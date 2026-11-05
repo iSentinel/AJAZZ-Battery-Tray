@@ -1,8 +1,7 @@
 name: Publish Windows release v0.1.0
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   release:
