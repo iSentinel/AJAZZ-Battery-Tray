@@ -3,7 +3,7 @@
 A small, independent Windows tray utility for the **AJAZZ AJ179 APEX** mouse
 connected through its **2.4 GHz / 8K dock** (`USB VID_3151 / PID_5007`).
 
-**Version:** 0.1.0 (initial, requires real-device validation of this implementation).
+**Version:** 0.1.0 (early build; battery display confirmed on an AJ179 APEX with its original 2.4 GHz/8K dock).
 
 ## Features
 
@@ -39,7 +39,7 @@ Open PowerShell in the extracted project folder:
 
 Or use GitHub Actions > **Build Windows portable app** > Run workflow, then
 download the `AJAZZBatteryTray-win-x64` artifact. The workflow builds on a
-Windows runner. The portable ZIP contains the self-contained executable.
+Windows runner. Download the artifact ZIP and extract it once: the self-contained\n`AJAZZBatteryTray.exe` is directly inside, without an additional ZIP.\nFor local builds, `build.ps1` also produces `dist/AJAZZBatteryTray-win-x64.zip`.
 
 A first launch may display Windows SmartScreen because the app is not signed.
 Review the source before allowing it to run.
@@ -68,9 +68,7 @@ EEPROM-write, update, or pairing opcodes.
 
 **Important:** A matching VID/PID does not always identify the physical mouse.
 The HID exchange is documented for another AJAZZ APEX model and implemented
-for `3151:5007` in Halo Battery. The AJ179 APEX has been observed by the
-user to return its correct battery percentage **in Halo Battery**, but this
-new C# implementation still requires testing on that Windows machine.
+for `3151:5007` in Halo Battery. The AJ179 APEX has been observed by the user to return its battery percentage\n**in both Halo Battery and AJAZZ Battery Tray** through the original dock.\nExtended tests (sleep/wake, charging, disconnect/reconnect and Bluetooth)\nare not yet complete.
 
 Do not run Halo Battery, the official configuration app, and AJAZZ Battery
 Tray at the same time during initial testing: concurrent reads may compete.
