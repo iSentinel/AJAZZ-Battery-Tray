@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-beta.2 (2026-11-05)
+- Add a separate Windows x64 installer using Inno Setup.
+- Install to Program Files, add Start menu and optional desktop shortcuts.
+- Register standard Windows uninstaller; preserve user settings by default.
+- Publish both a portable executable and an installer in GitHub Releases.
+- Add CI installation/uninstallation smoke test and SHA256 checksums.
+- Simplify README to direct users to GitHub Releases.
+
 ## 0.2.0-beta.1 (development)
 - Native macOS Intel/Apple Silicon menu-bar prototype via AppKit and IOKit.
 - Mark AJ159 APEX compatibility as experimental; shared receiver protocol.

@@ -2,7 +2,7 @@ using Microsoft.Win32;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Registers the portable application for the current Windows user.</summary>
+/// <summary>Registers the application for the current Windows user.</summary>
 public static class StartupRegistration
 {
     private const string KeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";

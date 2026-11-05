@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'macos/**'
       - '.github/workflows/release-beta.yml'
+      - 'installer/**'
   workflow_dispatch:
 
 jobs:
@@ -33,6 +34,49 @@ jobs:
           Copy-Item dist/app/AJAZZBatteryTray.exe dist/release/AJAZZBatteryTray-win-x64.exe
           $hash = (Get-FileHash dist/release/AJAZZBatteryTray-win-x64.exe -Algorithm SHA256).Hash.ToLower()
           "$hash  AJAZZBatteryTray-win-x64.exe" | Set-Content -Encoding ascii dist/release/AJAZZBatteryTray-win-x64.sha256
+      - name: Install Inno Setup compiler
+        shell: pwsh
+        run: |
+          $candidates = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          }
+      - name: Build Windows installer and smoke-test install/uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidates = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw 'ISCC.exe not found' }
+          & $iscc "installer\AJAZZBatteryTray.iss"
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
+          $installer = 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe'
+          if (-not (Test-Path $installer)) { throw 'Installer output missing' }
+          $installDir = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'
+          $p = Start-Process -FilePath (Resolve-Path $installer) -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-'
+          ) -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Silent install failed: $($p.ExitCode)" }
+          $installed = Join-Path $installDir 'AJAZZBatteryTray.exe'
+          if (-not (Test-Path $installed)) { throw 'Missing EXE in Program Files' }
+          $uninstaller = Join-Path $installDir 'unins000.exe'
+          if (-not (Test-Path $uninstaller)) { throw 'Uninstaller missing' }
+          $p = Start-Process -FilePath $uninstaller -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          ) -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Silent uninstall failed: $($p.ExitCode)" }
+          if (Test-Path $installed) { throw 'EXE remains after uninstall' }
+          Copy-Item $installer dist/release/
+          $hash = (Get-FileHash dist/release/AJAZZBatteryTray-Setup-win-x64.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  AJAZZBatteryTray-Setup-win-x64.exe" | Set-Content -Encoding ascii dist/release/AJAZZBatteryTray-Setup-win-x64.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: win-release
@@ -73,9 +117,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.2.0-beta.1"
+          TAG="v0.2.0-beta.2"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.2.0-beta.1 — Windows and macOS
+          ## AJAZZ Battery Tray v0.2.0-beta.2 — Windows and macOS
 
           Battery status in the notification area on Windows 10/11 and the
           native menu bar on macOS 13+ (Intel or Apple Silicon).
@@ -95,22 +139,29 @@ jobs:
           distinguished at once. Mac low-battery alerts and login autostart
           are not yet included.
 
-          Windows download: AJAZZBatteryTray-win-x64.exe
+          Windows recommended installer: AJAZZBatteryTray-Setup-win-x64.exe
+          Installs to Program Files, provides Start menu and standard uninstall.
+          Administrator permission is required only to install/uninstall.
+          Portable Windows download: AJAZZBatteryTray-win-x64.exe
           macOS download: AJAZZBatteryTray-macOS-universal.zip
-          SHA256 checksum files accompany both platforms.
+          SHA256 checksum files accompany every distribution.
           NOTES
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG exists; refresh the four named beta assets"
+            echo "Release $TAG exists; refresh beta assets"
             gh release upload "$TAG" dist/release/AJAZZBatteryTray-win-x64.exe \
               dist/release/AJAZZBatteryTray-win-x64.sha256 \
+              dist/release/AJAZZBatteryTray-Setup-win-x64.exe \
+              dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 --clobber
           else
             gh release create "$TAG" \
               dist/release/AJAZZBatteryTray-win-x64.exe \
               dist/release/AJAZZBatteryTray-win-x64.sha256 \
+              dist/release/AJAZZBatteryTray-Setup-win-x64.exe \
+              dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.2.0-beta.1" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.2.0-beta.2" \
               --notes-file notes.md --prerelease
           fi

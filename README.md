@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.2.0-beta.1 development (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.2.0-beta.2 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -33,33 +33,42 @@ be ambiguous.
 
 ## Requirements
 
-- Windows 10/11 x64; .NET 8 SDK **only needed to build**, not to run
-  a published self-contained executable.
+- Windows 10/11 x64; no separate .NET installation needed for released builds.
 - AJAZZ AJ179 APEX in 2.4 GHz mode, with the USB/8K receiver attached.
 
-## Build and run
+## Download and install
 
-Open PowerShell in the extracted project folder:
+Get the latest builds from [GitHub Releases](https://github.com/iSentinel/AJAZZ-Battery-Tray/releases).
+Use the **Releases** section rather than GitHub Actions artifacts.
 
-```powershell
-# Confirm commands and requirements first:
-.\build.ps1 -Help
+**Windows 10/11 x64**
 
-# Run dependency-free tests, then create a portable x64 EXE and ZIP:
-.\build.ps1
+- **Installer (recommended):** `AJAZZBatteryTray-Setup-win-x64.exe`.
+  Run it, approve the Windows administrator prompt, and the application is
+  installed in `C:\Program Files\AJAZZ Battery Tray\` with a Start menu
+  shortcut and an entry in Windows Settings → Installed apps.
+  An optional desktop shortcut is available in the wizard.
+- **Portable:** `AJAZZBatteryTray-win-x64.exe`.
+  Run it from any folder without installation or administrator rights.
+- Choose **Start with Windows** in the tray menu after installing if you want
+  autostart. If you previously enabled autostart from the portable version,
+  disable and re-enable it from the installed application so Windows uses the
+  new path.
 
-# Run the application (its icon appears in the Windows notification area):
-.\dist\app\AJAZZBatteryTray.exe
-```
+**macOS 13+ (Intel / Apple Silicon, experimental)**
 
-Or use GitHub Actions > **Build Windows portable app** > Run workflow, then
-download the `AJAZZBatteryTray-win-x64` artifact. The workflow builds on a
-Windows runner. Download the artifact ZIP and extract it once: the self-contained
-`AJAZZBatteryTray.exe` is directly inside, without an additional ZIP.
-For local builds, `build.ps1` also produces `dist/AJAZZBatteryTray-win-x64.zip`.
+Download `AJAZZBatteryTray-macOS-universal.zip`, extract it once, and move
+`AJAZZ Battery Tray.app` to Applications. See
+[macOS installation and limitations](macos/README.md). macOS is not yet tested
+with physical AJAZZ hardware.
 
-A first launch may display Windows SmartScreen because the app is not signed.
-Review the source before allowing it to run.
+Windows installer installation and removal require administrator permissions.
+The application itself runs as the current user without elevation. Uninstall
+from Windows Settings → Installed apps; personal settings and diagnostic logs
+are intentionally preserved in `%APPDATA%\AJAZZBatteryTray`.
+
+Releases are unsigned; Windows SmartScreen and macOS Gatekeeper may warn. Review
+the project source and checksums before deciding to run the software.
 
 ## Tray menu
 
@@ -106,8 +115,8 @@ Tray at the same time during initial testing: concurrent reads may compete.
   the full status. Windows may suppress balloon notifications in Focus Assist.
 - If the receiver remains present while the mouse sleeps, the icon changes to
   `?` rather than showing a stale percentage.
-- Prebuilt EXE is produced by the Windows build script or GitHub Actions;
-  this source package does not include a precompiled Windows executable.
+- Prebuilt Windows portable and installer EXEs and the macOS ZIP are published
+  under GitHub Releases; local compilation is not necessary for users.
 
 ## Diagnostics
 
