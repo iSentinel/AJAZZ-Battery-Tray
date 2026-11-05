@@ -17,8 +17,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build universal menu-bar app
+        if: ${{ hashFiles('macos/main.swift') != '' }}
         run: bash macos/build-macos.sh
       - name: Upload macOS ZIP (one extraction)
+        if: ${{ hashFiles('macos/main.swift') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: AJAZZBatteryTray-macOS-universal-experimental

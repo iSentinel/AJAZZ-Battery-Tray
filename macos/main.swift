@@ -105,9 +105,9 @@ final class TrayController: NSObject, NSApplicationDelegate {
         statusMenu.addItem(detailItem)
         statusMenu.addItem(.separator())
 
-        let refresh = NSMenuItem(title: "Refresh now", action: #selector(refresh), keyEquivalent: "r")
-        refresh.target = self
-        statusMenu.addItem(refresh)
+        let refreshItem = NSMenuItem(title: "Refresh now", action: #selector(refresh), keyEquivalent: "r")
+        refreshItem.target = self
+        statusMenu.addItem(refreshItem)
 
         let interval = NSMenuItem(title: "Refresh interval", action: nil, keyEquivalent: "")
         let subMenu = NSMenu()
