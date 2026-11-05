@@ -22,7 +22,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     public TrayAppContext()
     {
-        _tray = new NotifyIcon { Text = "AJAZZ AJ179 APEX: connecting..." };
+        _tray = new NotifyIcon { Text = "AJAZZ APEX: connecting..." };
         UpdateIcon(null, false);
         _tray.ContextMenuStrip = BuildMenu();
         _tray.Visible = true;
@@ -36,7 +36,7 @@ public sealed class TrayAppContext : ApplicationContext
     private ContextMenuStrip BuildMenu()
     {
         ContextMenuStrip menu = new();
-        _statusItem.Text = "AJAZZ AJ179 APEX — connecting";
+        _statusItem.Text = "AJAZZ APEX — connecting";
         _statusItem.Enabled = false;
         menu.Items.Add(_statusItem);
         menu.Items.Add(new ToolStripSeparator());
@@ -174,7 +174,7 @@ public sealed class TrayAppContext : ApplicationContext
                 ? _alerts.Evaluate(reading.Percent!.Value) : null;
             if (threshold.HasValue)
             {
-                _tray.ShowBalloonTip(5000, "AJAZZ AJ179 APEX: low battery",
+                _tray.ShowBalloonTip(5000, "AJAZZ APEX: low battery",
                     $"Battery at {reading.Percent}%. Threshold: {threshold}%.",
                     ToolTipIcon.Warning);
             }
@@ -189,8 +189,8 @@ public sealed class TrayAppContext : ApplicationContext
 
         _lastConnected = connected;
         string value = connected ? $"{reading.Percent}%" : "unavailable";
-        _statusItem.Text = $"AJAZZ AJ179 APEX — {value}";
-        string tooltip = $"AJAZZ AJ179 APEX: {value} ({reading.Details})";
+        _statusItem.Text = $"AJAZZ APEX — {value}";
+        string tooltip = $"AJAZZ APEX: {value} ({reading.Details})";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
         UpdateIcon(reading.Percent, connected);
     }
