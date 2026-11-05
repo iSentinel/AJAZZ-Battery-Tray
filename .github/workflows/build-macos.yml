@@ -1,0 +1,30 @@
+name: Build macOS experimental app
+
+on:
+  push:
+    paths:
+      - 'macos/**'
+      - '.github/workflows/build-macos.yml'
+      - 'src/AjazzBatteryTray/**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build universal menu-bar app
+        if: ${{ hashFiles('macos/main.swift') != '' }}
+        run: bash macos/build-macos.sh
+      - name: Upload macOS ZIP (one extraction)
+        if: ${{ hashFiles('macos/main.swift') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: AJAZZBatteryTray-macOS-universal-experimental
+          path: |
+            dist/AJAZZBatteryTray-macOS-universal.zip
+            dist/AJAZZBatteryTray-macOS-universal.sha256
+          if-no-files-found: error
