@@ -17,7 +17,10 @@ Intel (x86_64) and Apple Silicon (arm64).
 - A HID `SetFeature` request transmits the same poll as the Windows version:
   ID 0, zero-filled payload with `0xF7` in the second byte. No other device
   commands are sent. A `GetFeature` report ID `0x05` returns the battery
-  value, if the device and macOS expose the same protocol.
+  value, if the device and macOS expose the same protocol. The parser handles
+  reports with or without an included report-ID byte.
+- For AJ159 APEX, only the **8K dock** with `3151:5007` is targeted;
+  alternative `3151:4026` and `3151:4027` receivers are not supported.
 - Only 2.4 GHz USB is implemented. No Bluetooth, battery charging detection,
   macOS notifications, or automatic start at login yet.
 - The app is **ad-hoc signed, not Apple-notarized**. macOS Gatekeeper can show a

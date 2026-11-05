@@ -17,14 +17,17 @@ enum ApexBattery {
 
     /// Decode a feature report returned for report ID 0x05.
     static func parse(_ report: [UInt8]) -> Int? {
-        guard report.count >= 4,
-              report[0] == 0x05,
-              report[1] == 0,
-              report[2] == 0,
-              (1...100).contains(Int(report[3])) else {
-            return nil
+        // macOS may return the report ID or strip it from an unnumbered reply.
+        if report.count >= 4 && report[0] == 0x05 &&
+           report[1] == 0 && report[2] == 0 &&
+           (1...100).contains(Int(report[3])) {
+            return Int(report[3])
         }
-        return Int(report[3])
+        if report.count >= 3 && report[0] == 0 && report[1] == 0 &&
+           (1...100).contains(Int(report[2])) {
+            return Int(report[2])
+        }
+        return nil
     }
 
     static func read() -> Status {
@@ -77,7 +80,7 @@ enum ApexBattery {
             let read = reply.withUnsafeMutableBufferPointer { data in
                 IOHIDDeviceGetReport(device, kIOHIDReportTypeFeature, 5, data.baseAddress!, &actualLength)
             }
-            if read == kIOReturnSuccess && actualLength >= 4,
+            if read == kIOReturnSuccess && actualLength >= 3,
                let percent = parse(Array(reply.prefix(Int(actualLength)))) {
                 return percent
             }
@@ -179,8 +182,16 @@ final class TrayController: NSObject, NSApplicationDelegate {
 
 if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-h") {
     print("AJAZZ Battery Tray for macOS (experimental 2.4 GHz/8K HID)")
-    print("Usage: AJAZZBatteryTray [--help] [--diagnose]")
+    print("Usage: AJAZZBatteryTray [--help] [--diagnose] [--self-test]")
     print("Requires macOS 13+ and a compatible VID_3151:PID_5007 receiver.")
+} else if CommandLine.arguments.contains("--self-test") {
+    let valid = ApexBattery.parse([5, 0, 0, 73]) == 73 &&
+                ApexBattery.parse([0, 0, 73]) == 73 &&
+                ApexBattery.parse([5, 0, 0, 0]) == nil &&
+                ApexBattery.parse([5, 0, 0, 255]) == nil &&
+                ApexBattery.parse([4, 0, 0, 30]) == nil
+    print(valid ? "PASS: HID report parser" : "FAIL: HID report parser")
+    if !valid { exit(1) }
 } else if CommandLine.arguments.contains("--diagnose") {
     switch ApexBattery.read() {
     case .battery(let level): print("PASS: battery \(level)%")

@@ -23,6 +23,7 @@ codesign --force --deep --sign - "$APP"
 plutil -lint "$APP/Contents/Info.plist"
 codesign --verify --verbose "$APP"
 "$APP/Contents/MacOS/AJAZZBatteryTray" --help
+"$APP/Contents/MacOS/AJAZZBatteryTray" --self-test
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$OUT"
 shasum -a 256 "$OUT" | sed "s|$ROOT/dist/||" > "$ROOT/dist/AJAZZBatteryTray-macOS-universal.sha256"
 echo "PASS: $OUT"
