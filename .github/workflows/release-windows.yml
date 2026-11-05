@@ -1,0 +1,71 @@
+name: Publish Windows release v0.1.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-windows.yml'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run tests
+        shell: pwsh
+        run: |
+          dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
+          if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
+      - name: Publish Windows x64 single-file executable
+        shell: pwsh
+        run: |
+          dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:PublishTrimmed=false `
+            -p:DebugType=None -o dist/app
+          if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+          $file = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $sha = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
+          "$sha  AJAZZBatteryTray.exe" | Set-Content -Encoding ascii dist/app/SHA256SUMS.txt
+      - name: Publish GitHub Release (idempotent)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v0.1.0'
+          $notes = @'
+          ## AJAZZ Battery Tray v0.1.0 — Windows
+
+          A compact Windows 10/11 x64 system tray monitor for AJAZZ APEX mice
+          using the 2.4 GHz / 8K USB receiver (VID 3151, PID 5007).
+
+          - Battery percentage in the Windows tray
+          - 15/30/60/120-second refresh, low battery alerts, current-user autostart
+          - No vendor configuration app or administrator rights needed
+          - Tested by an AJ179 APEX user: receiver detection and percentage work
+
+          **AJ159 APEX:** shares the receiver identifiers in public reverse-engineered
+          reports, but has not been tested on this app yet.
+
+          **macOS/Bluetooth:** not included in this Windows release.
+
+          **Installation:** Download AJAZZBatteryTray.exe directly below,
+          run it, and look in the Windows notification area.
+          Unsigned executable: Windows SmartScreen can warn.
+          '@
+          $notes | Set-Content -Path dist/release-notes.md -Encoding utf8
+          gh release view $tag --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag dist/app/AJAZZBatteryTray.exe dist/app/SHA256SUMS.txt --clobber --repo "$env:GITHUB_REPOSITORY"
+          } else {
+            gh release create $tag dist/app/AJAZZBatteryTray.exe dist/app/SHA256SUMS.txt `
+              --repo "$env:GITHUB_REPOSITORY" --target "$env:GITHUB_SHA" `
+              --title "AJAZZ Battery Tray v0.1.0 (Windows)" `
+              --notes-file dist/release-notes.md --prerelease
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed' }
