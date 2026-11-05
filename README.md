@@ -12,7 +12,9 @@ A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 | Windows 10/11 x64 | Battery read confirmed on user's dock | Experimental; shared HID protocol not yet hardware-tested here |
 | macOS 13+ (Intel/Apple Silicon) | Experimental; native AppKit + IOKit HID | Experimental; native AppKit + IOKit HID |
 
-**Mac:** see [macOS build and limitations](macos/README.md). This is not a
+**Mac:** see [macOS build and limitations](macos/README.md). AJ159 APEX has
+multiple USB identities; only the 8K dock `3151:5007` is targeted here,
+not alternate `3151:4026` or `3151:4027` receivers. This is not a
 WinForms port: macOS uses its own Swift menu-bar application. Bluetooth
 is not implemented on either platform yet. Only one matching receiver is
 reported at a time; if two receivers are attached, the device shown can
@@ -83,8 +85,8 @@ EEPROM-write, update, or pairing opcodes.
 
 **Important:** A matching VID/PID does not identify the physical mouse model. The Windows
 tray therefore shows generic **AJAZZ APEX** rather than claiming a specific
-model, and AJ159 APEX is marked experimental until tested. A matching VID/PID
-The HID exchange is documented for another AJAZZ APEX model and implemented
+model, and AJ159 APEX is marked experimental until tested. The HID exchange
+is documented for another AJAZZ APEX model and implemented
 for `3151:5007` in Halo Battery. The AJ179 APEX has been observed by the user to return its battery percentage
 **in both Halo Battery and AJAZZ Battery Tray** through the original dock.
 Extended tests (sleep/wake, charging, disconnect/reconnect and Bluetooth)
