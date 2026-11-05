@@ -39,7 +39,9 @@ Open PowerShell in the extracted project folder:
 
 Or use GitHub Actions > **Build Windows portable app** > Run workflow, then
 download the `AJAZZBatteryTray-win-x64` artifact. The workflow builds on a
-Windows runner. Download the artifact ZIP and extract it once: the self-contained\n`AJAZZBatteryTray.exe` is directly inside, without an additional ZIP.\nFor local builds, `build.ps1` also produces `dist/AJAZZBatteryTray-win-x64.zip`.
+Windows runner. Download the artifact ZIP and extract it once: the self-contained
+`AJAZZBatteryTray.exe` is directly inside, without an additional ZIP.
+For local builds, `build.ps1` also produces `dist/AJAZZBatteryTray-win-x64.zip`.
 
 A first launch may display Windows SmartScreen because the app is not signed.
 Review the source before allowing it to run.
@@ -68,7 +70,10 @@ EEPROM-write, update, or pairing opcodes.
 
 **Important:** A matching VID/PID does not always identify the physical mouse.
 The HID exchange is documented for another AJAZZ APEX model and implemented
-for `3151:5007` in Halo Battery. The AJ179 APEX has been observed by the user to return its battery percentage\n**in both Halo Battery and AJAZZ Battery Tray** through the original dock.\nExtended tests (sleep/wake, charging, disconnect/reconnect and Bluetooth)\nare not yet complete.
+for `3151:5007` in Halo Battery. The AJ179 APEX has been observed by the user to return its battery percentage
+**in both Halo Battery and AJAZZ Battery Tray** through the original dock.
+Extended tests (sleep/wake, charging, disconnect/reconnect and Bluetooth)
+are not yet complete.
 
 Do not run Halo Battery, the official configuration app, and AJAZZ Battery
 Tray at the same time during initial testing: concurrent reads may compete.
