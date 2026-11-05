@@ -24,9 +24,11 @@ jobs:
             -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true -p:PublishTrimmed=false `
             -p:DebugType=None -o dist/app
-          Compress-Archive -Path dist/app/* -DestinationPath dist/AJAZZBatteryTray-win-x64.zip
+      # upload-artifact already delivers a ZIP download. Upload the executable
+      # directory, not a pre-zipped archive, to avoid nested ZIP files.
       - uses: actions/upload-artifact@v4
         with:
           name: AJAZZBatteryTray-win-x64
-          path: dist/AJAZZBatteryTray-win-x64.zip
+          path: dist/app/
           if-no-files-found: error
+          compression-level: 6
