@@ -135,6 +135,10 @@ Tray at the same time during initial testing: concurrent reads may compete.
 
 ## Roadmap
 
+A [safe dock protocol capture guide](docs/DOCK_CAPTURE_GUIDE.md) is available
+for collecting reversible RGB/display evidence from the official software.
+No unverified configuration opcode is enabled in this app.
+
 See [ROADMAP.md](docs/ROADMAP.md) for the safety gates, validation plan and
 next staged work. Battery monitoring and clock sync are implemented;
 RGB, display uploads and mouse configuration are **not** exposed until
