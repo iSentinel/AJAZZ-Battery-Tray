@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — guarded DPI and polling-rate research
+- Document GET-side vendor candidates for DPI stages, active profile,
+  polling rate and mouse options, with explicit model uncertainty.
+- Explain that vendor GET commands may require host-to-device HID writes.
+- Preserve the 0xF7/0x28 allowlist and prohibit speculative probes.
+- Define capture, readback, source-of-truth and failure-handling gates.
+
+
 ## 0.3.0-beta.21 (2026-11-07)
 - Treat Windows USB/HID enumeration failures as unknown rather than unplugged.
 - Prevent false USB disconnect history, notifications and Bluetooth handover.
