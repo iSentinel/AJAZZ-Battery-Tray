@@ -31,6 +31,23 @@ GATT Battery Service (0x180F) / Battery Level (0x2A19) uncached.
 - **Hardware support is not confirmed** until the actual AJ179/AJ159 is tested.
 - The chosen entry is not stored across sessions.
 
+## Experimental macOS connected-device inspector (v0.3.0-beta.10)
+
+The macOS menu exposes **Check connected Bluetooth battery...**. On the
+user's explicit request, CoreBluetooth checks only peripherals the macOS
+Bluetooth stack already reports connected **with Battery Service 0x180F**.
+The user selects a likely AJAZZ-named device and requests one read of
+Battery Level 0x2A19. It connects to that selected peripheral for the read,
+then disconnects its CoreBluetooth session; there is a ten-second timeout.
+
+- No scan API, automatic pairing or periodic reads are used.
+- macOS prompts for Bluetooth permission only when the user opens the feature.
+- Bluetooth identifiers are kept in memory only and never logged or exported.
+- The selected peripheral is not stored or merged with 2.4 GHz status.
+- If CoreBluetooth doesn't expose the HID mouse or Battery Service, the
+  result is explicitly unknown; **absence does not imply 0%**.
+- This implementation compiles in CI but needs a physical Mac acceptance test.
+
 ## Standard read-only discovery path
 
 Bluetooth SIG Battery Service is `0x180F`; the classic Battery Level
