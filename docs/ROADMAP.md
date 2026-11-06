@@ -25,6 +25,7 @@
 - [x] macOS battery history CSV with private local storage and retention.
 - [x] macOS battery history chart (24h, 7d, 30d).
 - [x] macOS opt-in low-battery and receiver-disconnect notifications.
+- [x] macOS Start at Login via SMAppService (requires real Mac validation).
 - [ ] Verify macOS notification delivery and permission prompts on a real Mac.
 
 ## Stage 2 — Dock customization
