@@ -53,8 +53,9 @@ public static class BluetoothBatteryReader
             devices = await DeviceInformation.FindAllAsync(selector);
         }
 
-        return devices.Where(x => x.Pairing.IsPaired)
-            .Select(x => CreateCandidate(x, lowEnergy)).ToArray();
+        // The selector already requires pairing. Some Windows AEP entries
+        // report Pairing.IsPaired inconsistently, so do not filter twice.
+        return devices.Select(x => CreateCandidate(x, lowEnergy)).ToArray();
     }
 
     private static BluetoothCandidate CreateCandidate(DeviceInformation item,
