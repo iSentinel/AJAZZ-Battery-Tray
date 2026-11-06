@@ -11,6 +11,9 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _timer;
     private readonly AjazzHidReader _reader = new();
     private readonly AlertPolicy _alerts = new();
+    private readonly ConnectionAlertPolicy _connectionAlerts = new();
+    private readonly BatteryHistory _history = new();
+    private BatteryHistoryForm? _historyWindow;
     private readonly DockClockSchedule _clockSchedule = new();
     private readonly ToolStripMenuItem _clockStatus = new();
     private bool _manualClockSync;
@@ -44,6 +47,8 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(_statusItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Refresh now", null, (_, _) => PollSoon());
+        menu.Items.Add("Battery history...", null, (_, _) => ShowHistory());
+        menu.Items.Add("Device diagnostics...", null, (_, _) => ShowDiagnostics());
         menu.Items.Add(BuildIntervalMenu());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Sync dock time now", null, (_, _) => RequestClockSync());
@@ -58,6 +63,26 @@ public sealed class TrayAppContext : ApplicationContext
         };
         notify.CheckedChanged += (_, _) => SaveNotifications(notify.Checked);
         menu.Items.Add(notify);
+        ToolStripMenuItem disconnect = new("Notify on receiver disconnect")
+        {
+            Checked = _settings.NotifyOnDisconnect, CheckOnClick = true
+        };
+        disconnect.CheckedChanged += (_, _) =>
+        {
+            _settings.NotifyOnDisconnect = disconnect.Checked;
+            _settings.Save();
+        };
+        menu.Items.Add(disconnect);
+        ToolStripMenuItem history = new("Record battery history")
+        {
+            Checked = _settings.RecordBatteryHistory, CheckOnClick = true
+        };
+        history.CheckedChanged += (_, _) =>
+        {
+            _settings.RecordBatteryHistory = history.Checked;
+            _settings.Save();
+        };
+        menu.Items.Add(history);
         ConfigureStartupMenu();
         menu.Items.Add(_startupItem);
         menu.Items.Add(new ToolStripSeparator());
@@ -105,6 +130,23 @@ public sealed class TrayAppContext : ApplicationContext
     {
         _manualClockSync = true;
         PollSoon();
+    }
+
+    private void ShowHistory()
+    {
+        if (_historyWindow is null || _historyWindow.IsDisposed)
+        {
+            _historyWindow = new BatteryHistoryForm(_history);
+        }
+        _historyWindow.RefreshData();
+        _historyWindow.Show();
+        _historyWindow.BringToFront();
+    }
+
+    private static void ShowDiagnostics()
+    {
+        MessageBox.Show(DeviceDiagnostics.Read(), "AJAZZ APEX device diagnostics",
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void ConfigureStartupMenu()
@@ -238,6 +280,18 @@ public sealed class TrayAppContext : ApplicationContext
     private void ApplyReading(AjazzHidReader.Reading reading)
     {
         bool connected = reading.Percent.HasValue;
+        if (_settings.RecordBatteryHistory)
+        {
+            _history.Record(DateTimeOffset.UtcNow, reading.Percent, reading.ReceiverPresent);
+        }
+
+        if (_connectionAlerts.Evaluate(connected, reading.ReceiverPresent) &&
+            _settings.NotifyOnDisconnect)
+        {
+            _tray.ShowBalloonTip(4000, "AJAZZ APEX disconnected",
+                "The 2.4 GHz receiver is no longer detected.",
+                ToolTipIcon.Warning);
+        }
         int? previousPercent = _lastPercent;
         if (connected)
         {
@@ -291,6 +345,7 @@ public sealed class TrayAppContext : ApplicationContext
         _closing = true;
         _timer.Stop();
         _timer.Dispose();
+        _historyWindow?.Close();
         _tray.Visible = false;
         _tray.Dispose();
         _icon?.Dispose();

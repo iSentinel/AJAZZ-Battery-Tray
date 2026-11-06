@@ -117,11 +117,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.2.0-beta.3"
+          TAG="v0.3.0-beta.1"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.2.0-beta.3 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.1 — Windows and macOS
 
-          Battery and dock clock synchronization in the notification area on Windows 10/11 and the
+          Battery history, diagnostics and dock clock synchronization in
+          the notification area on Windows 10/11 and the
           native menu bar on macOS 13+ (Intel or Apple Silicon).
 
           **Windows:** AJ179 APEX 2.4 GHz / 8K battery display confirmed on
@@ -133,6 +134,10 @@ jobs:
           Download the macOS ZIP and extract it once to get the .app.
           The app is ad-hoc signed, not notarized by Apple. Gatekeeper may
           request approval in Privacy & Security.
+
+          **Windows Monitoring:** 30-day battery history CSV and interactive
+          chart (24h/7d/30d), read-only device diagnostics, optional
+          receiver disconnect notification (off by default).
 
           **Dock Clock Sync:** Manual or five-minute automatic RTC update using
           the documented 0x28 feature report. The host writes local system time.
@@ -166,6 +171,6 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.2.0-beta.3" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.1" \
               --notes-file notes.md --prerelease
           fi

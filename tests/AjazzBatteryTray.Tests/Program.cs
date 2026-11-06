@@ -79,5 +79,35 @@ bool ThrowsBadReportLength()
     }
 }
 
+// History and connection rules run without real mouse hardware.
+DateTimeOffset t0 = new(2026, 11, 6, 12, 0, 0, TimeSpan.Zero);
+BatterySample online = new(t0, 74, "online");
+Check("state with battery", BatteryHistoryRules.State(true, 74) == "online");
+Check("state with asleep mouse", BatteryHistoryRules.State(true, null) == "unavailable");
+Check("state without receiver", BatteryHistoryRules.State(false, null) == "disconnected");
+Check("new point stored", BatteryHistoryRules.ShouldRecord(null, online));
+Check("duplicate point suppressed", !BatteryHistoryRules.ShouldRecord(
+    online, online with { Timestamp = t0.AddMinutes(1) }));
+Check("five-minute sample kept", BatteryHistoryRules.ShouldRecord(
+    online, online with { Timestamp = t0.AddMinutes(5) }));
+Check("percentage change kept", BatteryHistoryRules.ShouldRecord(
+    online, online with { Timestamp = t0.AddSeconds(30), Percent = 73 }));
+Check("disconnect event kept", BatteryHistoryRules.ShouldRecord(
+    online, new BatterySample(t0.AddSeconds(30), null, "disconnected")));
+Check("history retention", BatteryHistoryRules.Retain(
+    new[] { online with { Timestamp = t0.AddDays(-32) }, online },
+    t0.AddSeconds(1)).Count == 1);
+
+ConnectionAlertPolicy disconnectPolicy = new();
+Check("no alert before first online", !disconnectPolicy.Evaluate(false, false));
+Check("first online no disconnect alert", !disconnectPolicy.Evaluate(true, true));
+Check("one missing poll ignored", !disconnectPolicy.Evaluate(false, false));
+Check("second missing poll alerts", disconnectPolicy.Evaluate(false, false));
+Check("no duplicate disconnect alert", !disconnectPolicy.Evaluate(false, false));
+Check("reconnect resets disconnect", !disconnectPolicy.Evaluate(true, true));
+Check("receiver present asleep ignored", !disconnectPolicy.Evaluate(false, true));
+Check("disconnect alert after reconnect", !disconnectPolicy.Evaluate(false, false) &&
+    disconnectPolicy.Evaluate(false, false));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
