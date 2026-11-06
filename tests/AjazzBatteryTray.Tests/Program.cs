@@ -109,6 +109,48 @@ Check("receiver present asleep ignored", !disconnectPolicy.Evaluate(false, true)
 Check("disconnect alert after reconnect", !disconnectPolicy.Evaluate(false, false) &&
     disconnectPolicy.Evaluate(false, false));
 
+// CSV must preserve valid values while rejecting inconsistent state rows.
+string timeText = t0.ToString("O");
+Check("CSV valid 0% online", BatteryHistoryCsv.Parse(
+    $"{timeText},0,online")?.Percent == 0);
+Check("CSV valid 100% online", BatteryHistoryCsv.Parse(
+    $"{timeText},100,online")?.Percent == 100);
+Check("CSV unavailable without percentage", BatteryHistoryCsv.Parse(
+    $"{timeText},,unavailable")?.State == "unavailable");
+Check("CSV disconnect without percentage", BatteryHistoryCsv.Parse(
+    $"{timeText},,disconnected")?.State == "disconnected");
+Check("CSV rejects online without percent", BatteryHistoryCsv.Parse(
+    $"{timeText},,online") is null);
+Check("CSV rejects disconnected with percent", BatteryHistoryCsv.Parse(
+    $"{timeText},20,disconnected") is null);
+Check("CSV rejects unavailable with percent", BatteryHistoryCsv.Parse(
+    $"{timeText},20,unavailable") is null);
+Check("CSV rejects invalid negative percentage", BatteryHistoryCsv.Parse(
+    $"{timeText},-1,online") is null);
+Check("CSV rejects 101 percent", BatteryHistoryCsv.Parse(
+    $"{timeText},101,online") is null);
+Check("CSV rejects malformed date", BatteryHistoryCsv.Parse(
+    "not-a-date,40,online") is null);
+Check("CSV rejects malformed state", BatteryHistoryCsv.Parse(
+    $"{timeText},50,pending") is null);
+Check("CSV rejects extra columns", BatteryHistoryCsv.Parse(
+    $"{timeText},70,online,extra") is null);
+Check("CSV rejects header as a sample",
+    BatteryHistoryCsv.Parse(BatteryHistoryCsv.Header) is null);
+BatterySample csvSample = new(t0, 0, "online");
+Check("CSV round-trip preserves 0%", BatteryHistoryCsv.Parse(
+    BatteryHistoryCsv.Format(csvSample)) == csvSample);
+BatterySample gapSample = new(t0, null, "unavailable");
+Check("CSV round-trip preserves gap", BatteryHistoryCsv.Parse(
+    BatteryHistoryCsv.Format(gapSample)) == gapSample);
+DateTimeOffset offsetTime = new(2026, 11, 7, 1, 30, 0,
+    TimeSpan.FromHours(2));
+BatterySample shifted = new(offsetTime, 86, "online");
+Check("CSV normalizes timestamp to UTC", BatteryHistoryCsv.Parse(
+    BatteryHistoryCsv.Format(shifted))?.Timestamp.Offset == TimeSpan.Zero);
+Check("CSV header unchanged for existing files",
+    BatteryHistoryCsv.Header == "utc_timestamp,percent,state");
+
 // Stop unknown or malformed HID writes before they reach the receiver.
 byte[] telemetry = new byte[65];
 telemetry[1] = 0xF7;
