@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.13 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.14 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -147,23 +147,17 @@ verified read-back and a reliable recovery path exist.
 
 ## Limitations / roadmap
 
-- **Automatic Bluetooth battery monitoring is not yet implemented.**
-  On Windows, **Check paired Bluetooth battery...** is an experimental,
-  manually triggered read of standard GATT Battery Service on a selected,
-  already paired AJAZZ BLE mouse. This never substitutes the tray reading.
-  The app does not pair devices, scan unpaired devices or write GATT data.
-  If Battery Service is absent, it reports unavailable.
-  A lookup has a 12-second UI timeout; a battery read has a 15-second
-  UI timeout, with clear messages when a sleeping mouse does not respond. Real AJ179/AJ159
-  Bluetooth battery compatibility still needs hardware validation.
-  On macOS there is also a manual **Check connected Bluetooth battery...**
-  inspector for AJAZZ devices already connected to the system; it uses
-  CoreBluetooth without scanning or pairing, and may not find HID devices
-  that do not expose Battery Service. Both platforms remain experimental.
-  See [Bluetooth discovery plan](docs/BLUETOOTH_DISCOVERY.md).
- It requires testing the Windows BLE
-  device's Battery Service or Windows battery property in Bluetooth mode.
-  The 2.4 GHz dock is the supported primary transport.
+- **Windows Bluetooth tray fallback:** optional per-session automatic
+  monitoring is available after a successful **fresh** manual GATT read on
+  a selected paired device. It runs only while the 2.4 GHz receiver is
+  physically absent and never stores Bluetooth identifiers on disk.
+  AJ179 APEX directly returned 83% via GATT on Windows in a real
+  hardware test (2026-11-06). Automatic switching and reconnect behavior
+  still require field validation. AJ159 APEX BLE remains unverified.
+- The tray prioritizes USB 2.4 GHz even if the attached mouse sleeps.
+  Windows-cached Bluetooth values are displayed in the manual inspector
+  but are **not** used for automatic battery monitoring.
+- macOS Bluetooth remains manual and experimental.
 - Charging state is not shown: the documented `0x05` status frame does not
   provide a verified charging bit.
 - The notification icon uses a live percent; the tray tooltip and menu provide
@@ -211,10 +205,28 @@ tries standard BLE GATT Battery Level first and can show Windows's cached
 battery percentage if GATT is unavailable. The result identifies its source,
 and a cached value may not reflect the latest charge.
 
-This does not confirm AJ179/AJ159 exposes the standard service, and the mouse
+AJ179 APEX has now returned a direct GATT reading on Windows; AJ159 remains
+unverified. The mouse
 name is only a candidate hint, not a trustworthy identity. No pairing or
 automatic background Bluetooth polling is performed. The original 2.4 GHz
 monitor and safety guards are unchanged.
+
+### Enable automatic Bluetooth tray fallback (Windows)
+
+1. Pair AJ179 APEX through Windows Bluetooth settings.
+2. Open **Check paired Bluetooth battery...**, select the mouse and choose
+   **Read selected battery**.
+3. After **Fresh GATT Battery Level (2A19) read**, enable **Use this mouse
+   in tray when 2.4 GHz receiver is absent (this session)**.
+4. Remove the 2.4 GHz receiver. The tray shows **Bluetooth: NN%** and reads
+   again at most once every 60 seconds. USB receiver presence always wins.
+5. To stop, choose **Disable Bluetooth tray fallback** from the tray menu.
+   Restarting AJAZZ Battery Tray also disables it.
+
+Only a successful direct GATT value enables this option. Cached Windows
+BatteryLife does not qualify. Bluetooth values older than 120 seconds
+or failed reads are treated as unknown. The fallback does not currently
+feed the USB-only history chart or low-battery notifications.
 
 ### Troubleshooting Windows Bluetooth discovery
 
