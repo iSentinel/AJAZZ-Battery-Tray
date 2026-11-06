@@ -7,6 +7,9 @@
 - Never send unverified write opcodes, especially commands that might
   change the button matrix, persist a profile or enter a bootloader.
 - No serial numbers, device paths or user telemetry are uploaded.
+- Pull requests run Windows and macOS checks; redundant feature-branch pushes
+  should not queue duplicate builds.
+- Published release assets must never be silently overwritten.
 - Every release requires Windows tests, installer install/uninstall smoke test,
   macOS universal build and tests, and checksums in GitHub Releases.
 - Real-device testing is separate from CI compilation.
