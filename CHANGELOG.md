@@ -8,6 +8,13 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.23 (2026-11-07)
+- Validate both SetupAPI interface-detail calls instead of silently ignoring
+  failed size queries, failed detail reads or invalid interface paths.
+- Classify such errors as unknown USB presence, preserving safe BLE priority.
+- Add seven pure tests for expected Win32 buffer errors and valid sizes.
+- Preserve the existing HID write allowlist and paired-only Bluetooth policy.
+
 ## 0.3.0-beta.22 (2026-11-07)
 - Distinguish SetupAPI ERROR_NO_MORE_ITEMS from unexpected Windows HID
   enumeration failures, which must not imply that the USB receiver is absent.
