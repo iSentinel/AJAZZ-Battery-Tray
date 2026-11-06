@@ -28,8 +28,8 @@ Intel (x86_64) and Apple Silicon (arm64).
 - Dock Clock Sync uses the documented 0x28 feature report, manually or every
   five minutes. It follows the HID framing used by the macOS open-source
   Ajazz clock-sync daemon and is still unverified on our real hardware.
-- Only 2.4 GHz USB is implemented. No Bluetooth, battery charging detection,
-  or automatic start at login yet.
+- Only 2.4 GHz USB is implemented. Bluetooth and charging detection are not implemented.
+  macOS 13+ supports optional Start at Login from the menu.
 - Optional **Low battery notifications** (20%, 10%, 5%) and **Notify on
   receiver disconnect** are available in the menu bar. Both are off by
   default. Enabling either requests macOS notification permission. A sleeping
@@ -45,6 +45,19 @@ Get the macOS Universal ZIP from
 [GitHub Releases](https://github.com/iSentinel/AJAZZ-Battery-Tray/releases).
 Extract once and move `AJAZZ Battery Tray.app` to `/Applications`.
 The app runs in the menu bar, not the Dock.
+
+## Start at Login
+
+Select **Start at login** from the menu bar to register this app using the
+macOS Service Management API. The application must reside in `/Applications`
+for reliable login registration. Registration is optional and uses no
+administrator privileges. If macOS reports **approval needed**, open
+**Open Login Items settings...** and approve the app under
+System Settings → General → Login Items.
+
+The menu reads the current system registration state rather than assuming
+success. Ad-hoc-signed builds are not notarized, and the login item flow still
+requires a real Mac validation.
 
 ## Battery history
 
