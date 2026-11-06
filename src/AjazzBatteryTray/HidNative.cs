@@ -125,6 +125,17 @@ internal static class HidNative
         return HidD_GetAttributes(handle, ref value) ? value : null;
     }
 
+    /// <summary>Enforce a strict write-command allowlist at the HID boundary.</summary>
+    internal static bool SendApprovedFeature(SafeFileHandle device, byte[] report)
+    {
+        if (!HidFeaturePolicy.IsApproved(report))
+        {
+            FileLog.Write("WARN", "Blocked unapproved HID feature command");
+            return false;
+        }
+        return HidD_SetFeature(device, report, report.Length);
+    }
+
     /// <summary>Enumerates current HID interface paths (not all PnP devices).</summary>
     internal static IReadOnlyList<string> FindAjazzPaths()
     {

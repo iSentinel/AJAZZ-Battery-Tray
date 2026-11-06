@@ -22,5 +22,7 @@
              Link="AppSettings.cs" />
     <Compile Include="../../src/AjazzBatteryTray/FileLog.cs"
              Link="FileLog.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/HidFeaturePolicy.cs"
+             Link="HidFeaturePolicy.cs" />
   </ItemGroup>
 </Project>

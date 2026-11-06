@@ -24,6 +24,15 @@ A shared VID/PID does not prove identical firmware across APEX variants.
 6. Test replugging, sleep/wake and conflict with the vendor utility.
 7. Expose settings only after verified recovery and explicit user control.
 
+The application now enforces this at runtime:
+
+- Windows: `HidFeaturePolicy.IsApproved` is called before
+  `HidD_SetFeature`, permitting only exact `0xF7` battery polls or
+  valid `0x28` clock packets.
+- macOS: an equivalent guard validates the command payload before
+  `IOHIDDeviceSetReport`.
+- Unknown and malformed commands fail closed. No override option exists.
+
 No speculative vendor write opcodes are sent by this application.
 
 ## Sources

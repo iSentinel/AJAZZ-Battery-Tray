@@ -44,6 +44,9 @@ read-back/round-trip and recovery test is recorded.
 
 ## Stage 3 — Mouse configuration
 
+- [x] Add strict HID write-command allowlists for Windows and macOS.
+- [x] Unit-test blocking of screen/GIF, key-matrix and firmware opcodes.
+
 - [ ] Validate safe GET-only read-back of DPI levels and polling rate.
 - [ ] Add explicit read-only reporting if a matching verified response exists.
 - [ ] Document actual DPI stage count and receiver limits per model.

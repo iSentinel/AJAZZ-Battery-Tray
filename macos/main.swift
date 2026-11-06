@@ -93,12 +93,40 @@ enum ApexBattery {
         return false
     }
 
+
+    /// Gate every SetReport call to supported telemetry or RTC packets.
+    static func validClockFrame(_ data: [UInt8]) -> Bool {
+        guard data.count == 64, data[0] == 0x28, data[7] == 0xD7,
+              data[1..<7].allSatisfy({ $0 == 0 }),
+              data[15...].allSatisfy({ $0 == 0 }) else { return false }
+        let year = Int(data[8]) * 256 + Int(data[9])
+        let month = Int(data[10])
+        let day = Int(data[11])
+        let hour = Int(data[12])
+        let minute = Int(data[13])
+        let second = Int(data[14])
+        guard (2020...2099).contains(year), (1...12).contains(month) else {
+            return false
+        }
+        let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+        let days = [31, leap ? 29 : 28, 31, 30, 31, 30,
+                    31, 31, 30, 31, 30, 31]
+        return day >= 1 && day <= days[month - 1] &&
+               hour < 24 && minute < 60 && second < 60
+    }
+
+    static func validTelemetryFrame(_ data: [UInt8]) -> Bool {
+        return (65...256).contains(data.count) && data[0] == 0 &&
+               data[1] == 0xF7 && data[2...].allSatisfy({ $0 == 0 })
+    }
+
     private static func sendClock(_ device: IOHIDDevice) -> Bool {
         guard IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
             return false
         }
         defer { IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone)) }
         let payload = makeClockPayload(Date())
+        guard validClockFrame(payload) else { return false }
         let status = payload.withUnsafeBufferPointer { data in
             IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature,
                                  CFIndex(payload[0]), data.baseAddress!, data.count)
@@ -149,6 +177,7 @@ enum ApexBattery {
         for count in [65, 67] {
             var request = [UInt8](repeating: 0, count: count)
             request[1] = 0xF7
+            guard validTelemetryFrame(request) else { continue }
             let write = request.withUnsafeBufferPointer { data in
                 IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature, 0, data.baseAddress!, data.count)
             }
@@ -353,7 +382,12 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         packet[7] == 0xD7 && packet[8] == 0x07 && packet[9] == 0xEA &&
         packet[10] == 11 && packet[11] == 6 && packet[12] == 9 &&
         packet[13] == 57 && packet[14] == 42 && packet[15] == 0
-    let valid = clockValid &&
+    var blocked = [UInt8](repeating: 0, count: 64)
+    blocked[0] = 0x50
+    let guardValid = ApexBattery.validClockFrame(packet) &&
+        !ApexBattery.validClockFrame(blocked) &&
+        !ApexBattery.validTelemetryFrame(blocked)
+    let valid = clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&
                 ApexBattery.parse([0, 0, 73]) == 73 &&
                 ApexBattery.parse([5, 0, 0, 0]) == nil &&

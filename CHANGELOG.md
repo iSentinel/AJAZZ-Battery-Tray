@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-beta.3 (2026-11-06)
+- Add an explicit allowlist for every Windows HID feature write.
+- Permit only correctly framed 0xF7 telemetry and 0x28 dock clock packets.
+- Reject malformed timestamps, unexpected payloads, display, mapping and
+  bootloader commands before they reach the receiver.
+- Add equivalent macOS guards and unit/self-tests for dangerous opcodes.
+- No new mouse configuration write commands have been enabled.
+
+
 ## 0.3.0-beta.2 (2026-11-06)
 - Stage 2 start: read-only AJAZZ 8K dock product identification.
 - Windows: read HID product string and bcdDevice revision (not firmware).
