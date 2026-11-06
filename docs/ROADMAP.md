@@ -24,7 +24,8 @@
 - [ ] Model-matched Bluetooth battery reporting where available.
 - [x] macOS battery history CSV with private local storage and retention.
 - [x] macOS battery history chart (24h, 7d, 30d).
-- [ ] macOS low-battery and receiver-disconnect notifications.
+- [x] macOS opt-in low-battery and receiver-disconnect notifications.
+- [ ] Verify macOS notification delivery and permission prompts on a real Mac.
 
 ## Stage 2 — Dock customization
 

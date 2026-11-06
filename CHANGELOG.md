@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.6 (2026-11-06)
+- Add opt-in macOS local notifications for battery thresholds 20/10/5%.
+- Add optional receiver-disconnect alert after two missing USB polls.
+- Request notification permission only when the user enables a menu option.
+- Prevent duplicate alerts and ignore sleeping mice when the receiver remains.
+- Add hardware-independent alert-policy checks to macOS self-test.
+
+
 ## 0.3.0-beta.5 (2026-11-06)
 - Add a native AppKit battery history graph for macOS.
 - Select 24 hours, 7 days or 30 days and refresh on demand.

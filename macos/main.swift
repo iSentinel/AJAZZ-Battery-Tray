@@ -210,6 +210,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var polling = false
     private let batteryHistory = BatteryHistoryWriter()
+    private let batteryAlerts = BatteryAlertPolicy()
     private var historyWindow: BatteryHistoryWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -248,6 +249,19 @@ final class TrayController: NSObject, NSApplicationDelegate {
         recordHistory.target = self
         recordHistory.state = historyEnabled ? .on : .off
         statusMenu.addItem(recordHistory)
+        let lowAlerts = NSMenuItem(title: "Low battery notifications",
+                                   action: #selector(toggleLowBatteryAlerts(_:)),
+                                   keyEquivalent: "")
+        lowAlerts.target = self
+        lowAlerts.state = lowAlertsEnabled ? .on : .off
+        statusMenu.addItem(lowAlerts)
+
+        let disconnectAlerts = NSMenuItem(title: "Notify on receiver disconnect",
+                                          action: #selector(toggleDisconnectAlerts(_:)),
+                                          keyEquivalent: "")
+        disconnectAlerts.target = self
+        disconnectAlerts.state = disconnectAlertsEnabled ? .on : .off
+        statusMenu.addItem(disconnectAlerts)
 
         let interval = NSMenuItem(title: "Refresh interval", action: nil, keyEquivalent: "")
         let subMenu = NSMenu()
@@ -328,6 +342,28 @@ final class TrayController: NSObject, NSApplicationDelegate {
         sender.state = enabled ? .on : .off
     }
 
+    private var lowAlertsEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "NotifyLowBattery")
+    }
+
+    private var disconnectAlertsEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "NotifyOnDisconnect")
+    }
+
+    @objc private func toggleLowBatteryAlerts(_ sender: NSMenuItem) {
+        let enabled = !lowAlertsEnabled
+        UserDefaults.standard.set(enabled, forKey: "NotifyLowBattery")
+        sender.state = enabled ? .on : .off
+        if enabled { BatteryLocalNotifications.requestPermission() }
+    }
+
+    @objc private func toggleDisconnectAlerts(_ sender: NSMenuItem) {
+        let enabled = !disconnectAlertsEnabled
+        UserDefaults.standard.set(enabled, forKey: "NotifyOnDisconnect")
+        sender.state = enabled ? .on : .off
+        if enabled { BatteryLocalNotifications.requestPermission() }
+    }
+
     private var autoClockEnabled: Bool {
         if UserDefaults.standard.object(forKey: "AutomaticDockClockSync") == nil {
             return true
@@ -392,6 +428,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
 
     private func update(_ status: ApexBattery.Status) {
         if historyEnabled { batteryHistory.record(status) }
+        if let event = batteryAlerts.evaluate(
+            status, notifyLow: lowAlertsEnabled,
+            notifyDisconnect: disconnectAlertsEnabled) {
+            BatteryLocalNotifications.deliver(event)
+        }
         switch status {
         case .notConnected: receiverWasPresent = false
         default: receiverWasPresent = true
@@ -446,7 +487,24 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
             "2026-11-06T12:00:00Z,255,online") == nil &&
         BatteryHistoryReader.parse(
             "not-a-date,73,online") == nil
-    let valid = chartValid && historyValid && clockValid && guardValid &&
+    let alerts = BatteryAlertPolicy()
+    let alertTests = alerts.evaluate(
+        .notConnected, notifyLow: true, notifyDisconnect: true) == nil &&
+        alerts.evaluate(
+            .battery(75), notifyLow: true, notifyDisconnect: true) == nil &&
+        alerts.evaluate(
+            .battery(19), notifyLow: true, notifyDisconnect: true) == .lowBattery(19) &&
+        alerts.evaluate(
+            .battery(18), notifyLow: true, notifyDisconnect: true) == nil &&
+        alerts.evaluate(
+            .battery(9), notifyLow: true, notifyDisconnect: true) == .lowBattery(9) &&
+        alerts.evaluate(
+            .unavailable, notifyLow: true, notifyDisconnect: true) == nil &&
+        alerts.evaluate(
+            .notConnected, notifyLow: true, notifyDisconnect: true) == nil &&
+        alerts.evaluate(
+            .notConnected, notifyLow: true, notifyDisconnect: true) == .receiverDisconnected
+    let valid = alertTests && chartValid && historyValid && clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&
                 ApexBattery.parse([0, 0, 73]) == 73 &&
                 ApexBattery.parse([5, 0, 0, 0]) == nil &&
