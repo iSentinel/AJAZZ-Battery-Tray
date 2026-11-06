@@ -155,5 +155,44 @@ bool BatteryLevelMatches(byte[] bytes, int expected)
     => BluetoothBatteryRules.TryParseLevel(bytes, out int level) &&
        level == expected;
 
+Check("history captures backward clock change",
+    BatteryHistoryRules.ShouldRecord(online,
+        online with { Timestamp = t0.AddMinutes(-15) }));
+Check("Bluetooth timeout accepts completed task",
+    BluetoothOperationTimeout.Run(Task.FromResult(73),
+        TimeSpan.FromSeconds(1)).GetAwaiter().GetResult() == 73);
+Check("Bluetooth timeout rejects invalid limit",
+    ThrowsBadBluetoothLimit());
+Check("Bluetooth pending operation times out",
+    BluetoothTaskTimesOut());
+
+bool ThrowsBadBluetoothLimit()
+{
+    try
+    {
+        BluetoothOperationTimeout.Run(Task.FromResult(1), TimeSpan.Zero);
+        return false;
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+        return true;
+    }
+}
+
+bool BluetoothTaskTimesOut()
+{
+    try
+    {
+        TaskCompletionSource<int> pending = new();
+        BluetoothOperationTimeout.Run(pending.Task,
+            TimeSpan.FromMilliseconds(20)).GetAwaiter().GetResult();
+        return false;
+    }
+    catch (TimeoutException)
+    {
+        return true;
+    }
+}
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
