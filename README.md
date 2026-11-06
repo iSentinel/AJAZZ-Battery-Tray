@@ -251,6 +251,9 @@ It copies the app version, operating system and read-only receiver details
 without requesting serial numbers or private device paths.
 Review the clipboard text before sharing it.
 
+For real-device findings, use the
+[hardware validation issue form](https://github.com/iSentinel/AJAZZ-Battery-Tray/issues/new?template=hardware-validation.yml).
+
 See [Hardware Acceptance Checklist](docs/HARDWARE_ACCEPTANCE.md) for safe
 real-device tests covering AJ179/AJ159, disconnect/reconnect, sleep/wake,
 dock clock, history and the experimental macOS features.
