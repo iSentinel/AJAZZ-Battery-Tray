@@ -14,6 +14,25 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Windows source and reconnect hardening (v0.3.0-beta.15)
+
+Automatic Bluetooth fallback now relies on a **typed battery source**:
+`DirectGatt`, `WindowsCached` or `Unavailable`. No UI string or label
+determines whether a reading is eligible for automatic display.
+Only a valid direct GATT response is accepted.
+
+When the receiver is absent and Bluetooth fallback is enabled, the tray
+labels the source **Bluetooth**, even if the last reading has expired.
+The source shows **unavailable** instead of falling back to a misleading
+2.4 GHz unavailable status. Reconnecting a USB receiver prioritizes its
+reading; a sleeping USB mouse does not show a Bluetooth percentage.
+Intentional USB removal does not cause an unrelated disconnect warning
+while the Bluetooth fallback session is active.
+
+Tests cover typed result trust, cached values, unknown/stale readings, source
+priority, and disconnect notification behavior. Real hardware switching and
+sleep/wake still need field validation.
+
 ## Confirmed AJ179 APEX hardware observation (2026-11-06)
 
 On a physically paired AJ179 APEX in Windows, the user selected the mouse
