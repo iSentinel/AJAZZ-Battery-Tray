@@ -49,6 +49,7 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add("Refresh now", null, (_, _) => PollSoon());
         menu.Items.Add("Battery history...", null, (_, _) => ShowHistory());
         menu.Items.Add("Device diagnostics...", null, (_, _) => ShowDiagnostics());
+        menu.Items.Add("Copy diagnostic report", null, (_, _) => CopyDeviceReport());
         menu.Items.Add(BuildIntervalMenu());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Sync dock time now", null, (_, _) => RequestClockSync());
@@ -141,6 +142,24 @@ public sealed class TrayAppContext : ApplicationContext
         _historyWindow.RefreshData();
         _historyWindow.Show();
         _historyWindow.BringToFront();
+    }
+
+    private static void CopyDeviceReport()
+    {
+        string report = "AJAZZ Battery Tray diagnostic report\n" +
+            $"Version: {Application.ProductVersion}\n" +
+            $"Windows: {Environment.OSVersion.VersionString}\n" +
+            DeviceDiagnostics.Read();
+        try
+        {
+            Clipboard.SetText(report);
+        }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "Cannot copy diagnostics to clipboard", error);
+            MessageBox.Show("The Windows clipboard is currently unavailable.",
+                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private static void ShowDiagnostics()
