@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>AJAZZBatteryTray</AssemblyName>
     <RootNamespace>AjazzBatteryTray</RootNamespace>
-    <Version>0.3.0-beta.19</Version>
+    <Version>0.3.0-beta.20</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 </Project>
