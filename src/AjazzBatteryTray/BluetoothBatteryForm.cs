@@ -123,6 +123,7 @@ public sealed class BluetoothBatteryForm : Form
     private async Task ReadSelectedAsync()
     {
         if (_devices.SelectedItem is not BluetoothCandidate selected) return;
+        ClearVerifiedSelection();
         SetBusy(true, "Reading selected mouse's GATT Battery Service...");
         try
         {
@@ -180,6 +181,12 @@ public sealed class BluetoothBatteryForm : Form
         {
             _onAutoSelection(null, null);
         }
+    }
+
+    /// <summary>Require a new fresh GATT read before enabling again.</summary>
+    public void DisableAutomatic()
+    {
+        ClearVerifiedSelection();
     }
 
     private void CopyLookupSummary()
