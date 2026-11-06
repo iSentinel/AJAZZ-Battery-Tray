@@ -217,5 +217,15 @@ bool WindowsLevelEquals(object raw, int expected)
     => BluetoothBatteryRules.TryParseWindowsLevel(raw, out int level) &&
        level == expected;
 
+// A generic Windows mouse name must not be hidden after explicit Show all.
+Check("BLE standard AJAZZ visible by default",
+    BluetoothBatteryRules.ShouldShow("AJAZZ AJ179", false));
+Check("BLE generic paired mouse hidden by default",
+    !BluetoothBatteryRules.ShouldShow("Bluetooth Mouse", false));
+Check("BLE generic paired mouse visible with Show all",
+    BluetoothBatteryRules.ShouldShow("Bluetooth Mouse", true));
+Check("BLE unnamed endpoint visible with Show all",
+    BluetoothBatteryRules.ShouldShow(null, true));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
