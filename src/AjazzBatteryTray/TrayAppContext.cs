@@ -14,6 +14,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly ConnectionAlertPolicy _connectionAlerts = new();
     private readonly BatteryHistory _history = new();
     private BatteryHistoryForm? _historyWindow;
+    private BluetoothBatteryForm? _bluetoothWindow;
     private readonly DockClockSchedule _clockSchedule = new();
     private readonly ToolStripMenuItem _clockStatus = new();
     private bool _manualClockSync;
@@ -49,6 +50,8 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add("Refresh now", null, (_, _) => PollSoon());
         menu.Items.Add("Battery history...", null, (_, _) => ShowHistory());
         menu.Items.Add("Device diagnostics...", null, (_, _) => ShowDiagnostics());
+        menu.Items.Add("Check paired Bluetooth battery...", null,
+            (_, _) => ShowBluetoothBattery());
         menu.Items.Add("Copy diagnostic report", null, (_, _) => CopyDeviceReport());
         menu.Items.Add(BuildIntervalMenu());
         menu.Items.Add(new ToolStripSeparator());
@@ -142,6 +145,14 @@ public sealed class TrayAppContext : ApplicationContext
         _historyWindow.RefreshData();
         _historyWindow.Show();
         _historyWindow.BringToFront();
+    }
+
+    private void ShowBluetoothBattery()
+    {
+        if (_bluetoothWindow is null || _bluetoothWindow.IsDisposed)
+            _bluetoothWindow = new BluetoothBatteryForm();
+        _bluetoothWindow.Show();
+        _bluetoothWindow.BringToFront();
     }
 
     private static void CopyDeviceReport()
@@ -365,6 +376,7 @@ public sealed class TrayAppContext : ApplicationContext
         _timer.Stop();
         _timer.Dispose();
         _historyWindow?.Close();
+        _bluetoothWindow?.Close();
         _tray.Visible = false;
         _tray.Dispose();
         _icon?.Dispose();
