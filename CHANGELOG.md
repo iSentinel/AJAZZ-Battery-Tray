@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased (Bluetooth research)
+- Confirmed Bluetooth connectivity of AJ179 APEX and AJ159 APEX from product specs.
+- Documented standard read-only Battery Service discovery and privacy gates.
+- Runtime BLE support remains disabled until paired-device hardware validation.
+
 ## Unreleased (CI improvements)
 - Avoid duplicate Windows and macOS builds for every feature-branch push.
 - Keep mandatory pull-request checks and main-branch builds.

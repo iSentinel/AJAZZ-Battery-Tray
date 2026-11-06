@@ -24,7 +24,11 @@
 - [x] Windows read-only interface diagnostics (VID/PID/HID usage/length).
 - [x] Optional Windows receiver-disconnect warning with debounce.
 - [ ] Verify mouse reconnection, sleep, charging and clock updates on real dock.
+- [x] Document Bluetooth capabilities and standard GATT discovery plan.
+- [ ] Verify paired-device Battery Service 0x180F / Battery Level 0x2A19
+  on actual AJ179/APEX and AJ159/APEX hardware.
 - [ ] Model-matched Bluetooth battery reporting where available.
+  See [Bluetooth discovery plan](BLUETOOTH_DISCOVERY.md).
 - [x] macOS battery history CSV with private local storage and retention.
 - [x] macOS battery history chart (24h, 7d, 30d).
 - [x] macOS opt-in low-battery and receiver-disconnect notifications.

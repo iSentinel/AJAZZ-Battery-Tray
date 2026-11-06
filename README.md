@@ -142,7 +142,11 @@ verified read-back and a reliable recovery path exist.
 
 ## Limitations / roadmap
 
-- **Bluetooth is not yet implemented on either platform.** It requires testing the Windows BLE
+- **Bluetooth is not yet implemented on either platform.**
+  Both APEX models support Bluetooth connectivity, but GATT battery-level
+  availability has not been verified. See
+  [Bluetooth discovery and acceptance plan](docs/BLUETOOTH_DISCOVERY.md).
+  No automatic pairing or background BLE scanning is performed. It requires testing the Windows BLE
   device's Battery Service or Windows battery property in Bluetooth mode.
   The 2.4 GHz dock is the supported primary transport.
 - Charging state is not shown: the documented `0x05` status frame does not
