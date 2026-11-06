@@ -14,7 +14,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate package versions and release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_VERSION="$(sed -nE 's|.*<Version>([^<]+)</Version>.*|\1|p' src/AjazzBatteryTray/AjazzBatteryTray.csproj)"
+          SETUP_VERSION="$(sed -nE 's/^#define AppVersion "([^"]+)".*/\1/p' installer/AJAZZBatteryTray.iss)"
+          MAC_VERSION="$(sed -nE 's|.*<key>CFBundleShortVersionString</key><string>([^<]+)</string>.*|\1|p' macos/Info.plist)"
+          RELEASE_TAG="$(sed -nE 's/^[[:space:]]*TAG="(v[^"]+)".*/\1/p' .github/workflows/release-beta.yml)"
+          if [[ -z "$APP_VERSION" ||
+                "$SETUP_VERSION" != "$APP_VERSION" ||
+                "$MAC_VERSION" != "${APP_VERSION%%-*}" ||
+                "$RELEASE_TAG" != "v$APP_VERSION" ]]; then
+            echo "::error::Release version mismatch between app, installer, macOS and workflow."
+            exit 1
+          fi
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Release $RELEASE_TAG already exists; bump versions before publishing."
+            exit 1
+          fi
+          echo "PASS: $RELEASE_TAG metadata matches and tag is not published."
+
   windows:
+    needs: verify-version
     runs-on: windows-latest
     permissions:
       contents: read
@@ -87,6 +118,7 @@ jobs:
           if-no-files-found: error
 
   macos:
+    needs: verify-version
     runs-on: macos-latest
     permissions:
       contents: read
