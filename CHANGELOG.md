@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-beta.16 (2026-11-06)
+- Make Windows USB battery updates independent of slow Bluetooth polling.
+- Avoid overlapping automatic Bluetooth GATT requests in the same session.
+- Reject late GATT responses after Bluetooth selection/disable changes.
+- Refresh the tray on BLE completion without duplicating USB history or alerts.
+- Test session-generation invalidation and document unplug/replug acceptance.
+- No new HID/GATT writes, automatic pairing or unpaired Bluetooth scanning.
+
+
 ## 0.3.0-beta.15 (2026-11-06)
 - Replace fragile Bluetooth source detection by display text with typed
   DirectGatt, WindowsCached and Unavailable states.
