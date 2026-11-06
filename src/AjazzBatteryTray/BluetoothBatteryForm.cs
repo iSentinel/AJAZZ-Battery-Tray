@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Opt-in inspector; does not join a device to the 2.4 GHz receiver.</summary>
+/// <summary>Manual Bluetooth inspector with optional, session-only tray fallback.</summary>
 public sealed class BluetoothBatteryForm : Form
 {
     private readonly ListBox _devices = new();
@@ -42,7 +42,7 @@ public sealed class BluetoothBatteryForm : Form
         {
             Dock = DockStyle.Top, Height = 62, Padding = new Padding(12),
             Text = "Manual check of already paired Bluetooth LE and Classic mice.\n" +
-                   "No pairing, unpaired scans, background polling, or device writes."
+                   "No pairing or GATT writes. Automatic reads require opt-in."
         };
         _devices.Dock = DockStyle.Fill;
         _result.Dock = DockStyle.Bottom;
