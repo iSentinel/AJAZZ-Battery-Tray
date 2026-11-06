@@ -140,6 +140,11 @@ A [safe dock protocol capture guide](docs/DOCK_CAPTURE_GUIDE.md) is available
 for collecting reversible RGB/display evidence from the official software.
 No unverified configuration opcode is enabled in this app.
 
+For a clear distinction between successful CI builds and real mouse tests,
+see the [Hardware Validation Matrix](docs/VALIDATION_MATRIX.md). It includes
+AJ179 Bluetooth GATT confirmation (83%), remaining USB/BLE handover tests,
+and dock clock acceptance steps.
+
 See [ROADMAP.md](docs/ROADMAP.md) for the safety gates, validation plan and
 next staged work. Battery monitoring and clock sync are implemented;
 RGB, display uploads and mouse configuration are **not** exposed until

@@ -15,6 +15,8 @@
 - Every release requires Windows tests, installer install/uninstall smoke test,
   macOS universal build and tests, and checksums in GitHub Releases.
 - Real-device testing is separate from CI compilation.
+- Track confirmed vs unverified behavior in
+  [Hardware Validation Matrix](VALIDATION_MATRIX.md).
 
 ## Stage 1 — Monitoring and Diagnostics
 
@@ -29,7 +31,6 @@
 - [x] Document Bluetooth capabilities and standard GATT discovery plan.
 - [x] Verify 0x180F / 0x2A19 direct GATT battery read on AJ179 APEX:
   Windows manual read reported 83% (user hardware observation, 2026-11-06).
-- [ ] Verify standard Battery Service on actual AJ159 APEX hardware.
 - [x] Add bounded manual BLE UI requests and test timeouts on Windows.
 - [x] Handle Windows LE/Classic paired endpoints and generic paired names.
 - [x] Isolate failed or slow Windows LE/Classic enumeration and show safe
@@ -39,15 +40,15 @@
 - [ ] Verify automatic Bluetooth tray fallback on AJ179 APEX, including
   2.4 GHz receiver unplug/replug and sleep/wake.
 - [x] Offer Windows cached battery as a labelled fallback (not necessarily live).
-- [ ] Validate Bluetooth battery discovery and Windows cached value on a
-  physical AJ179 APEX with 2.4 GHz receiver disconnected.
+- [ ] Validate real Bluetooth tray fallback with the 2.4 GHz receiver
+  physically absent; direct GATT has already been confirmed.
 - [x] Record history state after a backward system-clock adjustment.
 - [x] Windows manual, paired-only Bluetooth GATT Battery Level inspector
   (experimental; the user chooses a device and initiates each read).
 - [x] macOS manual, already-connected CoreBluetooth Battery Service inspector
   (experimental; no scanning, pairing, device IDs persisted or background reads).
 - [x] Confirm AJ179 APEX standard GATT Battery Service on Windows.
-- [ ] Confirm AJ159 APEX standard Battery Service on Windows/macOS.
+- [ ] Confirm AJ159 APEX standard Battery Service on real Windows/macOS hardware.
 - [x] Windows in-memory, explicit opt-in Bluetooth tray fallback when
   2.4 GHz receiver is physically absent. Direct fresh GATT only; no
   automatic paired-device discovery or persisted device IDs.
@@ -70,8 +71,8 @@
   Bluetooth GATT responses, and selection changes mid-request.
 - [ ] Field-test lost GATT response, USB reconnect and BLE resume on AJ179 APEX.
 - [ ] Field-test Windows Bluetooth fallback and source priority on AJ179 APEX.
-- [ ] Add model-matched Bluetooth reporting to the tray when verified.
-- [ ] Model-matched Bluetooth battery reporting where available.
+- [ ] Establish safe persistent, model-matched Bluetooth identity only if
+  real hardware evidence justifies it; avoid storing Bluetooth addresses.
   See [Bluetooth discovery plan](BLUETOOTH_DISCOVERY.md).
 - [x] macOS battery history CSV with private local storage and retention.
 - [x] macOS battery history chart (24h, 7d, 30d).
