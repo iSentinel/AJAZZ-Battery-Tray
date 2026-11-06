@@ -213,6 +213,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private let batteryHistory = BatteryHistoryWriter()
     private let batteryAlerts = BatteryAlertPolicy()
     private var historyWindow: BatteryHistoryWindowController?
+    private var bluetoothWindow: BluetoothBatteryWindowController?
     private var startupMenuItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -235,6 +236,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
                                      keyEquivalent: "")
         diagnostics.target = self
         statusMenu.addItem(diagnostics)
+        let bluetooth = NSMenuItem(title: "Check connected Bluetooth battery...",
+                                   action: #selector(showBluetoothBattery),
+                                   keyEquivalent: "")
+        bluetooth.target = self
+        statusMenu.addItem(bluetooth)
         let copyReport = NSMenuItem(title: "Copy diagnostic report",
                                     action: #selector(copyDeviceReport),
                                     keyEquivalent: "")
@@ -417,6 +423,14 @@ final class TrayController: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc private func showBluetoothBattery() {
+        if bluetoothWindow == nil {
+            bluetoothWindow = BluetoothBatteryWindowController()
+        }
+        bluetoothWindow?.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     @objc private func showDiagnostics() {
         let alert = NSAlert()
         alert.messageText = "AJAZZ APEX — Device diagnostics"
@@ -578,7 +592,16 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
             .notConnected, notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
             .notConnected, notifyLow: true, notifyDisconnect: true) == .receiverDisconnected
-    let valid = alertTests && chartValid && historyValid && clockValid && guardValid &&
+    let bluetoothValid = BluetoothBatteryPayload.parse(Data([0])) == 0 &&
+        BluetoothBatteryPayload.parse(Data([100])) == 100 &&
+        BluetoothBatteryPayload.parse(Data([101])) == nil &&
+        BluetoothBatteryPayload.parse(Data([50, 0])) == nil &&
+        BluetoothBatteryPayload.parse(nil) == nil &&
+        BluetoothBatteryPayload.likelyAjazz("AJ179 APEX") &&
+        BluetoothBatteryPayload.likelyAjazz("Ajazz mouse") &&
+        !BluetoothBatteryPayload.likelyAjazz("Keyboard")
+    let valid = bluetoothValid && alertTests && chartValid && historyValid &&
+                clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&
                 ApexBattery.parse([0, 0, 73]) == 73 &&
                 ApexBattery.parse([5, 0, 0, 0]) == nil &&
