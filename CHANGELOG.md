@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-beta.3 (2026-11-06)
+- Add manual and automatic 8K dock clock synchronization (Windows/macOS).
+- Send documented clock opcode 0x28 and fixed 0xD7 marker with local time.
+- Resynchronize on receiver connection and every five minutes.
+- Add optional setting and status in tray/menu-bar menus.
+- Add packet and scheduling tests; hardware clock verification pending.
+
+
 ## 0.2.0-beta.2 (2026-11-05)
 - Add a separate Windows x64 installer using Inno Setup.
 - Install to Program Files, add Start menu and optional desktop shortcuts.

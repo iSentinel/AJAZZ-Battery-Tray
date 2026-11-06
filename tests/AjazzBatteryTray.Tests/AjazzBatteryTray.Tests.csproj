@@ -10,5 +10,9 @@
              Link="BatteryReportParser.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AlertPolicy.cs"
              Link="AlertPolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DockClockReport.cs"
+             Link="DockClockReport.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DockClockSchedule.cs"
+             Link="DockClockSchedule.cs" />
   </ItemGroup>
 </Project>

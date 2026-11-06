@@ -11,6 +11,9 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _timer;
     private readonly AjazzHidReader _reader = new();
     private readonly AlertPolicy _alerts = new();
+    private readonly DockClockSchedule _clockSchedule = new();
+    private readonly ToolStripMenuItem _clockStatus = new();
+    private bool _manualClockSync;
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly ToolStripMenuItem _statusItem = new();
     private readonly ToolStripMenuItem _startupItem = new();
@@ -42,6 +45,12 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Refresh now", null, (_, _) => PollSoon());
         menu.Items.Add(BuildIntervalMenu());
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Sync dock time now", null, (_, _) => RequestClockSync());
+        menu.Items.Add(BuildClockSyncToggle());
+        _clockStatus.Text = "Dock clock: not yet synchronized";
+        _clockStatus.Enabled = false;
+        menu.Items.Add(_clockStatus);
         ToolStripMenuItem notify = new("Low battery notifications")
         {
             Checked = _settings.NotificationsEnabled,
@@ -71,6 +80,31 @@ public sealed class TrayAppContext : ApplicationContext
         }
 
         return menu;
+    }
+
+    private ToolStripMenuItem BuildClockSyncToggle()
+    {
+        ToolStripMenuItem option = new("Auto-sync dock clock (5 min)")
+        {
+            Checked = _settings.AutomaticDockClockSync,
+            CheckOnClick = true
+        };
+        option.CheckedChanged += (_, _) =>
+        {
+            _settings.AutomaticDockClockSync = option.Checked;
+            _settings.Save();
+            if (option.Checked)
+            {
+                RequestClockSync();
+            }
+        };
+        return option;
+    }
+
+    private void RequestClockSync()
+    {
+        _manualClockSync = true;
+        PollSoon();
     }
 
     private void ConfigureStartupMenu()
@@ -138,10 +172,11 @@ public sealed class TrayAppContext : ApplicationContext
         _timer.Stop();
         try
         {
-            AjazzHidReader.Reading reading = await Task.Run(_reader.Read);
+            var result = await Task.Run(QueryAndSync);
             if (!_closing)
             {
-                ApplyReading(reading);
+                ApplyReading(result.Reading);
+                ApplyClockResult(result.Attempted, result.Succeeded);
             }
         }
         catch (Exception error)
@@ -161,6 +196,43 @@ public sealed class TrayAppContext : ApplicationContext
                 _timer.Start();
             }
         }
+    }
+
+    private (AjazzHidReader.Reading Reading, bool Attempted, bool Succeeded)
+        QueryAndSync()
+    {
+        AjazzHidReader.Reading reading = _reader.Read();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        bool manual = _manualClockSync;
+        _manualClockSync = false;
+        bool automatic = _clockSchedule.ShouldAttempt(
+            now, _settings.AutomaticDockClockSync, reading.ReceiverPresent);
+        if (!manual && !automatic)
+        {
+            return (reading, false, false);
+        }
+
+        if (!reading.ReceiverPresent)
+        {
+            return (reading, true, false);
+        }
+
+        bool sent = _reader.TrySyncDockClock(DateTime.Now);
+        _clockSchedule.RecordAttempt(now);
+        return (reading, true, sent);
+    }
+
+    private void ApplyClockResult(bool attempted, bool succeeded)
+    {
+        if (!attempted)
+        {
+            return;
+        }
+
+        string timestamp = DateTime.Now.ToString("HH:mm:ss");
+        _clockStatus.Text = (succeeded
+            ? "Dock clock: command sent at " : "Dock clock: unable to send at ") + timestamp;
+        FileLog.Write(succeeded ? "INFO" : "WARN", _clockStatus.Text);
     }
 
     private void ApplyReading(AjazzHidReader.Reading reading)

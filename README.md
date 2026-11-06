@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.2.0-beta.2 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.2.0-beta.3 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -27,6 +27,8 @@ be ambiguous.
 - Windows low-battery notifications at 20%, 10% and 5%, without repeated alerts.
 - Poll every 15, 30 (default), 60 or 120 seconds; double-click to refresh.
 - Optional autostart for the current Windows user (no administrator rights).
+- **Dock Clock Sync:** set the 8K dock's screen clock to the computer's local time.
+  Automatically on connection and every five minutes, or manually from the tray.
 - Configuration and diagnostic log under `%APPDATA%\AJAZZBatteryTray`.
 - No vendor software, external HID driver or background service required.
 - No DPI, pairing, firmware, RGB or stored-profile modifications.
@@ -73,8 +75,8 @@ the project source and checksums before deciding to run the software.
 ## Tray menu
 
 Right-click the notification icon to refresh, configure the polling interval,
-toggle low-battery alerts, enable or disable autostart, open the diagnostic
-folder or exit the app. Double-click to refresh immediately.
+toggle low-battery alerts, synchronize the dock clock or disable automatic clock
+synchronization, enable or disable autostart, open the diagnostic folder or exit. Double-click to refresh immediately.
 
 ## HID protocol and safety
 
@@ -88,9 +90,12 @@ specifically requires all of the following:
   `05 00 00 PP ...`, where `PP` is the reported battery percentage.
 
 Invalid responses, 0%, and percentages above 100% are shown as unknown.
-The utility makes **only this documented telemetry poll**. The read protocol
-uses a HID SET_FEATURE operation, but it does not issue device-setting,
-EEPROM-write, update, or pairing opcodes.
+The battery reader sends the documented telemetry poll. Clock sync (enabled by
+default, with a tray toggle) sends **only** documented firmware RTC opcode
+`0x28`, with marker `0xD7`, a big-endian year and local date/time, on the
+same restricted vendor HID collection. It does not change DPI, firmware,
+pairing, display images, or stored device profiles. HID transfer success does
+not confirm that the dock screen accepted the new time.
 
 **Important:** A matching VID/PID does not identify the physical mouse model. The Windows
 tray therefore shows generic **AJAZZ APEX** rather than claiming a specific
@@ -117,6 +122,18 @@ Tray at the same time during initial testing: concurrent reads may compete.
   `?` rather than showing a stale percentage.
 - Prebuilt Windows portable and installer EXEs and the macOS ZIP are published
   under GitHub Releases; local compilation is not necessary for users.
+
+## Dock clock sync
+
+Right-click the tray icon and choose **Sync dock time now**, or toggle
+**Auto-sync dock clock (5 min)**. Automatic syncing runs when the receiver
+becomes available and every five minutes, including after the next poll when
+Windows wakes from sleep. It uses the computer's **local time**, not UTC.
+The application reports whether the HID transfer was accepted by Windows;
+visually confirm the clock on your dock. Because clock sync is a write,
+close the official AJAZZ application before testing to avoid conflicting
+commands. The feature is based on documented 8K receiver behaviour but
+has not yet been tested on this application's AJ179 APEX hardware.
 
 ## Diagnostics
 
