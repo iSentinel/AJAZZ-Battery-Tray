@@ -13,7 +13,7 @@ cp "$ROOT/macos/Info.plist" "$APP/Contents/Info.plist"
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
 for arch in arm64 x86_64; do
   swiftc -O -sdk "$SDK" -target "${arch}-apple-macos13.0" \
-    -framework AppKit -framework IOKit -framework UserNotifications \
+    -framework AppKit -framework IOKit -framework UserNotifications -framework ServiceManagement \
     "$ROOT/macos/main.swift" "$ROOT/macos/BatteryHistory.swift" \
     "$ROOT/macos/BatteryHistoryWindow.swift" \
     "$ROOT/macos/BatteryNotifications.swift" -o "$ROOT/dist/mac/ajazz-${arch}"
