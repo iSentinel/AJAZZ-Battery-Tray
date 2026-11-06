@@ -28,7 +28,10 @@ Intel (x86_64) and Apple Silicon (arm64).
 - Dock Clock Sync uses the documented 0x28 feature report, manually or every
   five minutes. It follows the HID framing used by the macOS open-source
   Ajazz clock-sync daemon and is still unverified on our real hardware.
-- Only 2.4 GHz USB is implemented. Bluetooth and charging detection are not implemented.
+- Automatic Bluetooth monitoring and charging detection are not implemented.
+  A manual **Check connected Bluetooth battery...** inspector tries the
+  standard Battery Service on already-connected AJAZZ mice, with no scanning
+  or pairing. The device's GATT Battery Service availability is unverified.
   macOS 13+ supports optional Start at Login from the menu.
 - Optional **Low battery notifications** (20%, 10%, 5%) and **Notify on
   receiver disconnect** are available in the menu bar. Both are off by
@@ -58,6 +61,20 @@ System Settings → General → Login Items.
 The menu reads the current system registration state rather than assuming
 success. Ad-hoc-signed builds are not notarized, and the login item flow still
 requires a real Mac validation.
+
+## Manual Bluetooth battery check (experimental)
+
+Select **Check connected Bluetooth battery...** from the menu bar, then
+**Find connected AJAZZ mice**. The app checks CoreBluetooth's list of
+already connected peripherals advertising standard Battery Service 0x180F.
+Choose an entry and select **Read selected battery** to request Battery
+Level 0x2A19. This may prompt for system Bluetooth permission.
+
+No scan for unpaired devices takes place. No Bluetooth identifiers are
+stored, no settings are written, and Bluetooth readings do not replace the
+2.4 GHz battery icon. Some HID mice may not expose the Battery Service to
+CoreBluetooth even while connected; in that case the tool reports unavailable.
+A real Mac with AJ179/AJ159 is required to confirm compatibility.
 
 ## Battery history
 

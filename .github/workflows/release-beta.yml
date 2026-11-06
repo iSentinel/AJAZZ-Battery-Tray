@@ -120,9 +120,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.9"
+          TAG="v0.3.0-beta.10"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.9 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.10 — Windows and macOS
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -137,6 +137,11 @@ jobs:
           Download the macOS ZIP and extract it once to get the .app.
           The app is ad-hoc signed, not notarized by Apple. Gatekeeper may
           request approval in Privacy & Security.
+
+          **macOS experimental Bluetooth:** Opt-in manual CoreBluetooth
+          inspection of already connected AJAZZ mice with standard GATT
+          Battery Service. No scanning or pairing, and no BLE status is
+          substituted for 2.4 GHz. Real Mac hardware verification is pending.
 
           **Windows experimental Bluetooth:** Opt-in manual inspection of
           paired AJAZZ BLE mouse candidates. User chooses the device and
@@ -178,7 +183,7 @@ jobs:
 
           **Protocol:** USB VID 3151 PID 5007, vendor HID usage FFFF:0002.
           **Not supported yet:** Automatic Bluetooth monitoring, charging
-          state, two receivers distinguished at once, and Mac Bluetooth.
+          state and two receivers distinguished at once.
           macOS notifications and Start at Login are now optional.
 
           Windows recommended installer: AJAZZBatteryTray-Setup-win-x64.exe
@@ -199,6 +204,6 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.9" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.10" \
               --notes-file notes.md --prerelease
           fi
