@@ -14,6 +14,26 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Windows Bluetooth retry backoff (v0.3.0-beta.18)
+
+Automatic direct-GATT reads have a normal interval of one minute.
+After one consecutive failed read the interval is two minutes; after two
+failures it becomes five minutes, and after three or more failures it is
+limited to ten minutes. Successful fresh direct-GATT reads reset the
+schedule to one minute. Unavailable readings remain unavailable rather
+than showing a stale battery percentage.
+
+The Windows tray offers **Refresh Bluetooth battery now** for a manually
+selected paired mouse. This bypasses the retry delay but does not
+enumerate, scan, pair, or write any Bluetooth characteristics.
+It remains disabled when the USB/2.4 GHz receiver is present, the fallback
+was not explicitly enabled, or another GATT read is in progress.
+The manual action is intended to check the mouse after wake/reconnect.
+
+The backoff policy has hardware-independent scheduling tests. Actual
+battery and sleep/wake responsiveness must still be checked on the
+physical AJ179 APEX.
+
 ## Windows monitoring diagnostics (v0.3.0-beta.17)
 
 The tray shows whether the opt-in Bluetooth fallback is **off**, waiting

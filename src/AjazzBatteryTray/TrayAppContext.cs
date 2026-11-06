@@ -21,6 +21,7 @@ public sealed class TrayAppContext : ApplicationContext
     private AjazzHidReader.Reading? _latestUsbReading;
     private readonly ToolStripMenuItem _bluetoothStatus = new();
     private readonly ToolStripMenuItem _disableBluetooth = new();
+    private readonly ToolStripMenuItem _refreshBluetooth = new();
     private string _lastSource = "";
     private readonly DockClockSchedule _clockSchedule = new();
     private readonly ToolStripMenuItem _clockStatus = new();
@@ -66,6 +67,11 @@ public sealed class TrayAppContext : ApplicationContext
         _disableBluetooth.Enabled = false;
         _disableBluetooth.Click += (_, _) => SelectBluetoothFallback(null, null);
         menu.Items.Add(_disableBluetooth);
+        _refreshBluetooth.Text = "Refresh Bluetooth battery now";
+        _refreshBluetooth.Enabled = false;
+        _refreshBluetooth.Click += (_, _) => StartBluetoothPoll(
+            _latestUsbReading?.ReceiverPresent ?? false, force: true);
+        menu.Items.Add(_refreshBluetooth);
         menu.Items.Add("Copy Bluetooth monitor status", null,
             (_, _) => CopyBluetoothStatus());
         menu.Items.Add("Copy diagnostic report", null, (_, _) => CopyDeviceReport());
@@ -206,6 +212,9 @@ public sealed class TrayAppContext : ApplicationContext
         bool usbPresent = _latestUsbReading?.ReceiverPresent ?? false;
         _bluetoothStatus.Text = _bluetoothPolicy.StatusText(
             usbPresent, _bluetoothReadInFlight, DateTimeOffset.UtcNow);
+        _refreshBluetooth.Enabled = !_closing && !_bluetoothReadInFlight &&
+            _bluetoothSelection is not null &&
+            _bluetoothPolicy.CanRefreshNow(usbPresent);
     }
 
     private void CopyBluetoothStatus()
@@ -222,6 +231,8 @@ public sealed class TrayAppContext : ApplicationContext
             $"Displayed percent: {_lastPercent?.ToString() ?? "unknown"}\n" +
             $"GATT request pending: {_bluetoothReadInFlight}\n" +
             $"Consecutive failed reads: {_bluetoothPolicy.ConsecutiveFailures}\n" +
+            $"Automatic retry (minutes): " +
+            $"{BluetoothAutoPolicy.RetryInterval(_bluetoothPolicy.ConsecutiveFailures).TotalMinutes}\n" +
             $"Last GATT attempt (UTC): {attempt}\n" +
             $"Last successful GATT (UTC): {last}\n" +
             "No Bluetooth addresses, serial numbers or device IDs are included.";
@@ -379,11 +390,13 @@ public sealed class TrayAppContext : ApplicationContext
         return (reading, true, sent);
     }
 
-    private void StartBluetoothPoll(bool receiverPresent)
+    private void StartBluetoothPoll(bool receiverPresent, bool force = false)
     {
         BluetoothCandidate? selected = _bluetoothSelection;
         if (_closing || _bluetoothReadInFlight || selected is null ||
-            !_bluetoothPolicy.ShouldRead(receiverPresent, DateTimeOffset.UtcNow))
+            !_bluetoothPolicy.CanRefreshNow(receiverPresent) ||
+            (!force && !_bluetoothPolicy.ShouldRead(receiverPresent,
+                DateTimeOffset.UtcNow)))
             return;
 
         _bluetoothReadInFlight = true;

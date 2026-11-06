@@ -338,5 +338,45 @@ Check("BLE reselect invalidates old request generation",
     automaticBle.Generation > beforeDisableGeneration + 1);
 automaticBle.Disable();
 
+// Repeated BLE errors trigger a conservative retry schedule, not constant reads.
+BluetoothAutoPolicy backoff = new();
+Check("BLE forced refresh requires opt-in", !backoff.CanRefreshNow(false));
+backoff.Enable(83, t0);
+Check("BLE force request allowed with USB absent", backoff.CanRefreshNow(false));
+Check("BLE force request blocked while USB present", !backoff.CanRefreshNow(true));
+Check("BLE normal interval is one minute",
+    BluetoothAutoPolicy.RetryInterval(0) == TimeSpan.FromMinutes(1));
+Check("BLE one failure delays two minutes",
+    BluetoothAutoPolicy.RetryInterval(1) == TimeSpan.FromMinutes(2));
+Check("BLE two failures delay five minutes",
+    BluetoothAutoPolicy.RetryInterval(2) == TimeSpan.FromMinutes(5));
+Check("BLE repeated failures cap at ten minutes",
+    BluetoothAutoPolicy.RetryInterval(6) == TimeSpan.FromMinutes(10));
+DateTimeOffset failedAt = t0.AddMinutes(1);
+backoff.RecordRead(missing, failedAt);
+Check("BLE no retry before two minutes", !backoff.ShouldRead(
+    false, failedAt.AddSeconds(119)));
+Check("BLE retry at two minutes", backoff.ShouldRead(
+    false, failedAt.AddMinutes(2)));
+failedAt = failedAt.AddMinutes(2);
+backoff.RecordRead(missing, failedAt);
+Check("BLE two failures wait five minutes", !backoff.ShouldRead(
+    false, failedAt.AddMinutes(4)));
+Check("BLE retry after five minutes", backoff.ShouldRead(
+    false, failedAt.AddMinutes(5)));
+failedAt = failedAt.AddMinutes(5);
+backoff.RecordRead(missing, failedAt);
+Check("BLE third failure delays ten minutes", !backoff.ShouldRead(
+    false, failedAt.AddMinutes(9)));
+Check("BLE retry at ten minutes", backoff.ShouldRead(
+    false, failedAt.AddMinutes(10)));
+backoff.RecordRead(direct, failedAt.AddMinutes(10));
+Check("BLE good GATT read resets backoff", backoff.ConsecutiveFailures == 0 &&
+    BluetoothAutoPolicy.RetryInterval(backoff.ConsecutiveFailures) ==
+    TimeSpan.FromMinutes(1));
+backoff.Disable();
+Check("BLE manual refresh disabled after opting out",
+    !backoff.CanRefreshNow(false));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

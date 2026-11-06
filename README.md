@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.17 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.18 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -236,6 +236,14 @@ A new USB reading updates the tray immediately; the Bluetooth request runs
 independently and updates the tray when it completes. Only one automatic
 Bluetooth request can be in progress at a time. Switching the selected mouse,
 disabling fallback or exiting invalidates any older pending result.
+
+When Bluetooth cannot be read, automatic retries back off: **1 minute**
+normally, then **2, 5, and up to 10 minutes** after consecutive errors.
+This reduces repeated requests while the mouse sleeps. Use
+**Refresh Bluetooth battery now** to read immediately from the
+already-selected paired mouse without waiting for the backoff. This is
+available only while fallback is enabled, no USB receiver is present, and
+no other Bluetooth read is pending. No scan or pairing occurs.
 
 The tray menu also shows **Bluetooth fallback** status: off, standby while
 USB is primary, checking, fresh GATT percentage or unavailable with a

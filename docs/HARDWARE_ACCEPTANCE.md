@@ -86,6 +86,21 @@ targeted. Other receiver variants and Bluetooth are not yet validated.
 6. Confirm no duplicate USB history rows or low-battery notifications are
    produced by completion of the asynchronous Bluetooth request.
 
+## Bluetooth sleep/wake and retry backoff (Windows)
+
+1. Enable Bluetooth tray fallback after a direct manual GATT Battery Level
+   read from AJ179 APEX. Remove the 2.4 GHz receiver.
+2. Leave the mouse idle until sleeping. Verify the tray shows unavailable
+   after failed/expired GATT results rather than a stale percentage.
+3. Verify the retry schedule increases after consecutive failures:
+   two minutes, five minutes, then a maximum of ten minutes.
+4. Wake the mouse and choose **Refresh Bluetooth battery now**. A successful
+   fresh GATT read should restore the percent and reset failure counters.
+5. Reinsert the 2.4 GHz receiver: the manual Bluetooth refresh menu item
+   must become disabled and the tray must prioritize USB status.
+6. Disable Bluetooth fallback: neither scheduled nor manual BLE reads
+   should run until a newly verified, opted-in session starts.
+
 ## Bluetooth diagnostic report
 
 With the opt-in Bluetooth fallback enabled on Windows, use **Copy Bluetooth

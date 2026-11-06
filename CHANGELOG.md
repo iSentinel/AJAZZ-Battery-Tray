@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-beta.18 (2026-11-06)
+- Back off failed automatic Bluetooth GATT reads from one minute to two,
+  five, then a maximum of ten minutes while the mouse is unavailable.
+- Reset the retry interval after a fresh successful GATT Battery Level read.
+- Add Refresh Bluetooth battery now for the selected, opted-in mouse.
+- Disable manual BLE polling while USB receiver is present or a read runs.
+- Add fifteen scheduling and user-consent tests, with sleep/wake guide.
+- No additional Bluetooth scans, pairing, firmware or HID/GATT writes.
+
+
 ## 0.3.0-beta.17 (2026-11-06)
 - Show Bluetooth fallback state, recent GATT percentage and repeated failures
   in the Windows tray menu.
