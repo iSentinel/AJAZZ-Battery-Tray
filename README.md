@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.1 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.2 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -31,8 +31,9 @@ be ambiguous.
   Automatically on connection and every five minutes, or manually from the tray.
 - **Windows Battery History:** local 30-day CSV history with a 24-hour,
   7-day or 30-day chart showing charge and connection interruptions.
-- **Windows Device Diagnostics:** USB VID/PID, matching HID collections and
-  feature report length without exposing serial numbers.
+- **Device Diagnostics:** receiver product name on Windows and macOS, USB
+  VID/PID and vendor HID usage; Windows also shows the USB device revision and
+  feature report size, without querying or exposing private serial numbers.
 - Optional Windows notification when the receiver disconnects for two polls;
   disabled by default to prevent noise.
 - Configuration and diagnostic log under `%APPDATA%\AJAZZBatteryTray`.
@@ -165,7 +166,8 @@ validated to make that prediction trustworthy.
 ## Safe device diagnostics
 
 The Windows tray menu's **Device diagnostics...** reports HID usage,
-feature-report length and the number of matching interfaces. Firmware
+feature-report length, product name, USB revision and matching interfaces.
+The macOS menu contains a read-only **Device diagnostics...** dialog too. USB revision is **not firmware version**. Firmware
 version, DPI and polling rate are explicitly shown as not yet queried:
 the corresponding read protocol has not been verified on AJ179 hardware.
 It does not enumerate private USB identifiers or send configuration commands.

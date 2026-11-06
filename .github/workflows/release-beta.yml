@@ -117,9 +117,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.1"
+          TAG="v0.3.0-beta.2"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.1 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.2 — Windows and macOS
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -134,6 +134,10 @@ jobs:
           Download the macOS ZIP and extract it once to get the .app.
           The app is ad-hoc signed, not notarized by Apple. Gatekeeper may
           request approval in Privacy & Security.
+
+          **Read-only dock identification:** Windows HID product name and USB
+          device revision (not firmware), macOS HID product name. No device
+          settings are modified by these queries.
 
           **Windows Monitoring:** 30-day battery history CSV and interactive
           chart (24h/7d/30d), read-only device diagnostics, optional
@@ -171,6 +175,6 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.1" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.2" \
               --notes-file notes.md --prerelease
           fi

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace AjazzBatteryTray;
@@ -88,6 +89,41 @@ internal static class HidNative
     [DllImport("hid.dll", SetLastError = true)]
     internal static extern bool HidD_GetFeature(
         SafeFileHandle device, [In, Out] byte[] report, int reportLength);
+
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct HidAttributes
+    {
+        public uint Size;
+        public ushort VendorID;
+        public ushort ProductID;
+        public ushort VersionNumber;
+    }
+
+    [DllImport("hid.dll", SetLastError = true)]
+    private static extern bool HidD_GetAttributes(
+        SafeFileHandle device, ref HidAttributes attributes);
+
+    [DllImport("hid.dll", SetLastError = true)]
+    private static extern bool HidD_GetProductString(
+        SafeFileHandle device, [Out] byte[] buffer, int length);
+
+    /// <summary>Read manufacturer-provided product metadata, never the serial.</summary>
+    internal static string? GetProductName(SafeFileHandle handle)
+    {
+        byte[] buffer = new byte[256];
+        if (!HidD_GetProductString(handle, buffer, buffer.Length)) return null;
+        string value = Encoding.Unicode.GetString(buffer).Split('\0')[0];
+        string clean = new(value.Where(ch => !char.IsControl(ch)).Take(100).ToArray());
+        return string.IsNullOrWhiteSpace(clean) ? null : clean.Trim();
+    }
+
+    /// <summary>Retrieve USB revision (bcdDevice), not firmware version.</summary>
+    internal static HidAttributes? GetAttributes(SafeFileHandle handle)
+    {
+        HidAttributes value = new() { Size = (uint)Marshal.SizeOf<HidAttributes>() };
+        return HidD_GetAttributes(handle, ref value) ? value : null;
+    }
 
     /// <summary>Enumerates current HID interface paths (not all PnP devices).</summary>
     internal static IReadOnlyList<string> FindAjazzPaths()

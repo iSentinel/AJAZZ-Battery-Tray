@@ -106,6 +106,34 @@ enum ApexBattery {
         return status == kIOReturnSuccess
     }
 
+
+    /// Reads public HID product metadata without sending a device command.
+    static func diagnostics() -> String {
+        let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+        let criteria: [String: Any] = [
+            kIOHIDVendorIDKey as String: vendorID,
+            kIOHIDProductIDKey as String: productID
+        ]
+        IOHIDManagerSetDeviceMatching(manager, criteria as CFDictionary)
+        guard IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
+            return "Unable to open HID manager."
+        }
+        defer { IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone)) }
+        guard let found = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> else {
+            return "No compatible receiver detected."
+        }
+        let matched = found.filter { matchesVendorUsage($0) }
+        let product = matched.first.flatMap {
+            IOHIDDeviceGetProperty($0, kIOHIDProductKey as CFString) as? String
+        } ?? "unknown"
+        return "VID:PID: 3151:5007\n" +
+               "Product name: \(product)\n" +
+               "Matching vendor HID collections: \(matched.count)\n" +
+               "Usage page / usage: FFFF / 0002\n" +
+               "Firmware / display capabilities: not queried\n" +
+               "No serial numbers or private USB paths are shown."
+    }
+
     private static func matchesVendorUsage(_ device: IOHIDDevice) -> Bool {
         let page = (IOHIDDeviceGetProperty(device, kIOHIDPrimaryUsagePageKey as CFString) as? NSNumber)?.intValue
         let item = (IOHIDDeviceGetProperty(device, kIOHIDPrimaryUsageKey as CFString) as? NSNumber)?.intValue
@@ -167,6 +195,12 @@ final class TrayController: NSObject, NSApplicationDelegate {
         let refreshItem = NSMenuItem(title: "Refresh now", action: #selector(refresh), keyEquivalent: "r")
         refreshItem.target = self
         statusMenu.addItem(refreshItem)
+
+        let diagnostics = NSMenuItem(title: "Device diagnostics...",
+                                     action: #selector(showDiagnostics),
+                                     keyEquivalent: "")
+        diagnostics.target = self
+        statusMenu.addItem(diagnostics)
 
         let interval = NSMenuItem(title: "Refresh interval", action: nil, keyEquivalent: "")
         let subMenu = NSMenu()
@@ -233,6 +267,14 @@ final class TrayController: NSObject, NSApplicationDelegate {
         UserDefaults.standard.set(enabled, forKey: "AutomaticDockClockSync")
         sender.state = enabled ? .on : .off
         if enabled { syncClockNow() }
+    }
+
+    @objc private func showDiagnostics() {
+        let alert = NSAlert()
+        alert.messageText = "AJAZZ APEX — Device diagnostics"
+        alert.informativeText = ApexBattery.diagnostics()
+        alert.alertStyle = .informational
+        alert.runModal()
     }
 
     @objc private func syncClockNow() {
