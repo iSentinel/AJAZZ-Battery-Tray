@@ -70,6 +70,15 @@ opens Finder to the directory containing the CSV. Choose **Battery history
 chart...** for a native graph with 24-hour, 7-day and 30-day views.
 Unavailable and disconnected readings are gaps rather than 0%.
 
+## Sharing a diagnostic report
+
+Choose **Copy diagnostic report** from the menu bar to copy the app version,
+macOS version and receiver metadata. The app does not query device serials
+or private USB paths. Inspect the clipboard before posting an issue.
+
+Follow [hardware acceptance tests](../docs/HARDWARE_ACCEPTANCE.md) to verify
+receiver detection, dock clock and login-item behavior on your Mac.
+
 ## Troubleshooting
 
 Run the executable from a terminal to check HID discovery:

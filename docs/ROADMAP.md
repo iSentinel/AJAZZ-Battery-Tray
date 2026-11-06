@@ -65,6 +65,13 @@ targets the mouse key matrix. Do not introduce generic "commit" or
 write commands from speculative opcode tables. Use only confirmed packets
 with device-model-specific guards and recovery instructions.
 
+## Hardware acceptance preparation
+
+- [x] Copy diagnostic report on Windows and macOS without serial number queries.
+- [x] Publish physical hardware acceptance checklist for AJ179 and AJ159.
+- [ ] Gather real Windows sleep/reconnect/RTC observations and Mac compatibility results.
+- [ ] Confirm AJ159 APEX with its particular 8K receiver on hardware.
+
 ## Evidence and release rules
 
 Before promoting any experimental feature to supported:

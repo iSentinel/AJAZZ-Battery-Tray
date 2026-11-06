@@ -235,6 +235,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
                                      keyEquivalent: "")
         diagnostics.target = self
         statusMenu.addItem(diagnostics)
+        let copyReport = NSMenuItem(title: "Copy diagnostic report",
+                                    action: #selector(copyDeviceReport),
+                                    keyEquivalent: "")
+        copyReport.target = self
+        statusMenu.addItem(copyReport)
         let openHistory = NSMenuItem(title: "Open battery history folder...",
                                      action: #selector(openHistoryFolder),
                                      keyEquivalent: "")
@@ -392,6 +397,24 @@ final class TrayController: NSObject, NSApplicationDelegate {
         UserDefaults.standard.set(enabled, forKey: "AutomaticDockClockSync")
         sender.state = enabled ? .on : .off
         if enabled { syncClockNow() }
+    }
+
+    @objc private func copyDeviceReport() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"]
+            as? String ?? "unknown"
+        let report = "AJAZZ Battery Tray diagnostic report\n" +
+            "Version: \(version)\n" +
+            "macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)\n" +
+            ApexBattery.diagnostics()
+        let clipboard = NSPasteboard.general
+        clipboard.clearContents()
+        if !clipboard.setString(report, forType: .string) {
+            let alert = NSAlert()
+            alert.messageText = "Unable to copy diagnostic report"
+            alert.informativeText = "The macOS clipboard is unavailable."
+            alert.alertStyle = .warning
+            alert.runModal()
+        }
     }
 
     @objc private func showDiagnostics() {

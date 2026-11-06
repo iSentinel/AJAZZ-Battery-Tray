@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.7 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.8 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -196,6 +196,17 @@ The macOS menu contains a read-only **Device diagnostics...** dialog too. USB re
 version, DPI and polling rate are explicitly shown as not yet queried:
 the corresponding read protocol has not been verified on AJ179 hardware.
 It does not enumerate private USB identifiers or send configuration commands.
+
+## Hardware acceptance
+
+Choose **Copy diagnostic report** in the Windows tray or macOS menu bar.
+It copies the app version, operating system and read-only receiver details
+without requesting serial numbers or private device paths.
+Review the clipboard text before sharing it.
+
+See [Hardware Acceptance Checklist](docs/HARDWARE_ACCEPTANCE.md) for safe
+real-device tests covering AJ179/AJ159, disconnect/reconnect, sleep/wake,
+dock clock, history and the experimental macOS features.
 
 ## Diagnostics
 

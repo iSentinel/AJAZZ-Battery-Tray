@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.8 (2026-11-06)
+- Add Copy diagnostic report to Windows tray and macOS menu bar.
+- Include app and OS version with read-only receiver metadata.
+- Do not query USB serial numbers or private device paths.
+- Add hardware acceptance checklist for AJ179/AJ159 and both OSes.
+- Keep vendor mouse and display configuration opcodes blocked.
+
+
 ## 0.3.0-beta.7 (2026-11-06)
 - Add optional macOS Start at Login using SMAppService.mainApp.
 - Read the system registration state and show when approval is needed.
