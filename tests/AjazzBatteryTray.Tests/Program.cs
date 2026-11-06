@@ -66,6 +66,19 @@ schedule.RecordAttempt(start.AddMinutes(5));
 Check("clock receiver removed", !schedule.ShouldAttempt(start.AddMinutes(6), true, false));
 Check("clock receiver reconnected", schedule.ShouldAttempt(start.AddMinutes(6), true, true));
 
+// A corrected Windows clock must not postpone RTC synchronization for hours.
+DockClockSchedule correctedClock = new();
+Check("clock correction initial sync", correctedClock.ShouldAttempt(start, true, true));
+correctedClock.RecordAttempt(start);
+DateTimeOffset rolledBack = start.AddHours(-2);
+Check("clock correction backwards triggers resync",
+    correctedClock.ShouldAttempt(rolledBack, true, true));
+correctedClock.RecordAttempt(rolledBack);
+Check("clock correction does not cause repeat writes",
+    !correctedClock.ShouldAttempt(rolledBack.AddMinutes(1), true, true));
+Check("clock correction restores normal five-minute interval",
+    correctedClock.ShouldAttempt(rolledBack.AddMinutes(5), true, true));
+
 bool ThrowsBadReportLength()
 {
     try

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.20 (2026-11-07)
+- Recover Windows automatic dock RTC synchronization after the system clock
+  moves backward instead of delaying updates until the old clock is reached.
+- Test immediate recovery, no rapid repeat and the normal five-minute interval.
+- Keep verified HID command restrictions unchanged; real dock confirmation
+  is still required.
+- Bump Windows, installer, macOS build and release metadata for beta.20.
+
 ## 0.3.0-beta.19 (2026-11-07)
 - Share a strict, hardware-independent Windows battery history CSV codec.
 - Preserve valid 0% history rows and reject incomplete or contradictory

@@ -23,6 +23,8 @@
 - [x] Battery percentage in Windows tray and macOS menu bar.
 - [x] USB receiver detection and unknown/sleep handling.
 - [x] Manual and automatic dock RTC sync (command 0x28).
+- [x] Recover automatic RTC sync after a backward Windows clock correction;
+  regression tests confirm no rapid repeat (hardware display unverified).
 - [x] Windows battery history (CSV, state transitions, max 30 days).
 - [x] Validate existing Windows/macOS history CSV rows consistently,
   including 0%, missing values, invalid states and headerless recovery.
