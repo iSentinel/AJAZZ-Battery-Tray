@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-beta.17 (2026-11-06)
+- Show Bluetooth fallback state, recent GATT percentage and repeated failures
+  in the Windows tray menu.
+- Track last attempted and last successful automatic GATT read timestamps.
+- Add Copy Bluetooth monitor status with no device IDs, MACs or serial numbers.
+- Clear diagnostic counters on disable; reject monitoring results when off.
+- Test status labels, failed-read counters, timestamp preservation and reset.
+- Add a hardware validation issue field for the redacted monitor status.
+
+
 ## 0.3.0-beta.16 (2026-11-06)
 - Make Windows USB battery updates independent of slow Bluetooth polling.
 - Avoid overlapping automatic Bluetooth GATT requests in the same session.
