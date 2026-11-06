@@ -132,9 +132,7 @@ public sealed class BluetoothBatteryForm : Form
             _result.Text = result.Percent.HasValue
                 ? $"{selected.DisplayName}: {result.Percent}% — {result.Status}"
                 : result.Status + " No battery percentage inferred.";
-            if (result.Percent.HasValue &&
-                BluetoothAutoPolicy.IsDirectGatt(result.Status) &&
-                selected.IsLowEnergy)
+            if (result.IsFreshGatt && selected.IsLowEnergy)
             {
                 _verified = selected;
                 _verifiedPercent = result.Percent.Value;
