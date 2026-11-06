@@ -86,6 +86,12 @@ and never includes USB serial numbers. **Open battery history folder...**
 opens Finder to the directory containing the CSV. Choose **Battery history
 chart...** for a native graph with 24-hour, 7-day and 30-day views.
 Unavailable and disconnected readings are gaps rather than 0%.
+History loading now skips malformed CSV rows, preserves genuine zero-percent
+values if validly recorded, and tolerates files missing their header.
+Failed file writes are retried at the next observation instead of being
+marked successful. A backward system-clock change also triggers a new
+observation without waiting for the old timestamp to catch up.
+The USB HID parser still treats an unverified zero-value report as unknown.
 
 ## Sharing a diagnostic report
 
