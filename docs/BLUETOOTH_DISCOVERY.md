@@ -14,6 +14,20 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Windows discovery diagnostics (v0.3.0-beta.13)
+
+The manual Windows inspector independently queries the paired-only BLE and
+Classic endpoints, with an eight-second bound on each transport. If one query
+fails, the other can still return devices. The UI shows counts for each
+transport and a short, sanitized error type. **Copy lookup summary** copies
+only counts, the selected filter mode and error names; it does not copy
+Bluetooth addresses, serial numbers, or system device instance IDs.
+
+This is a diagnostic improvement, not confirmation that a specific AJAZZ
+Bluetooth device exposes GATT Battery Service. The user still selects the
+paired device and manually requests Battery Level. A Windows-cached value
+is labelled as potentially stale.
+
 ## Windows discovery fix (v0.3.0-beta.12)
 
 Some Bluetooth mice are reported by Windows as Classic rather than LE, or
