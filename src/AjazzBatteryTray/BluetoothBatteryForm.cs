@@ -36,6 +36,9 @@ public sealed class BluetoothBatteryForm : Form
         _find.Width = 215;
         _read.Width = 170;
         _read.Enabled = false;
+        _devices.SelectedIndexChanged += (_, _) =>
+            _read.Enabled = _devices.SelectedItem is BluetoothCandidate &&
+                            _find.Enabled;
 
         FlowLayoutPanel buttons = new() { Dock = DockStyle.Bottom, Height = 44 };
         buttons.Controls.Add(_find);
