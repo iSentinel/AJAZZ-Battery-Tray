@@ -47,13 +47,38 @@ targeted. Other receiver variants and Bluetooth are not yet validated.
 | Dock RTC | Trigger Sync dock time now | Clock on physical dock changes correctly |
 | Diagnostics | Copy diagnostic report | Report contains no serial number or HID path |
 
+## Verified field evidence
+
+- **2026-11-06, Windows, AJ179 APEX, Bluetooth:** device appeared in
+  **Check paired Bluetooth battery...** and returned
+  **83% — Fresh GATT Battery Level (2A19) read**. This confirms one direct
+  GATT reading on real AJ179 APEX hardware; it does not prove periodic
+  polling or receiver handover. No identifying device data was recorded.
+
+## Automatic Bluetooth fallback test (Windows)
+
+1. Switch AJ179 APEX to Bluetooth and use Windows to pair it.
+2. Select the paired mouse in the tray Bluetooth inspector, then click
+   **Read selected battery**. Confirm **Fresh GATT Battery Level**.
+3. Explicitly enable **Use this mouse in tray when 2.4 GHz receiver is
+   absent (this session)**. Close the inspector if desired.
+4. With the USB/2.4 GHz receiver removed, verify the tray label shows
+   **Bluetooth** and a plausible percent; wait more than 60 seconds.
+5. Plug the USB receiver back in: the tray must prioritize **2.4 GHz**,
+   never silently merge both sources. If USB mouse sleeps, show unknown,
+   not a stale Bluetooth percentage.
+6. Unplug receiver and allow Bluetooth to disconnect/sleep. The app must
+   show unavailable after a failed/expired read (maximum 120 seconds).
+7. Select **Disable Bluetooth tray fallback** and confirm there are no
+   further automatic GATT requests. Restart the app; fallback must be off.
+
 ## Known limitations
 
 - CI passing **does not** prove USB reports, clock writes, notification
   permission, or login item registration work on a particular real Mac.
 - AJ159 APEX has not yet been tested on this project's hardware.
-- Charging detection, Bluetooth, RGB, GIF uploads and device configuration
-  are not enabled.
+- Charging detection, automatic persistent Bluetooth device selection,
+  RGB, GIF uploads and device configuration are not enabled.
 - If the receiver is present while the mouse sleeps, that is not counted
   as a disconnect alert.
 - Do not send speculative HID configuration or firmware opcodes.
