@@ -352,13 +352,14 @@ public sealed class TrayAppContext : ApplicationContext
             var response = await BluetoothOperationTimeout.Run(
                 BluetoothBatteryReader.ReadAsync(selected), TimeSpan.FromSeconds(12));
             if (_closing || _bluetoothSelection != selected) return;
-            bool direct = BluetoothAutoPolicy.IsDirectGatt(response.Status);
-            _bluetoothPolicy.RecordRead(response.Percent, direct, DateTimeOffset.UtcNow);
+            _bluetoothPolicy.RecordRead(response, DateTimeOffset.UtcNow);
         }
         catch (Exception error)
         {
             if (_closing || _bluetoothSelection != selected) return;
-            _bluetoothPolicy.RecordRead(null, false, DateTimeOffset.UtcNow);
+            _bluetoothPolicy.RecordRead(new BluetoothBatteryResult(null,
+                BluetoothBatterySource.Unavailable, "Read failed."),
+                DateTimeOffset.UtcNow);
             FileLog.Write("WARN", "Bluetooth fallback read failed: " +
                 error.GetType().Name);
         }
@@ -382,17 +383,22 @@ public sealed class TrayAppContext : ApplicationContext
         bool connected = reading.Percent.HasValue;
         int? blePercent = _bluetoothPolicy.VisiblePercent(
             reading.ReceiverPresent, DateTimeOffset.UtcNow);
-        int? displayPercent = connected ? reading.Percent : blePercent;
-        bool displayConnected = displayPercent.HasValue;
-        string source = connected ? "2.4 GHz" :
-            blePercent.HasValue ? "Bluetooth" : "2.4 GHz";
+        BatteryDisplayState display = BatteryDisplayState.Resolve(
+            reading.ReceiverPresent, reading.Percent,
+            _bluetoothPolicy.Enabled, blePercent);
+        int? displayPercent = display.Percent;
+        bool displayConnected = display.HasReading;
+        string source = display.SourceName;
         if (_settings.RecordBatteryHistory)
         {
             _history.Record(DateTimeOffset.UtcNow, reading.Percent, reading.ReceiverPresent);
         }
 
-        if (_connectionAlerts.Evaluate(connected, reading.ReceiverPresent) &&
-            _settings.NotifyOnDisconnect && !blePercent.HasValue)
+        bool receiverLost = _connectionAlerts.Evaluate(
+            connected, reading.ReceiverPresent);
+        if (_settings.NotifyOnDisconnect &&
+            BatteryDisplayState.NotifyReceiverDisconnect(
+                receiverLost, _bluetoothPolicy.Enabled))
         {
             _tray.ShowBalloonTip(4000, "AJAZZ APEX disconnected",
                 "The 2.4 GHz receiver is no longer detected.",
