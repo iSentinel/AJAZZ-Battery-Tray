@@ -13,13 +13,15 @@ public sealed class BluetoothBatteryForm : Form
         AutoSize = true
     };
     private readonly Label _result = new();
+    private string _discoverySummary = "No Bluetooth lookup has run yet.";
+    private readonly Button _copy = new() { Text = "Copy lookup summary" };
     private readonly Button _find = new() { Text = "Find paired Bluetooth devices" };
     private readonly Button _read = new() { Text = "Read selected battery" };
 
     public BluetoothBatteryForm()
     {
         Text = "AJAZZ — Experimental Bluetooth battery check";
-        Size = new Size(660, 390);
+        Size = new Size(700, 430);
         MinimumSize = new Size(570, 320);
         StartPosition = FormStartPosition.CenterScreen;
         BuildWindow();
@@ -35,11 +37,12 @@ public sealed class BluetoothBatteryForm : Form
         };
         _devices.Dock = DockStyle.Fill;
         _result.Dock = DockStyle.Bottom;
-        _result.Height = 76;
+        _result.Height = 104;
         _result.Padding = new Padding(10);
         _result.Text = "Choose Find to list already paired devices.";
         _find.Width = 232;
         _read.Width = 165;
+        _copy.Width = 160;
         _read.Enabled = false;
         _devices.SelectedIndexChanged += (_, _) =>
             _read.Enabled = _devices.SelectedItem is BluetoothCandidate &&
@@ -50,6 +53,8 @@ public sealed class BluetoothBatteryForm : Form
         FlowLayoutPanel buttons = new() { Dock = DockStyle.Bottom, Height = 44 };
         buttons.Controls.Add(_find);
         buttons.Controls.Add(_read);
+        buttons.Controls.Add(_copy);
+        _copy.Click += (_, _) => CopyLookupSummary();
         _find.Click += async (_, _) => await FindDevicesAsync();
         _read.Click += async (_, _) => await ReadSelectedAsync();
         Controls.Add(_devices);
@@ -64,24 +69,33 @@ public sealed class BluetoothBatteryForm : Form
         SetBusy(true, "Checking paired Bluetooth LE and Classic devices...");
         try
         {
-            var candidates = await BluetoothOperationTimeout.Run(
+            BluetoothDiscovery discovery = await BluetoothOperationTimeout.Run(
                 BluetoothBatteryReader.FindPairedAsync(_showAll.Checked),
                 TimeSpan.FromSeconds(20));
             _devices.Items.Clear();
-            foreach (BluetoothCandidate device in candidates) _devices.Items.Add(device);
-            _result.Text = candidates.Count == 0
-                ? "No matching paired devices. Check Show all, then click Find again."
-                : $"{candidates.Count} paired endpoint(s). Select the mouse and click Read.";
+            foreach (BluetoothCandidate item in discovery.Candidates)
+                _devices.Items.Add(item);
+            _discoverySummary = discovery.Summary +
+                $" Displayed: {discovery.Candidates.Count}. " +
+                $"Show all enabled: {_showAll.Checked}.";
+            _result.Text = discovery.Candidates.Count == 0
+                ? "No matching devices. Enable Show all and search again.\n" +
+                  _discoverySummary
+                : "Select your mouse and click Read selected battery.\n" +
+                  _discoverySummary;
         }
         catch (TimeoutException)
         {
-            _result.Text = "Paired device lookup timed out. Wake the mouse and try again.";
+            _discoverySummary = "Bluetooth lookup timed out.";
+            _result.Text = _discoverySummary + " Wake the mouse and try again.";
         }
         catch (Exception error)
         {
             FileLog.Write("WARN", "BLE paired device inspection failed: " +
                 error.GetType().Name);
-            _result.Text = "Bluetooth inspection unavailable in this Windows session.";
+            _discoverySummary = "Bluetooth lookup unavailable: " +
+                error.GetType().Name;
+            _result.Text = _discoverySummary;
         }
         finally
         {
@@ -114,6 +128,22 @@ public sealed class BluetoothBatteryForm : Form
         finally
         {
             SetBusy(false);
+        }
+    }
+
+    private void CopyLookupSummary()
+    {
+        try
+        {
+            Clipboard.SetText("AJAZZ Bluetooth lookup summary\n" +
+                _discoverySummary + "\n" +
+                "No Bluetooth addresses or Windows device IDs are included.");
+        }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "Bluetooth clipboard unavailable: " +
+                error.GetType().Name);
+            _result.Text = "Windows clipboard is unavailable.";
         }
     }
 
