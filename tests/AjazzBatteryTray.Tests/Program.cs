@@ -194,5 +194,28 @@ bool BluetoothTaskTimesOut()
     }
 }
 
+Check("Windows byte battery 0% accepted",
+    WindowsLevelEquals((byte)0, 0));
+Check("Windows byte battery 65% accepted",
+    WindowsLevelEquals((byte)65, 65));
+Check("Windows integer battery 100% accepted",
+    WindowsLevelEquals(100, 100));
+Check("Windows unknown sentinel 101 rejected",
+    !BluetoothBatteryRules.TryParseWindowsLevel((byte)101, out _));
+Check("Windows battery 255 rejected",
+    !BluetoothBatteryRules.TryParseWindowsLevel((byte)255, out _));
+Check("Windows battery negative rejected",
+    !BluetoothBatteryRules.TryParseWindowsLevel(-1, out _));
+Check("Windows null battery rejected",
+    !BluetoothBatteryRules.TryParseWindowsLevel(null, out _));
+Check("Windows battery string rejected",
+    !BluetoothBatteryRules.TryParseWindowsLevel("75", out _));
+Check("Bluetooth unnamed not auto-matched",
+    !BluetoothBatteryRules.IsCandidateName("Unnamed paired device"));
+
+bool WindowsLevelEquals(object raw, int expected)
+    => BluetoothBatteryRules.TryParseWindowsLevel(raw, out int level) &&
+       level == expected;
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
