@@ -435,7 +435,6 @@ public sealed class TrayAppContext : ApplicationContext
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
     private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
     {
-        bool connected = reading.Percent.HasValue;
         int? blePercent = _bluetoothPolicy.VisiblePercent(
             reading.ReceiverPresent, DateTimeOffset.UtcNow);
         BatteryDisplayState display = BatteryDisplayState.Resolve(
