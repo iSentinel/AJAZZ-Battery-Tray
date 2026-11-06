@@ -28,6 +28,10 @@
 - [ ] Verify paired-device Battery Service 0x180F / Battery Level 0x2A19
   on actual AJ179/APEX and AJ159/APEX hardware.
 - [x] Add bounded manual BLE UI requests and test timeouts on Windows.
+- [x] Handle Windows LE/Classic paired endpoints and generic paired names.
+- [x] Offer Windows cached battery as a labelled fallback (not necessarily live).
+- [ ] Validate Bluetooth battery discovery and Windows cached value on a
+  physical AJ179 APEX with 2.4 GHz receiver disconnected.
 - [x] Record history state after a backward system-clock adjustment.
 - [x] Windows manual, paired-only Bluetooth GATT Battery Level inspector
   (experimental; the user chooses a device and initiates each read).
