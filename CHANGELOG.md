@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-beta.9 (2026-11-06)
+- Add an explicit Windows manual Bluetooth Battery Service (GATT 180F) probe.
+- Enumerate only already paired BLE candidates and require user selection.
+- Read Battery Level (2A19) without GATT writes, pairing or background scanning.
+- Validate standard one-byte 0..100 responses; unavailable remains unknown.
+- Keep BLE results separate from 2.4 GHz tray status and history.
+- Move Windows targeting to Windows SDK 19041 for .NET 8 WinRT interop.
+- Hardware Bluetooth percentage support remains experimental until tested.
+
+
 ## Unreleased (Bluetooth research)
 - Confirmed Bluetooth connectivity of AJ179 APEX and AJ159 APEX from product specs.
 - Documented standard read-only Battery Service discovery and privacy gates.
