@@ -209,6 +209,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var manualClockSync = false
     private var timer: Timer?
     private var polling = false
+    private let batteryHistory = BatteryHistoryWriter()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -230,6 +231,17 @@ final class TrayController: NSObject, NSApplicationDelegate {
                                      keyEquivalent: "")
         diagnostics.target = self
         statusMenu.addItem(diagnostics)
+        let openHistory = NSMenuItem(title: "Open battery history folder...",
+                                     action: #selector(openHistoryFolder),
+                                     keyEquivalent: "")
+        openHistory.target = self
+        statusMenu.addItem(openHistory)
+        let recordHistory = NSMenuItem(title: "Record battery history",
+                                       action: #selector(toggleBatteryHistory(_:)),
+                                       keyEquivalent: "")
+        recordHistory.target = self
+        recordHistory.state = historyEnabled ? .on : .off
+        statusMenu.addItem(recordHistory)
 
         let interval = NSMenuItem(title: "Refresh interval", action: nil, keyEquivalent: "")
         let subMenu = NSMenu()
@@ -282,6 +294,23 @@ final class TrayController: NSObject, NSApplicationDelegate {
         UserDefaults.standard.set(sender.tag, forKey: "PollSeconds")
         configureTimer()
         refresh()
+    }
+
+    private var historyEnabled: Bool {
+        if UserDefaults.standard.object(forKey: "RecordBatteryHistory") == nil {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: "RecordBatteryHistory")
+    }
+
+    @objc private func openHistoryFolder() {
+        NSWorkspace.shared.open(batteryHistory.directory)
+    }
+
+    @objc private func toggleBatteryHistory(_ sender: NSMenuItem) {
+        let enabled = !historyEnabled
+        UserDefaults.standard.set(enabled, forKey: "RecordBatteryHistory")
+        sender.state = enabled ? .on : .off
     }
 
     private var autoClockEnabled: Bool {
@@ -347,6 +376,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     }
 
     private func update(_ status: ApexBattery.Status) {
+        if historyEnabled { batteryHistory.record(status) }
         switch status {
         case .notConnected: receiverWasPresent = false
         default: receiverWasPresent = true
@@ -387,7 +417,13 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
     let guardValid = ApexBattery.validClockFrame(packet) &&
         !ApexBattery.validClockFrame(blocked) &&
         !ApexBattery.validTelemetryFrame(blocked)
-    let valid = clockValid && guardValid &&
+    let historyValid = !BatteryHistoryWriter.shouldRecord(
+        previous: "70|online", current: "70|online", secondsSinceLast: 60) &&
+        BatteryHistoryWriter.shouldRecord(
+        previous: "70|online", current: "69|online", secondsSinceLast: 60) &&
+        BatteryHistoryWriter.shouldRecord(
+        previous: "70|online", current: "70|online", secondsSinceLast: 301)
+    let valid = historyValid && clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&
                 ApexBattery.parse([0, 0, 73]) == 73 &&
                 ApexBattery.parse([5, 0, 0, 0]) == nil &&

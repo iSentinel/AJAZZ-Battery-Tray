@@ -22,6 +22,7 @@
 - [x] Optional Windows receiver-disconnect warning with debounce.
 - [ ] Verify mouse reconnection, sleep, charging and clock updates on real dock.
 - [ ] Model-matched Bluetooth battery reporting where available.
+- [x] macOS battery history CSV with private local storage and retention.
 - [ ] macOS battery history chart and notifications.
 
 ## Stage 2 — Dock customization

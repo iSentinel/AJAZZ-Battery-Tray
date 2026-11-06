@@ -47,6 +47,15 @@ The resulting ZIP is `dist/AJAZZBatteryTray-macOS-universal.zip`. Extract
 once and move `AJAZZ Battery Tray.app` to `/Applications`, then open it.
 The app runs in the menu bar, not the Dock.
 
+## Battery history
+
+The menu-bar app writes only battery percent and connection states to
+`~/Library/Application Support/AJAZZBatteryTray/battery-history.csv`
+while **Record battery history** is enabled. It captures changes and a
+five-minute observation if the state remains unchanged, keeps at most 30 days,
+and never includes USB serial numbers. **Open battery history folder...**
+opens Finder to the directory containing the CSV. There is no macOS chart yet.
+
 ## Troubleshooting
 
 Run the executable from a terminal to check HID discovery:

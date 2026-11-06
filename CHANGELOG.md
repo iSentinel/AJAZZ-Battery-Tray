@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-beta.4 (2026-11-06)
+- Add private macOS battery history CSV under Application Support.
+- Record charge changes and receiver status; sample unchanged state every 5 min.
+- Auto-prune history after 30 days and cap rows at 20,000.
+- Add macOS menu options to open history folder and disable recording.
+- Add macOS self-tests for recording frequency and state changes.
+- Windows features remain unchanged from v0.3.0-beta.3.
+
+
 ## 0.3.0-beta.3 (2026-11-06)
 - Add an explicit allowlist for every Windows HID feature write.
 - Permit only correctly framed 0xF7 telemetry and 0x28 dock clock packets.
