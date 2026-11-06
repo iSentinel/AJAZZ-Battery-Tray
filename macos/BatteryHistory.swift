@@ -71,12 +71,13 @@ final class BatteryHistoryWriter {
         guard let text = try? String(contentsOf: file, encoding: .utf8) else {
             return
         }
-        let parser = ISO8601DateFormatter()
         let cutoff = now.addingTimeInterval(-30 * 86400)
-        let entries = text.split(separator: "\n").dropFirst().filter { row in
-            guard let stamp = row.split(separator: ",").first,
-                  let date = parser.date(from: String(stamp)) else { return false }
-            return date >= cutoff && date <= now
+        let entries = text.split(separator: "\n").filter { row in
+            guard let observation = BatteryHistoryReader.parse(String(row)) else {
+                return false
+            }
+            return observation.timestamp >= cutoff &&
+                   observation.timestamp <= now
         }
         let bounded = entries.suffix(20000)
         let result = "utc_timestamp,percent,state\n" +
