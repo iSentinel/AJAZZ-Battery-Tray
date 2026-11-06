@@ -60,8 +60,7 @@ targeted. Other receiver variants and Bluetooth are not yet validated.
 
 ## Reporting a result
 
-Create a GitHub Issue at
-https://github.com/iSentinel/AJAZZ-Battery-Tray/issues with:
+Open the [hardware validation issue form](https://github.com/iSentinel/AJAZZ-Battery-Tray/issues/new?template=hardware-validation.yml) with:
 
 - Version, OS, mouse model and connection type.
 - The **Copy diagnostic report** output (inspect before sharing).
