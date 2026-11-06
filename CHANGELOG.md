@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-beta.11 (2026-11-06)
+- Add 12-second timeout to the Windows paired BLE lookup and a 15-second
+  timeout to the manually triggered Battery Service read.
+- Report timeouts without inventing a percentage or changing 2.4 GHz status.
+- Resume battery-history observations if Windows system time moves backward.
+- Add deterministic tests for timeout completion, expiration and clock jumps.
+- No new HID or GATT commands and no automatic Bluetooth polling.
+
+
 ## 0.3.0-beta.10 (2026-11-06)
 - Add an experimental macOS manual read of the standard GATT Battery Level.
 - Enumerate only CoreBluetooth already-connected peripherals with Battery

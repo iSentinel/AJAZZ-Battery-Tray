@@ -30,6 +30,9 @@ GATT Battery Service (0x180F) / Battery Level (0x2A19) uncached.
 - A BLE value does not overwrite the 2.4 GHz tray icon or battery history.
 - **Hardware support is not confirmed** until the actual AJ179/AJ159 is tested.
 - The chosen entry is not stored across sessions.
+- Windows BLE lookup and read dialogs have bounded UI waits (12s and 15s).
+  A timeout means unknown, not 0%. The underlying OS request may still finish
+  after the UI stops waiting; no GATT write operation is involved.
 
 ## Experimental macOS connected-device inspector (v0.3.0-beta.10)
 

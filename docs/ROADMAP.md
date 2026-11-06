@@ -27,6 +27,8 @@
 - [x] Document Bluetooth capabilities and standard GATT discovery plan.
 - [ ] Verify paired-device Battery Service 0x180F / Battery Level 0x2A19
   on actual AJ179/APEX and AJ159/APEX hardware.
+- [x] Add bounded manual BLE UI requests and test timeouts on Windows.
+- [x] Record history state after a backward system-clock adjustment.
 - [x] Windows manual, paired-only Bluetooth GATT Battery Level inspector
   (experimental; the user chooses a device and initiates each read).
 - [x] macOS manual, already-connected CoreBluetooth Battery Service inspector

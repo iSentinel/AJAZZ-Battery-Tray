@@ -15,6 +15,7 @@ public static class BatteryHistoryRules
     public static bool ShouldRecord(BatterySample? previous, BatterySample sample)
         => previous is null || previous.State != sample.State ||
            previous.Percent != sample.Percent ||
+           sample.Timestamp < previous.Timestamp ||
            sample.Timestamp - previous.Timestamp >= TimeSpan.FromMinutes(5);
 
     /// <summary>Keep a maximum of 30 days and 20,000 observations.</summary>

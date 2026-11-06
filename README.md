@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.10 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.11 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -147,7 +147,9 @@ verified read-back and a reliable recovery path exist.
   manually triggered read of standard GATT Battery Service on a selected,
   already paired AJAZZ BLE mouse. This never substitutes the tray reading.
   The app does not pair devices, scan unpaired devices or write GATT data.
-  If Battery Service is absent, it reports unavailable. Real AJ179/AJ159
+  If Battery Service is absent, it reports unavailable.
+  A lookup has a 12-second UI timeout; a battery read has a 15-second
+  UI timeout, with clear messages when a sleeping mouse does not respond. Real AJ179/AJ159
   Bluetooth battery compatibility still needs hardware validation.
   On macOS there is also a manual **Check connected Bluetooth battery...**
   inspector for AJAZZ devices already connected to the system; it uses
