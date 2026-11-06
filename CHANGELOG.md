@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0-beta.15 (2026-11-06)
+- Replace fragile Bluetooth source detection by display text with typed
+  DirectGatt, WindowsCached and Unavailable states.
+- Use only validated fresh direct-GATT values for automatic Bluetooth tray.
+- Label a selected but currently unavailable Bluetooth source explicitly.
+- Suppress misleading USB receiver-disconnect warnings during intentional
+  Bluetooth fallback; preserve USB warnings when fallback is disabled.
+- Add regression tests for stale values, cached source, asleep USB receiver,
+  source priority and disabling fallback.
+- No new HID write commands, Bluetooth scanning or automatic pairing.
+
+
 ## 0.3.0-beta.14 (2026-11-06)
 - Record field-confirmed AJ179 APEX Bluetooth GATT Battery Level: 83%.
 - Add explicit opt-in automatic Bluetooth tray fallback on Windows after

@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.14 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.15 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -222,6 +222,13 @@ monitor and safety guards are unchanged.
    again at most once every 60 seconds. USB receiver presence always wins.
 5. To stop, choose **Disable Bluetooth tray fallback** from the tray menu.
    Restarting AJAZZ Battery Tray also disables it.
+
+When Bluetooth fallback is enabled but the GATT value is unavailable,
+the tray explicitly shows **Bluetooth: unavailable**. The Windows cached
+battery property is never treated as a live reading, even if a future UI
+label changes. If you intentionally remove the USB receiver to use
+Bluetooth, the optional USB-disconnect warning is suppressed for the
+duration of that session's Bluetooth fallback.
 
 Only a successful direct GATT value enables this option. Cached Windows
 BatteryLife does not qualify. Bluetooth values older than 120 seconds

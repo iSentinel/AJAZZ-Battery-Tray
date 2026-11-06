@@ -39,12 +39,12 @@ public sealed class BluetoothAutoPolicy
             now - _lastAttempt.Value >= ReadInterval);
 
     /// <summary>Save a direct GATT result or invalidate stale/failed data.</summary>
-    public void RecordRead(int? percent, bool directGatt, DateTimeOffset now)
+    public void RecordRead(BluetoothBatteryResult result, DateTimeOffset now)
     {
         _lastAttempt = now;
-        if (Enabled && directGatt && percent is >= 0 and <= 100)
+        if (Enabled && result.IsFreshGatt)
         {
-            _percent = percent;
+            _percent = result.Percent;
             _lastReading = now;
         }
         else
@@ -63,7 +63,4 @@ public sealed class BluetoothAutoPolicy
         return _percent;
     }
 
-    /// <summary>Only a direct 2A19 GATT read authorizes automatic mode.</summary>
-    public static bool IsDirectGatt(string status)
-        => status == "Fresh GATT Battery Level (2A19) read.";
 }

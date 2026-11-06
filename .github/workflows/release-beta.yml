@@ -120,9 +120,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.14"
+          TAG="v0.3.0-beta.15"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.14 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.15 — Windows and macOS
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -142,6 +142,12 @@ jobs:
           inspection of already connected AJAZZ mice with standard GATT
           Battery Service. No scanning or pairing, and no BLE status is
           substituted for 2.4 GHz. Real Mac hardware verification is pending.
+
+          **Bluetooth fallback resilience:** Direct GATT readings now carry a
+          typed source, not a textual label. A selected Bluetooth source
+          shows unavailable explicitly when its reading expires, and
+          intentional USB removal during fallback does not trigger a
+          misleading USB-disconnect warning.
 
           **Windows opt-in Bluetooth fallback:** AJ179 APEX directly returned
           83% through standard GATT Battery Level (2A19) on real Windows
@@ -228,7 +234,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.14" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.15" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
