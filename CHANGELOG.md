@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-beta.12 (2026-11-06)
+- Fix Windows Bluetooth device list hiding paired AJAZZ mice.
+- Enumerate paired-only LE and Classic devices; allow all paired device names.
+- Remove unreliable second pairing-state filter on Windows endpoints.
+- Read Windows's cached numeric device battery property if GATT is absent.
+- Label cached values and reject unknown sentinel 101 or invalid percentages.
+- Keep Bluetooth data manual and separate from USB receiver monitoring.
+- Add cached-battery parser tests; no pairing, GATT writes or HID settings.
+
+
 ## Unreleased — dock protocol evidence guide
 - Document Windows USBPcap/Wireshark capture of one reversible vendor setting.
 - Require before/after/readback/restore and redaction before publishing.
