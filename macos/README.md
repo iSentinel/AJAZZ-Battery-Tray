@@ -28,8 +28,8 @@ Intel (x86_64) and Apple Silicon (arm64).
 - Dock Clock Sync uses the documented 0x28 feature report, manually or every
   five minutes. It follows the HID framing used by the macOS open-source
   Ajazz clock-sync daemon and is still unverified on our real hardware.
-- Only 2.4 GHz USB is implemented. No Bluetooth, battery charging detection,
-  yet. macOS 13+ supports optional Start at login via the menu.
+- Only 2.4 GHz USB is implemented. Bluetooth and charging detection are not implemented.
+  macOS 13+ supports optional Start at Login from the menu.
 - Optional **Low battery notifications** (20%, 10%, 5%) and **Notify on
   receiver disconnect** are available in the menu bar. Both are off by
   default. Enabling either requests macOS notification permission. A sleeping
