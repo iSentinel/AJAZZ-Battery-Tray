@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import IOKit.hid
+import ServiceManagement
 
 /// Reads battery and can set only the dock's documented on-board clock.
 enum ApexBattery {
@@ -212,6 +213,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private let batteryHistory = BatteryHistoryWriter()
     private let batteryAlerts = BatteryAlertPolicy()
     private var historyWindow: BatteryHistoryWindowController?
+    private var startupMenuItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -289,6 +291,20 @@ final class TrayController: NSObject, NSApplicationDelegate {
         clockItem.isEnabled = false
         statusMenu.addItem(clockItem)
         statusMenu.addItem(.separator())
+
+        let startup = NSMenuItem(title: "Start at login",
+                                 action: #selector(toggleLoginStartup(_:)),
+                                 keyEquivalent: "")
+        startup.target = self
+        startupMenuItem = startup
+        statusMenu.addItem(startup)
+        let loginSettings = NSMenuItem(title: "Open Login Items settings...",
+                                       action: #selector(openLoginItemsSettings),
+                                       keyEquivalent: "")
+        loginSettings.target = self
+        statusMenu.addItem(loginSettings)
+        statusMenu.addItem(.separator())
+        refreshStartupMenu()
 
         let quit = NSMenuItem(title: "Quit AJAZZ Battery Tray", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
@@ -450,6 +466,41 @@ final class TrayController: NSObject, NSApplicationDelegate {
             detailItem.title = "Receiver found; battery status unavailable"
         }
         statusItem.button?.toolTip = detailItem.title
+    }
+
+    private func refreshStartupMenu() {
+        let service = SMAppService.mainApp
+        startupMenuItem?.state = service.status == .enabled ? .on : .off
+        startupMenuItem?.title = service.status == .requiresApproval
+            ? "Start at login (approval needed)" : "Start at login"
+    }
+
+    @objc private func toggleLoginStartup(_ sender: NSMenuItem) {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+            } else if service.status == .notRegistered {
+                try service.register()
+            }
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Unable to change Start at Login"
+            alert.informativeText = error.localizedDescription +
+                "\nInstall the app in Applications, then try again."
+            alert.alertStyle = .warning
+            alert.runModal()
+        }
+
+        refreshStartupMenu()
+        if service.status == .requiresApproval {
+            SMAppService.openSystemSettingsLoginItems()
+        }
+    }
+
+    @objc private func openLoginItemsSettings() {
+        SMAppService.openSystemSettingsLoginItems()
+        refreshStartupMenu()
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
