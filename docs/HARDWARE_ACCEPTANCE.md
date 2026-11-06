@@ -114,6 +114,19 @@ consecutive failures reset to zero and last-success timestamp advances.
 The report contains no Bluetooth address or device instance ID.
 Review all copied data before attaching to a public GitHub issue.
 
+## HID enumeration error versus unplug (Windows)
+
+The 2.4 GHz receiver status can be **present**, **absent**, or **unknown**
+when Windows reports a HID enumeration error. An unknown result should
+keep the battery unavailable; it must **not** be recorded as unplugged,
+trigger a disconnect notification, or activate Bluetooth fallback.
+Only a confirmed absent USB receiver may activate the opted-in BLE path.
+Recheck after a successful enumeration; USB receiver priority must recover.
+
+This behavior has pure unit tests but is **not yet verified under an actual
+Windows USB/HID error**. Do not disable USB controllers or remove device
+drivers just to reproduce the scenario.
+
 ## Known limitations
 
 - CI passing **does not** prove USB reports, clock writes, notification
