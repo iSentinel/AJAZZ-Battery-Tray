@@ -7,15 +7,20 @@ namespace AjazzBatteryTray;
 public sealed class BluetoothBatteryForm : Form
 {
     private readonly ListBox _devices = new();
+    private readonly CheckBox _showAll = new()
+    {
+        Text = "Show all paired Bluetooth devices (if mouse name is different)",
+        AutoSize = true
+    };
     private readonly Label _result = new();
-    private readonly Button _find = new() { Text = "Find paired AJAZZ BLE mice" };
+    private readonly Button _find = new() { Text = "Find paired Bluetooth devices" };
     private readonly Button _read = new() { Text = "Read selected battery" };
 
     public BluetoothBatteryForm()
     {
         Text = "AJAZZ — Experimental Bluetooth battery check";
-        Size = new Size(570, 340);
-        MinimumSize = new Size(480, 280);
+        Size = new Size(660, 390);
+        MinimumSize = new Size(570, 320);
         StartPosition = FormStartPosition.CenterScreen;
         BuildWindow();
     }
@@ -25,21 +30,23 @@ public sealed class BluetoothBatteryForm : Form
         Label instructions = new()
         {
             Dock = DockStyle.Top, Height = 62, Padding = new Padding(12),
-            Text = "Manual check of paired Bluetooth LE mice only.\n" +
-                   "No pairing, background scanning, or device settings writes."
+            Text = "Manual check of already paired Bluetooth LE and Classic mice.\n" +
+                   "No pairing, unpaired scans, background polling, or device writes."
         };
         _devices.Dock = DockStyle.Fill;
         _result.Dock = DockStyle.Bottom;
-        _result.Height = 66;
+        _result.Height = 76;
         _result.Padding = new Padding(10);
         _result.Text = "Choose Find to list already paired devices.";
-        _find.Width = 215;
-        _read.Width = 170;
+        _find.Width = 232;
+        _read.Width = 165;
         _read.Enabled = false;
         _devices.SelectedIndexChanged += (_, _) =>
             _read.Enabled = _devices.SelectedItem is BluetoothCandidate &&
                             _find.Enabled;
 
+        _showAll.Dock = DockStyle.Top;
+        _showAll.Padding = new Padding(12, 3, 0, 4);
         FlowLayoutPanel buttons = new() { Dock = DockStyle.Bottom, Height = 44 };
         buttons.Controls.Add(_find);
         buttons.Controls.Add(_read);
@@ -48,25 +55,27 @@ public sealed class BluetoothBatteryForm : Form
         Controls.Add(_devices);
         Controls.Add(buttons);
         Controls.Add(_result);
+        Controls.Add(_showAll);
         Controls.Add(instructions);
     }
 
     private async Task FindDevicesAsync()
     {
-        SetBusy(true, "Searching already-paired LE devices...");
+        SetBusy(true, "Checking paired Bluetooth LE and Classic devices...");
         try
         {
             var candidates = await BluetoothOperationTimeout.Run(
-                BluetoothBatteryReader.FindPairedAsync(), TimeSpan.FromSeconds(12));
+                BluetoothBatteryReader.FindPairedAsync(_showAll.Checked),
+                TimeSpan.FromSeconds(20));
             _devices.Items.Clear();
             foreach (BluetoothCandidate device in candidates) _devices.Items.Add(device);
             _result.Text = candidates.Count == 0
-                ? "No paired AJAZZ BLE candidates. Pair in Windows Settings first."
-                : $"{candidates.Count} candidate(s). Select one to read Battery Level.";
+                ? "No matching paired devices. Check Show all, then click Find again."
+                : $"{candidates.Count} paired endpoint(s). Select the mouse and click Read.";
         }
         catch (TimeoutException)
         {
-            _result.Text = "Paired device lookup timed out. Check Windows Bluetooth.";
+            _result.Text = "Paired device lookup timed out. Wake the mouse and try again.";
         }
         catch (Exception error)
         {
@@ -89,7 +98,7 @@ public sealed class BluetoothBatteryForm : Form
             var result = await BluetoothOperationTimeout.Run(
                 BluetoothBatteryReader.ReadAsync(selected), TimeSpan.FromSeconds(15));
             _result.Text = result.Percent.HasValue
-                ? $"{selected.DisplayName}: {result.Percent}% (BLE experimental)"
+                ? $"{selected.DisplayName}: {result.Percent}% — {result.Status}"
                 : result.Status + " No battery percentage inferred.";
         }
         catch (TimeoutException)
@@ -113,6 +122,7 @@ public sealed class BluetoothBatteryForm : Form
         _find.Enabled = !busy;
         _read.Enabled = !busy && _devices.SelectedItem is BluetoothCandidate;
         _devices.Enabled = !busy;
+        _showAll.Enabled = !busy;
         if (message is not null) _result.Text = message;
     }
 }

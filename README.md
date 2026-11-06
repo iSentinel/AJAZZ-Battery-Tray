@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.11 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.12 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -202,9 +202,13 @@ validated to make that prediction trustworthy.
 
 Switch an AJAZZ mouse into Bluetooth mode and pair it through Windows
 Settings. Right-click the battery tray icon, select **Check paired Bluetooth
-battery...**, click **Find paired AJAZZ BLE mice**, choose your device, then
-click **Read selected battery**. A valid single-byte 0–100% reading from the
-standard Battery Service is displayed in this dialog only.
+battery...**, click **Find paired Bluetooth devices**, choose your mouse,
+then click **Read selected battery**. If the mouse is missing, enable
+**Show all paired Bluetooth devices** and click Find again; Windows may
+advertise it with a generic name or as Bluetooth Classic. The dialog
+tries standard BLE GATT Battery Level first and can show Windows's cached
+battery percentage if GATT is unavailable. The result identifies its source,
+and a cached value may not reflect the latest charge.
 
 This does not confirm AJ179/AJ159 exposes the standard service, and the mouse
 name is only a candidate hint, not a trustworthy identity. No pairing or

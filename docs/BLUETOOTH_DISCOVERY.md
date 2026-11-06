@@ -14,6 +14,28 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Windows discovery fix (v0.3.0-beta.12)
+
+Some Bluetooth mice are reported by Windows as Classic rather than LE, or
+appear under an unexpected device name. Other Windows paired endpoints can
+have inconsistent `Pairing.IsPaired` metadata despite the paired-only AQS
+selector. An extra LE-only and name-only filter incorrectly hid the mouse.
+
+The Windows dialog now:
+- Queries **paired-only Bluetooth LE and Bluetooth Classic** association
+  endpoints; no unpaired discovery or pairing operation takes place.
+- Defaults to names containing AJAZZ/AJ159/AJ179, and offers an explicit
+  **Show all paired Bluetooth devices** option when the mouse has a
+  different Windows name.
+- Does not apply an additional unreliable `Pairing.IsPaired` check.
+- Tries an uncached GATT read only for LE endpoints. If it is unavailable,
+  uses Windows's numeric `System.Devices.BatteryLife` property when present.
+- Labels Windows-reported battery as cached, which may be stale, and rejects
+  its special unknown value 101 and all values outside 0–100%.
+- Keeps Bluetooth reads manual and separate from the 2.4 GHz tray status,
+  battery history and notifications; no device identifiers are persisted.
+- Still requires field testing on the physical mouse and Windows version.
+
 ## Experimental Windows manual inspector (v0.3.0-beta.9)
 
 The tray option **Check paired Bluetooth battery...** now offers explicit
