@@ -120,9 +120,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.8"
+          TAG="v0.3.0-beta.9"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.8 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.9 — Windows and macOS
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -137,6 +137,12 @@ jobs:
           Download the macOS ZIP and extract it once to get the .app.
           The app is ad-hoc signed, not notarized by Apple. Gatekeeper may
           request approval in Privacy & Security.
+
+          **Windows experimental Bluetooth:** Opt-in manual inspection of
+          paired AJAZZ BLE mouse candidates. User chooses the device and
+          reads the standard GATT Battery Service (180F) / Level (2A19).
+          No pairing, GATT writes or background BLE polling. Support
+          depends on real hardware exposing the standard service.
 
           **Hardware acceptance:** Both platforms can copy a local
           diagnostic report to the clipboard. The release includes a
@@ -171,9 +177,9 @@ jobs:
           Clock display update still needs real-device confirmation.
 
           **Protocol:** USB VID 3151 PID 5007, vendor HID usage FFFF:0002.
-          **Not supported yet:** Bluetooth, charging state, two receivers
-          distinguished at once. Mac low-battery alerts and login autostart
-          are not yet included.
+          **Not supported yet:** Automatic Bluetooth monitoring, charging
+          state, two receivers distinguished at once, and Mac Bluetooth.
+          macOS notifications and Start at Login are now optional.
 
           Windows recommended installer: AJAZZBatteryTray-Setup-win-x64.exe
           Installs to Program Files, provides Start menu and standard uninstall.
@@ -193,6 +199,6 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.8" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.9" \
               --notes-file notes.md --prerelease
           fi
