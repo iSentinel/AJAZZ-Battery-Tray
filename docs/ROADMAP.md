@@ -29,6 +29,8 @@
   on actual AJ179/APEX and AJ159/APEX hardware.
 - [x] Windows manual, paired-only Bluetooth GATT Battery Level inspector
   (experimental; the user chooses a device and initiates each read).
+- [x] macOS manual, already-connected CoreBluetooth Battery Service inspector
+  (experimental; no scanning, pairing, device IDs persisted or background reads).
 - [ ] Verify standard Battery Service on actual AJ179/AJ159 BLE hardware.
 - [ ] Add model-matched Bluetooth reporting to the tray when verified.
 - [ ] Model-matched Bluetooth battery reporting where available.
