@@ -227,5 +227,41 @@ Check("BLE generic paired mouse visible with Show all",
 Check("BLE unnamed endpoint visible with Show all",
     BluetoothBatteryRules.ShouldShow(null, true));
 
+// Automatic BLE fallback requires explicit opt-in and a direct GATT reading.
+BluetoothAutoPolicy automaticBle = new();
+Check("BLE auto disabled by default", !automaticBle.Enabled);
+Check("BLE no polling without opt-in", !automaticBle.ShouldRead(false, t0));
+automaticBle.Enable(83, t0);
+Check("BLE fresh 83% visible without USB", automaticBle.VisiblePercent(
+    false, t0.AddSeconds(10)) == 83);
+Check("USB receiver always takes priority", automaticBle.VisiblePercent(
+    true, t0.AddSeconds(10)) is null);
+Check("BLE no read before one minute", !automaticBle.ShouldRead(
+    false, t0.AddSeconds(59)));
+Check("BLE read due after one minute", automaticBle.ShouldRead(
+    false, t0.AddSeconds(60)));
+Check("BLE no background read while USB present", !automaticBle.ShouldRead(
+    true, t0.AddMinutes(5)));
+Check("BLE reading expires instead of staying stale", automaticBle.VisiblePercent(
+    false, t0.AddSeconds(121)) is null);
+Check("BLE rejects Windows cached source", !BluetoothAutoPolicy.IsDirectGatt(
+    "Battery reported by Windows (cached; may be stale)."));
+Check("BLE accepts direct GATT source", BluetoothAutoPolicy.IsDirectGatt(
+    "Fresh GATT Battery Level (2A19) read."));
+automaticBle.RecordRead(82, true, t0.AddMinutes(2));
+Check("BLE direct refresh updates percent", automaticBle.VisiblePercent(
+    false, t0.AddMinutes(2)) == 82);
+automaticBle.RecordRead(77, false, t0.AddMinutes(3));
+Check("BLE failed direct read clears value", automaticBle.VisiblePercent(
+    false, t0.AddMinutes(3)) is null);
+automaticBle.RecordRead(0, true, t0.AddMinutes(4));
+Check("BLE zero accepted from valid GATT", automaticBle.VisiblePercent(
+    false, t0.AddMinutes(4)) == 0);
+Check("BLE backward clock correction triggers read", automaticBle.ShouldRead(
+    false, t0.AddMinutes(-2)));
+automaticBle.Disable();
+Check("BLE disable erases transient reading", !automaticBle.Enabled &&
+    automaticBle.VisiblePercent(false, t0.AddMinutes(4)) is null);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
