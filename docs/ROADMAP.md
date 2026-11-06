@@ -26,7 +26,8 @@
 
 ## Stage 2 — Dock customization
 
-- [ ] Read-only dock model and display capability identification.
+- [x] Read-only dock product string and USB revision (Windows); product name on macOS.
+- [ ] Display capability identification and screen-controller version (unverified).
 - [ ] Validate reversible RGB brightness / effect protocol on AJ179 APEX.
 - [ ] Capture known-good original settings and demonstrate read-back.
 - [ ] Only after validation: RGB UI with explicit apply/reset controls.
@@ -65,6 +66,16 @@ Before promoting any experimental feature to supported:
 2. Test on hardware, record before/after/read-back and recoverability.
 3. Validate sleep/wake, unplug/replug, reconnect and simultaneous vendor app.
 4. Pass Windows/macOS CI, app packaging and release checksums.
+
+## Current Stage 2 evidence
+
+Safe Windows HID calls: `HidD_GetProductString` and `HidD_GetAttributes`
+from Microsoft's documented APIs. They return metadata without vendor
+configuration commands. USB `VersionNumber` is a device revision,
+**not** firmware version.
+
+- https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/hidsdi/nf-hidsdi-hidd_getproductstring
+- https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/hidsdi/nf-hidsdi-hidd_getattributes
 
 ## Protocol references
 

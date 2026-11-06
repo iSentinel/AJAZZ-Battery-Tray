@@ -6,6 +6,8 @@ Intel (x86_64) and Apple Silicon (arm64).
 
 ## Compatibility and limitations
 
+- Read-only Device diagnostics in the menu shows the HID product string
+  and matching collection count, never a serial number.
 - Tries the vendor-defined HID status interface on USB receiver
   `VID_3151:PID_5007`, usage page `0xFFFF`, usage `0x02`.
 - The receiver/protocol is documented for AJ159 APEX and has been confirmed

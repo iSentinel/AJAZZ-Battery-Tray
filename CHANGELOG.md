@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-beta.2 (2026-11-06)
+- Stage 2 start: read-only AJAZZ 8K dock product identification.
+- Windows: read HID product string and bcdDevice revision (not firmware).
+- macOS: read HID product string in the menu-bar diagnostics dialog.
+- No unverified RGB, image, GIF, DPI or profile commands were added.
+
+
 ## 0.3.0-beta.1 (2026-11-06)
 - Add Windows battery history with a built-in 24h/7d/30d chart.
 - Store state transitions in local CSV with a 30-day retention limit.
