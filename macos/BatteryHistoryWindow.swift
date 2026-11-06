@@ -55,7 +55,7 @@ final class BatteryHistoryChart: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         NSColor.windowBackgroundColor.setFill()
-        NSRectFill(bounds)
+        NSBezierPath(rect: bounds).fill()
         let plot = NSRect(x: 57, y: 45, width: max(1, bounds.width - 83),
                           height: max(1, bounds.height - 70))
         drawGrid(plot)
