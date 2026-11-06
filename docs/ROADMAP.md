@@ -29,6 +29,10 @@
   on actual AJ179/APEX and AJ159/APEX hardware.
 - [x] Add bounded manual BLE UI requests and test timeouts on Windows.
 - [x] Handle Windows LE/Classic paired endpoints and generic paired names.
+- [x] Isolate failed or slow Windows LE/Classic enumeration and show safe
+  per-transport counts in the manual Bluetooth dialog.
+- [ ] Confirm new diagnostics and actual battery reading on a paired AJ179 APEX
+  running Windows with its 2.4 GHz receiver disconnected.
 - [x] Offer Windows cached battery as a labelled fallback (not necessarily live).
 - [ ] Validate Bluetooth battery discovery and Windows cached value on a
   physical AJ179 APEX with 2.4 GHz receiver disconnected.
