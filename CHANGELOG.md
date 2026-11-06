@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-beta.21 (2026-11-07)
+- Treat Windows USB/HID enumeration failures as unknown rather than unplugged.
+- Prevent false USB disconnect history, notifications and Bluetooth handover.
+- Block automatic/manual BLE polling until receiver absence is confirmed.
+- Restore USB-first status after the next successful HID enumeration.
+- Test present, absent and unknown receiver state with 11 regression checks.
+- Keep approved HID commands unchanged; no new wireless writes.
+
+
 ## 0.3.0-beta.20 (2026-11-07)
 - Recover Windows automatic dock RTC synchronization after the system clock
   moves backward instead of delaying updates until the old clock is reached.

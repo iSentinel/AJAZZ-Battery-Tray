@@ -35,6 +35,10 @@
 - [x] Windows battery chart (24h/7d/30d).
 - [x] Windows read-only interface diagnostics (VID/PID/HID usage/length).
 - [x] Optional Windows receiver-disconnect warning with debounce.
+- [x] Treat Windows HID enumeration failures as unknown, not confirmed USB
+  removal, to avoid incorrect BLE fallback and false disconnect alerts.
+- [ ] Validate recovery from temporary Windows HID enumeration errors on
+  physical AJ179 hardware.
 - [ ] Verify mouse reconnection, sleep, charging and clock updates on real dock.
 - [x] Document Bluetooth capabilities and standard GATT discovery plan.
 - [x] Verify 0x180F / 0x2A19 direct GATT battery read on AJ179 APEX:

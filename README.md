@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.19 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.21 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -160,6 +160,10 @@ verified read-back and a reliable recovery path exist.
   hardware test (2026-11-06). Automatic switching and reconnect behavior
   still require field validation. AJ159 APEX BLE remains unverified.
 - The tray prioritizes USB 2.4 GHz even if the attached mouse sleeps.
+  If Windows **cannot determine whether the receiver is present**, the app
+  treats that as **unknown**, not an unplug event: no false disconnect alert
+  and no switch to Bluetooth during that temporary HID enumeration failure.
+  Bluetooth fallback resumes only after USB absence is confirmed.
   Windows-cached Bluetooth values are displayed in the manual inspector
   but are **not** used for automatic battery monitoring.
 - macOS Bluetooth remains manual and experimental.

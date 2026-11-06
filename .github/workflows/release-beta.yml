@@ -120,9 +120,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.20"
+          TAG="v0.3.0-beta.21"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.20 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.21 — Windows and macOS
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -146,6 +146,11 @@ jobs:
           **Windows dock RTC scheduling:** A system clock adjustment backwards
           now permits the next automatic sync immediately, without repeatedly
           sending the command. Physical dock display verification is pending.
+
+          **Windows USB state safety:** HID enumeration failures now
+          remain unknown rather than simulating physical USB removal.
+          Unknown USB status cannot trigger false unplug warnings,
+          disconnected history rows or an automatic Bluetooth handover.
 
           **Cross-platform CSV history reliability:** Strictly validate
           battery percent and connection state, skip bad rows without
@@ -259,7 +264,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.20" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.21" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

@@ -5,7 +5,9 @@ namespace AjazzBatteryTray;
 /// <summary>Queries the shared AJAZZ APEX 8K receiver vendor collection.</summary>
 public sealed class AjazzHidReader
 {
-    public sealed record Reading(bool ReceiverPresent, int? Percent, string Details);
+    /// <summary>PresenceKnown is false when Windows could not enumerate USB.</summary>
+    public sealed record Reading(bool ReceiverPresent, int? Percent,
+        string Details, bool PresenceKnown = true);
 
     public Reading Read()
     {
@@ -28,7 +30,8 @@ public sealed class AjazzHidReader
         catch (Exception error)
         {
             FileLog.Write("WARN", "HID read failed", error);
-            return new Reading(false, null, "HID read error; see log");
+            return new Reading(false, null, "HID read error; see log",
+                PresenceKnown: false);
         }
     }
 

@@ -370,6 +370,38 @@ Check("disabled BLE not shown in tray", fallbackOff.Source ==
     BatteryTransport.Usb24GHz && !fallbackOff.HasReading);
 Check("no USB disconnect alert during BLE fallback",
     !BatteryDisplayState.NotifyReceiverDisconnect(true, true));
+// Windows HID enumeration failure is unknown, not physical USB removal.
+Check("unknown USB state treated as present for alerts",
+    BatteryDisplayState.SafeReceiverPresent(false, false));
+Check("confirmed USB absence stays absent",
+    !BatteryDisplayState.SafeReceiverPresent(false, true));
+Check("confirmed USB presence stays present",
+    BatteryDisplayState.SafeReceiverPresent(true, true));
+Check("unknown USB cannot activate BLE fallback",
+    !BatteryDisplayState.MayUseBluetooth(false, false));
+Check("confirmed absence may activate opted-in BLE",
+    BatteryDisplayState.MayUseBluetooth(false, true));
+Check("present USB cannot activate BLE fallback",
+    !BatteryDisplayState.MayUseBluetooth(true, true));
+BatteryDisplayState uncertainUsb = BatteryDisplayState.Resolve(
+    false, null, true, 83, presenceKnown: false);
+Check("unknown USB status suppresses stale BLE reading",
+    uncertainUsb.Source == BatteryTransport.Usb24GHz &&
+    uncertainUsb.Percent is null);
+Check("unknown USB status becomes unavailable history",
+    BatteryHistoryRules.State(
+        BatteryDisplayState.SafeReceiverPresent(false, false),
+        null) == "unavailable");
+ConnectionAlertPolicy transientError = new();
+transientError.Evaluate(true, true);
+Check("HID error does not count as disconnected",
+    !transientError.Evaluate(false,
+        BatteryDisplayState.SafeReceiverPresent(false, false)));
+Check("first confirmed missing poll after error ignored",
+    !transientError.Evaluate(false, false));
+Check("second confirmed missing poll raises warning",
+    transientError.Evaluate(false, false));
+
 Check("USB disconnect alert preserved without BLE",
     BatteryDisplayState.NotifyReceiverDisconnect(true, false));
 

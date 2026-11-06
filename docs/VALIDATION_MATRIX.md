@@ -15,6 +15,8 @@ is not evidence that a dock clock or wireless handover works on hardware.
 | Bluetooth retry delay | 1 / 2 / 5 / 10 minutes after repeated failures | **Pending:** sleeping/waking AJ179 APEX |
 | Manual Bluetooth refresh | User initiated, selected paired device only | **Pending:** real sleep recovery |
 | Windows low-battery and receiver alerts | Implemented and unit tested | **Pending:** real low-battery and disconnect scenario |
+| Temporary Windows HID enumeration error | Unknown state kept separate from confirmed USB absence in code | **Pending:** real transient HID error |
+
 | USB receiver disconnect and reconnect | State-handling code and unit tests | **Pending:** real sleep/replug matrix |
 | Dock time and date sync | Documented 0x28 report implemented and tested | **Pending:** visibly confirm clock update on dock screen |
 | AJ159 APEX via 8K receiver | Experimental shared-receiver implementation | **Pending:** actual AJ159 hardware |

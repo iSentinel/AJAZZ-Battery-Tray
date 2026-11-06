@@ -210,16 +210,22 @@ public sealed class TrayAppContext : ApplicationContext
     private void UpdateBluetoothStatus()
     {
         bool usbPresent = _latestUsbReading?.ReceiverPresent ?? false;
-        _bluetoothStatus.Text = _bluetoothPolicy.StatusText(
-            usbPresent, _bluetoothReadInFlight, DateTimeOffset.UtcNow);
+        bool presenceKnown = _latestUsbReading?.PresenceKnown ?? false;
+        _bluetoothStatus.Text = !_bluetoothPolicy.Enabled
+            ? "Bluetooth fallback: off"
+            : presenceKnown
+                ? _bluetoothPolicy.StatusText(
+                    usbPresent, _bluetoothReadInFlight, DateTimeOffset.UtcNow)
+                : "Bluetooth fallback: paused (receiver status unknown)";
         _refreshBluetooth.Enabled = !_closing && !_bluetoothReadInFlight &&
-            _bluetoothSelection is not null &&
+            presenceKnown && _bluetoothSelection is not null &&
             _bluetoothPolicy.CanRefreshNow(usbPresent);
     }
 
     private void CopyBluetoothStatus()
     {
         string usb = _latestUsbReading is null ? "not checked" :
+            !_latestUsbReading.PresenceKnown ? "unknown (HID error)" :
             _latestUsbReading.ReceiverPresent ? "present" : "absent";
         string last = _bluetoothPolicy.LastSuccessfulRead?.ToString("O") ?? "never";
         string attempt = _bluetoothPolicy.LastAttempt?.ToString("O") ?? "never";
@@ -351,7 +357,7 @@ public sealed class TrayAppContext : ApplicationContext
             if (!_closing)
             {
                 _latestUsbReading = new AjazzHidReader.Reading(
-                    false, null, "Unexpected error");
+                    false, null, "Unexpected error", PresenceKnown: false);
                 ApplyReading(_latestUsbReading);
             }
         }
@@ -393,6 +399,7 @@ public sealed class TrayAppContext : ApplicationContext
     private void StartBluetoothPoll(bool receiverPresent, bool force = false)
     {
         BluetoothCandidate? selected = _bluetoothSelection;
+        if (_latestUsbReading is not { PresenceKnown: true }) return;
         if (_closing || _bluetoothReadInFlight || selected is null ||
             !_bluetoothPolicy.CanRefreshNow(receiverPresent) ||
             (!force && !_bluetoothPolicy.ShouldRead(receiverPresent,
@@ -455,11 +462,14 @@ public sealed class TrayAppContext : ApplicationContext
         bool connected = reading.Percent.HasValue;
         if (_settings.RecordBatteryHistory)
         {
-            _history.Record(DateTimeOffset.UtcNow, reading.Percent, reading.ReceiverPresent);
+            _history.Record(DateTimeOffset.UtcNow, reading.Percent,
+                BatteryDisplayState.SafeReceiverPresent(
+                    reading.ReceiverPresent, reading.PresenceKnown));
         }
 
         bool receiverLost = _connectionAlerts.Evaluate(
-            connected, reading.ReceiverPresent);
+            connected, BatteryDisplayState.SafeReceiverPresent(
+                reading.ReceiverPresent, reading.PresenceKnown));
         if (_settings.NotifyOnDisconnect &&
             BatteryDisplayState.NotifyReceiverDisconnect(
                 receiverLost, _bluetoothPolicy.Enabled))
@@ -486,11 +496,12 @@ public sealed class TrayAppContext : ApplicationContext
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
     private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
     {
-        int? blePercent = _bluetoothPolicy.VisiblePercent(
-            reading.ReceiverPresent, DateTimeOffset.UtcNow);
+        int? blePercent = reading.PresenceKnown
+            ? _bluetoothPolicy.VisiblePercent(
+                reading.ReceiverPresent, DateTimeOffset.UtcNow) : null;
         BatteryDisplayState display = BatteryDisplayState.Resolve(
             reading.ReceiverPresent, reading.Percent,
-            _bluetoothPolicy.Enabled, blePercent);
+            _bluetoothPolicy.Enabled, blePercent, reading.PresenceKnown);
         int? displayPercent = display.Percent;
         bool displayConnected = display.HasReading;
         string source = display.SourceName;
