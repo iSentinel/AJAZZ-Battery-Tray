@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.18 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.19 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -193,6 +193,12 @@ The history is written locally to
 five minutes unless the charge or connection state changes. Data older than 30
 days is automatically pruned and storage is capped at 20,000 observations.
 Use the **Record battery history** menu option to disable collection.
+The Windows history reader validates each CSV observation: an `online`
+row requires a battery percentage, while disconnected/unavailable rows must
+have an empty value. Corrupt rows are skipped without discarding other data.
+The on-disk schema remains unchanged, and a valid `0%` record is preserved
+if supplied by a future supported source. This does **not** change the USB
+receiver rule: its zero-valued HID status remains unknown, never 0%.
 
 The chart intentionally **does not predict remaining runtime**: voltage-based
 battery percentages, charging state and awake/idle time are not sufficiently

@@ -16,6 +16,8 @@
              Link="DockClockSchedule.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BatteryHistory.cs"
              Link="BatteryHistory.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/BatteryHistoryCsv.cs"
+             Link="BatteryHistoryCsv.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ConnectionAlertPolicy.cs"
              Link="ConnectionAlertPolicy.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AppSettings.cs"

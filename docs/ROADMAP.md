@@ -24,6 +24,10 @@
 - [x] USB receiver detection and unknown/sleep handling.
 - [x] Manual and automatic dock RTC sync (command 0x28).
 - [x] Windows battery history (CSV, state transitions, max 30 days).
+- [x] Validate existing Windows/macOS history CSV rows consistently,
+  including 0%, missing values, invalid states and headerless recovery.
+- [x] Retry failed macOS history writes and recover after system time moves
+  backward without changing the CSV file format.
 - [x] Windows battery chart (24h/7d/30d).
 - [x] Windows read-only interface diagnostics (VID/PID/HID usage/length).
 - [x] Optional Windows receiver-disconnect warning with debounce.

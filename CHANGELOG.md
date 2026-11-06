@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0-beta.19 (2026-11-07)
+- Share a strict, hardware-independent Windows battery history CSV codec.
+- Preserve valid 0% history rows and reject incomplete or contradictory
+  online/disconnected/unavailable rows, bad dates and out-of-range values.
+- Keep the existing CSV schema and recover readable rows from headerless files.
+- Align the macOS history parser with the same CSV validation rules.
+- Retry macOS history writes after disk errors and pruning failures.
+- Record a new macOS sample after a backward system-clock correction.
+- Add Windows CSV round-trip tests and macOS history self-test checks.
+- The USB HID zero-value report still means unknown; no new device commands.
+
+# Changelog
+
 ## Unreleased — hardware evidence clarification
 - Add a capability-by-capability validation matrix separating CI and
   actual AJ179 APEX observations.

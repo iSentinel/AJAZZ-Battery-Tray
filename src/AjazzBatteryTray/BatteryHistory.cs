@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace AjazzBatteryTray;
 
 /// <summary>Battery reading or receiver state at one UTC instant.</summary>
@@ -28,7 +26,7 @@ public static class BatteryHistoryRules
 /// <summary>Small, human-readable history stored on the user's computer.</summary>
 public sealed class BatteryHistory
 {
-    private const string Header = "utc_timestamp,percent,state";
+
     public static string FilePath => Path.Combine(
         AppSettings.DirectoryPath, "battery-history.csv");
 
@@ -51,8 +49,8 @@ public sealed class BatteryHistory
             bool needsHeader = !File.Exists(FilePath);
             using (StreamWriter writer = new(FilePath, append: true))
             {
-                if (needsHeader) writer.WriteLine(Header);
-                writer.WriteLine(Format(sample));
+                if (needsHeader) writer.WriteLine(BatteryHistoryCsv.Header);
+                writer.WriteLine(BatteryHistoryCsv.Format(sample));
             }
 
             _last = sample;
@@ -82,36 +80,15 @@ public sealed class BatteryHistory
     {
         IReadOnlyList<BatterySample> points = BatteryHistoryRules.Retain(ReadFile(), now);
         string temporary = FilePath + ".tmp";
-        File.WriteAllLines(temporary, new[] { Header }.Concat(points.Select(Format)));
+        File.WriteAllLines(temporary, new[] { BatteryHistoryCsv.Header }
+            .Concat(points.Select(BatteryHistoryCsv.Format)));
         File.Move(temporary, FilePath, overwrite: true);
         _lastPrune = now.UtcDateTime;
     }
 
     private static IEnumerable<BatterySample> ReadFile()
-        => File.ReadLines(FilePath).Skip(1).Select(Parse)
-               .Where(x => x is not null).Cast<BatterySample>();
-
-    private static string Format(BatterySample value)
-        => $"{value.Timestamp:O}," +
-           $"{value.Percent?.ToString(CultureInfo.InvariantCulture) ?? ""},{value.State}";
-
-    private static BatterySample? Parse(string text)
-    {
-        string[] parts = text.Split(',');
-        if (parts.Length != 3 ||
-            !DateTimeOffset.TryParse(parts[0], CultureInfo.InvariantCulture,
-                DateTimeStyles.RoundtripKind, out DateTimeOffset timestamp)) return null;
-
-        int? percent = null;
-        if (parts[1].Length > 0)
-        {
-            if (!int.TryParse(parts[1], NumberStyles.None,
-                CultureInfo.InvariantCulture, out int value) ||
-                value is < 1 or > 100) return null;
-            percent = value;
-        }
-
-        if (parts[2] is not ("online" or "unavailable" or "disconnected")) return null;
-        return new BatterySample(timestamp, percent, parts[2]);
-    }
+        => File.ReadLines(FilePath)
+            .Where(x => x != BatteryHistoryCsv.Header)
+            .Select(BatteryHistoryCsv.Parse)
+            .OfType<BatterySample>();
 }

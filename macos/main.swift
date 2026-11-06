@@ -566,11 +566,23 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         BatteryHistoryWriter.shouldRecord(
         previous: "70|online", current: "69|online", secondsSinceLast: 60) &&
         BatteryHistoryWriter.shouldRecord(
-        previous: "70|online", current: "70|online", secondsSinceLast: 301)
+        previous: "70|online", current: "70|online", secondsSinceLast: 301) &&
+        BatteryHistoryWriter.shouldRecord(
+        previous: "70|online", current: "70|online", secondsSinceLast: -60)
     let chartValid = BatteryHistoryReader.parse(
         "2026-11-06T12:00:00Z,73,online")?.percent == 73 &&
         BatteryHistoryReader.parse(
+            "2026-11-06T12:00:00Z,0,online")?.percent == 0 &&
+        BatteryHistoryReader.parse(
             "2026-11-06T12:00:00Z,,disconnected")?.state == "disconnected" &&
+        BatteryHistoryReader.parse(
+            "2026-11-06T12:00:00Z,,unavailable")?.percent == nil &&
+        BatteryHistoryReader.parse(
+            "2026-11-06T12:00:00Z,,online") == nil &&
+        BatteryHistoryReader.parse(
+            "2026-11-06T12:00:00Z,1,disconnected") == nil &&
+        BatteryHistoryReader.parse(
+            "2026-11-06T12:00:00Z,101,online") == nil &&
         BatteryHistoryReader.parse(
             "2026-11-06T12:00:00Z,255,online") == nil &&
         BatteryHistoryReader.parse(
