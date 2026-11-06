@@ -1,0 +1,99 @@
+name: AJAZZ hardware validation
+description: Report real AJ179/AJ159 battery, Bluetooth or dock-clock behavior.
+title: "Hardware validation: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to validate hardware behavior separately from CI.
+        Never post Bluetooth addresses, USB device IDs, serial numbers,
+        unredacted USB captures, or private paths. Close the official AJAZZ
+        utility before testing so two applications do not compete for HID access.
+  - type: dropdown
+    id: model
+    attributes:
+      label: Mouse model
+      options:
+        - AJ179 APEX
+        - AJ159 APEX
+        - Other AJAZZ model
+        - Unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS Apple Silicon
+        - macOS Intel
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Application version
+      description: Example v0.3.0-beta.13
+      placeholder: v0.3.0-beta.13
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection tested
+      options:
+        - Bluetooth LE
+        - Bluetooth Classic
+        - 2.4 GHz / 8K receiver
+        - USB cable
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: observations
+    attributes:
+      label: What happened?
+      description: Include steps and what the operating system reported.
+      placeholder: |
+        1. Windows shows AJAZZ battery percentage of ...
+        2. Battery Tray -> Check paired Bluetooth battery...
+        3. Show all paired devices -> Find...
+        Expected: ...
+        Actual: ...
+    validations:
+      required: true
+  - type: textarea
+    id: bluetooth_lookup
+    attributes:
+      label: Bluetooth lookup summary (optional)
+      description: Paste ONLY the result of Copy lookup summary. Do not paste device IDs.
+      placeholder: "Found 1 BLE and 0 Classic paired endpoints..."
+  - type: dropdown
+    id: dock_clock
+    attributes:
+      label: Dock clock synchronization
+      options:
+        - Not tested
+        - Date and time updated correctly
+        - HID command sent, screen did not change
+        - Dock did not respond
+        - No dock with display
+  - type: dropdown
+    id: sleep_reconnect
+    attributes:
+      label: Mouse sleep and reconnect
+      options:
+        - Not tested
+        - Recovery works after sleep/reconnect
+        - Battery stopped updating until app restart
+        - Missing receiver or mouse wrongly reported 0%
+        - Other
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I reviewed this report and removed all private device identifiers and raw USB captures.
+          required: true
