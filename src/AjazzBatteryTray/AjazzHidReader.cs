@@ -53,7 +53,7 @@ public sealed class AjazzHidReader
 
                 byte[] frame = DockClockReport.Create(
                     localTime, caps.FeatureReportByteLength);
-                if (HidNative.HidD_SetFeature(handle, frame, frame.Length))
+                if (HidNative.SendApprovedFeature(handle, frame))
                 {
                     return true;
                 }
@@ -104,7 +104,7 @@ public sealed class AjazzHidReader
         // 00 F7 00... is the receiver's documented zero-payload status poll.
         byte[] poll = new byte[length];
         poll[1] = 0xF7;
-        if (!HidNative.HidD_SetFeature(handle, poll, length))
+        if (!HidNative.SendApprovedFeature(handle, poll))
         {
             return null;
         }

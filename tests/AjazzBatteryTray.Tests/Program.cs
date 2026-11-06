@@ -109,5 +109,32 @@ Check("receiver present asleep ignored", !disconnectPolicy.Evaluate(false, true)
 Check("disconnect alert after reconnect", !disconnectPolicy.Evaluate(false, false) &&
     disconnectPolicy.Evaluate(false, false));
 
+// Stop unknown or malformed HID writes before they reach the receiver.
+byte[] telemetry = new byte[65];
+telemetry[1] = 0xF7;
+Check("safe telemetry allowed", HidFeaturePolicy.IsApproved(telemetry));
+Check("safe dock clock allowed", HidFeaturePolicy.IsApproved(clock));
+Check("blocked button matrix command", !AllowedCommand(0x50));
+Check("blocked screen upload", !AllowedCommand(0x25));
+Check("blocked 24-bit display upload", !AllowedCommand(0x29));
+Check("blocked GIF begin", !AllowedCommand(0x18));
+Check("blocked firmware bootloader", !AllowedCommand(0x40));
+byte[] damagedClock = (byte[])clock.Clone();
+damagedClock[8] = 0;
+Check("clock marker required", !HidFeaturePolicy.IsApproved(damagedClock));
+damagedClock = (byte[])clock.Clone();
+damagedClock[12] = 31;
+damagedClock[11] = 2;
+Check("impossible date rejected", !HidFeaturePolicy.IsApproved(damagedClock));
+telemetry[5] = 42;
+Check("nonzero telemetry payload blocked", !HidFeaturePolicy.IsApproved(telemetry));
+
+bool AllowedCommand(byte opcode)
+{
+    byte[] frame = new byte[65];
+    frame[1] = opcode;
+    return HidFeaturePolicy.IsApproved(frame);
+}
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

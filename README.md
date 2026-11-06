@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.2 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.3 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -27,6 +27,9 @@ be ambiguous.
 - Windows low-battery notifications at 20%, 10% and 5%, without repeated alerts.
 - Poll every 15, 30 (default), 60 or 120 seconds; double-click to refresh.
 - Optional autostart for the current Windows user (no administrator rights).
+- **HID command guard:** only documented battery poll and dock RTC packets are
+  permitted to reach the device; all other vendor SET_FEATURE opcodes are
+  rejected before transmission.
 - **Dock Clock Sync:** set the 8K dock's screen clock to the computer's local time.
   Automatically on connection and every five minutes, or manually from the tray.
 - **Windows Battery History:** local 30-day CSV history with a 24-hour,
@@ -162,6 +165,14 @@ Use the **Record battery history** menu option to disable collection.
 The chart intentionally **does not predict remaining runtime**: voltage-based
 battery percentages, charging state and awake/idle time are not sufficiently
 validated to make that prediction trustworthy.
+
+## Safe HID operations
+
+A strict command policy blocks unknown or malformed feature-report writes.
+On Windows it explicitly permits the zero-payload battery poll `0xF7`
+and the correctly encoded clock packet `0x28`, and rejects
+button-map, display/GIF and bootloader commands. A matching guard is included
+in the macOS app. There is no UI to bypass this safety check.
 
 ## Safe device diagnostics
 

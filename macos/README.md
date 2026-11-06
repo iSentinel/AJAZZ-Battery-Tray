@@ -23,6 +23,8 @@ Intel (x86_64) and Apple Silicon (arm64).
   reports with or without an included report-ID byte.
 - For AJ159 APEX, only the **8K dock** with `3151:5007` is targeted;
   alternative `3151:4026` and `3151:4027` receivers are not supported.
+- A runtime allowlist permits only the documented telemetry/RTC frames.
+  Screen/GIF, mouse button mapping and firmware packets are rejected.
 - Dock Clock Sync uses the documented 0x28 feature report, manually or every
   five minutes. It follows the HID framing used by the macOS open-source
   Ajazz clock-sync daemon and is still unverified on our real hardware.
