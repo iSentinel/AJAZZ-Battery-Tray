@@ -56,12 +56,17 @@ public sealed class BluetoothBatteryForm : Form
         SetBusy(true, "Searching already-paired LE devices...");
         try
         {
-            var candidates = await BluetoothBatteryReader.FindPairedAsync();
+            var candidates = await BluetoothOperationTimeout.Run(
+                BluetoothBatteryReader.FindPairedAsync(), TimeSpan.FromSeconds(12));
             _devices.Items.Clear();
             foreach (BluetoothCandidate device in candidates) _devices.Items.Add(device);
             _result.Text = candidates.Count == 0
                 ? "No paired AJAZZ BLE candidates. Pair in Windows Settings first."
                 : $"{candidates.Count} candidate(s). Select one to read Battery Level.";
+        }
+        catch (TimeoutException)
+        {
+            _result.Text = "Paired device lookup timed out. Check Windows Bluetooth.";
         }
         catch (Exception error)
         {
@@ -81,10 +86,15 @@ public sealed class BluetoothBatteryForm : Form
         SetBusy(true, "Reading selected mouse's GATT Battery Service...");
         try
         {
-            var result = await BluetoothBatteryReader.ReadAsync(selected);
+            var result = await BluetoothOperationTimeout.Run(
+                BluetoothBatteryReader.ReadAsync(selected), TimeSpan.FromSeconds(15));
             _result.Text = result.Percent.HasValue
                 ? $"{selected.DisplayName}: {result.Percent}% (BLE experimental)"
                 : result.Status + " No battery percentage inferred.";
+        }
+        catch (TimeoutException)
+        {
+            _result.Text = "Bluetooth Battery Service read timed out. Try waking the mouse.";
         }
         catch (Exception error)
         {
