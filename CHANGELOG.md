@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — hardware evidence clarification
+- Add a capability-by-capability validation matrix separating CI and
+  actual AJ179 APEX observations.
+- Document the direct Bluetooth GATT 83% hardware result and remaining
+  sleep/wake, USB handover, RTC and AJ159 acceptance steps.
+- Consolidate duplicate pending Bluetooth roadmap items without claiming
+  unverified hardware support.
+
+
 ## 0.3.0-beta.18 (2026-11-06)
 - Back off failed automatic Bluetooth GATT reads from one minute to two,
   five, then a maximum of ten minutes while the mouse is unavailable.
