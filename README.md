@@ -140,6 +140,11 @@ A [safe dock protocol capture guide](docs/DOCK_CAPTURE_GUIDE.md) is available
 for collecting reversible RGB/display evidence from the official software.
 No unverified configuration opcode is enabled in this app.
 
+A [read-only DPI and polling-rate research plan](docs/DPI_POLLING_READBACK.md)
+identifies vendor command candidates and lists hardware verification gates.
+It deliberately does **not** enable any untested HID requests or mouse
+configuration changes.
+
 For a clear distinction between successful CI builds and real mouse tests,
 see the [Hardware Validation Matrix](docs/VALIDATION_MATRIX.md). It includes
 AJ179 Bluetooth GATT confirmation (83%), remaining USB/BLE handover tests,

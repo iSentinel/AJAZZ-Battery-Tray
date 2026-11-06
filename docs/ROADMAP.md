@@ -119,6 +119,9 @@ read-back/round-trip and recovery test is recorded.
 - [x] Add strict HID write-command allowlists for Windows and macOS.
 - [x] Unit-test blocking of screen/GIF, key-matrix and firmware opcodes.
 
+- [x] Document vendor GET-side DPI, profile and polling opcode
+  candidates and the host-to-device transport safety warning.
+  See [Read-only research](DPI_POLLING_READBACK.md).
 - [ ] Validate safe GET-only read-back of DPI levels and polling rate.
 - [ ] Add explicit read-only reporting if a matching verified response exists.
 - [ ] Document actual DPI stage count and receiver limits per model.
