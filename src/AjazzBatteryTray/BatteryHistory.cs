@@ -80,7 +80,8 @@ public sealed class BatteryHistory
     {
         IReadOnlyList<BatterySample> points = BatteryHistoryRules.Retain(ReadFile(), now);
         string temporary = FilePath + ".tmp";
-        File.WriteAllLines(temporary, new[] { BatteryHistoryCsv.Header }.Concat(points.Select(BatteryHistoryCsv.Format)));
+        File.WriteAllLines(temporary, new[] { BatteryHistoryCsv.Header }
+            .Concat(points.Select(BatteryHistoryCsv.Format)));
         File.Move(temporary, FilePath, overwrite: true);
         _lastPrune = now.UtcDateTime;
     }
