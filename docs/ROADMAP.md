@@ -47,6 +47,8 @@
 
 - [x] Read-only dock product string and USB revision (Windows); product name on macOS.
 - [ ] Display capability identification and screen-controller version (unverified).
+- [x] Document safe USB capture of official dock commands and rollback.
+- [ ] Collect real AJ179 APEX before/after/readback traces for RGB/display.
 - [ ] Validate reversible RGB brightness / effect protocol on AJ179 APEX.
 - [ ] Capture known-good original settings and demonstrate read-back.
 - [ ] Only after validation: RGB UI with explicit apply/reset controls.
