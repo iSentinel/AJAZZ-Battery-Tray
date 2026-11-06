@@ -197,6 +197,17 @@ version, DPI and polling rate are explicitly shown as not yet queried:
 the corresponding read protocol has not been verified on AJ179 hardware.
 It does not enumerate private USB identifiers or send configuration commands.
 
+## Hardware acceptance
+
+Choose **Copy diagnostic report** in the Windows tray or macOS menu bar.
+It copies the app version, operating system and read-only receiver details
+without requesting serial numbers or private device paths.
+Review the clipboard text before sharing it.
+
+See [Hardware Acceptance Checklist](docs/HARDWARE_ACCEPTANCE.md) for safe
+real-device tests covering AJ179/AJ159, disconnect/reconnect, sleep/wake,
+dock clock, history and the experimental macOS features.
+
 ## Diagnostics
 
 - Settings: `%APPDATA%\AJAZZBatteryTray\settings.json`
