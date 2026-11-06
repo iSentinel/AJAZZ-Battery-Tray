@@ -173,6 +173,20 @@ Check("SetupAPI invalid parameter is not end",
     !HidEnumerationRules.IsNormalEnd(87));
 Check("SetupAPI error code zero is not end",
     !HidEnumerationRules.IsNormalEnd(0));
+Check("SetupAPI detail size probe accepts expected Win32 error",
+    HidEnumerationRules.IsExpectedSizeQueryError(122));
+Check("SetupAPI detail size probe rejects access denied",
+    !HidEnumerationRules.IsExpectedSizeQueryError(5));
+Check("SetupAPI detail size probe rejects false success",
+    !HidEnumerationRules.IsExpectedSizeQueryError(0));
+Check("SetupAPI detail size rejects short buffer",
+    !HidEnumerationRules.IsValidDetailSize(7));
+Check("SetupAPI detail size accepts minimum",
+    HidEnumerationRules.IsValidDetailSize(8));
+Check("SetupAPI detail size accepts maximum",
+    HidEnumerationRules.IsValidDetailSize(65536));
+Check("SetupAPI detail size rejects huge buffer",
+    !HidEnumerationRules.IsValidDetailSize(65537));
 
 // Stop unknown or malformed HID writes before they reach the receiver.
 byte[] telemetry = new byte[65];
