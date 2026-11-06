@@ -23,7 +23,7 @@ enum BatteryHistoryReader {
 
         let charge = Int(fields[1])
         if state == "online" {
-            guard let value = charge, (1...100).contains(value) else {
+            guard let value = charge, (0...100).contains(value) else {
                 return nil
             }
         } else if !fields[1].isEmpty {
@@ -38,7 +38,8 @@ enum BatteryHistoryReader {
             return []
         }
 
-        return csv.split(separator: "\n").dropFirst()
+        return csv.split(separator: "\n")
+            .filter { $0 != "utc_timestamp,percent,state" }
             .compactMap { parse(String($0)) }
             .filter { $0.timestamp >= start && $0.timestamp <= end }
             .sorted { $0.timestamp < $1.timestamp }
