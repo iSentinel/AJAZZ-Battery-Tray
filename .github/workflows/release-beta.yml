@@ -214,5 +214,5 @@ jobs:
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
               --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.12" \
-              --notes-file notes.md --prerelease
+              --notes-file notes.md --latest
           fi
