@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — release verification and field evidence
+- Check that each published release is GitHub's Latest, not a hidden pre-release.
+- Check all three distributions and their SHA-256 files after publishing.
+- Add a structured AJ179/AJ159 hardware test report with privacy checks.
+- No application code or HID commands changed.
+
+
 ## 0.3.0-beta.13 (2026-11-06)
 - Isolate Windows paired BLE and Classic enumeration failures.
 - Limit each transport's lookup time to eight seconds, retaining partial results.

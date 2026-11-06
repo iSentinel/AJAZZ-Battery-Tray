@@ -10,6 +10,8 @@
 - Pull requests run Windows and macOS checks; redundant feature-branch pushes
   should not queue duplicate builds.
 - Published release assets must never be silently overwritten.
+- [x] Verify future releases appear under GitHub Releases / Latest and
+  contain all three distributions and their SHA-256 files.
 - Every release requires Windows tests, installer install/uninstall smoke test,
   macOS universal build and tests, and checksums in GitHub Releases.
 - Real-device testing is separate from CI compilation.
