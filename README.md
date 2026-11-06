@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.3 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.4 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -68,6 +68,14 @@ Use the **Releases** section rather than GitHub Actions artifacts.
   new path.
 
 **macOS 13+ (Intel / Apple Silicon, experimental)**
+
+The macOS version records battery and connection history to
+`~/Library/Application Support/AJAZZBatteryTray/battery-history.csv`.
+Use **Open battery history folder...** in the menu bar to view/export data,
+or **Record battery history** to disable it. Collection records status changes
+and one sample at most every five minutes, retaining up to 30 days.
+The macOS graphical history viewer remains planned.
+
 
 Download `AJAZZBatteryTray-macOS-universal.zip`, extract it once, and move
 `AJAZZ Battery Tray.app` to Applications. See
