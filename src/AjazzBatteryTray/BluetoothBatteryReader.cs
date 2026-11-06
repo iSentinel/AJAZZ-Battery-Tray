@@ -111,14 +111,13 @@ public static class BluetoothBatteryReader
         return new BluetoothCandidate(name, item.Id, lowEnergy, cached);
     }
 
-    /// <summary>GATT read for BLE; Windows's cached property for Classic.</summary>
-    public static async Task<(int? Percent, string Status)> ReadAsync(
+    /// <summary>Read direct GATT when possible; label Windows cache separately.</summary>
+    public static async Task<BluetoothBatteryResult> ReadAsync(
         BluetoothCandidate selected)
     {
-        if (!selected.IsLowEnergy)
-            return ReadWindowsBattery(selected);
+        if (!selected.IsLowEnergy) return ReadWindowsBattery(selected);
 
-        (int? Percent, string Status) gatt;
+        BluetoothBatteryResult gatt;
         try
         {
             gatt = await ReadGattAsync(selected.DeviceId);
@@ -127,49 +126,50 @@ public static class BluetoothBatteryReader
         {
             FileLog.Write("WARN", "GATT read unavailable: " +
                 error.GetType().Name);
-            gatt = (null, "Unable to read the GATT Battery Service.");
+            gatt = Missing("Unable to read the GATT Battery Service.");
         }
 
-        if (gatt.Percent.HasValue) return gatt;
-        return selected.WindowsPercent.HasValue
-            ? (selected.WindowsPercent,
-                "Battery reported by Windows (cached; may be stale).")
-            : gatt;
+        return gatt.IsFreshGatt ? gatt :
+            selected.WindowsPercent.HasValue ? ReadWindowsBattery(selected) : gatt;
     }
 
-    private static (int?, string) ReadWindowsBattery(BluetoothCandidate selected)
+    private static BluetoothBatteryResult ReadWindowsBattery(
+        BluetoothCandidate selected)
         => selected.WindowsPercent.HasValue
-            ? (selected.WindowsPercent,
+            ? new(selected.WindowsPercent, BluetoothBatterySource.WindowsCached,
                 "Battery reported by Windows (cached; may be stale).")
-            : (null, "Windows does not expose a battery percentage for this endpoint.");
+            : Missing("Windows does not expose a battery percentage for this endpoint.");
 
-    private static async Task<(int? Percent, string Status)> ReadGattAsync(
-        string deviceId)
+    private static BluetoothBatteryResult Missing(string status)
+        => new(null, BluetoothBatterySource.Unavailable, status);
+
+    private static async Task<BluetoothBatteryResult> ReadGattAsync(string deviceId)
     {
-        using BluetoothLEDevice? device = await BluetoothLEDevice.FromIdAsync(deviceId);
+        using BluetoothLEDevice? device =
+            await BluetoothLEDevice.FromIdAsync(deviceId);
         if (device is null)
-            return (null, "BLE endpoint cannot be opened by Windows.");
+            return Missing("BLE endpoint cannot be opened by Windows.");
 
         var services = await device.GetGattServicesForUuidAsync(
             GattServiceUuids.Battery, BluetoothCacheMode.Uncached);
         if (services.Status != GattCommunicationStatus.Success)
-            return (null, "Battery Service is unavailable or the mouse is asleep.");
+            return Missing("Battery Service is unavailable or the mouse is asleep.");
         return await ReadServicesAsync(services.Services);
     }
 
-    private static async Task<(int?, string)> ReadServicesAsync(
+    private static async Task<BluetoothBatteryResult> ReadServicesAsync(
         IReadOnlyList<GattDeviceService> services)
     {
         try
         {
             if (services.Count == 0)
-                return (null, "Battery Service (180F) not exposed.");
+                return Missing("Battery Service (180F) not exposed.");
             foreach (GattDeviceService service in services)
             {
-                var result = await ReadServiceAsync(service);
-                if (result.Item1.HasValue) return result;
+                BluetoothBatteryResult result = await ReadServiceAsync(service);
+                if (result.IsFreshGatt) return result;
             }
-            return (null, "No readable standard Battery Level (2A19).");
+            return Missing("No readable standard Battery Level (2A19).");
         }
         finally
         {
@@ -177,23 +177,27 @@ public static class BluetoothBatteryReader
         }
     }
 
-    private static async Task<(int?, string)> ReadServiceAsync(
+    private static async Task<BluetoothBatteryResult> ReadServiceAsync(
         GattDeviceService service)
     {
         var found = await service.GetCharacteristicsForUuidAsync(
             GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Uncached);
         if (found.Status != GattCommunicationStatus.Success)
-            return (null, "Battery Level characteristic unavailable.");
+            return Missing("Battery Level characteristic unavailable.");
+
         foreach (GattCharacteristic characteristic in found.Characteristics)
         {
-            var read = await characteristic.ReadValueAsync(BluetoothCacheMode.Uncached);
+            var read = await characteristic.ReadValueAsync(
+                BluetoothCacheMode.Uncached);
             if (read.Status != GattCommunicationStatus.Success) continue;
             using DataReader reader = DataReader.FromBuffer(read.Value);
             byte[] value = new byte[read.Value.Length];
             reader.ReadBytes(value);
-            if (BluetoothBatteryRules.TryParseLevel(value, out int level))
-                return (level, "Fresh GATT Battery Level (2A19) read.");
+            if (BluetoothBatteryRules.TryParseLevel(value, out int percent))
+                return new(percent, BluetoothBatterySource.DirectGatt,
+                    "Fresh GATT Battery Level (2A19) read.");
         }
-        return (null, "Battery Level is absent or has an invalid value.");
+
+        return Missing("Battery Level is absent or has an invalid value.");
     }
 }
