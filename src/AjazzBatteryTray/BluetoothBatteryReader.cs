@@ -83,7 +83,18 @@ public static class BluetoothBatteryReader
         if (!selected.IsLowEnergy)
             return ReadWindowsBattery(selected);
 
-        var gatt = await ReadGattAsync(selected.DeviceId);
+        (int? Percent, string Status) gatt;
+        try
+        {
+            gatt = await ReadGattAsync(selected.DeviceId);
+        }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "GATT read unavailable: " +
+                error.GetType().Name);
+            gatt = (null, "Unable to read the GATT Battery Service.");
+        }
+
         if (gatt.Percent.HasValue) return gatt;
         return selected.WindowsPercent.HasValue
             ? (selected.WindowsPercent,
