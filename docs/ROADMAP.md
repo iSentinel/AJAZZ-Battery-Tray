@@ -39,6 +39,8 @@
 - [x] Optional Windows receiver-disconnect warning with debounce.
 - [x] Treat Windows HID enumeration failures as unknown, not confirmed USB
   removal, to avoid incorrect BLE fallback and false disconnect alerts.
+- [x] Check SetupAPI enumeration completion status: only Win32 259 ends
+  the scan; unexpected errors preserve unknown receiver presence.
 - [ ] Validate recovery from temporary Windows HID enumeration errors on
   physical AJ179 hardware.
 - [ ] Verify mouse reconnection, sleep, charging and clock updates on real dock.

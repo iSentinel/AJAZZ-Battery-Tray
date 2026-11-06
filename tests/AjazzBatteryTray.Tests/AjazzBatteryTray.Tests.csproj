@@ -26,6 +26,8 @@
              Link="FileLog.cs" />
     <Compile Include="../../src/AjazzBatteryTray/HidFeaturePolicy.cs"
              Link="HidFeaturePolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/HidEnumerationRules.cs"
+             Link="HidEnumerationRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothBatteryRules.cs"
              Link="BluetoothBatteryRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothOperationTimeout.cs"
