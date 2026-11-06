@@ -244,24 +244,59 @@ Check("BLE no background read while USB present", !automaticBle.ShouldRead(
     true, t0.AddMinutes(5)));
 Check("BLE reading expires instead of staying stale", automaticBle.VisiblePercent(
     false, t0.AddSeconds(121)) is null);
-Check("BLE rejects Windows cached source", !BluetoothAutoPolicy.IsDirectGatt(
-    "Battery reported by Windows (cached; may be stale)."));
-Check("BLE accepts direct GATT source", BluetoothAutoPolicy.IsDirectGatt(
-    "Fresh GATT Battery Level (2A19) read."));
-automaticBle.RecordRead(82, true, t0.AddMinutes(2));
+BluetoothBatteryResult direct = new(82, BluetoothBatterySource.DirectGatt,
+    "Display text can change without changing trust.");
+BluetoothBatteryResult cached = new(77, BluetoothBatterySource.WindowsCached,
+    "Fresh GATT Battery Level (2A19) read.");
+BluetoothBatteryResult missing = new(null, BluetoothBatterySource.Unavailable,
+    "No battery response");
+Check("typed GATT source accepts different display text", direct.IsFreshGatt);
+Check("typed Windows cache rejected despite misleading text", !cached.IsFreshGatt);
+Check("typed unavailable rejected", !missing.IsFreshGatt);
+Check("direct out-of-range rejected", !new BluetoothBatteryResult(
+    255, BluetoothBatterySource.DirectGatt, "GATT").IsFreshGatt);
+
+automaticBle.RecordRead(direct, t0.AddMinutes(2));
 Check("BLE direct refresh updates percent", automaticBle.VisiblePercent(
     false, t0.AddMinutes(2)) == 82);
-automaticBle.RecordRead(77, false, t0.AddMinutes(3));
-Check("BLE failed direct read clears value", automaticBle.VisiblePercent(
+automaticBle.RecordRead(cached, t0.AddMinutes(3));
+Check("BLE cached read clears current value", automaticBle.VisiblePercent(
     false, t0.AddMinutes(3)) is null);
-automaticBle.RecordRead(0, true, t0.AddMinutes(4));
+automaticBle.RecordRead(new BluetoothBatteryResult(0,
+    BluetoothBatterySource.DirectGatt, "GATT"), t0.AddMinutes(4));
 Check("BLE zero accepted from valid GATT", automaticBle.VisiblePercent(
     false, t0.AddMinutes(4)) == 0);
+automaticBle.RecordRead(missing, t0.AddMinutes(5));
+Check("BLE missing reading shows unknown", automaticBle.VisiblePercent(
+    false, t0.AddMinutes(5)) is null);
 Check("BLE backward clock correction triggers read", automaticBle.ShouldRead(
     false, t0.AddMinutes(-2)));
+
+BatteryDisplayState usb = BatteryDisplayState.Resolve(true, 83, true, 77);
+Check("USB receiver takes priority over BLE", usb.Source == BatteryTransport.Usb24GHz &&
+    usb.Percent == 83);
+BatteryDisplayState sleepingUsb = BatteryDisplayState.Resolve(true, null, true, 77);
+Check("sleeping USB mouse does not use BLE", sleepingUsb.Source ==
+    BatteryTransport.Usb24GHz && sleepingUsb.Percent is null);
+BatteryDisplayState activeBle = BatteryDisplayState.Resolve(false, null, true, 77);
+Check("absent USB uses BLE source", activeBle.Source ==
+    BatteryTransport.Bluetooth && activeBle.Percent == 77);
+BatteryDisplayState unavailableBle = BatteryDisplayState.Resolve(false,
+    null, true, null);
+Check("BLE unknown labelled as Bluetooth", unavailableBle.Source ==
+    BatteryTransport.Bluetooth && !unavailableBle.HasReading);
+BatteryDisplayState fallbackOff = BatteryDisplayState.Resolve(false,
+    null, false, 77);
+Check("disabled BLE not shown in tray", fallbackOff.Source ==
+    BatteryTransport.Usb24GHz && !fallbackOff.HasReading);
+Check("no USB disconnect alert during BLE fallback",
+    !BatteryDisplayState.NotifyReceiverDisconnect(true, true));
+Check("USB disconnect alert preserved without BLE",
+    BatteryDisplayState.NotifyReceiverDisconnect(true, false));
+
 automaticBle.Disable();
 Check("BLE disable erases transient reading", !automaticBle.Enabled &&
-    automaticBle.VisiblePercent(false, t0.AddMinutes(4)) is null);
+    automaticBle.VisiblePercent(false, t0.AddMinutes(5)) is null);
 
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
