@@ -14,6 +14,22 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Nonblocking Windows monitoring (v0.3.0-beta.16)
+
+The USB/2.4 GHz receiver poll now updates the tray **before** starting any
+automatic Bluetooth request. A slow or timed-out GATT operation no longer
+holds the USB poll timer or delays its screen/icon update.
+
+Bluetooth requests are still opt-in and limited to a single active request
+at a time. Enabling, disabling or changing the selected Bluetooth mouse
+increments a session generation. A result from an older generation is
+ignored instead of changing the new session's battery indicator.
+
+A completed GATT read updates the tray **without** re-recording an extra
+USB history sample or triggering duplicate USB connection/low-battery alerts.
+The Windows UI remains responsive while Bluetooth is pending. Physical
+handover, sleep/wake and delayed-response tests are still necessary.
+
 ## Windows source and reconnect hardening (v0.3.0-beta.15)
 
 Automatic Bluetooth fallback now relies on a **typed battery source**:

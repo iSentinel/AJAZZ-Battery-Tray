@@ -231,7 +231,10 @@ Check("BLE unnamed endpoint visible with Show all",
 BluetoothAutoPolicy automaticBle = new();
 Check("BLE auto disabled by default", !automaticBle.Enabled);
 Check("BLE no polling without opt-in", !automaticBle.ShouldRead(false, t0));
+int initialGeneration = automaticBle.Generation;
 automaticBle.Enable(83, t0);
+Check("BLE selection changes generation",
+    automaticBle.Generation == initialGeneration + 1);
 Check("BLE fresh 83% visible without USB", automaticBle.VisiblePercent(
     false, t0.AddSeconds(10)) == 83);
 Check("USB receiver always takes priority", automaticBle.VisiblePercent(
@@ -294,9 +297,17 @@ Check("no USB disconnect alert during BLE fallback",
 Check("USB disconnect alert preserved without BLE",
     BatteryDisplayState.NotifyReceiverDisconnect(true, false));
 
+int beforeDisableGeneration = automaticBle.Generation;
 automaticBle.Disable();
+Check("BLE disable invalidates pending request generation",
+    automaticBle.Generation == beforeDisableGeneration + 1);
 Check("BLE disable erases transient reading", !automaticBle.Enabled &&
     automaticBle.VisiblePercent(false, t0.AddMinutes(5)) is null);
+
+automaticBle.Enable(70, t0.AddMinutes(6));
+Check("BLE reselect invalidates old request generation",
+    automaticBle.Generation > beforeDisableGeneration + 1);
+automaticBle.Disable();
 
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

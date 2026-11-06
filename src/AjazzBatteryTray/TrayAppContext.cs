@@ -17,6 +17,8 @@ public sealed class TrayAppContext : ApplicationContext
     private BluetoothBatteryForm? _bluetoothWindow;
     private readonly BluetoothAutoPolicy _bluetoothPolicy = new();
     private BluetoothCandidate? _bluetoothSelection;
+    private bool _bluetoothReadInFlight;
+    private AjazzHidReader.Reading? _latestUsbReading;
     private readonly ToolStripMenuItem _bluetoothStatus = new();
     private readonly ToolStripMenuItem _disableBluetooth = new();
     private string _lastSource = "";
@@ -290,12 +292,10 @@ public sealed class TrayAppContext : ApplicationContext
             var result = await Task.Run(QueryAndSync);
             if (!_closing)
             {
-                await PollBluetoothFallbackAsync(result.Reading.ReceiverPresent);
-                if (!_closing)
-                {
-                    ApplyReading(result.Reading);
-                    ApplyClockResult(result.Attempted, result.Succeeded);
-                }
+                _latestUsbReading = result.Reading;
+                ApplyReading(result.Reading);
+                ApplyClockResult(result.Attempted, result.Succeeded);
+                StartBluetoothPoll(result.Reading.ReceiverPresent);
             }
         }
         catch (Exception error)
@@ -303,7 +303,9 @@ public sealed class TrayAppContext : ApplicationContext
             FileLog.Write("ERROR", "Unexpected poll failure", error);
             if (!_closing)
             {
-                ApplyReading(new AjazzHidReader.Reading(false, null, "Unexpected error"));
+                _latestUsbReading = new AjazzHidReader.Reading(
+                    false, null, "Unexpected error");
+                ApplyReading(_latestUsbReading);
             }
         }
         finally
@@ -341,29 +343,48 @@ public sealed class TrayAppContext : ApplicationContext
         return (reading, true, sent);
     }
 
-    private async Task PollBluetoothFallbackAsync(bool receiverPresent)
+    private void StartBluetoothPoll(bool receiverPresent)
     {
         BluetoothCandidate? selected = _bluetoothSelection;
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-        if (selected is null || !_bluetoothPolicy.ShouldRead(receiverPresent, now))
+        if (_closing || _bluetoothReadInFlight || selected is null ||
+            !_bluetoothPolicy.ShouldRead(receiverPresent, DateTimeOffset.UtcNow))
             return;
+
+        _bluetoothReadInFlight = true;
+        _ = PollBluetoothFallbackAsync(selected, _bluetoothPolicy.Generation);
+    }
+
+    private async Task PollBluetoothFallbackAsync(
+        BluetoothCandidate selected, int generation)
+    {
+        BluetoothBatteryResult response;
         try
         {
-            var response = await BluetoothOperationTimeout.Run(
+            response = await BluetoothOperationTimeout.Run(
                 BluetoothBatteryReader.ReadAsync(selected), TimeSpan.FromSeconds(12));
-            if (_closing || _bluetoothSelection != selected) return;
-            _bluetoothPolicy.RecordRead(response, DateTimeOffset.UtcNow);
         }
         catch (Exception error)
         {
-            if (_closing || _bluetoothSelection != selected) return;
-            _bluetoothPolicy.RecordRead(new BluetoothBatteryResult(null,
-                BluetoothBatterySource.Unavailable, "Read failed."),
-                DateTimeOffset.UtcNow);
             FileLog.Write("WARN", "Bluetooth fallback read failed: " +
                 error.GetType().Name);
+            response = new BluetoothBatteryResult(null,
+                BluetoothBatterySource.Unavailable, "Read failed.");
         }
+        finally
+        {
+            _bluetoothReadInFlight = false;
+        }
+
+        if (!IsCurrentBluetoothRequest(selected, generation)) return;
+        _bluetoothPolicy.RecordRead(response, DateTimeOffset.UtcNow);
+        if (_latestUsbReading is not null)
+            UpdateTrayDisplay(_latestUsbReading);
     }
+
+    private bool IsCurrentBluetoothRequest(
+        BluetoothCandidate selected, int generation)
+        => !_closing && _bluetoothSelection == selected &&
+           _bluetoothPolicy.Enabled && _bluetoothPolicy.Generation == generation;
 
     private void ApplyClockResult(bool attempted, bool succeeded)
     {
@@ -381,14 +402,6 @@ public sealed class TrayAppContext : ApplicationContext
     private void ApplyReading(AjazzHidReader.Reading reading)
     {
         bool connected = reading.Percent.HasValue;
-        int? blePercent = _bluetoothPolicy.VisiblePercent(
-            reading.ReceiverPresent, DateTimeOffset.UtcNow);
-        BatteryDisplayState display = BatteryDisplayState.Resolve(
-            reading.ReceiverPresent, reading.Percent,
-            _bluetoothPolicy.Enabled, blePercent);
-        int? displayPercent = display.Percent;
-        bool displayConnected = display.HasReading;
-        string source = display.SourceName;
         if (_settings.RecordBatteryHistory)
         {
             _history.Record(DateTimeOffset.UtcNow, reading.Percent, reading.ReceiverPresent);
@@ -404,7 +417,6 @@ public sealed class TrayAppContext : ApplicationContext
                 "The 2.4 GHz receiver is no longer detected.",
                 ToolTipIcon.Warning);
         }
-        int? previousPercent = _lastPercent;
         if (connected)
         {
             int? threshold = _settings.NotificationsEnabled
@@ -417,6 +429,21 @@ public sealed class TrayAppContext : ApplicationContext
             }
         }
 
+        UpdateTrayDisplay(reading);
+    }
+
+    /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
+    private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
+    {
+        int? blePercent = _bluetoothPolicy.VisiblePercent(
+            reading.ReceiverPresent, DateTimeOffset.UtcNow);
+        BatteryDisplayState display = BatteryDisplayState.Resolve(
+            reading.ReceiverPresent, reading.Percent,
+            _bluetoothPolicy.Enabled, blePercent);
+        int? displayPercent = display.Percent;
+        bool displayConnected = display.HasReading;
+        string source = display.SourceName;
+        int? previousPercent = _lastPercent;
         if (displayConnected != _lastConnected ||
             previousPercent != displayPercent || source != _lastSource)
         {

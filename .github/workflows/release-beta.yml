@@ -120,9 +120,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.15"
+          TAG="v0.3.0-beta.16"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.15 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.16 — Windows and macOS
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -142,6 +142,11 @@ jobs:
           inspection of already connected AJAZZ mice with standard GATT
           Battery Service. No scanning or pairing, and no BLE status is
           substituted for 2.4 GHz. Real Mac hardware verification is pending.
+
+          **Windows asynchronous monitoring:** USB battery updates no longer
+          wait for Bluetooth GATT. Only one BLE read runs at once; late
+          replies from disabled or replaced sessions are ignored, and
+          BLE completion does not replay USB history or notifications.
 
           **Bluetooth fallback resilience:** Direct GATT readings now carry a
           typed source, not a textual label. A selected Bluetooth source
@@ -234,7 +239,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.15" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.16" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

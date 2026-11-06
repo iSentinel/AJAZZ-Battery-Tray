@@ -72,6 +72,20 @@ targeted. Other receiver variants and Bluetooth are not yet validated.
 7. Select **Disable Bluetooth tray fallback** and confirm there are no
    further automatic GATT requests. Restart the app; fallback must be off.
 
+## Asynchronous Bluetooth response test (Windows)
+
+1. Enable Bluetooth fallback after a fresh manually verified 2A19 read.
+2. While GATT polling is delayed by a sleeping mouse, reconnect the USB
+   receiver. USB battery reporting should update on its regular interval,
+   without waiting for the 12-second Bluetooth timeout.
+3. Disconnect the USB receiver and allow an automatic BLE read to begin.
+4. Disable Bluetooth fallback before the BLE response arrives. The late
+   response must not update the tray or re-enable fallback.
+5. Select and verify the mouse again. Pending results from the previous
+   Bluetooth session must not update the new session.
+6. Confirm no duplicate USB history rows or low-battery notifications are
+   produced by completion of the asynchronous Bluetooth request.
+
 ## Known limitations
 
 - CI passing **does not** prove USB reports, clock writes, notification
