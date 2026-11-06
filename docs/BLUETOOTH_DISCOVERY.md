@@ -14,6 +14,23 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Experimental Windows manual inspector (v0.3.0-beta.9)
+
+The tray option **Check paired Bluetooth battery...** now offers explicit
+read-only inspection of an already paired BLE device. It enumerates paired
+Bluetooth LE devices only, filters plausible AJAZZ names, requires the user to
+select the entry and press **Read selected battery**, then reads standard
+GATT Battery Service (0x180F) / Battery Level (0x2A19) uncached.
+
+- A value is accepted only if it is one byte in the range 0..100.
+- Absent service, sleeping device, access denial or invalid payload produces
+  a clear unavailable status, **not an invented percentage**.
+- Device instance IDs are held in memory only; no address or UUID is logged.
+- Nothing scans unpaired peripherals, pairs devices, or writes a GATT value.
+- A BLE value does not overwrite the 2.4 GHz tray icon or battery history.
+- **Hardware support is not confirmed** until the actual AJ179/AJ159 is tested.
+- The chosen entry is not stored across sessions.
+
 ## Standard read-only discovery path
 
 Bluetooth SIG Battery Service is `0x180F`; the classic Battery Level

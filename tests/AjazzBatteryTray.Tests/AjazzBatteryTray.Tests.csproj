@@ -24,5 +24,7 @@
              Link="FileLog.cs" />
     <Compile Include="../../src/AjazzBatteryTray/HidFeaturePolicy.cs"
              Link="HidFeaturePolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/BluetoothBatteryRules.cs"
+             Link="BluetoothBatteryRules.cs" />
   </ItemGroup>
 </Project>

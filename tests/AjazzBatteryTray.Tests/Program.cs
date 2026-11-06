@@ -136,5 +136,24 @@ bool AllowedCommand(byte opcode)
     return HidFeaturePolicy.IsApproved(frame);
 }
 
+// Standard Battery Level is one byte 0..100; zero is a valid measured value.
+Check("BLE candidate AJAZZ", BluetoothBatteryRules.IsCandidateName("AJAZZ AJ179"));
+Check("BLE candidate AJ159", BluetoothBatteryRules.IsCandidateName("AJ159 APEX"));
+Check("BLE reject unrelated", !BluetoothBatteryRules.IsCandidateName("Keyboard"));
+Check("BLE reject empty name", !BluetoothBatteryRules.IsCandidateName(""));
+Check("BLE 0% is valid", BatteryLevelMatches(new byte[] { 0 }, 0));
+Check("BLE 57% is valid", BatteryLevelMatches(new byte[] { 57 }, 57));
+Check("BLE 100% is valid", BatteryLevelMatches(new byte[] { 100 }, 100));
+Check("BLE 101% invalid", !BluetoothBatteryRules.TryParseLevel(
+    new byte[] { 101 }, out _));
+Check("BLE no data invalid", !BluetoothBatteryRules.TryParseLevel(
+    Array.Empty<byte>(), out _));
+Check("BLE extra bytes invalid", !BluetoothBatteryRules.TryParseLevel(
+    new byte[] { 55, 0 }, out _));
+
+bool BatteryLevelMatches(byte[] bytes, int expected)
+    => BluetoothBatteryRules.TryParseLevel(bytes, out int level) &&
+       level == expected;
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

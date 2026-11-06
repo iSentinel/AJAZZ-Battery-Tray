@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.8 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.9 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -142,7 +142,15 @@ verified read-back and a reliable recovery path exist.
 
 ## Limitations / roadmap
 
-- **Bluetooth is not yet implemented on either platform.**
+- **Automatic Bluetooth battery monitoring is not yet implemented.**
+  On Windows, **Check paired Bluetooth battery...** is an experimental,
+  manually triggered read of standard GATT Battery Service on a selected,
+  already paired AJAZZ BLE mouse. This never substitutes the tray reading.
+  The app does not pair devices, scan unpaired devices or write GATT data.
+  If Battery Service is absent, it reports unavailable. Real AJ179/AJ159
+  Bluetooth battery compatibility still needs hardware validation.
+  macOS Bluetooth battery support remains unimplemented.
+  See [Bluetooth discovery plan](docs/BLUETOOTH_DISCOVERY.md).
   Both APEX models support Bluetooth connectivity, but GATT battery-level
   availability has not been verified. See
   [Bluetooth discovery and acceptance plan](docs/BLUETOOTH_DISCOVERY.md).
@@ -183,6 +191,19 @@ Use the **Record battery history** menu option to disable collection.
 The chart intentionally **does not predict remaining runtime**: voltage-based
 battery percentages, charging state and awake/idle time are not sufficiently
 validated to make that prediction trustworthy.
+
+## Manual Bluetooth battery check (Windows, experimental)
+
+Switch an AJAZZ mouse into Bluetooth mode and pair it through Windows
+Settings. Right-click the battery tray icon, select **Check paired Bluetooth
+battery...**, click **Find paired AJAZZ BLE mice**, choose your device, then
+click **Read selected battery**. A valid single-byte 0–100% reading from the
+standard Battery Service is displayed in this dialog only.
+
+This does not confirm AJ179/AJ159 exposes the standard service, and the mouse
+name is only a candidate hint, not a trustworthy identity. No pairing or
+automatic background Bluetooth polling is performed. The original 2.4 GHz
+monitor and safety guards are unchanged.
 
 ## Safe HID operations
 
