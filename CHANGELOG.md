@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-beta.10 (2026-11-06)
+- Add an experimental macOS manual read of the standard GATT Battery Level.
+- Enumerate only CoreBluetooth already-connected peripherals with Battery
+  Service, filter plausible AJAZZ names and require user selection.
+- Never scan, pair, write GATT characteristics, or poll in background.
+- Add a 10-second read timeout and explicit unavailable results.
+- Add parser self-tests and Bluetooth permission description.
+- Real AJ179/AJ159 BLE compatibility still requires a Mac hardware test.
+
+
 ## 0.3.0-beta.9 (2026-11-06)
 - Add an explicit Windows manual Bluetooth Battery Service (GATT 180F) probe.
 - Enumerate only already paired BLE candidates and require user selection.
