@@ -237,6 +237,12 @@ Check("BLE selection changes generation",
     automaticBle.Generation == initialGeneration + 1);
 Check("BLE fresh 83% visible without USB", automaticBle.VisiblePercent(
     false, t0.AddSeconds(10)) == 83);
+Check("BLE status shows USB primary", automaticBle.StatusText(
+    true, false, t0.AddSeconds(10)).Contains("USB primary"));
+Check("BLE status shows fresh GATT", automaticBle.StatusText(
+    false, false, t0.AddSeconds(10)).Contains("83%"));
+Check("BLE status shows polling", automaticBle.StatusText(
+    false, true, t0.AddSeconds(10)).Contains("checking battery"));
 Check("USB receiver always takes priority", automaticBle.VisiblePercent(
     true, t0.AddSeconds(10)) is null);
 Check("BLE no read before one minute", !automaticBle.ShouldRead(
@@ -265,13 +271,28 @@ Check("BLE direct refresh updates percent", automaticBle.VisiblePercent(
 automaticBle.RecordRead(cached, t0.AddMinutes(3));
 Check("BLE cached read clears current value", automaticBle.VisiblePercent(
     false, t0.AddMinutes(3)) is null);
+Check("BLE cached read counts one failure", automaticBle.ConsecutiveFailures == 1);
+Check("BLE unavailable status shows failures", automaticBle.StatusText(
+    false, false, t0.AddMinutes(3)).Contains("1 failed"));
+Check("BLE last successful reading retained for diagnostics",
+    automaticBle.LastSuccessfulRead == t0.AddMinutes(2));
 automaticBle.RecordRead(new BluetoothBatteryResult(0,
     BluetoothBatterySource.DirectGatt, "GATT"), t0.AddMinutes(4));
 Check("BLE zero accepted from valid GATT", automaticBle.VisiblePercent(
     false, t0.AddMinutes(4)) == 0);
+Check("BLE fresh direct read clears failure count",
+    automaticBle.ConsecutiveFailures == 0);
+Check("BLE status can display measured zero", automaticBle.StatusText(
+    false, false, t0.AddMinutes(4)).Contains("0%"));
 automaticBle.RecordRead(missing, t0.AddMinutes(5));
 Check("BLE missing reading shows unknown", automaticBle.VisiblePercent(
     false, t0.AddMinutes(5)) is null);
+Check("BLE missing response increments failure count",
+    automaticBle.ConsecutiveFailures == 1);
+Check("BLE last success preserved after missing response",
+    automaticBle.LastSuccessfulRead == t0.AddMinutes(4));
+Check("BLE last GATT attempt timestamp recorded",
+    automaticBle.LastAttempt == t0.AddMinutes(5));
 Check("BLE backward clock correction triggers read", automaticBle.ShouldRead(
     false, t0.AddMinutes(-2)));
 
@@ -303,6 +324,14 @@ Check("BLE disable invalidates pending request generation",
     automaticBle.Generation == beforeDisableGeneration + 1);
 Check("BLE disable erases transient reading", !automaticBle.Enabled &&
     automaticBle.VisiblePercent(false, t0.AddMinutes(5)) is null);
+Check("BLE disable removes diagnostic counters",
+    automaticBle.ConsecutiveFailures == 0 &&
+    automaticBle.LastSuccessfulRead is null && automaticBle.LastAttempt is null);
+Check("BLE status clearly shows off", automaticBle.StatusText(
+    false, false, t0.AddMinutes(5)).EndsWith("off"));
+automaticBle.RecordRead(missing, t0.AddMinutes(6));
+Check("late BLE response ignored when disabled",
+    automaticBle.ConsecutiveFailures == 0 && automaticBle.LastAttempt is null);
 
 automaticBle.Enable(70, t0.AddMinutes(6));
 Check("BLE reselect invalidates old request generation",
