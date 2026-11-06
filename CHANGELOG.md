@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.7 (2026-11-06)
+- Add optional macOS Start at Login using SMAppService.mainApp.
+- Read the system registration state and show when approval is needed.
+- Add shortcut to macOS Login Items settings.
+- No administrator privileges or custom launch agents required.
+- Hardware/Mac startup behavior remains experimental until field validation.
+
+
 ## 0.3.0-beta.6 (2026-11-06)
 - Add opt-in macOS local notifications for battery thresholds 20/10/5%.
 - Add optional receiver-disconnect alert after two missing USB polls.
