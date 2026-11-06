@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.9 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.10 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -149,12 +149,12 @@ verified read-back and a reliable recovery path exist.
   The app does not pair devices, scan unpaired devices or write GATT data.
   If Battery Service is absent, it reports unavailable. Real AJ179/AJ159
   Bluetooth battery compatibility still needs hardware validation.
-  macOS Bluetooth battery support remains unimplemented.
+  On macOS there is also a manual **Check connected Bluetooth battery...**
+  inspector for AJAZZ devices already connected to the system; it uses
+  CoreBluetooth without scanning or pairing, and may not find HID devices
+  that do not expose Battery Service. Both platforms remain experimental.
   See [Bluetooth discovery plan](docs/BLUETOOTH_DISCOVERY.md).
-  Both APEX models support Bluetooth connectivity, but GATT battery-level
-  availability has not been verified. See
-  [Bluetooth discovery and acceptance plan](docs/BLUETOOTH_DISCOVERY.md).
-  No automatic pairing or background BLE scanning is performed. It requires testing the Windows BLE
+ It requires testing the Windows BLE
   device's Battery Service or Windows battery property in Bluetooth mode.
   The 2.4 GHz dock is the supported primary transport.
 - Charging state is not shown: the documented `0x05` status frame does not
