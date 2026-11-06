@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — dock protocol evidence guide
+- Document Windows USBPcap/Wireshark capture of one reversible vendor setting.
+- Require before/after/readback/restore and redaction before publishing.
+- Keep all unverified RGB, GIF, DPI and profile writes blocked.
+
+
 ## 0.3.0-beta.11 (2026-11-06)
 - Add 12-second timeout to the Windows paired BLE lookup and a 15-second
   timeout to the manually triggered Battery Service read.
