@@ -14,6 +14,10 @@ A shared VID/PID does not prove identical firmware across APEX variants.
 | EEPROM commit | 0x50 can modify button mapping on AJ-series | Forbidden |
 | OTA/bootloader | Changes firmware | Forbidden |
 
+A detailed [Windows USBPcap capture guide](DOCK_CAPTURE_GUIDE.md) explains
+how to obtain redacted before/after/revert evidence using the official app,
+without sending speculative commands from this project.
+
 ## Acceptance gates for any write feature
 
 1. Confirm physical model, firmware and HID collection.
