@@ -51,6 +51,11 @@
 - [x] Windows in-memory, explicit opt-in Bluetooth tray fallback when
   2.4 GHz receiver is physically absent. Direct fresh GATT only; no
   automatic paired-device discovery or persisted device IDs.
+- [x] Use typed direct-GATT / Windows-cache / unavailable results for
+  Windows automatic Bluetooth trust, independent of displayed wording.
+- [x] Distinguish Bluetooth-unavailable from USB-unavailable in the tray.
+- [x] Suppress intentional USB-removal notification during BLE fallback.
+- [ ] Field-test lost GATT response, USB reconnect and BLE resume on AJ179 APEX.
 - [ ] Field-test Windows Bluetooth fallback and source priority on AJ179 APEX.
 - [ ] Add model-matched Bluetooth reporting to the tray when verified.
 - [ ] Model-matched Bluetooth battery reporting where available.
