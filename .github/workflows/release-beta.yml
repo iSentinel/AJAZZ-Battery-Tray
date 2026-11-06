@@ -120,9 +120,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.11"
+          TAG="v0.3.0-beta.12"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.11 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.12 — Windows and macOS
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -142,6 +142,12 @@ jobs:
           inspection of already connected AJAZZ mice with standard GATT
           Battery Service. No scanning or pairing, and no BLE status is
           substituted for 2.4 GHz. Real Mac hardware verification is pending.
+
+          **Windows Bluetooth discovery fix:** Detect paired Bluetooth Classic
+          and LE endpoints, allow an explicit "show all paired devices" option
+          when Windows gives a generic mouse name, and use Windows cached
+          BatteryLife only when a GATT Battery Level read is unavailable.
+          Cached values are labelled and may be stale. No pairing or writes.
 
           **Windows reliability:** Bluetooth LE inspection has bounded UI
           timeouts and battery history tolerates backward clock corrections.
@@ -207,6 +213,6 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.11" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.12" \
               --notes-file notes.md --prerelease
           fi
