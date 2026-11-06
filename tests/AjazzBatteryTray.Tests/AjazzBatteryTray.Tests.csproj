@@ -14,5 +14,13 @@
              Link="DockClockReport.cs" />
     <Compile Include="../../src/AjazzBatteryTray/DockClockSchedule.cs"
              Link="DockClockSchedule.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/BatteryHistory.cs"
+             Link="BatteryHistory.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/ConnectionAlertPolicy.cs"
+             Link="ConnectionAlertPolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/AppSettings.cs"
+             Link="AppSettings.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/FileLog.cs"
+             Link="FileLog.cs" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-beta.1 (2026-11-06)
+- Add Windows battery history with a built-in 24h/7d/30d chart.
+- Store state transitions in local CSV with a 30-day retention limit.
+- Add receiver/interface diagnostics without unverified HID commands.
+- Add opt-in notification for repeated receiver disappearance.
+- Add history and disconnect policies with hardware-independent tests.
+- Keep firmware, DPI, RGB, GIF and polling-rate configuration gated.
+
+
 ## 0.2.0-beta.3 (2026-11-06)
 - Add manual and automatic 8K dock clock synchronization (Windows/macOS).
 - Send documented clock opcode 0x28 and fixed 0xD7 marker with local time.

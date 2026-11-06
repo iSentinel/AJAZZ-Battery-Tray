@@ -7,6 +7,8 @@ public sealed class AppSettings
 {
     public int PollSeconds { get; set; } = 30;
     public bool NotificationsEnabled { get; set; } = true;
+    public bool RecordBatteryHistory { get; set; } = true;
+    public bool NotifyOnDisconnect { get; set; } = false;
     public bool AutomaticDockClockSync { get; set; } = true;
 
     public static string DirectoryPath => Path.Combine(

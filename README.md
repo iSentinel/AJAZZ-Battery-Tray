@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.2.0-beta.3 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.1 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -29,6 +29,12 @@ be ambiguous.
 - Optional autostart for the current Windows user (no administrator rights).
 - **Dock Clock Sync:** set the 8K dock's screen clock to the computer's local time.
   Automatically on connection and every five minutes, or manually from the tray.
+- **Windows Battery History:** local 30-day CSV history with a 24-hour,
+  7-day or 30-day chart showing charge and connection interruptions.
+- **Windows Device Diagnostics:** USB VID/PID, matching HID collections and
+  feature report length without exposing serial numbers.
+- Optional Windows notification when the receiver disconnects for two polls;
+  disabled by default to prevent noise.
 - Configuration and diagnostic log under `%APPDATA%\AJAZZBatteryTray`.
 - No vendor software, external HID driver or background service required.
 - No DPI, pairing, firmware, RGB or stored-profile modifications.
@@ -109,6 +115,13 @@ are not yet complete.
 Do not run Halo Battery, the official configuration app, and AJAZZ Battery
 Tray at the same time during initial testing: concurrent reads may compete.
 
+## Roadmap
+
+See [ROADMAP.md](docs/ROADMAP.md) for the safety gates, validation plan and
+next staged work. Battery monitoring and clock sync are implemented;
+RGB, display uploads and mouse configuration are **not** exposed until
+verified read-back and a reliable recovery path exist.
+
 ## Limitations / roadmap
 
 - **Bluetooth is not yet implemented on either platform.** It requires testing the Windows BLE
@@ -135,9 +148,32 @@ close the official AJAZZ application before testing to avoid conflicting
 commands. The feature is based on documented 8K receiver behaviour but
 has not yet been tested on this application's AJ179 APEX hardware.
 
+## Battery history (Windows)
+
+Right-click the tray icon and choose **Battery history...**. The chart shows
+observed charge values; gaps indicate missing data, not zero battery.
+The history is written locally to
+`%APPDATA%\AJAZZBatteryTray\battery-history.csv`, at most once every
+five minutes unless the charge or connection state changes. Data older than 30
+days is automatically pruned and storage is capped at 20,000 observations.
+Use the **Record battery history** menu option to disable collection.
+
+The chart intentionally **does not predict remaining runtime**: voltage-based
+battery percentages, charging state and awake/idle time are not sufficiently
+validated to make that prediction trustworthy.
+
+## Safe device diagnostics
+
+The Windows tray menu's **Device diagnostics...** reports HID usage,
+feature-report length and the number of matching interfaces. Firmware
+version, DPI and polling rate are explicitly shown as not yet queried:
+the corresponding read protocol has not been verified on AJ179 hardware.
+It does not enumerate private USB identifiers or send configuration commands.
+
 ## Diagnostics
 
 - Settings: `%APPDATA%\AJAZZBatteryTray\settings.json`
+- Battery history: `%APPDATA%\AJAZZBatteryTray\battery-history.csv`
 - Log: `%APPDATA%\AJAZZBatteryTray\app.log`
 - Windows identifiers: `Get-PnpDevice -PresentOnly | Where-Object InstanceId -match 'VID_3151&PID_5007'`
 
