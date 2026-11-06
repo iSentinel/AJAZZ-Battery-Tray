@@ -19,6 +19,7 @@ public sealed class DockClockSchedule
         bool justConnected = !_receiverWasPresent;
         _receiverWasPresent = true;
         return enabled && (justConnected || !_lastAttempt.HasValue ||
+                           now < _lastAttempt.Value ||
                            now - _lastAttempt.Value >= _interval);
     }
 
