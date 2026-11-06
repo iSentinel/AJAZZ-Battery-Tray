@@ -221,3 +221,30 @@ jobs:
               --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.13" \
               --notes-file notes.md --latest
           fi
+          # A published release must be visible through /releases/latest.
+          # Fail CI if GitHub hides it as a pre-release or an asset is missing.
+          PUBLISHED="repos/$GH_REPO/releases/tags/$TAG"
+          if [ "$(gh api "$PUBLISHED" --jq '.draft')" != "false" ] ||
+             [ "$(gh api "$PUBLISHED" --jq '.prerelease')" != "false" ]; then
+            echo "::error::$TAG is not a published stable-status release."
+            exit 1
+          fi
+          LATEST="$(gh api "repos/$GH_REPO/releases/latest" --jq '.tag_name')"
+          if [ "$LATEST" != "$TAG" ]; then
+            echo "::error::Latest points to $LATEST instead of $TAG."
+            exit 1
+          fi
+          ASSETS="$(gh api "$PUBLISHED" --jq '.assets[].name')"
+          for file in \
+            AJAZZBatteryTray-win-x64.exe \
+            AJAZZBatteryTray-win-x64.sha256 \
+            AJAZZBatteryTray-Setup-win-x64.exe \
+            AJAZZBatteryTray-Setup-win-x64.sha256 \
+            AJAZZBatteryTray-macOS-universal.zip \
+            AJAZZBatteryTray-macOS-universal.sha256; do
+            if ! printf '%s\n' "$ASSETS" | grep -Fxq "$file"; then
+              echo "::error::Missing published release file: $file"
+              exit 1
+            fi
+          done
+          echo "PASS: $TAG is Latest and all six files are published."
