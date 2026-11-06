@@ -12,11 +12,15 @@ public sealed class BluetoothAutoPolicy
 
     public bool Enabled { get; private set; }
 
+    /// <summary>Reject replies from a device selection that has changed.</summary>
+    public int Generation { get; private set; }
+
     /// <summary>Start only after a manual, valid, direct GATT battery read.</summary>
     public void Enable(int percent, DateTimeOffset now)
     {
         if (percent is < 0 or > 100)
             throw new ArgumentOutOfRangeException(nameof(percent));
+        Generation++;
         Enabled = true;
         _percent = percent;
         _lastReading = now;
@@ -25,6 +29,7 @@ public sealed class BluetoothAutoPolicy
 
     public void Disable()
     {
+        Generation++;
         Enabled = false;
         _percent = null;
         _lastReading = null;
