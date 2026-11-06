@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-beta.13 (2026-11-06)
+- Isolate Windows paired BLE and Classic enumeration failures.
+- Limit each transport's lookup time to eight seconds, retaining partial results.
+- Show per-transport paired-device counts and sanitized error names.
+- Add Copy lookup summary without device IDs, addresses or serial numbers.
+- Test manual Show all paired-device name filtering and update diagnostics docs.
+- Do not add auto-pairing, Bluetooth background polling or device writes.
+
+
 ## 0.3.0-beta.12 (2026-11-06)
 - Fix Windows Bluetooth device list hiding paired AJAZZ mice.
 - Enumerate paired-only LE and Classic devices; allow all paired device names.
