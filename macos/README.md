@@ -29,7 +29,12 @@ Intel (x86_64) and Apple Silicon (arm64).
   five minutes. It follows the HID framing used by the macOS open-source
   Ajazz clock-sync daemon and is still unverified on our real hardware.
 - Only 2.4 GHz USB is implemented. No Bluetooth, battery charging detection,
-  macOS notifications, or automatic start at login yet.
+  or automatic start at login yet.
+- Optional **Low battery notifications** (20%, 10%, 5%) and **Notify on
+  receiver disconnect** are available in the menu bar. Both are off by
+  default. Enabling either requests macOS notification permission. A sleeping
+  mouse with its receiver still present does not trigger a disconnect alert.
+  Check System Settings → Notifications if alerts are not displayed.
 - The app is **ad-hoc signed, not Apple-notarized**. macOS Gatekeeper can show a
   warning. Do not disable Gatekeeper globally; use the standard System
   Settings → Privacy & Security → Open Anyway flow after inspecting the source.
