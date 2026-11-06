@@ -185,21 +185,30 @@ internal static class HidNative
 
     private static string? ReadPath(IntPtr deviceSet, ref InterfaceData data)
     {
-        SetupDiGetDeviceInterfaceDetail(deviceSet, ref data,
+        // The first call normally fails with ERROR_INSUFFICIENT_BUFFER.
+        bool sized = SetupDiGetDeviceInterfaceDetail(deviceSet, ref data,
             IntPtr.Zero, 0, out uint needed, IntPtr.Zero);
-        if (needed < 8 || needed > 65536)
-        {
-            return null;
-        }
+        if (sized)
+            throw new InvalidDataException("Unexpected SetupAPI size response.");
+
+        int sizeError = Marshal.GetLastWin32Error();
+        if (!HidEnumerationRules.IsExpectedSizeQueryError(sizeError))
+            throw new Win32Exception(sizeError);
+        if (!HidEnumerationRules.IsValidDetailSize(needed))
+            throw new InvalidDataException("Invalid SetupAPI interface detail size.");
 
         IntPtr buffer = Marshal.AllocHGlobal((int)needed);
         try
         {
             // cbSize differs between 64-bit and 32-bit Windows.
             Marshal.WriteInt32(buffer, IntPtr.Size == 8 ? 8 : 6);
-            bool ok = SetupDiGetDeviceInterfaceDetail(deviceSet,
-                ref data, buffer, needed, out _, IntPtr.Zero);
-            return ok ? Marshal.PtrToStringUni(IntPtr.Add(buffer, 4)) : null;
+            if (!SetupDiGetDeviceInterfaceDetail(deviceSet,
+                    ref data, buffer, needed, out _, IntPtr.Zero))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            string? path = Marshal.PtrToStringUni(IntPtr.Add(buffer, 4));
+            return !string.IsNullOrWhiteSpace(path) ? path :
+                throw new InvalidDataException("Empty SetupAPI interface path.");
         }
         finally
         {
