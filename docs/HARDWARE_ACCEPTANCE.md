@@ -86,6 +86,15 @@ targeted. Other receiver variants and Bluetooth are not yet validated.
 6. Confirm no duplicate USB history rows or low-battery notifications are
    produced by completion of the asynchronous Bluetooth request.
 
+## Bluetooth diagnostic report
+
+With the opt-in Bluetooth fallback enabled on Windows, use **Copy Bluetooth
+monitor status** in the tray menu after (1) a fresh 2A19 reading,
+(2) mouse sleep or Bluetooth outage, and (3) recovery. Record whether
+consecutive failures reset to zero and last-success timestamp advances.
+The report contains no Bluetooth address or device instance ID.
+Review all copied data before attaching to a public GitHub issue.
+
 ## Known limitations
 
 - CI passing **does not** prove USB reports, clock writes, notification
