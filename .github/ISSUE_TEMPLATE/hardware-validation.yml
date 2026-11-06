@@ -70,6 +70,12 @@ body:
       label: Bluetooth lookup summary (optional)
       description: Paste ONLY the result of Copy lookup summary. Do not paste device IDs.
       placeholder: "Found 1 BLE and 0 Classic paired endpoints..."
+  - type: textarea
+    id: bluetooth_status
+    attributes:
+      label: Bluetooth monitor status (optional)
+      description: Paste the redacted Copy Bluetooth monitor status text; review before sharing.
+      placeholder: "Bluetooth fallback enabled, GATT request pending, last success..."
   - type: dropdown
     id: dock_clock
     attributes:
