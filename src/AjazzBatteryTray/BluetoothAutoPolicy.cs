@@ -3,7 +3,6 @@ namespace AjazzBatteryTray;
 /// <summary>Pure rules for a temporary, opt-in Bluetooth tray fallback.</summary>
 public sealed class BluetoothAutoPolicy
 {
-    private static readonly TimeSpan ReadInterval = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan FreshnessLimit = TimeSpan.FromSeconds(120);
 
     private DateTimeOffset? _lastAttempt;
@@ -44,19 +43,33 @@ public sealed class BluetoothAutoPolicy
         _lastAttempt = null;
     }
 
-    /// <summary>No automatic BLE requests while the USB receiver is present.</summary>
+    /// <summary>Delay repeated reads to avoid waking a sleeping mouse too often.</summary>
+    public static TimeSpan RetryInterval(int consecutiveFailures)
+        => consecutiveFailures switch
+        {
+            <= 0 => TimeSpan.FromMinutes(1),
+            1 => TimeSpan.FromMinutes(2),
+            2 => TimeSpan.FromMinutes(5),
+            _ => TimeSpan.FromMinutes(10)
+        };
+
+    /// <summary>Allow a user-requested read only while USB is absent.</summary>
+    public bool CanRefreshNow(bool receiverPresent)
+        => Enabled && !receiverPresent;
+
+    /// <summary>Back off automatic requests while the receiver is absent.</summary>
     public bool ShouldRead(bool receiverPresent, DateTimeOffset now)
-        => Enabled && !receiverPresent &&
+        => CanRefreshNow(receiverPresent) &&
            (!_lastAttempt.HasValue ||
             now < _lastAttempt.Value ||
-            now - _lastAttempt.Value >= ReadInterval);
+            now - _lastAttempt.Value >= RetryInterval(ConsecutiveFailures));
 
     /// <summary>Save a direct GATT result or invalidate stale/failed data.</summary>
     public void RecordRead(BluetoothBatteryResult result, DateTimeOffset now)
     {
         if (!Enabled) return;
         _lastAttempt = now;
-        if (Enabled && result.IsFreshGatt)
+        if (result.IsFreshGatt)
         {
             _percent = result.Percent;
             _lastReading = now;
