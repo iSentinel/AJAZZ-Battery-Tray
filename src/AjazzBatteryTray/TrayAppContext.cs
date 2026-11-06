@@ -66,6 +66,8 @@ public sealed class TrayAppContext : ApplicationContext
         _disableBluetooth.Enabled = false;
         _disableBluetooth.Click += (_, _) => SelectBluetoothFallback(null, null);
         menu.Items.Add(_disableBluetooth);
+        menu.Items.Add("Copy Bluetooth monitor status", null,
+            (_, _) => CopyBluetoothStatus());
         menu.Items.Add("Copy diagnostic report", null, (_, _) => CopyDeviceReport());
         menu.Items.Add(BuildIntervalMenu());
         menu.Items.Add(new ToolStripSeparator());
@@ -186,18 +188,52 @@ public sealed class TrayAppContext : ApplicationContext
         {
             _bluetoothSelection = candidate;
             _bluetoothPolicy.Enable(level.Value, DateTimeOffset.UtcNow);
-            _bluetoothStatus.Text = "Bluetooth tray fallback: enabled (session)";
             _disableBluetooth.Enabled = true;
         }
         else
         {
             _bluetoothSelection = null;
             _bluetoothPolicy.Disable();
-            _bluetoothStatus.Text = "Bluetooth tray fallback: off";
             _disableBluetooth.Enabled = false;
             _bluetoothWindow?.DisableAutomatic();
         }
+        UpdateBluetoothStatus();
         PollSoon();
+    }
+
+    private void UpdateBluetoothStatus()
+    {
+        bool usbPresent = _latestUsbReading?.ReceiverPresent ?? false;
+        _bluetoothStatus.Text = _bluetoothPolicy.StatusText(
+            usbPresent, _bluetoothReadInFlight, DateTimeOffset.UtcNow);
+    }
+
+    private void CopyBluetoothStatus()
+    {
+        string usb = _latestUsbReading is null ? "not checked" :
+            _latestUsbReading.ReceiverPresent ? "present" : "absent";
+        string last = _bluetoothPolicy.LastSuccessfulRead?.ToString("O") ?? "never";
+        string attempt = _bluetoothPolicy.LastAttempt?.ToString("O") ?? "never";
+        string report = "AJAZZ Bluetooth monitor status\n" +
+            $"App version: {Application.ProductVersion}\n" +
+            $"Auto fallback: {_bluetoothPolicy.Enabled}\n" +
+            $"USB receiver: {usb}\n" +
+            $"Displayed source: {_lastSource}\n" +
+            $"Displayed percent: {_lastPercent?.ToString() ?? "unknown"}\n" +
+            $"GATT request pending: {_bluetoothReadInFlight}\n" +
+            $"Consecutive failed reads: {_bluetoothPolicy.ConsecutiveFailures}\n" +
+            $"Last GATT attempt (UTC): {attempt}\n" +
+            $"Last successful GATT (UTC): {last}\n" +
+            "No Bluetooth addresses, serial numbers or device IDs are included.";
+        try
+        {
+            Clipboard.SetText(report);
+        }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "Bluetooth status clipboard unavailable: " +
+                error.GetType().Name);
+        }
     }
 
     private static void CopyDeviceReport()
@@ -351,6 +387,7 @@ public sealed class TrayAppContext : ApplicationContext
             return;
 
         _bluetoothReadInFlight = true;
+        UpdateBluetoothStatus();
         _ = PollBluetoothFallbackAsync(selected, _bluetoothPolicy.Generation);
     }
 
@@ -373,6 +410,7 @@ public sealed class TrayAppContext : ApplicationContext
         finally
         {
             _bluetoothReadInFlight = false;
+            if (!_closing) UpdateBluetoothStatus();
         }
 
         if (!IsCurrentBluetoothRequest(selected, generation)) return;
@@ -459,6 +497,7 @@ public sealed class TrayAppContext : ApplicationContext
         string tooltip = $"AJAZZ APEX: {source} {value}";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
         UpdateIcon(displayPercent, displayConnected);
+        UpdateBluetoothStatus();
     }
 
     private void UpdateIcon(int? percent, bool connected)
