@@ -34,17 +34,11 @@ Intel (x86_64) and Apple Silicon (arm64).
   warning. Do not disable Gatekeeper globally; use the standard System
   Settings → Privacy & Security → Open Anyway flow after inspecting the source.
 
-## Build
+## Download and install
 
-On a Mac with Xcode command line tools:
-
-```bash
-bash macos/build-macos.sh --help
-bash macos/build-macos.sh
-```
-
-The resulting ZIP is `dist/AJAZZBatteryTray-macOS-universal.zip`. Extract
-once and move `AJAZZ Battery Tray.app` to `/Applications`, then open it.
+Get the macOS Universal ZIP from
+[GitHub Releases](https://github.com/iSentinel/AJAZZ-Battery-Tray/releases).
+Extract once and move `AJAZZ Battery Tray.app` to `/Applications`.
 The app runs in the menu bar, not the Dock.
 
 ## Battery history
@@ -54,7 +48,9 @@ The menu-bar app writes only battery percent and connection states to
 while **Record battery history** is enabled. It captures changes and a
 five-minute observation if the state remains unchanged, keeps at most 30 days,
 and never includes USB serial numbers. **Open battery history folder...**
-opens Finder to the directory containing the CSV. There is no macOS chart yet.
+opens Finder to the directory containing the CSV. Choose **Battery history
+chart...** for a native graph with 24-hour, 7-day and 30-day views.
+Unavailable and disconnected readings are gaps rather than 0%.
 
 ## Troubleshooting
 

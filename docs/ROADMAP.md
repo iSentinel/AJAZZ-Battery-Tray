@@ -23,7 +23,8 @@
 - [ ] Verify mouse reconnection, sleep, charging and clock updates on real dock.
 - [ ] Model-matched Bluetooth battery reporting where available.
 - [x] macOS battery history CSV with private local storage and retention.
-- [ ] macOS battery history chart and notifications.
+- [x] macOS battery history chart (24h, 7d, 30d).
+- [ ] macOS low-battery and receiver-disconnect notifications.
 
 ## Stage 2 — Dock customization
 

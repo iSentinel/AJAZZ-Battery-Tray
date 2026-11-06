@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.5 (2026-11-06)
+- Add a native AppKit battery history graph for macOS.
+- Select 24 hours, 7 days or 30 days and refresh on demand.
+- Preserve gaps for missing battery readings instead of showing 0%.
+- Test CSV parser with malformed rows and invalid percentages.
+- Document ready-made GitHub release downloads for macOS users.
+
+
 ## 0.3.0-beta.4 (2026-11-06)
 - Add private macOS battery history CSV under Application Support.
 - Record charge changes and receiver status; sample unchanged state every 5 min.

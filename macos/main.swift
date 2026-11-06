@@ -210,6 +210,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var polling = false
     private let batteryHistory = BatteryHistoryWriter()
+    private var historyWindow: BatteryHistoryWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -236,6 +237,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
                                      keyEquivalent: "")
         openHistory.target = self
         statusMenu.addItem(openHistory)
+        let chart = NSMenuItem(title: "Battery history chart...",
+                               action: #selector(showBatteryHistory),
+                               keyEquivalent: "")
+        chart.target = self
+        statusMenu.addItem(chart)
         let recordHistory = NSMenuItem(title: "Record battery history",
                                        action: #selector(toggleBatteryHistory(_:)),
                                        keyEquivalent: "")
@@ -301,6 +307,15 @@ final class TrayController: NSObject, NSApplicationDelegate {
             return true
         }
         return UserDefaults.standard.bool(forKey: "RecordBatteryHistory")
+    }
+
+    @objc private func showBatteryHistory() {
+        if historyWindow == nil {
+            historyWindow = BatteryHistoryWindowController(file: batteryHistory.file)
+        }
+        historyWindow?.refresh()
+        historyWindow?.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func openHistoryFolder() {
@@ -423,7 +438,15 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         previous: "70|online", current: "69|online", secondsSinceLast: 60) &&
         BatteryHistoryWriter.shouldRecord(
         previous: "70|online", current: "70|online", secondsSinceLast: 301)
-    let valid = historyValid && clockValid && guardValid &&
+    let chartValid = BatteryHistoryReader.parse(
+        "2026-11-06T12:00:00Z,73,online")?.percent == 73 &&
+        BatteryHistoryReader.parse(
+            "2026-11-06T12:00:00Z,,disconnected")?.state == "disconnected" &&
+        BatteryHistoryReader.parse(
+            "2026-11-06T12:00:00Z,255,online") == nil &&
+        BatteryHistoryReader.parse(
+            "not-a-date,73,online") == nil
+    let valid = chartValid && historyValid && clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&
                 ApexBattery.parse([0, 0, 73]) == 73 &&
                 ApexBattery.parse([5, 0, 0, 0]) == nil &&

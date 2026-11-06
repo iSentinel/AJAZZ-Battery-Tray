@@ -14,7 +14,8 @@ SDK="$(xcrun --sdk macosx --show-sdk-path)"
 for arch in arm64 x86_64; do
   swiftc -O -sdk "$SDK" -target "${arch}-apple-macos13.0" \
     -framework AppKit -framework IOKit \
-    "$ROOT/macos/main.swift" "$ROOT/macos/BatteryHistory.swift" -o "$ROOT/dist/mac/ajazz-${arch}"
+    "$ROOT/macos/main.swift" "$ROOT/macos/BatteryHistory.swift" \
+    "$ROOT/macos/BatteryHistoryWindow.swift" -o "$ROOT/dist/mac/ajazz-${arch}"
 done
 lipo -create "$ROOT/dist/mac/ajazz-arm64" "$ROOT/dist/mac/ajazz-x86_64" \
   -output "$APP/Contents/MacOS/AJAZZBatteryTray"
