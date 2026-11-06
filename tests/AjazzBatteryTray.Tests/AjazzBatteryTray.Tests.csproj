@@ -28,5 +28,7 @@
              Link="BluetoothBatteryRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothOperationTimeout.cs"
              Link="BluetoothOperationTimeout.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/BluetoothAutoPolicy.cs"
+             Link="BluetoothAutoPolicy.cs" />
   </ItemGroup>
 </Project>
