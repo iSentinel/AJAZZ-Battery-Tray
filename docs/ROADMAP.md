@@ -56,6 +56,12 @@
 - [x] Distinguish Bluetooth-unavailable from USB-unavailable in the tray.
 - [x] Suppress intentional USB-removal notification during BLE fallback.
 - [x] Keep USB tray updates independent of slow Bluetooth GATT reads.
+- [x] Back off failed Windows Bluetooth reads to 2/5/10 minutes to avoid
+  repeated requests to a sleeping mouse.
+- [x] Add explicit Refresh Bluetooth battery now for the selected paired
+  mouse, disabled while the USB receiver has priority.
+- [ ] Field-verify failure recovery, wake responsiveness and the new
+  retry schedule on AJ179 APEX Bluetooth.
 - [x] Show Bluetooth polling state, consecutive failures and last success in
   Windows tray; copy redacted status for field testing.
 - [x] Avoid overlapping background GATT requests and invalidate replies
