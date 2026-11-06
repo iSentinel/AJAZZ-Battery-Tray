@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.22 (2026-11-07)
+- Distinguish SetupAPI ERROR_NO_MORE_ITEMS from unexpected Windows HID
+  enumeration failures, which must not imply that the USB receiver is absent.
+- Surface unexpected scan errors through the existing unknown USB state,
+  preventing false disconnect events and automatic Bluetooth fallback.
+- Add four pure tests of SetupAPI completion/error classification.
+- Keep all existing HID and Bluetooth write restrictions unchanged.
+- Bump release metadata consistently across Windows, macOS and installer.
+
 ## 0.3.0-beta.21 (2026-11-07)
 - Treat Windows USB/HID enumeration failures as unknown rather than unplugged.
 - Prevent false USB disconnect history, notifications and Bluetooth handover.

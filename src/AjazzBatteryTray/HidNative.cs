@@ -166,6 +166,9 @@ internal static class HidNative
             if (!SetupDiEnumDeviceInterfaces(deviceSet, IntPtr.Zero,
                     ref guid, index, ref data))
             {
+                int win32Error = Marshal.GetLastWin32Error();
+                if (!HidEnumerationRules.IsNormalEnd(win32Error))
+                    throw new Win32Exception(win32Error);
                 break;
             }
 

@@ -164,6 +164,16 @@ Check("CSV normalizes timestamp to UTC", BatteryHistoryCsv.Parse(
 Check("CSV header unchanged for existing files",
     BatteryHistoryCsv.Header == "utc_timestamp,percent,state");
 
+// SetupAPI must not treat a failed HID scan as confirmed USB removal.
+Check("SetupAPI normal end recognized",
+    HidEnumerationRules.IsNormalEnd(HidEnumerationRules.NoMoreItems));
+Check("SetupAPI access denied is not end",
+    !HidEnumerationRules.IsNormalEnd(5));
+Check("SetupAPI invalid parameter is not end",
+    !HidEnumerationRules.IsNormalEnd(87));
+Check("SetupAPI error code zero is not end",
+    !HidEnumerationRules.IsNormalEnd(0));
+
 // Stop unknown or malformed HID writes before they reach the receiver.
 byte[] telemetry = new byte[65];
 telemetry[1] = 0xF7;
