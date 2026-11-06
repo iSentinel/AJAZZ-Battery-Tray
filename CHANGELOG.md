@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0-beta.14 (2026-11-06)
+- Record field-confirmed AJ179 APEX Bluetooth GATT Battery Level: 83%.
+- Add explicit opt-in automatic Bluetooth tray fallback on Windows after
+  successfully reading a selected mouse's standard GATT Battery Level.
+- Keep selected device in memory only, cleared on disable and app restart.
+- USB receiver takes priority; BLE is queried only when USB is absent.
+- Enforce 60-second minimum BLE polling and 120-second reading freshness.
+- Reject Windows-cached values for automatic display; unavailable stays unknown.
+- Add a tray disable option and scheduling/source-priority unit tests.
+- No auto-pairing, BLE scans, GATT writes or new vendor HID commands.
+
+
 ## Unreleased — release verification and field evidence
 - Check that each published release is GitHub's Latest, not a hidden pre-release.
 - Check all three distributions and their SHA-256 files after publishing.

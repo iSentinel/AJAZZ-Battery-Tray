@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Opt-in inspector; does not join a device to the 2.4 GHz receiver.</summary>
+/// <summary>Manual Bluetooth inspector with optional, session-only tray fallback.</summary>
 public sealed class BluetoothBatteryForm : Form
 {
     private readonly ListBox _devices = new();
@@ -17,12 +17,21 @@ public sealed class BluetoothBatteryForm : Form
     private readonly Button _copy = new() { Text = "Copy lookup summary" };
     private readonly Button _find = new() { Text = "Find paired Bluetooth devices" };
     private readonly Button _read = new() { Text = "Read selected battery" };
-
-    public BluetoothBatteryForm()
+    private readonly CheckBox _automatic = new()
     {
+        Text = "Use this mouse in tray when 2.4 GHz receiver is absent (this session)",
+        AutoSize = true, Enabled = false
+    };
+    private readonly Action<BluetoothCandidate?, int?> _onAutoSelection;
+    private BluetoothCandidate? _verified;
+    private int? _verifiedPercent;
+
+    public BluetoothBatteryForm(Action<BluetoothCandidate?, int?> onAutoSelection)
+    {
+        _onAutoSelection = onAutoSelection;
         Text = "AJAZZ — Experimental Bluetooth battery check";
-        Size = new Size(700, 430);
-        MinimumSize = new Size(570, 320);
+        Size = new Size(760, 465);
+        MinimumSize = new Size(670, 365);
         StartPosition = FormStartPosition.CenterScreen;
         BuildWindow();
     }
@@ -33,7 +42,7 @@ public sealed class BluetoothBatteryForm : Form
         {
             Dock = DockStyle.Top, Height = 62, Padding = new Padding(12),
             Text = "Manual check of already paired Bluetooth LE and Classic mice.\n" +
-                   "No pairing, unpaired scans, background polling, or device writes."
+                   "No pairing or GATT writes. Automatic reads require opt-in."
         };
         _devices.Dock = DockStyle.Fill;
         _result.Dock = DockStyle.Bottom;
@@ -45,9 +54,15 @@ public sealed class BluetoothBatteryForm : Form
         _copy.Width = 160;
         _read.Enabled = false;
         _devices.SelectedIndexChanged += (_, _) =>
+        {
             _read.Enabled = _devices.SelectedItem is BluetoothCandidate &&
                             _find.Enabled;
+            ClearVerifiedSelection();
+        };
 
+        _automatic.Dock = DockStyle.Bottom;
+        _automatic.Padding = new Padding(12, 3, 0, 4);
+        _automatic.CheckedChanged += (_, _) => ToggleAutomatic();
         _showAll.Dock = DockStyle.Top;
         _showAll.Padding = new Padding(12, 3, 0, 4);
         FlowLayoutPanel buttons = new() { Dock = DockStyle.Bottom, Height = 44 };
@@ -58,6 +73,7 @@ public sealed class BluetoothBatteryForm : Form
         _find.Click += async (_, _) => await FindDevicesAsync();
         _read.Click += async (_, _) => await ReadSelectedAsync();
         Controls.Add(_devices);
+        Controls.Add(_automatic);
         Controls.Add(buttons);
         Controls.Add(_result);
         Controls.Add(_showAll);
@@ -66,6 +82,7 @@ public sealed class BluetoothBatteryForm : Form
 
     private async Task FindDevicesAsync()
     {
+        ClearVerifiedSelection();
         SetBusy(true, "Checking paired Bluetooth LE and Classic devices...");
         try
         {
@@ -106,6 +123,7 @@ public sealed class BluetoothBatteryForm : Form
     private async Task ReadSelectedAsync()
     {
         if (_devices.SelectedItem is not BluetoothCandidate selected) return;
+        ClearVerifiedSelection();
         SetBusy(true, "Reading selected mouse's GATT Battery Service...");
         try
         {
@@ -114,6 +132,14 @@ public sealed class BluetoothBatteryForm : Form
             _result.Text = result.Percent.HasValue
                 ? $"{selected.DisplayName}: {result.Percent}% — {result.Status}"
                 : result.Status + " No battery percentage inferred.";
+            if (result.Percent.HasValue &&
+                BluetoothAutoPolicy.IsDirectGatt(result.Status) &&
+                selected.IsLowEnergy)
+            {
+                _verified = selected;
+                _verifiedPercent = result.Percent.Value;
+                _automatic.Enabled = true;
+            }
         }
         catch (TimeoutException)
         {
@@ -129,6 +155,38 @@ public sealed class BluetoothBatteryForm : Form
         {
             SetBusy(false);
         }
+    }
+
+    private void ClearVerifiedSelection()
+    {
+        if (_automatic.Checked)
+        {
+            _automatic.Checked = false;
+        }
+        _automatic.Enabled = false;
+        _verified = null;
+        _verifiedPercent = null;
+    }
+
+    private void ToggleAutomatic()
+    {
+        if (_automatic.Checked && _verified is not null &&
+            _verifiedPercent.HasValue)
+        {
+            _onAutoSelection(_verified, _verifiedPercent);
+            _result.Text = "Bluetooth tray fallback is enabled for this session. " +
+                "It is used only when the 2.4 GHz receiver is absent.";
+        }
+        else
+        {
+            _onAutoSelection(null, null);
+        }
+    }
+
+    /// <summary>Require a new fresh GATT read before enabling again.</summary>
+    public void DisableAutomatic()
+    {
+        ClearVerifiedSelection();
     }
 
     private void CopyLookupSummary()

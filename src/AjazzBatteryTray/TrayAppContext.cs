@@ -15,6 +15,11 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly BatteryHistory _history = new();
     private BatteryHistoryForm? _historyWindow;
     private BluetoothBatteryForm? _bluetoothWindow;
+    private readonly BluetoothAutoPolicy _bluetoothPolicy = new();
+    private BluetoothCandidate? _bluetoothSelection;
+    private readonly ToolStripMenuItem _bluetoothStatus = new();
+    private readonly ToolStripMenuItem _disableBluetooth = new();
+    private string _lastSource = "";
     private readonly DockClockSchedule _clockSchedule = new();
     private readonly ToolStripMenuItem _clockStatus = new();
     private bool _manualClockSync;
@@ -52,6 +57,13 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add("Device diagnostics...", null, (_, _) => ShowDiagnostics());
         menu.Items.Add("Check paired Bluetooth battery...", null,
             (_, _) => ShowBluetoothBattery());
+        _bluetoothStatus.Text = "Bluetooth tray fallback: off";
+        _bluetoothStatus.Enabled = false;
+        menu.Items.Add(_bluetoothStatus);
+        _disableBluetooth.Text = "Disable Bluetooth tray fallback";
+        _disableBluetooth.Enabled = false;
+        _disableBluetooth.Click += (_, _) => SelectBluetoothFallback(null, null);
+        menu.Items.Add(_disableBluetooth);
         menu.Items.Add("Copy diagnostic report", null, (_, _) => CopyDeviceReport());
         menu.Items.Add(BuildIntervalMenu());
         menu.Items.Add(new ToolStripSeparator());
@@ -150,9 +162,40 @@ public sealed class TrayAppContext : ApplicationContext
     private void ShowBluetoothBattery()
     {
         if (_bluetoothWindow is null || _bluetoothWindow.IsDisposed)
-            _bluetoothWindow = new BluetoothBatteryForm();
+        {
+            _bluetoothWindow = new BluetoothBatteryForm(SelectBluetoothFallback);
+            _bluetoothWindow.FormClosing += (_, e) =>
+            {
+                if (!_closing)
+                {
+                    e.Cancel = true;
+                    _bluetoothWindow.Hide();
+                }
+            };
+        }
         _bluetoothWindow.Show();
         _bluetoothWindow.BringToFront();
+    }
+
+    private void SelectBluetoothFallback(BluetoothCandidate? candidate, int? level)
+    {
+        if (candidate is not null && candidate.IsLowEnergy &&
+            level is >= 0 and <= 100)
+        {
+            _bluetoothSelection = candidate;
+            _bluetoothPolicy.Enable(level.Value, DateTimeOffset.UtcNow);
+            _bluetoothStatus.Text = "Bluetooth tray fallback: enabled (session)";
+            _disableBluetooth.Enabled = true;
+        }
+        else
+        {
+            _bluetoothSelection = null;
+            _bluetoothPolicy.Disable();
+            _bluetoothStatus.Text = "Bluetooth tray fallback: off";
+            _disableBluetooth.Enabled = false;
+            _bluetoothWindow?.DisableAutomatic();
+        }
+        PollSoon();
     }
 
     private static void CopyDeviceReport()
@@ -247,8 +290,12 @@ public sealed class TrayAppContext : ApplicationContext
             var result = await Task.Run(QueryAndSync);
             if (!_closing)
             {
-                ApplyReading(result.Reading);
-                ApplyClockResult(result.Attempted, result.Succeeded);
+                await PollBluetoothFallbackAsync(result.Reading.ReceiverPresent);
+                if (!_closing)
+                {
+                    ApplyReading(result.Reading);
+                    ApplyClockResult(result.Attempted, result.Succeeded);
+                }
             }
         }
         catch (Exception error)
@@ -294,6 +341,29 @@ public sealed class TrayAppContext : ApplicationContext
         return (reading, true, sent);
     }
 
+    private async Task PollBluetoothFallbackAsync(bool receiverPresent)
+    {
+        BluetoothCandidate? selected = _bluetoothSelection;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        if (selected is null || !_bluetoothPolicy.ShouldRead(receiverPresent, now))
+            return;
+        try
+        {
+            var response = await BluetoothOperationTimeout.Run(
+                BluetoothBatteryReader.ReadAsync(selected), TimeSpan.FromSeconds(12));
+            if (_closing || _bluetoothSelection != selected) return;
+            bool direct = BluetoothAutoPolicy.IsDirectGatt(response.Status);
+            _bluetoothPolicy.RecordRead(response.Percent, direct, DateTimeOffset.UtcNow);
+        }
+        catch (Exception error)
+        {
+            if (_closing || _bluetoothSelection != selected) return;
+            _bluetoothPolicy.RecordRead(null, false, DateTimeOffset.UtcNow);
+            FileLog.Write("WARN", "Bluetooth fallback read failed: " +
+                error.GetType().Name);
+        }
+    }
+
     private void ApplyClockResult(bool attempted, bool succeeded)
     {
         if (!attempted)
@@ -310,13 +380,19 @@ public sealed class TrayAppContext : ApplicationContext
     private void ApplyReading(AjazzHidReader.Reading reading)
     {
         bool connected = reading.Percent.HasValue;
+        int? blePercent = _bluetoothPolicy.VisiblePercent(
+            reading.ReceiverPresent, DateTimeOffset.UtcNow);
+        int? displayPercent = connected ? reading.Percent : blePercent;
+        bool displayConnected = displayPercent.HasValue;
+        string source = connected ? "2.4 GHz" :
+            blePercent.HasValue ? "Bluetooth" : "2.4 GHz";
         if (_settings.RecordBatteryHistory)
         {
             _history.Record(DateTimeOffset.UtcNow, reading.Percent, reading.ReceiverPresent);
         }
 
         if (_connectionAlerts.Evaluate(connected, reading.ReceiverPresent) &&
-            _settings.NotifyOnDisconnect)
+            _settings.NotifyOnDisconnect && !blePercent.HasValue)
         {
             _tray.ShowBalloonTip(4000, "AJAZZ APEX disconnected",
                 "The 2.4 GHz receiver is no longer detected.",
@@ -325,7 +401,6 @@ public sealed class TrayAppContext : ApplicationContext
         int? previousPercent = _lastPercent;
         if (connected)
         {
-            _lastPercent = reading.Percent;
             int? threshold = _settings.NotificationsEnabled
                 ? _alerts.Evaluate(reading.Percent!.Value) : null;
             if (threshold.HasValue)
@@ -336,19 +411,21 @@ public sealed class TrayAppContext : ApplicationContext
             }
         }
 
-        if (connected != _lastConnected ||
-            (connected && previousPercent != reading.Percent))
+        if (displayConnected != _lastConnected ||
+            previousPercent != displayPercent || source != _lastSource)
         {
-            FileLog.Write("INFO", reading.Details + (connected
-                ? $"; battery {reading.Percent}%" : "; level unavailable"));
+            FileLog.Write("INFO", $"{source} battery: " +
+                (displayConnected ? $"{displayPercent}%" : "unavailable"));
         }
 
-        _lastConnected = connected;
-        string value = connected ? $"{reading.Percent}%" : "unavailable";
-        _statusItem.Text = $"AJAZZ APEX — {value}";
-        string tooltip = $"AJAZZ APEX: {value} ({reading.Details})";
+        _lastPercent = displayPercent;
+        _lastConnected = displayConnected;
+        _lastSource = source;
+        string value = displayConnected ? $"{displayPercent}%" : "unavailable";
+        _statusItem.Text = $"AJAZZ APEX — {source}: {value}";
+        string tooltip = $"AJAZZ APEX: {source} {value}";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
-        UpdateIcon(reading.Percent, connected);
+        UpdateIcon(displayPercent, displayConnected);
     }
 
     private void UpdateIcon(int? percent, bool connected)
@@ -375,6 +452,8 @@ public sealed class TrayAppContext : ApplicationContext
         _closing = true;
         _timer.Stop();
         _timer.Dispose();
+        _bluetoothSelection = null;
+        _bluetoothPolicy.Disable();
         _historyWindow?.Close();
         _bluetoothWindow?.Close();
         _tray.Visible = false;

@@ -27,14 +27,17 @@
 - [x] Optional Windows receiver-disconnect warning with debounce.
 - [ ] Verify mouse reconnection, sleep, charging and clock updates on real dock.
 - [x] Document Bluetooth capabilities and standard GATT discovery plan.
-- [ ] Verify paired-device Battery Service 0x180F / Battery Level 0x2A19
-  on actual AJ179/APEX and AJ159/APEX hardware.
+- [x] Verify 0x180F / 0x2A19 direct GATT battery read on AJ179 APEX:
+  Windows manual read reported 83% (user hardware observation, 2026-11-06).
+- [ ] Verify standard Battery Service on actual AJ159 APEX hardware.
 - [x] Add bounded manual BLE UI requests and test timeouts on Windows.
 - [x] Handle Windows LE/Classic paired endpoints and generic paired names.
 - [x] Isolate failed or slow Windows LE/Classic enumeration and show safe
   per-transport counts in the manual Bluetooth dialog.
-- [ ] Confirm new diagnostics and actual battery reading on a paired AJ179 APEX
-  running Windows with its 2.4 GHz receiver disconnected.
+- [x] Confirm paired AJ179 APEX appears in Windows inspector and returns
+  direct GATT Battery Level (83% on 2026-11-06).
+- [ ] Verify automatic Bluetooth tray fallback on AJ179 APEX, including
+  2.4 GHz receiver unplug/replug and sleep/wake.
 - [x] Offer Windows cached battery as a labelled fallback (not necessarily live).
 - [ ] Validate Bluetooth battery discovery and Windows cached value on a
   physical AJ179 APEX with 2.4 GHz receiver disconnected.
@@ -43,7 +46,12 @@
   (experimental; the user chooses a device and initiates each read).
 - [x] macOS manual, already-connected CoreBluetooth Battery Service inspector
   (experimental; no scanning, pairing, device IDs persisted or background reads).
-- [ ] Verify standard Battery Service on actual AJ179/AJ159 BLE hardware.
+- [x] Confirm AJ179 APEX standard GATT Battery Service on Windows.
+- [ ] Confirm AJ159 APEX standard Battery Service on Windows/macOS.
+- [x] Windows in-memory, explicit opt-in Bluetooth tray fallback when
+  2.4 GHz receiver is physically absent. Direct fresh GATT only; no
+  automatic paired-device discovery or persisted device IDs.
+- [ ] Field-test Windows Bluetooth fallback and source priority on AJ179 APEX.
 - [ ] Add model-matched Bluetooth reporting to the tray when verified.
 - [ ] Model-matched Bluetooth battery reporting where available.
   See [Bluetooth discovery plan](BLUETOOTH_DISCOVERY.md).

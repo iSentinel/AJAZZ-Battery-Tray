@@ -14,6 +14,37 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Confirmed AJ179 APEX hardware observation (2026-11-06)
+
+On a physically paired AJ179 APEX in Windows, the user selected the mouse
+inside **Check paired Bluetooth battery...** and observed
+**AJ179 APEX 83% — Fresh GATT Battery Level (2A19) read**.
+This establishes that at least this AJ179 APEX configuration exposes the
+standard GATT Battery Service, rather than only Windows's cached battery.
+
+It does **not** validate AJ159 APEX, another firmware revision, Mac BLE
+access, Bluetooth sleep/wake or source handover.
+
+## Opt-in Windows tray fallback (v0.3.0-beta.14)
+
+After selecting the mouse and successfully reading a **fresh** standard
+GATT Battery Level (0x2A19), the dialog enables **Use this mouse in tray when
+2.4 GHz receiver is absent (this session)**. User consent is explicit;
+it is disabled by default and reset at program restart.
+
+- The exact selected paired device ID is held **in memory only**.
+- No automatic Bluetooth discovery, pairing, GATT writes or device scanning.
+- The USB receiver takes priority, including when the USB-connected mouse
+  is asleep; BLE is queried only if the USB receiver itself is absent.
+- The minimum automatic Bluetooth polling interval is 60 seconds.
+- Each Bluetooth read has a 12-second UI timeout. Unavailable or stale
+  values are replaced by **unknown**, never by a fabricated percentage.
+- Windows cached BatteryLife values are *not* accepted as automatic fallback.
+- History and low-battery alerts still cover the 2.4 GHz path only.
+- A tray menu item disables fallback without restarting; disabling clears
+  the selected identifier and latest value from memory.
+- Actual unplug/replug and sleep/wake behavior still needs hardware tests.
+
 ## Windows discovery diagnostics (v0.3.0-beta.13)
 
 The manual Windows inspector independently queries the paired-only BLE and
