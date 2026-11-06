@@ -41,6 +41,8 @@
   removal, to avoid incorrect BLE fallback and false disconnect alerts.
 - [x] Check SetupAPI enumeration completion status: only Win32 259 ends
   the scan; unexpected errors preserve unknown receiver presence.
+- [x] Validate SetupAPI interface-detail size probes (Win32 122), size bounds
+  and final reads; propagate failed reads as unknown USB presence.
 - [ ] Validate recovery from temporary Windows HID enumeration errors on
   physical AJ179 hardware.
 - [ ] Verify mouse reconnection, sleep, charging and clock updates on real dock.
