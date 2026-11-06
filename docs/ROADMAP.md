@@ -16,6 +16,8 @@
   workflow publishes and verifies the newest six-asset release.
 - Every release requires Windows tests, installer install/uninstall smoke test,
   macOS universal build and tests, and checksums in GitHub Releases.
+- [x] Preflight Windows, installer and macOS version consistency and
+  reject already published release tags before packaging.
 - Real-device testing is separate from CI compilation.
 - Track confirmed vs unverified behavior in
   [Hardware Validation Matrix](VALIDATION_MATRIX.md).
