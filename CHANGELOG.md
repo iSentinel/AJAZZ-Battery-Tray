@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased (CI improvements)
+- Avoid duplicate Windows and macOS builds for every feature-branch push.
+- Keep mandatory pull-request checks and main-branch builds.
+- Cancel superseded pull-request CI runs when new commits arrive.
+- Serialize beta release publishing and reject overwriting existing assets.
+
+
 ## 0.3.0-beta.8 (2026-11-06)
 - Add Copy diagnostic report to Windows tray and macOS menu bar.
 - Include app and OS version with read-only receiver metadata.

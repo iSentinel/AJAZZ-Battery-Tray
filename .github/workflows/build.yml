@@ -2,8 +2,17 @@ name: Build Windows portable app
 
 on:
   push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '.github/workflows/build.yml'
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -16,7 +25,10 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Run unit tests
-        run: dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
+        shell: pwsh
+        run: |
+          dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
+          if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
       - name: Publish single-file Windows executable
         shell: pwsh
         run: |
@@ -24,6 +36,7 @@ jobs:
             -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true -p:PublishTrimmed=false `
             -p:DebugType=None -o dist/app
+          if ($LASTEXITCODE -ne 0) { throw 'Windows publish failed' }
       # upload-artifact already delivers a ZIP download. Upload the executable
       # directory, not a pre-zipped archive, to avoid nested ZIP files.
       - uses: actions/upload-artifact@v4

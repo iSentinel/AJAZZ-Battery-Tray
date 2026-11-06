@@ -6,9 +6,12 @@ on:
     paths:
       - 'src/**'
       - 'macos/**'
-      - '.github/workflows/release-beta.yml'
       - 'installer/**'
   workflow_dispatch:
+
+concurrency:
+  group: ajazz-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   windows:
@@ -180,13 +183,8 @@ jobs:
           SHA256 checksum files accompany every distribution.
           NOTES
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG exists; refresh beta assets"
-            gh release upload "$TAG" dist/release/AJAZZBatteryTray-win-x64.exe \
-              dist/release/AJAZZBatteryTray-win-x64.sha256 \
-              dist/release/AJAZZBatteryTray-Setup-win-x64.exe \
-              dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
-              dist/release/AJAZZBatteryTray-macOS-universal.zip \
-              dist/release/AJAZZBatteryTray-macOS-universal.sha256 --clobber
+            echo "::error::Release $TAG exists; do not overwrite published binaries."
+            exit 1
           else
             gh release create "$TAG" \
               dist/release/AJAZZBatteryTray-win-x64.exe \
