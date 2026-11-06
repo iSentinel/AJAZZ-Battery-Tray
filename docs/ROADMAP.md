@@ -56,6 +56,8 @@
 - [x] Distinguish Bluetooth-unavailable from USB-unavailable in the tray.
 - [x] Suppress intentional USB-removal notification during BLE fallback.
 - [x] Keep USB tray updates independent of slow Bluetooth GATT reads.
+- [x] Show Bluetooth polling state, consecutive failures and last success in
+  Windows tray; copy redacted status for field testing.
 - [x] Avoid overlapping background GATT requests and invalidate replies
   from previously selected or disabled Bluetooth sessions.
 - [ ] Hardware-test USB polling responsiveness during slow or sleeping

@@ -14,6 +14,24 @@ References:
 - Bluetooth SIG assigned numbers:
   https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Assigned_Numbers/out/en/index-en.html
 
+## Windows monitoring diagnostics (v0.3.0-beta.17)
+
+The tray shows whether the opt-in Bluetooth fallback is **off**, waiting
+behind a connected USB receiver, actively checking a GATT battery reading,
+showing a fresh percentage or currently unavailable. Unavailable status
+includes the number of failed consecutive reads and the local time of the
+last successful GATT reading.
+
+**Copy Bluetooth monitor status** writes a short, human-readable report to
+the clipboard with the app version, USB receiver state, displayed transport,
+last displayed percent, pending request state, consecutive failures, and
+UTC times for the last attempted and last successful GATT reads.
+
+It never copies the mouse's Bluetooth address, Windows device instance ID,
+serial number or raw Bluetooth payloads. The in-memory counters and times
+are reset when fallback is disabled or a new session starts. The report
+supports hardware acceptance without background data upload.
+
 ## Nonblocking Windows monitoring (v0.3.0-beta.16)
 
 The USB/2.4 GHz receiver poll now updates the tray **before** starting any

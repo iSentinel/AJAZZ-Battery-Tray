@@ -8,9 +8,13 @@ public sealed class BluetoothAutoPolicy
 
     private DateTimeOffset? _lastAttempt;
     private DateTimeOffset? _lastReading;
+    private DateTimeOffset? _lastSuccessfulRead;
     private int? _percent;
 
     public bool Enabled { get; private set; }
+    public int ConsecutiveFailures { get; private set; }
+    public DateTimeOffset? LastSuccessfulRead => _lastSuccessfulRead;
+    public DateTimeOffset? LastAttempt => _lastAttempt;
 
     /// <summary>Reject replies from a device selection that has changed.</summary>
     public int Generation { get; private set; }
@@ -24,6 +28,8 @@ public sealed class BluetoothAutoPolicy
         Enabled = true;
         _percent = percent;
         _lastReading = now;
+        _lastSuccessfulRead = now;
+        ConsecutiveFailures = 0;
         _lastAttempt = now;
     }
 
@@ -33,6 +39,8 @@ public sealed class BluetoothAutoPolicy
         Enabled = false;
         _percent = null;
         _lastReading = null;
+        _lastSuccessfulRead = null;
+        ConsecutiveFailures = 0;
         _lastAttempt = null;
     }
 
@@ -46,16 +54,20 @@ public sealed class BluetoothAutoPolicy
     /// <summary>Save a direct GATT result or invalidate stale/failed data.</summary>
     public void RecordRead(BluetoothBatteryResult result, DateTimeOffset now)
     {
+        if (!Enabled) return;
         _lastAttempt = now;
         if (Enabled && result.IsFreshGatt)
         {
             _percent = result.Percent;
             _lastReading = now;
+            _lastSuccessfulRead = now;
+            ConsecutiveFailures = 0;
         }
         else
         {
             _percent = null;
             _lastReading = null;
+            ConsecutiveFailures++;
         }
     }
 
@@ -66,6 +78,23 @@ public sealed class BluetoothAutoPolicy
             now < _lastReading.Value || now - _lastReading.Value > FreshnessLimit)
             return null;
         return _percent;
+    }
+
+    /// <summary>Human-readable status without device identifiers.</summary>
+    public string StatusText(bool receiverPresent, bool polling, DateTimeOffset now)
+    {
+        if (!Enabled) return "Bluetooth fallback: off";
+        if (receiverPresent) return "Bluetooth fallback: standby (USB primary)";
+        if (polling) return "Bluetooth fallback: checking battery...";
+
+        int? percent = VisiblePercent(false, now);
+        if (percent.HasValue)
+            return $"Bluetooth fallback: {percent}% (fresh GATT)";
+
+        string last = LastSuccessfulRead?.ToLocalTime().ToString("HH:mm:ss")
+            ?? "never";
+        return $"Bluetooth fallback: unavailable ({ConsecutiveFailures} failed; " +
+            $"last good {last})";
     }
 
 }
