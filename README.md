@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.12 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.13 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -16,7 +16,8 @@ A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 multiple USB identities; only the 8K dock `3151:5007` is targeted here,
 not alternate `3151:4026` or `3151:4027` receivers. This is not a
 WinForms port: macOS uses its own Swift menu-bar application. Bluetooth
-is not implemented on either platform yet. Only one matching receiver is
+has experimental manual battery inspectors on both platforms; automatic
+Bluetooth monitoring is not yet enabled. Only one matching receiver is
 reported at a time; if two receivers are attached, the device shown can
 be ambiguous.
 
@@ -214,6 +215,17 @@ This does not confirm AJ179/AJ159 exposes the standard service, and the mouse
 name is only a candidate hint, not a trustworthy identity. No pairing or
 automatic background Bluetooth polling is performed. The original 2.4 GHz
 monitor and safety guards are unchanged.
+
+### Troubleshooting Windows Bluetooth discovery
+
+In **Check paired Bluetooth battery...**, choose **Show all paired Bluetooth
+devices**, then **Find paired Bluetooth devices**. Windows Classic and BLE
+enumeration now return independently: if one transport fails, the other can
+still list paired devices. The dialog shows paired counts and error types, with
+**Copy lookup summary** for sharing a short diagnostic report. It does not
+include addresses or device IDs. A device displayed in this list is not proof
+that its GATT Battery Service is available. Cached Windows battery readings are
+labelled as potentially stale.
 
 ## Safe HID operations
 

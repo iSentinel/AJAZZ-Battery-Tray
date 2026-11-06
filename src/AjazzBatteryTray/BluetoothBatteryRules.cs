@@ -13,6 +13,10 @@ public static class BluetoothBatteryRules
                value.Contains("AJ179", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>Show unknown device names only when the user opts in.</summary>
+    public static bool ShouldShow(string? name, bool showAll)
+        => showAll || IsCandidateName(name);
+
     /// <summary>Accept only numeric Windows battery percentages (not status 101).</summary>
     public static bool TryParseWindowsLevel(object? raw, out int level)
     {

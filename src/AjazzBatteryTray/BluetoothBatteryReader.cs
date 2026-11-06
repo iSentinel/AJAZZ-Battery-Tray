@@ -13,6 +13,18 @@ public sealed record BluetoothCandidate(
         => $"{DisplayName} ({(IsLowEnergy ? "BLE" : "Classic")})";
 }
 
+/// <summary>Device counts and errors without addresses or Windows instance IDs.</summary>
+public sealed record BluetoothDiscovery(
+    IReadOnlyList<BluetoothCandidate> Candidates,
+    int LeCount, int ClassicCount,
+    string? LeError, string? ClassicError)
+{
+    public string Summary =>
+        $"Found {LeCount} BLE and {ClassicCount} Classic paired endpoints." +
+        (LeError is null ? "" : $" BLE query failed: {LeError}.") +
+        (ClassicError is null ? "" : $" Classic query failed: {ClassicError}.");
+}
+
 /// <summary>Manually inspects paired devices and standard battery metadata.</summary>
 public static class BluetoothBatteryReader
 {
@@ -22,21 +34,44 @@ public static class BluetoothBatteryReader
         "System.Devices.Aep.ModelName"
     };
 
-    /// <summary>List paired LE and Classic devices; never scan unpaired devices.</summary>
-    public static async Task<IReadOnlyList<BluetoothCandidate>> FindPairedAsync(
-        bool showAll = false)
+    /// <summary>Search both paired transports, tolerating one unavailable API.</summary>
+    public static async Task<BluetoothDiscovery> FindPairedAsync(bool showAll = false)
     {
-        var le = QueryPairedAsync(
+        var le = QuerySafeAsync(
             BluetoothLEDevice.GetDeviceSelectorFromPairingState(true), true);
-        var classic = QueryPairedAsync(
+        var classic = QuerySafeAsync(
             BluetoothDevice.GetDeviceSelectorFromPairingState(true), false);
-        var results = await Task.WhenAll(le, classic);
-        return results.SelectMany(x => x)
-            .Where(x => showAll || BluetoothBatteryRules.IsCandidateName(x.DisplayName))
+        TransportResult[] results = await Task.WhenAll(le, classic);
+        var candidates = results.SelectMany(x => x.Devices)
+            .Where(x => BluetoothBatteryRules.ShouldShow(x.DisplayName, showAll))
             .GroupBy(x => x.DeviceId, StringComparer.OrdinalIgnoreCase)
             .Select(x => x.First())
             .OrderBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+        return new BluetoothDiscovery(candidates, results[0].Devices.Count,
+            results[1].Devices.Count, results[0].Error, results[1].Error);
+    }
+
+    private sealed record TransportResult(
+        IReadOnlyList<BluetoothCandidate> Devices, string? Error);
+
+    /// <summary>Bound each transport separately to preserve partial results.</summary>
+    private static async Task<TransportResult> QuerySafeAsync(
+        string selector, bool lowEnergy)
+    {
+        try
+        {
+            var devices = await BluetoothOperationTimeout.Run(
+                QueryPairedAsync(selector, lowEnergy), TimeSpan.FromSeconds(8));
+            return new TransportResult(devices, null);
+        }
+        catch (Exception error)
+        {
+            string transport = lowEnergy ? "BLE" : "Classic";
+            string kind = error.GetType().Name;
+            FileLog.Write("WARN", $"{transport} paired lookup failed: {kind}");
+            return new TransportResult(Array.Empty<BluetoothCandidate>(), kind);
+        }
     }
 
     private static async Task<IReadOnlyList<BluetoothCandidate>> QueryPairedAsync(
