@@ -55,6 +55,11 @@
   Windows automatic Bluetooth trust, independent of displayed wording.
 - [x] Distinguish Bluetooth-unavailable from USB-unavailable in the tray.
 - [x] Suppress intentional USB-removal notification during BLE fallback.
+- [x] Keep USB tray updates independent of slow Bluetooth GATT reads.
+- [x] Avoid overlapping background GATT requests and invalidate replies
+  from previously selected or disabled Bluetooth sessions.
+- [ ] Hardware-test USB polling responsiveness during slow or sleeping
+  Bluetooth GATT responses, and selection changes mid-request.
 - [ ] Field-test lost GATT response, USB reconnect and BLE resume on AJ179 APEX.
 - [ ] Field-test Windows Bluetooth fallback and source priority on AJ179 APEX.
 - [ ] Add model-matched Bluetooth reporting to the tray when verified.
