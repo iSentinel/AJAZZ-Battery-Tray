@@ -13,6 +13,23 @@ public static class BluetoothBatteryRules
                value.Contains("AJ179", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>Accept only numeric Windows battery percentages (not status 101).</summary>
+    public static bool TryParseWindowsLevel(object? raw, out int level)
+    {
+        level = raw switch
+        {
+            byte value => value,
+            short value => value,
+            ushort value => value,
+            int value => value,
+            uint value when value <= 100 => (int)value,
+            _ => -1
+        };
+        if (level is >= 0 and <= 100) return true;
+        level = 0;
+        return false;
+    }
+
     /// <summary>Read one Battery Level byte (0-100), rejecting other frames.</summary>
     public static bool TryParseLevel(ReadOnlySpan<byte> data, out int level)
     {
