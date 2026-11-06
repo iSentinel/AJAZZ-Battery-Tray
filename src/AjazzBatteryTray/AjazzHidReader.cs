@@ -2,7 +2,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Queries only the AJ179 APEX-compatible vendor status collection.</summary>
+/// <summary>Queries the shared AJAZZ APEX 8K receiver vendor collection.</summary>
 public sealed class AjazzHidReader
 {
     public sealed record Reading(bool ReceiverPresent, int? Percent, string Details);
@@ -30,6 +30,41 @@ public sealed class AjazzHidReader
             FileLog.Write("WARN", "HID read failed", error);
             return new Reading(false, null, "HID read error; see log");
         }
+    }
+
+    /// <summary>Sends only the documented dock RTC command to the matching HID collection.</summary>
+    public bool TrySyncDockClock(DateTime localTime)
+    {
+        try
+        {
+            foreach (string path in HidNative.FindAjazzPaths())
+            {
+                using SafeFileHandle handle = HidNative.Open(path);
+                if (handle.IsInvalid || !HidNative.TryGetCaps(handle, out var caps))
+                {
+                    continue;
+                }
+
+                if (caps.UsagePage != 0xFFFF || caps.Usage != 0x02 ||
+                    caps.FeatureReportByteLength is < 65 or > 256)
+                {
+                    continue;
+                }
+
+                byte[] frame = DockClockReport.Create(
+                    localTime, caps.FeatureReportByteLength);
+                if (HidNative.HidD_SetFeature(handle, frame, frame.Length))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "Dock clock HID transfer failed", error);
+        }
+
+        return false;
     }
 
     private static Reading? QueryPath(string path)

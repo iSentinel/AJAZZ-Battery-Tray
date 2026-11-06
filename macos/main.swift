@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import IOKit.hid
 
-/// A status-only HID poll. No pairing, firmware or profile write commands.
+/// Reads battery and can set only the dock's documented on-board clock.
 enum ApexBattery {
     enum Status {
         case battery(Int)
@@ -54,6 +54,58 @@ enum ApexBattery {
         return attempted ? .unavailable : .notConnected
     }
 
+    /// Builds the documented 64-byte macOS feature payload for dock RTC updates.
+    static func makeClockPayload(_ date: Date) -> [UInt8] {
+        let fields = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second], from: date)
+        let year = fields.year ?? 2000
+        var payload = [UInt8](repeating: 0, count: 64)
+        payload[0] = 0x28
+        payload[7] = 0xD7
+        payload[8] = UInt8((year >> 8) & 0xFF)
+        payload[9] = UInt8(year & 0xFF)
+        payload[10] = UInt8(fields.month ?? 1)
+        payload[11] = UInt8(fields.day ?? 1)
+        payload[12] = UInt8(fields.hour ?? 0)
+        payload[13] = UInt8(fields.minute ?? 0)
+        payload[14] = UInt8(fields.second ?? 0)
+        return payload
+    }
+
+    /// Transfers local wall-clock time to the same vendor HID collection.
+    static func syncClock() -> Bool {
+        let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+        let criteria: [String: Any] = [
+            kIOHIDVendorIDKey as String: vendorID,
+            kIOHIDProductIDKey as String: productID
+        ]
+        IOHIDManagerSetDeviceMatching(manager, criteria as CFDictionary)
+        guard IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
+            return false
+        }
+        defer { IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone)) }
+        guard let found = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> else {
+            return false
+        }
+        for device in found where matchesVendorUsage(device) {
+            if sendClock(device) { return true }
+        }
+        return false
+    }
+
+    private static func sendClock(_ device: IOHIDDevice) -> Bool {
+        guard IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
+            return false
+        }
+        defer { IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone)) }
+        let payload = makeClockPayload(Date())
+        let status = payload.withUnsafeBufferPointer { data in
+            IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature,
+                                 CFIndex(payload[0]), data.baseAddress!, data.count)
+        }
+        return status == kIOReturnSuccess
+    }
+
     private static func matchesVendorUsage(_ device: IOHIDDevice) -> Bool {
         let page = (IOHIDDeviceGetProperty(device, kIOHIDPrimaryUsagePageKey as CFString) as? NSNumber)?.intValue
         let item = (IOHIDDeviceGetProperty(device, kIOHIDPrimaryUsageKey as CFString) as? NSNumber)?.intValue
@@ -94,6 +146,10 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var statusMenu: NSMenu!
     private var detailItem: NSMenuItem!
+    private var clockItem: NSMenuItem!
+    private var lastClockAttempt = Date.distantPast
+    private var receiverWasPresent = false
+    private var manualClockSync = false
     private var timer: Timer?
     private var polling = false
 
@@ -124,6 +180,21 @@ final class TrayController: NSObject, NSApplicationDelegate {
         statusMenu.addItem(interval)
         statusMenu.addItem(.separator())
 
+        let syncItem = NSMenuItem(title: "Sync dock time now",
+                                  action: #selector(syncClockNow), keyEquivalent: "")
+        syncItem.target = self
+        statusMenu.addItem(syncItem)
+        let automatic = NSMenuItem(title: "Auto-sync dock clock (5 min)",
+                                   action: #selector(toggleClockSync(_:)), keyEquivalent: "")
+        automatic.target = self
+        automatic.state = autoClockEnabled ? .on : .off
+        statusMenu.addItem(automatic)
+        clockItem = NSMenuItem(title: "Dock clock: not yet synchronized",
+                               action: nil, keyEquivalent: "")
+        clockItem.isEnabled = false
+        statusMenu.addItem(clockItem)
+        statusMenu.addItem(.separator())
+
         let quit = NSMenuItem(title: "Quit AJAZZ Battery Tray", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         statusMenu.addItem(quit)
@@ -150,18 +221,65 @@ final class TrayController: NSObject, NSApplicationDelegate {
         refresh()
     }
 
+    private var autoClockEnabled: Bool {
+        if UserDefaults.standard.object(forKey: "AutomaticDockClockSync") == nil {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: "AutomaticDockClockSync")
+    }
+
+    @objc private func toggleClockSync(_ sender: NSMenuItem) {
+        let enabled = !autoClockEnabled
+        UserDefaults.standard.set(enabled, forKey: "AutomaticDockClockSync")
+        sender.state = enabled ? .on : .off
+        if enabled { syncClockNow() }
+    }
+
+    @objc private func syncClockNow() {
+        manualClockSync = true
+        refresh()
+    }
+
     @objc private func refresh() {
         guard !polling else { return }
         polling = true
+        let manual = manualClockSync
+        manualClockSync = false
+        let automatic = autoClockEnabled
+        let lastAttempt = lastClockAttempt
+        let previouslyPresent = receiverWasPresent
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let value = ApexBattery.read()
+            let present: Bool
+            switch value {
+            case .notConnected: present = false
+            default: present = true
+            }
+            let due = Date().timeIntervalSince(lastAttempt) >= 300
+            let shouldSync = present && (manual ||
+                (automatic && (due || !previouslyPresent)))
+            let sent = shouldSync ? ApexBattery.syncClock() : false
             DispatchQueue.main.async {
                 self?.update(value)
+                if shouldSync { self?.recordClockResult(sent) }
             }
         }
     }
 
+    private func recordClockResult(_ sent: Bool) {
+        lastClockAttempt = Date()
+        let stamp = DateFormatter.localizedString(
+            from: Date(), dateStyle: .none, timeStyle: .medium)
+        clockItem.title = sent
+            ? "Dock clock: command sent at " + stamp
+            : "Dock clock: unable to send at " + stamp
+    }
+
     private func update(_ status: ApexBattery.Status) {
+        switch status {
+        case .notConnected: receiverWasPresent = false
+        default: receiverWasPresent = true
+        }
         polling = false
         switch status {
         case .battery(let level):
@@ -183,9 +301,18 @@ final class TrayController: NSObject, NSApplicationDelegate {
 if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-h") {
     print("AJAZZ Battery Tray for macOS (experimental 2.4 GHz/8K HID)")
     print("Usage: AJAZZBatteryTray [--help] [--diagnose] [--self-test]")
+    print("Tray menu: sync dock time now or every five minutes.")
     print("Requires macOS 13+ and a compatible VID_3151:PID_5007 receiver.")
 } else if CommandLine.arguments.contains("--self-test") {
-    let valid = ApexBattery.parse([5, 0, 0, 73]) == 73 &&
+    let testDate = Calendar.current.date(from: DateComponents(
+        year: 2026, month: 11, day: 6, hour: 9, minute: 57, second: 42))!
+    let packet = ApexBattery.makeClockPayload(testDate)
+    let clockValid = packet.count == 64 && packet[0] == 0x28 &&
+        packet[7] == 0xD7 && packet[8] == 0x07 && packet[9] == 0xEA &&
+        packet[10] == 11 && packet[11] == 6 && packet[12] == 9 &&
+        packet[13] == 57 && packet[14] == 42 && packet[15] == 0
+    let valid = clockValid &&
+                ApexBattery.parse([5, 0, 0, 73]) == 73 &&
                 ApexBattery.parse([0, 0, 73]) == 73 &&
                 ApexBattery.parse([5, 0, 0, 0]) == nil &&
                 ApexBattery.parse([5, 0, 0, 255]) == nil &&
