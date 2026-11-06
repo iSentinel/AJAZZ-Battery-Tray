@@ -54,6 +54,7 @@ public sealed class BluetoothAutoPolicy
     /// <summary>Save a direct GATT result or invalidate stale/failed data.</summary>
     public void RecordRead(BluetoothBatteryResult result, DateTimeOffset now)
     {
+        if (!Enabled) return;
         _lastAttempt = now;
         if (Enabled && result.IsFreshGatt)
         {
