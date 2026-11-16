@@ -19,16 +19,18 @@ public sealed class TrayAppContext : ApplicationContext
     private BluetoothCandidate? _bluetoothSelection;
     private bool _bluetoothReadInFlight;
     private AjazzHidReader.Reading? _latestUsbReading;
-    private readonly ToolStripMenuItem _bluetoothStatus = new();
-    private readonly ToolStripMenuItem _disableBluetooth = new();
-    private readonly ToolStripMenuItem _refreshBluetooth = new();
+    private ToolStripMenuItem _bluetoothStatus = new();
+    private ToolStripMenuItem _disableBluetooth = new();
+    private ToolStripMenuItem _refreshBluetooth = new();
     private string _lastSource = "";
     private readonly DockClockSchedule _clockSchedule = new();
-    private readonly ToolStripMenuItem _clockStatus = new();
+    private ToolStripMenuItem _clockStatus = new();
     private bool _manualClockSync;
+    private DateTime? _lastClockUpdate;
+    private bool _lastClockSucceeded;
     private readonly AppSettings _settings = AppSettings.Load();
-    private readonly ToolStripMenuItem _statusItem = new();
-    private readonly ToolStripMenuItem _startupItem = new();
+    private ToolStripMenuItem _statusItem = new();
+    private ToolStripMenuItem _startupItem = new();
     private Icon? _icon;
     private int? _lastPercent;
     private bool _lastConnected;
@@ -37,7 +39,8 @@ public sealed class TrayAppContext : ApplicationContext
 
     public TrayAppContext()
     {
-        _tray = new NotifyIcon { Text = "AJAZZ APEX: connecting..." };
+        UiText.SetLanguage(_settings.Language);
+        _tray = new NotifyIcon { Text = "AJAZZ APEX: " + UiText.Get("Connecting...") };
         UpdateIcon(null, false);
         _tray.ContextMenuStrip = BuildMenu();
         _tray.Visible = true;
@@ -51,56 +54,57 @@ public sealed class TrayAppContext : ApplicationContext
     private ContextMenuStrip BuildMenu()
     {
         ContextMenuStrip menu = new();
-        _statusItem.Text = "AJAZZ APEX — connecting";
-        _statusItem.Enabled = false;
+        _statusItem = new ToolStripMenuItem("AJAZZ APEX — " +
+            UiText.Get("Connecting...")) { Enabled = false };
         menu.Items.Add(_statusItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Refresh now", null, (_, _) => PollSoon());
-        menu.Items.Add("Battery history...", null, (_, _) => ShowHistory());
-        menu.Items.Add("Device diagnostics...", null, (_, _) => ShowDiagnostics());
-        menu.Items.Add("Check paired Bluetooth battery...", null,
-            (_, _) => ShowBluetoothBattery());
-        _bluetoothStatus.Text = "Bluetooth tray fallback: off";
-        _bluetoothStatus.Enabled = false;
-        menu.Items.Add(_bluetoothStatus);
-        _disableBluetooth.Text = "Disable Bluetooth tray fallback";
-        _disableBluetooth.Enabled = false;
+        menu.Items.Add(UiText.Get("Refresh now"), null, (_, _) => PollSoon());
+        menu.Items.Add(UiText.Get("Battery history..."), null,
+            (_, _) => ShowHistory());
+        menu.Items.Add(BuildBluetoothMenu());
+        menu.Items.Add(UiText.Get("Sync dock time now"), null,
+            (_, _) => RequestClockSync());
+        _clockStatus = new ToolStripMenuItem { Enabled = false };
+        UpdateClockStatus();
+        menu.Items.Add(_clockStatus);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(BuildSettingsMenu());
+        menu.Items.Add(BuildDiagnosticsMenu());
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(UiText.Get("Exit"), null, (_, _) => ExitThread());
+        return menu;
+    }
+
+    private ToolStripMenuItem BuildBluetoothMenu()
+    {
+        ToolStripMenuItem menu = new(UiText.Get("Bluetooth"));
+        menu.DropDownItems.Add(UiText.Get("Check paired Bluetooth battery..."),
+            null, (_, _) => ShowBluetoothBattery());
+        _bluetoothStatus = new ToolStripMenuItem { Enabled = false };
+        menu.DropDownItems.Add(_bluetoothStatus);
+        _disableBluetooth = new ToolStripMenuItem(
+            UiText.Get("Disable Bluetooth tray fallback"))
+        {
+            Enabled = _bluetoothSelection is not null
+        };
         _disableBluetooth.Click += (_, _) => SelectBluetoothFallback(null, null);
-        menu.Items.Add(_disableBluetooth);
-        _refreshBluetooth.Text = "Refresh Bluetooth battery now";
-        _refreshBluetooth.Enabled = false;
+        menu.DropDownItems.Add(_disableBluetooth);
+        _refreshBluetooth = new ToolStripMenuItem(
+            UiText.Get("Refresh Bluetooth battery now"));
         _refreshBluetooth.Click += (_, _) => StartBluetoothPoll(
             _latestUsbReading?.ReceiverPresent ?? false, force: true);
-        menu.Items.Add(_refreshBluetooth);
-        menu.Items.Add("Copy Bluetooth monitor status", null,
-            (_, _) => CopyBluetoothStatus());
-        menu.Items.Add("Copy diagnostic report", null, (_, _) => CopyDeviceReport());
-        menu.Items.Add(BuildIntervalMenu());
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Sync dock time now", null, (_, _) => RequestClockSync());
-        menu.Items.Add(BuildClockSyncToggle());
-        _clockStatus.Text = "Dock clock: not yet synchronized";
-        _clockStatus.Enabled = false;
-        menu.Items.Add(_clockStatus);
-        ToolStripMenuItem notify = new("Low battery notifications")
-        {
-            Checked = _settings.NotificationsEnabled,
-            CheckOnClick = true
-        };
-        notify.CheckedChanged += (_, _) => SaveNotifications(notify.Checked);
-        menu.Items.Add(notify);
-        menu.Items.Add(BuildBatteryThresholdMenu());
-        ToolStripMenuItem disconnect = new("Notify on receiver disconnect")
-        {
-            Checked = _settings.NotifyOnDisconnect, CheckOnClick = true
-        };
-        disconnect.CheckedChanged += (_, _) =>
-        {
-            _settings.NotifyOnDisconnect = disconnect.Checked;
-            _settings.Save();
-        };
-        menu.Items.Add(disconnect);
-        ToolStripMenuItem history = new("Record battery history")
+        menu.DropDownItems.Add(_refreshBluetooth);
+        UpdateBluetoothStatus();
+        return menu;
+    }
+
+    private ToolStripMenuItem BuildSettingsMenu()
+    {
+        ToolStripMenuItem menu = new(UiText.Get("Settings"));
+        menu.DropDownItems.Add(BuildNotificationsMenu());
+        menu.DropDownItems.Add(BuildIntervalMenu());
+        menu.DropDownItems.Add(BuildClockSyncToggle());
+        ToolStripMenuItem history = new(UiText.Get("Record battery history"))
         {
             Checked = _settings.RecordBatteryHistory, CheckOnClick = true
         };
@@ -109,18 +113,84 @@ public sealed class TrayAppContext : ApplicationContext
             _settings.RecordBatteryHistory = history.Checked;
             _settings.Save();
         };
-        menu.Items.Add(history);
+        menu.DropDownItems.Add(history);
+        _startupItem = new ToolStripMenuItem();
         ConfigureStartupMenu();
-        menu.Items.Add(_startupItem);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Open log folder", null, (_, _) => OpenLogFolder());
-        menu.Items.Add("Exit", null, (_, _) => ExitThread());
+        menu.DropDownItems.Add(_startupItem);
+        menu.DropDownItems.Add(new ToolStripSeparator());
+        menu.DropDownItems.Add(BuildLanguageMenu());
+        return menu;
+    }
+
+    private ToolStripMenuItem BuildNotificationsMenu()
+    {
+        ToolStripMenuItem menu = new(UiText.Get("Notifications"));
+        ToolStripMenuItem low = new(UiText.Get("Low battery notifications"))
+        {
+            Checked = _settings.NotificationsEnabled, CheckOnClick = true
+        };
+        low.CheckedChanged += (_, _) => SaveNotifications(low.Checked);
+        menu.DropDownItems.Add(low);
+        menu.DropDownItems.Add(BuildBatteryThresholdMenu());
+        ToolStripMenuItem disconnect = new(UiText.Get("Notify on receiver disconnect"))
+        {
+            Checked = _settings.NotifyOnDisconnect, CheckOnClick = true
+        };
+        disconnect.CheckedChanged += (_, _) =>
+        {
+            _settings.NotifyOnDisconnect = disconnect.Checked;
+            _settings.Save();
+        };
+        menu.DropDownItems.Add(disconnect);
+        return menu;
+    }
+
+    private ToolStripMenuItem BuildLanguageMenu()
+    {
+        ToolStripMenuItem menu = new(UiText.Get("Language"));
+        foreach (var (code, label) in new[]
+        {
+            ("en", "English"), ("ru", "Русский"), ("uk", "Українська")
+        })
+        {
+            ToolStripMenuItem option = new(label)
+            {
+                Checked = _settings.Language == code
+            };
+            option.Click += (_, _) => ChangeLanguage(code);
+            menu.DropDownItems.Add(option);
+        }
+        return menu;
+    }
+
+    private void ChangeLanguage(string code)
+    {
+        _settings.Language = UiText.Normalize(code);
+        _settings.Save();
+        UiText.SetLanguage(_settings.Language);
+        _tray.ContextMenuStrip = BuildMenu();
+        if (_latestUsbReading is not null) UpdateTrayDisplay(_latestUsbReading);
+        _historyWindow?.ApplyLanguage();
+        _bluetoothWindow?.ApplyLanguage();
+    }
+
+    private ToolStripMenuItem BuildDiagnosticsMenu()
+    {
+        ToolStripMenuItem menu = new(UiText.Get("Diagnostics"));
+        menu.DropDownItems.Add(UiText.Get("Device diagnostics..."), null,
+            (_, _) => ShowDiagnostics());
+        menu.DropDownItems.Add(UiText.Get("Copy diagnostic report"), null,
+            (_, _) => CopyDeviceReport());
+        menu.DropDownItems.Add(UiText.Get("Copy Bluetooth monitor status"), null,
+            (_, _) => CopyBluetoothStatus());
+        menu.DropDownItems.Add(UiText.Get("Open log folder"), null,
+            (_, _) => OpenLogFolder());
         return menu;
     }
 
     private ToolStripMenuItem BuildBatteryThresholdMenu()
     {
-        ToolStripMenuItem menu = new("Battery notification thresholds");
+        ToolStripMenuItem menu = new(UiText.Get("Battery notification thresholds"));
         foreach (int threshold in new[] { 50, 25, 10 })
         {
             bool enabled = threshold switch
@@ -129,7 +199,7 @@ public sealed class TrayAppContext : ApplicationContext
                 25 => _settings.AlertBelow25,
                 _ => _settings.AlertBelow10
             };
-            ToolStripMenuItem option = new($"Below {threshold}%")
+            ToolStripMenuItem option = new(UiText.Format("Below {0}%", threshold))
             {
                 Checked = enabled, CheckOnClick = true
             };
@@ -153,12 +223,13 @@ public sealed class TrayAppContext : ApplicationContext
 
     private ToolStripMenuItem BuildIntervalMenu()
     {
-        ToolStripMenuItem menu = new("Update interval");
+        ToolStripMenuItem menu = new(UiText.Get("Update interval"));
         foreach (int seconds in new[] { 15, 30, 60, 120 })
         {
-            ToolStripMenuItem option = new($"{seconds} seconds")
+            ToolStripMenuItem option = new(UiText.Format("{0} seconds", seconds))
             {
-                Checked = _settings.PollSeconds == seconds
+                Checked = _settings.PollSeconds == seconds,
+                Tag = seconds
             };
             option.Click += (_, _) => ChangeInterval(seconds, menu);
             menu.DropDownItems.Add(option);
@@ -169,7 +240,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     private ToolStripMenuItem BuildClockSyncToggle()
     {
-        ToolStripMenuItem option = new("Auto-sync dock clock (5 min)")
+        ToolStripMenuItem option = new(UiText.Get("Auto-sync dock clock (5 min)"))
         {
             Checked = _settings.AutomaticDockClockSync,
             CheckOnClick = true
@@ -245,12 +316,27 @@ public sealed class TrayAppContext : ApplicationContext
     {
         bool usbPresent = _latestUsbReading?.ReceiverPresent ?? false;
         bool presenceKnown = _latestUsbReading?.PresenceKnown ?? false;
-        _bluetoothStatus.Text = !_bluetoothPolicy.Enabled
-            ? "Bluetooth fallback: off"
-            : presenceKnown
-                ? _bluetoothPolicy.StatusText(
-                    usbPresent, _bluetoothReadInFlight, DateTimeOffset.UtcNow)
-                : "Bluetooth fallback: paused (receiver status unknown)";
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        if (!_bluetoothPolicy.Enabled)
+            _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: off");
+        else if (!presenceKnown)
+            _bluetoothStatus.Text = UiText.Get(
+                "Bluetooth fallback: paused (receiver status unknown)");
+        else if (usbPresent)
+            _bluetoothStatus.Text = UiText.Get(
+                "Bluetooth fallback: standby (USB primary)");
+        else if (_bluetoothReadInFlight)
+            _bluetoothStatus.Text = UiText.Get(
+                "Bluetooth fallback: checking battery...");
+        else if (_bluetoothPolicy.VisiblePercent(false, now) is int percent)
+            _bluetoothStatus.Text = UiText.Format(
+                "Bluetooth fallback: {0}% (fresh GATT)", percent);
+        else
+            _bluetoothStatus.Text = UiText.Format(
+                "Bluetooth fallback: unavailable ({0} failed; last good {1})",
+                _bluetoothPolicy.ConsecutiveFailures,
+                _bluetoothPolicy.LastSuccessfulRead?.ToLocalTime()
+                    .ToString("HH:mm:ss") ?? "never");
         _refreshBluetooth.Enabled = !_closing && !_bluetoothReadInFlight &&
             presenceKnown && _bluetoothSelection is not null &&
             _bluetoothPolicy.CanRefreshNow(usbPresent);
@@ -300,20 +386,20 @@ public sealed class TrayAppContext : ApplicationContext
         catch (Exception error)
         {
             FileLog.Write("WARN", "Cannot copy diagnostics to clipboard", error);
-            MessageBox.Show("The Windows clipboard is currently unavailable.",
+            MessageBox.Show(UiText.Get("The Windows clipboard is currently unavailable."),
                 "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
     private static void ShowDiagnostics()
     {
-        MessageBox.Show(DeviceDiagnostics.Read(), "AJAZZ APEX device diagnostics",
+        MessageBox.Show(DeviceDiagnostics.Read(), UiText.Get("AJAZZ APEX device diagnostics"),
             MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void ConfigureStartupMenu()
     {
-        _startupItem.Text = "Start with Windows";
+        _startupItem.Text = UiText.Get("Start with Windows");
         _startupItem.CheckOnClick = false;
         _startupItem.Checked = StartupRegistration.IsEnabled();
         _startupItem.Click += (_, _) => ToggleStartup();
@@ -347,7 +433,7 @@ public sealed class TrayAppContext : ApplicationContext
         _settings.Save();
         foreach (ToolStripMenuItem item in menu.DropDownItems)
         {
-            item.Checked = item.Text == $"{seconds} seconds";
+            item.Checked = item.Tag is int value && value == seconds;
         }
 
         PollSoon();
@@ -490,10 +576,20 @@ public sealed class TrayAppContext : ApplicationContext
             return;
         }
 
-        string timestamp = DateTime.Now.ToString("HH:mm:ss");
-        _clockStatus.Text = (succeeded
-            ? "Dock clock: command sent at " : "Dock clock: unable to send at ") + timestamp;
+        _lastClockUpdate = DateTime.Now;
+        _lastClockSucceeded = succeeded;
+        UpdateClockStatus();
         FileLog.Write(succeeded ? "INFO" : "WARN", _clockStatus.Text);
+    }
+
+    private void UpdateClockStatus()
+    {
+        _clockStatus.Text = !_lastClockUpdate.HasValue
+            ? UiText.Get("Dock clock: not yet synchronized")
+            : UiText.Format(_lastClockSucceeded
+                ? "Dock clock: command sent at {0}"
+                : "Dock clock: unable to send at {0}",
+                _lastClockUpdate.Value.ToString("HH:mm:ss"));
     }
 
     private void ApplyReading(AjazzHidReader.Reading reading)
@@ -513,8 +609,8 @@ public sealed class TrayAppContext : ApplicationContext
             BatteryDisplayState.NotifyReceiverDisconnect(
                 receiverLost, _bluetoothPolicy.Enabled))
         {
-            _tray.ShowBalloonTip(4000, "AJAZZ APEX disconnected",
-                "The 2.4 GHz receiver is no longer detected.",
+            _tray.ShowBalloonTip(4000, UiText.Get("AJAZZ APEX disconnected"),
+                UiText.Get("The 2.4 GHz receiver is no longer detected."),
                 ToolTipIcon.Warning);
         }
         if (connected)
@@ -531,8 +627,9 @@ public sealed class TrayAppContext : ApplicationContext
             _settings.NotificationsEnabled && _settings.AlertBelow25,
             _settings.NotificationsEnabled && _settings.AlertBelow10);
         if (!level.HasValue) return;
-        _tray.ShowBalloonTip(5000, "AJAZZ APEX: low battery",
-            $"Mouse battery is {percent}% ({source}); below {level}%.",
+        _tray.ShowBalloonTip(5000, UiText.Get("AJAZZ APEX: low battery"),
+            UiText.Format("Mouse battery is {0}% ({1}); below {2}%.",
+                percent, source, level),
             ToolTipIcon.Warning);
     }
 
@@ -559,7 +656,7 @@ public sealed class TrayAppContext : ApplicationContext
         _lastPercent = displayPercent;
         _lastConnected = displayConnected;
         _lastSource = source;
-        string value = displayConnected ? $"{displayPercent}%" : "unavailable";
+        string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         _statusItem.Text = $"AJAZZ APEX — {source}: {value}";
         string tooltip = $"AJAZZ APEX: {source} {value}";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
