@@ -32,12 +32,11 @@ final class BatteryAlertPolicy {
                 thresholds.contains($0) && percent < $0 &&
                     !notifiedThresholds.contains($0)
             }
-            guard let reached = reached else { return nil }
+            guard reached != nil else { return nil }
             // A large drop should emit one most-urgent warning.
             for threshold in [50, 25, 10] where percent < threshold {
                 notifiedThresholds.insert(threshold)
             }
-            _ = reached
             return .lowBattery(percent)
 
         case .unavailable:
