@@ -268,6 +268,20 @@ final class TrayController: NSObject, NSApplicationDelegate {
         lowAlerts.target = self
         lowAlerts.state = lowAlertsEnabled ? .on : .off
         statusMenu.addItem(lowAlerts)
+        let thresholdsMenu = NSMenuItem(
+            title: "Battery notification thresholds", action: nil, keyEquivalent: "")
+        let levels = NSMenu()
+        for threshold in [50, 25, 10] {
+            let item = NSMenuItem(
+                title: "Below \(threshold)%",
+                action: #selector(toggleBatteryThreshold(_:)), keyEquivalent: "")
+            item.tag = threshold
+            item.target = self
+            item.state = thresholdEnabled(threshold) ? .on : .off
+            levels.addItem(item)
+        }
+        thresholdsMenu.submenu = levels
+        statusMenu.addItem(thresholdsMenu)
 
         let disconnectAlerts = NSMenuItem(title: "Notify on receiver disconnect",
                                           action: #selector(toggleDisconnectAlerts(_:)),
@@ -377,6 +391,22 @@ final class TrayController: NSObject, NSApplicationDelegate {
         UserDefaults.standard.bool(forKey: "NotifyOnDisconnect")
     }
 
+    private func thresholdEnabled(_ threshold: Int) -> Bool {
+        let key = "AlertBelow\(threshold)"
+        if UserDefaults.standard.object(forKey: key) == nil { return true }
+        return UserDefaults.standard.bool(forKey: key)
+    }
+
+    private var selectedBatteryThresholds: Set<Int> {
+        Set([50, 25, 10].filter { thresholdEnabled($0) })
+    }
+
+    @objc private func toggleBatteryThreshold(_ sender: NSMenuItem) {
+        let enabled = !thresholdEnabled(sender.tag)
+        UserDefaults.standard.set(enabled, forKey: "AlertBelow\(sender.tag)")
+        sender.state = enabled ? .on : .off
+    }
+
     @objc private func toggleLowBatteryAlerts(_ sender: NSMenuItem) {
         let enabled = !lowAlertsEnabled
         UserDefaults.standard.set(enabled, forKey: "NotifyLowBattery")
@@ -483,7 +513,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
         if historyEnabled { batteryHistory.record(status) }
         if let event = batteryAlerts.evaluate(
             status, notifyLow: lowAlertsEnabled,
-            notifyDisconnect: disconnectAlertsEnabled) {
+            notifyDisconnect: disconnectAlertsEnabled,
+            thresholds: selectedBatteryThresholds) {
             BatteryLocalNotifications.deliver(event)
         }
         switch status {
@@ -593,17 +624,53 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         alerts.evaluate(
             .battery(75), notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
-            .battery(19), notifyLow: true, notifyDisconnect: true) == .lowBattery(19) &&
+            .battery(50), notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
-            .battery(18), notifyLow: true, notifyDisconnect: true) == nil &&
+            .battery(49), notifyLow: true, notifyDisconnect: true) == .lowBattery(49) &&
+        alerts.evaluate(
+            .battery(48), notifyLow: true, notifyDisconnect: true) == nil &&
+        alerts.evaluate(
+            .battery(25), notifyLow: true, notifyDisconnect: true) == nil &&
+        alerts.evaluate(
+            .battery(24), notifyLow: true, notifyDisconnect: true) == .lowBattery(24) &&
+        alerts.evaluate(
+            .battery(10), notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
             .battery(9), notifyLow: true, notifyDisconnect: true) == .lowBattery(9) &&
+        alerts.evaluate(
+            .battery(8), notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
             .unavailable, notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
             .notConnected, notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
             .notConnected, notifyLow: true, notifyDisconnect: true) == .receiverDisconnected
+    let selectedAlerts = BatteryAlertPolicy()
+    let selectedTests = selectedAlerts.evaluate(
+        .battery(75), notifyLow: true, notifyDisconnect: true,
+        thresholds: [25]) == nil &&
+        selectedAlerts.evaluate(
+            .battery(49), notifyLow: true, notifyDisconnect: true,
+            thresholds: [25]) == nil &&
+        selectedAlerts.evaluate(
+            .battery(24), notifyLow: true, notifyDisconnect: true,
+            thresholds: [25]) == .lowBattery(24) &&
+        selectedAlerts.evaluate(
+            .battery(9), notifyLow: true, notifyDisconnect: true,
+            thresholds: [25]) == nil &&
+        selectedAlerts.evaluate(
+            .battery(30), notifyLow: true, notifyDisconnect: true,
+            thresholds: [25]) == nil &&
+        selectedAlerts.evaluate(
+            .battery(24), notifyLow: true, notifyDisconnect: true,
+            thresholds: [25]) == .lowBattery(24)
+    let jumpAlerts = BatteryAlertPolicy()
+    let jumpTests = jumpAlerts.evaluate(
+        .battery(75), notifyLow: true, notifyDisconnect: true) == nil &&
+        jumpAlerts.evaluate(
+            .battery(9), notifyLow: true, notifyDisconnect: true) == .lowBattery(9) &&
+        jumpAlerts.evaluate(
+            .battery(9), notifyLow: true, notifyDisconnect: true) == nil
     let bluetoothValid = BluetoothBatteryPayload.parse(Data([0])) == 0 &&
         BluetoothBatteryPayload.parse(Data([100])) == 100 &&
         BluetoothBatteryPayload.parse(Data([101])) == nil &&
@@ -612,7 +679,8 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         BluetoothBatteryPayload.likelyAjazz("AJ179 APEX") &&
         BluetoothBatteryPayload.likelyAjazz("Ajazz mouse") &&
         !BluetoothBatteryPayload.likelyAjazz("Keyboard")
-    let valid = bluetoothValid && alertTests && chartValid && historyValid &&
+    let valid = bluetoothValid && alertTests && selectedTests && jumpTests &&
+                chartValid && historyValid &&
                 clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&
                 ApexBattery.parse([0, 0, 73]) == 73 &&

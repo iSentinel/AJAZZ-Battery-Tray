@@ -1,34 +1,47 @@
 namespace AjazzBatteryTray;
 
-/// <summary>Limits low-battery alerts to one notification per threshold crossing.</summary>
+/// <summary>Notifies once per selected low-battery level until recharged.</summary>
 public sealed class AlertPolicy
 {
-    private int? _lastThreshold;
+    private static readonly int[] Levels = { 50, 25, 10 };
+    private readonly HashSet<int> _notified = new();
 
-    /// <summary>Returns the newly reached threshold, or null if no alert is needed.</summary>
-    public int? Evaluate(int percent)
+    /// <summary>Returns the most urgent newly reached threshold, if any.</summary>
+    public int? Evaluate(int percent, bool below50 = true,
+        bool below25 = true, bool below10 = true)
     {
-        // Recharge above 25% to allow a new sequence of alerts.
-        if (percent > 25)
+        if (percent is < 0 or > 100) return null;
+
+        // Five points of hysteresis prevent repeated alerts near a limit.
+        foreach (int level in Levels)
         {
-            _lastThreshold = null;
+            if (percent >= level + 5) _notified.Remove(level);
         }
 
-        int? threshold = percent switch
+        int? reached = null;
+        foreach (int level in Levels.Reverse())
         {
-            <= 5 => 5,
-            <= 10 => 10,
-            <= 20 => 20,
-            _ => null
-        };
-
-        if (threshold is null || (_lastThreshold is not null &&
-                                   threshold.Value >= _lastThreshold.Value))
-        {
-            return null;
+            bool enabled = level switch
+            {
+                50 => below50,
+                25 => below25,
+                10 => below10,
+                _ => false
+            };
+            if (enabled && percent < level && !_notified.Contains(level))
+            {
+                reached = level;
+                break;
+            }
         }
 
-        _lastThreshold = threshold;
-        return threshold;
+        if (!reached.HasValue) return null;
+
+        // A jump to 9% needs one urgent alert, not three stale alerts.
+        foreach (int level in Levels)
+        {
+            if (percent < level) _notified.Add(level);
+        }
+        return reached;
     }
 }

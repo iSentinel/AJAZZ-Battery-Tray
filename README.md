@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.21 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.24 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
 ## Platforms and hardware status
 
@@ -25,7 +25,9 @@ be ambiguous.
 
 - Live battery percentage rendered in the notification area (system tray).
 - Receiver presence and unavailable/asleep status (`?` icon, no fabricated 0%).
-- Windows low-battery notifications at 20%, 10% and 5%, without repeated alerts.
+- Selectable battery alerts strictly below 50%, 25% and 10% on Windows and
+  macOS, with per-level toggles and duplicate suppression. Windows also alerts
+  on a fresh opted-in Bluetooth GATT reading while USB is absent.
 - Poll every 15, 30 (default), 60 or 120 seconds; double-click to refresh.
 - Optional autostart for the current Windows user (no administrator rights).
 - **HID command guard:** only documented battery poll and dock RTC packets are
@@ -100,7 +102,8 @@ the project source and checksums before deciding to run the software.
 ## Tray menu
 
 Right-click the notification icon to refresh, configure the polling interval,
-toggle low-battery alerts, synchronize the dock clock or disable automatic clock
+toggle low-battery alerts, choose levels under **Battery notification thresholds**,
+synchronize the dock clock or disable automatic clock
 synchronization, enable or disable autostart, open the diagnostic folder or exit. Double-click to refresh immediately.
 
 ## HID protocol and safety
@@ -274,7 +277,8 @@ serial numbers. Disabling fallback clears in-memory diagnostics.
 
 Bluetooth values older than 120 seconds
 or failed reads are treated as unknown. The fallback does not currently
-feed the USB-only history chart or low-battery notifications.
+feed the USB-only history chart or receiver-disconnect notifications;
+  a fresh opted-in Bluetooth reading can trigger a selected low-battery alert.
 
 ### Troubleshooting Windows Bluetooth discovery
 
