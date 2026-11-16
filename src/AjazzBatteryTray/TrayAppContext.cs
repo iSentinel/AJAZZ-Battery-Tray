@@ -89,6 +89,7 @@ public sealed class TrayAppContext : ApplicationContext
         };
         notify.CheckedChanged += (_, _) => SaveNotifications(notify.Checked);
         menu.Items.Add(notify);
+        menu.Items.Add(BuildBatteryThresholdMenu());
         ToolStripMenuItem disconnect = new("Notify on receiver disconnect")
         {
             Checked = _settings.NotifyOnDisconnect, CheckOnClick = true
@@ -115,6 +116,39 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add("Open log folder", null, (_, _) => OpenLogFolder());
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
         return menu;
+    }
+
+    private ToolStripMenuItem BuildBatteryThresholdMenu()
+    {
+        ToolStripMenuItem menu = new("Battery notification thresholds");
+        foreach (int threshold in new[] { 50, 25, 10 })
+        {
+            bool enabled = threshold switch
+            {
+                50 => _settings.AlertBelow50,
+                25 => _settings.AlertBelow25,
+                _ => _settings.AlertBelow10
+            };
+            ToolStripMenuItem option = new($"Below {threshold}%")
+            {
+                Checked = enabled, CheckOnClick = true
+            };
+            option.CheckedChanged += (_, _) =>
+                SaveBatteryThreshold(threshold, option.Checked);
+            menu.DropDownItems.Add(option);
+        }
+        return menu;
+    }
+
+    private void SaveBatteryThreshold(int threshold, bool enabled)
+    {
+        switch (threshold)
+        {
+            case 50: _settings.AlertBelow50 = enabled; break;
+            case 25: _settings.AlertBelow25 = enabled; break;
+            case 10: _settings.AlertBelow10 = enabled; break;
+        }
+        _settings.Save();
     }
 
     private ToolStripMenuItem BuildIntervalMenu()
@@ -435,6 +469,11 @@ public sealed class TrayAppContext : ApplicationContext
 
         if (!IsCurrentBluetoothRequest(selected, generation)) return;
         _bluetoothPolicy.RecordRead(response, DateTimeOffset.UtcNow);
+        if (_latestUsbReading is { PresenceKnown: true, ReceiverPresent: false })
+        {
+            if (response.IsFreshGatt && response.Percent.HasValue)
+                ShowLowBatteryAlert(response.Percent.Value, "Bluetooth");
+        }
         if (_latestUsbReading is not null)
             UpdateTrayDisplay(_latestUsbReading);
     }
@@ -479,18 +518,22 @@ public sealed class TrayAppContext : ApplicationContext
                 ToolTipIcon.Warning);
         }
         if (connected)
-        {
-            int? threshold = _settings.NotificationsEnabled
-                ? _alerts.Evaluate(reading.Percent!.Value) : null;
-            if (threshold.HasValue)
-            {
-                _tray.ShowBalloonTip(5000, "AJAZZ APEX: low battery",
-                    $"Battery at {reading.Percent}%. Threshold: {threshold}%.",
-                    ToolTipIcon.Warning);
-            }
-        }
+            ShowLowBatteryAlert(reading.Percent!.Value, "2.4 GHz");
 
         UpdateTrayDisplay(reading);
+    }
+
+    /// <summary>Notify only for a fresh, currently selected battery source.</summary>
+    private void ShowLowBatteryAlert(int percent, string source)
+    {
+        int? level = _alerts.Evaluate(percent,
+            _settings.NotificationsEnabled && _settings.AlertBelow50,
+            _settings.NotificationsEnabled && _settings.AlertBelow25,
+            _settings.NotificationsEnabled && _settings.AlertBelow10);
+        if (!level.HasValue) return;
+        _tray.ShowBalloonTip(5000, "AJAZZ APEX: low battery",
+            $"Mouse battery is {percent}% ({source}); below {level}%.",
+            ToolTipIcon.Warning);
     }
 
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
