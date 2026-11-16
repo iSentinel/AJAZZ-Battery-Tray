@@ -34,13 +34,55 @@ Check("reject short report", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0 }) is null);
 
 AlertPolicy policy = new();
-Check("normal battery no alert", policy.Evaluate(60) is null);
-Check("first 20 percent alert", policy.Evaluate(20) == 20);
-Check("same threshold not repeated", policy.Evaluate(18) is null);
-Check("10 percent alert", policy.Evaluate(10) == 10);
-Check("5 percent alert", policy.Evaluate(5) == 5);
-Check("no duplicate at 4 percent", policy.Evaluate(4) is null);
-Check("recharge resets", policy.Evaluate(60) is null && policy.Evaluate(19) == 20);
+Check("normal battery no alert", policy.Evaluate(75) is null);
+Check("at 50 is not below 50", policy.Evaluate(50) is null);
+Check("below 50 triggers once", policy.Evaluate(49) == 50);
+Check("below 50 is not repeated", policy.Evaluate(48) is null);
+Check("at 25 is not below 25", policy.Evaluate(25) is null);
+Check("below 25 triggers once", policy.Evaluate(24) == 25);
+Check("at 10 is not below 10", policy.Evaluate(10) is null);
+Check("below 10 triggers once", policy.Evaluate(9) == 10);
+Check("below 10 does not repeat", policy.Evaluate(4) is null);
+Check("recharge re-arms 50", policy.Evaluate(55) is null &&
+    policy.Evaluate(49) == 50);
+Check("invalid values ignored", policy.Evaluate(-1) is null &&
+    policy.Evaluate(101) is null);
+
+AlertPolicy only25 = new();
+Check("disabled 50 threshold does not alert", only25.Evaluate(
+    49, below50: false, below25: true, below10: false) is null);
+Check("selected 25 threshold alerts", only25.Evaluate(
+    24, below50: false, below25: true, below10: false) == 25);
+Check("disabled 10 threshold does not alert", only25.Evaluate(
+    9, below50: false, below25: true, below10: false) is null);
+Check("25 re-arms after charging", only25.Evaluate(
+    30, below50: false, below25: true, below10: false) is null &&
+    only25.Evaluate(24, below50: false, below25: true, below10: false) == 25);
+AlertPolicy skipLevels = new();
+Check("large drop emits only most urgent alert",
+    skipLevels.Evaluate(75) is null && skipLevels.Evaluate(9) == 10 &&
+    skipLevels.Evaluate(9) is null);
+AlertPolicy allDisabled = new();
+Check("disabling all thresholds suppresses alerts",
+    allDisabled.Evaluate(9, below50: false, below25: false,
+        below10: false) is null);
+AppSettings defaults = new();
+Check("all thresholds default enabled", defaults.AlertBelow50 &&
+    defaults.AlertBelow25 && defaults.AlertBelow10);
+AppSettings selected = new()
+{
+    AlertBelow50 = false, AlertBelow25 = true, AlertBelow10 = false
+};
+string savedSettings = System.Text.Json.JsonSerializer.Serialize(selected);
+AppSettings? restored = System.Text.Json.JsonSerializer
+    .Deserialize<AppSettings>(savedSettings);
+Check("threshold selection round-trips", restored is not null &&
+    !restored.AlertBelow50 && restored.AlertBelow25 && !restored.AlertBelow10);
+AppSettings? olderSettings = System.Text.Json.JsonSerializer
+    .Deserialize<AppSettings>("{\\"PollSeconds\\":30}");
+Check("older settings get new default thresholds", olderSettings is not null &&
+    olderSettings.AlertBelow50 && olderSettings.AlertBelow25 &&
+    olderSettings.AlertBelow10);
 
 // The Windows report includes an empty HID report ID at byte 0.
 var local = new DateTime(2026, 11, 6, 9, 57, 42);
