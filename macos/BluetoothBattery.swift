@@ -176,8 +176,8 @@ final class BluetoothBatteryWindowController: NSWindowController {
     private func setup() {
         guard let view = window?.contentView else { return }
         let intro = NSTextField(wrappingLabelWithString:
-            "Manual check of already connected AJAZZ Bluetooth mice. " +
-            AppText.text("No scanning, pairing, background polling or settings writes."))
+            AppText.text("Manual check of already connected AJAZZ Bluetooth mice.") +
+            " " + AppText.text("No scanning, pairing, background polling or settings writes."))
         intro.frame = NSRect(x: 22, y: 174, width: 516, height: 58)
         view.addSubview(intro)
         introLabel = intro
