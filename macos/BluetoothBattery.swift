@@ -33,12 +33,12 @@ final class BluetoothBatteryInspector: NSObject,
     /// Create a central manager only when the user explicitly requests it.
     func findConnected() {
         if manager == nil {
-            onStatus?("Checking Bluetooth access...")
+            onStatus?(AppText.text("Checking Bluetooth access..."))
             manager = CBCentralManager(delegate: self, queue: nil)
         } else if manager?.state == .poweredOn {
             listConnected()
         } else {
-            onStatus?("Bluetooth is not available or permission is denied.")
+            onStatus?(AppText.text("Bluetooth is not available or permission is denied."))
         }
     }
 
@@ -48,7 +48,7 @@ final class BluetoothBatteryInspector: NSObject,
         } else {
             devices = []
             onDevices?([])
-            onStatus?("Enable Bluetooth and grant this app Bluetooth access.")
+            onStatus?(AppText.text("Enable Bluetooth and grant this app Bluetooth access."))
         }
     }
 
@@ -64,8 +64,8 @@ final class BluetoothBatteryInspector: NSObject,
         }
         onDevices?(labels)
         onStatus?(labels.isEmpty
-            ? "No connected AJAZZ mouse exposing Battery Service (180F)."
-            : "Select a connected AJAZZ mouse to read Battery Level.")
+            ? AppText.text("No connected AJAZZ mouse exposing Battery Service (180F).")
+            : AppText.text("Select a connected AJAZZ mouse to read Battery Level."))
     }
 
     /// Connect only to the explicitly selected, already connected candidate.
@@ -75,14 +75,14 @@ final class BluetoothBatteryInspector: NSObject,
         let device = devices[index]
         selected = device
         pending = true
-        onStatus?("Reading Battery Level from selected mouse...")
+        onStatus?(AppText.text("Reading Battery Level from selected mouse..."))
         device.delegate = self
         manager?.connect(device)
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
             guard let self = self, self.pending, self.selected === device else {
                 return
             }
-            self.finish("Battery Service timed out or is unavailable.", device)
+            self.finish(AppText.text("Battery Service timed out or is unavailable."), device)
         }
     }
 
@@ -95,7 +95,7 @@ final class BluetoothBatteryInspector: NSObject,
     func centralManager(_ central: CBCentralManager,
                         didFailToConnect peripheral: CBPeripheral,
                         error: Error?) {
-        finish("Selected mouse could not be connected for a read.", peripheral)
+        finish(AppText.text("Selected mouse could not be connected for a read."), peripheral)
     }
 
     func peripheral(_ peripheral: CBPeripheral,
@@ -105,7 +105,7 @@ final class BluetoothBatteryInspector: NSObject,
               let service = peripheral.services?.first(where: {
                   $0.uuid == batteryService
               }) else {
-            finish("Standard Battery Service is not readable.", peripheral)
+            finish(AppText.text("Standard Battery Service is not readable."), peripheral)
             return
         }
         peripheral.discoverCharacteristics([batteryLevel], for: service)
@@ -119,7 +119,7 @@ final class BluetoothBatteryInspector: NSObject,
               let level = service.characteristics?.first(where: {
                   $0.uuid == batteryLevel
               }) else {
-            finish("Battery Level (2A19) is not exposed.", peripheral)
+            finish(AppText.text("Battery Level (2A19) is not exposed."), peripheral)
             return
         }
         peripheral.readValue(for: level)
@@ -131,8 +131,10 @@ final class BluetoothBatteryInspector: NSObject,
         guard pending, selected === peripheral else { return }
         let percent = error == nil
             ? BluetoothBatteryPayload.parse(characteristic.value) : nil
-        let message = percent.map { "Bluetooth battery: \($0)% (experimental)" } ??
-                      "No valid Battery Level was returned."
+        let message = percent.map {
+            AppText.format("Bluetooth battery: %d%% (experimental)", $0)
+        } ??
+                      AppText.text("No valid Battery Level was returned.")
         finish(message, peripheral)
     }
 
@@ -150,15 +152,17 @@ final class BluetoothBatteryWindowController: NSWindowController {
     private let inspector = BluetoothBatteryInspector()
     private let selection = NSPopUpButton()
     private let status = NSTextField(labelWithString: "")
-    private let readButton = NSButton(title: "Read selected battery",
+    private let readButton = NSButton(title: AppText.text("Read selected battery"),
                                       target: nil, action: nil)
+    private var findButton: NSButton?
+    private var introLabel: NSTextField?
 
     init() {
         let frame = NSRect(x: 0, y: 0, width: 560, height: 260)
         let window = NSWindow(contentRect: frame,
                               styleMask: [.titled, .closable],
                               backing: .buffered, defer: false)
-        window.title = "AJAZZ APEX — Bluetooth battery check"
+        window.title = AppText.text("AJAZZ APEX — Bluetooth battery check")
         window.isReleasedWhenClosed = false
         super.init(window: window)
         setup()
@@ -173,14 +177,16 @@ final class BluetoothBatteryWindowController: NSWindowController {
         guard let view = window?.contentView else { return }
         let intro = NSTextField(wrappingLabelWithString:
             "Manual check of already connected AJAZZ Bluetooth mice. " +
-            "No scanning, pairing, background polling or settings writes.")
+            AppText.text("No scanning, pairing, background polling or settings writes."))
         intro.frame = NSRect(x: 22, y: 174, width: 516, height: 58)
         view.addSubview(intro)
+        introLabel = intro
 
-        let find = NSButton(title: "Find connected AJAZZ mice", target: self,
+        let find = NSButton(title: AppText.text("Find connected AJAZZ mice"), target: self,
                             action: #selector(findDevices))
         find.frame = NSRect(x: 20, y: 138, width: 240, height: 29)
         view.addSubview(find)
+        findButton = find
 
         selection.frame = NSRect(x: 23, y: 97, width: 512, height: 28)
         selection.isEnabled = false
@@ -193,8 +199,23 @@ final class BluetoothBatteryWindowController: NSWindowController {
         view.addSubview(readButton)
 
         status.frame = NSRect(x: 224, y: 34, width: 310, height: 52)
-        status.stringValue = "Choose Find to inspect connected mice."
+        status.stringValue = AppText.text("Choose Find to inspect connected mice.")
         view.addSubview(status)
+    }
+
+    /// Refresh an open inspector without repeating discovery or a GATT read.
+    func applyLanguage() {
+        window?.title = AppText.text("AJAZZ APEX — Bluetooth battery check")
+        readButton.title = AppText.text("Read selected battery")
+        findButton?.title = AppText.text("Find connected AJAZZ mice")
+        introLabel?.stringValue = AppText.text(
+            "Manual check of already connected AJAZZ Bluetooth mice.") +
+            " " + AppText.text(
+                "No scanning, pairing, background polling or settings writes.")
+        if selection.numberOfItems == 0 {
+            status.stringValue = AppText.text(
+                "Choose Find to inspect connected mice.")
+        }
     }
 
     private func connectCallbacks() {
