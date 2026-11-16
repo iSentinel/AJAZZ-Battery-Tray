@@ -105,7 +105,13 @@ the project source and checksums before deciding to run the software.
 
 ## Tray menu
 
-Right-click the notification icon for **Refresh now**, **Battery history**,\n**Bluetooth**, **Sync dock time now**, **Settings**, **Diagnostics** and **Exit**.\nUnder **Settings** choose **Notifications** (including each 50/25/10% threshold),\n**Update interval**, **Auto-sync dock clock**, **Record battery history**,\n**Start with Windows**, or **Language**. Diagnostics contains diagnostic report\nand log-folder actions. Double-click the tray icon to refresh immediately.\nLanguage choice is stored in the user settings JSON and does not alter HID commands.
+Right-click the notification icon for **Refresh now**, **Battery history**,
+**Bluetooth**, **Sync dock time now**, **Settings**, **Diagnostics** and **Exit**.
+Under **Settings** choose **Notifications** (including each 50/25/10% threshold),
+**Update interval**, **Auto-sync dock clock**, **Record battery history**,
+**Start with Windows**, or **Language**. Diagnostics contains diagnostic report
+and log-folder actions. Double-click the tray icon to refresh immediately.
+Language choice is stored in the user settings JSON and does not alter HID commands.
 
 ## HID protocol and safety
 
