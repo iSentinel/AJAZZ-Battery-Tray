@@ -82,7 +82,7 @@ public sealed class BluetoothBatteryForm : Form
     /// <summary>Refresh captions without resetting BLE consent or selection.</summary>
     public void ApplyLanguage()
     {
-        Text = UiText.Get(UiText.Get("AJAZZ — Experimental Bluetooth battery check"));
+        Text = UiText.Get("AJAZZ — Experimental Bluetooth battery check");
         _instructions.Text = UiText.Get(
             "Manual check of already paired Bluetooth LE and Classic mice.") +
             "\n" + UiText.Get(
@@ -95,7 +95,7 @@ public sealed class BluetoothBatteryForm : Form
         _automatic.Text = UiText.Get(
             "Use this mouse in tray when 2.4 GHz receiver is absent (this session)");
         if (_devices.Items.Count == 0 && _verified is null)
-            _result.Text = UiText.Get(UiText.Get("Choose Find to list already paired devices."));
+            _result.Text = UiText.Get("Choose Find to list already paired devices.");
     }
 
     private async Task FindDevicesAsync()
