@@ -76,11 +76,12 @@ enum BatteryLocalNotifications {
             let content = UNMutableNotificationContent()
             switch event {
             case .lowBattery(let level):
-                content.title = "AJAZZ APEX: low battery"
-                content.body = "Mouse battery is at \(level)%."
+                content.title = AppText.text("AJAZZ APEX: low battery")
+                content.body = AppText.format("Mouse battery is at %d%%.", level)
             case .receiverDisconnected:
-                content.title = "AJAZZ APEX: receiver disconnected"
-                content.body = "The 2.4 GHz / 8K receiver is no longer detected."
+                content.title = AppText.text("AJAZZ APEX: receiver disconnected")
+                content.body = AppText.text(
+                    "The 2.4 GHz / 8K receiver is no longer detected.")
             }
             content.sound = .default
             let request = UNNotificationRequest(
