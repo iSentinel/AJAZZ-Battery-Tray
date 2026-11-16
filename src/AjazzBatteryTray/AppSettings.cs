@@ -6,6 +6,7 @@ namespace AjazzBatteryTray;
 public sealed class AppSettings
 {
     public int PollSeconds { get; set; } = 30;
+    public string Language { get; set; } = "en";
     public bool NotificationsEnabled { get; set; } = true;
     public bool AlertBelow50 { get; set; } = true;
     public bool AlertBelow25 { get; set; } = true;
@@ -30,6 +31,7 @@ public sealed class AppSettings
                     File.ReadAllText(FilePath));
                 if (result is not null)
                 {
+                    result.Language = UiText.Normalize(result.Language);
                     result.PollSeconds = result.PollSeconds is 15 or 30 or 60 or 120
                         ? result.PollSeconds : 30;
                     return result;
