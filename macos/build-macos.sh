@@ -14,7 +14,8 @@ SDK="$(xcrun --sdk macosx --show-sdk-path)"
 for arch in arm64 x86_64; do
   swiftc -O -sdk "$SDK" -target "${arch}-apple-macos13.0" \
     -framework AppKit -framework IOKit -framework UserNotifications -framework ServiceManagement -framework CoreBluetooth \
-    "$ROOT/macos/main.swift" "$ROOT/macos/BatteryHistory.swift" \
+    "$ROOT/macos/main.swift" "$ROOT/macos/AppText.swift" \
+    "$ROOT/macos/BatteryHistory.swift" \
     "$ROOT/macos/BatteryHistoryWindow.swift" \
     "$ROOT/macos/BatteryNotifications.swift" \
     "$ROOT/macos/BluetoothBattery.swift" -o "$ROOT/dist/mac/ajazz-${arch}"

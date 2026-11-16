@@ -152,9 +152,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.24"
+          TAG="v0.3.0-beta.25"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.24 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.25 — Windows and macOS
+
+          **Settings and languages:** Cleaner Settings and Diagnostics menus
+          on Windows and macOS. Group notification thresholds, history, polling,
+          clock synchronization and startup controls. Choose English, Russian
+          or Ukrainian, stored per user and applied without restarting.
 
           **Configurable battery alerts:** Independently select notifications
           strictly below 50%, 25% and 10% in the tray/menu bar. Thresholds
@@ -314,7 +319,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.24" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.25" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

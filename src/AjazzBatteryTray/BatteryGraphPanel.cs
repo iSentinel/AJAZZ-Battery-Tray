@@ -46,7 +46,7 @@ public sealed class BatteryGraphPanel : Panel
         if (Samples.Count == 0)
         {
             using Font font = new("Segoe UI", 11);
-            graphics.DrawString("No battery observations yet", font,
+            graphics.DrawString(UiText.Get("No battery observations yet"), font,
                 Brushes.Gray, area.Left + 16, area.Top + 30);
             return;
         }

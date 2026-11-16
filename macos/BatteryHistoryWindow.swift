@@ -99,7 +99,7 @@ final class BatteryHistoryChart: NSView {
                 .font: NSFont.systemFont(ofSize: 13),
                 .foregroundColor: NSColor.secondaryLabelColor
             ]
-            ("No observations for the selected period" as NSString).draw(
+            (AppText.text("No observations for the selected period") as NSString).draw(
                 at: NSPoint(x: plot.minX + 12, y: plot.midY),
                 withAttributes: style)
             return
@@ -140,6 +140,8 @@ final class BatteryHistoryWindowController: NSWindowController {
     private let plot = BatteryHistoryChart()
     private let range = NSPopUpButton()
     private let status = NSTextField(labelWithString: "")
+    private var reloadButton: NSButton?
+    private var folderButton: NSButton?
 
     init(file: URL) {
         self.file = file
@@ -147,7 +149,7 @@ final class BatteryHistoryWindowController: NSWindowController {
         let window = NSWindow(contentRect: frame,
                               styleMask: [.titled, .closable, .resizable, .miniaturizable],
                               backing: .buffered, defer: false)
-        window.title = "AJAZZ APEX — Battery history"
+        window.title = AppText.text("AJAZZ APEX — Battery history")
         window.minSize = NSSize(width: 660, height: 370)
         window.isReleasedWhenClosed = false
         super.init(window: window)
@@ -163,26 +165,30 @@ final class BatteryHistoryWindowController: NSWindowController {
         guard let root = window?.contentView else { return }
         range.frame = NSRect(x: 16, y: root.bounds.height - 45,
                              width: 164, height: 28)
-        range.addItems(withTitles: ["Last 24 hours", "Last 7 days", "Last 30 days"])
+        range.addItems(withTitles: [
+            "Last 24 hours", "Last 7 days", "Last 30 days"
+        ].map(AppText.text))
         range.selectItem(at: 1)
         range.target = self
         range.action = #selector(refresh)
         range.autoresizingMask = [.minYMargin]
         root.addSubview(range)
 
-        let reload = NSButton(title: "Refresh", target: self,
+        let reload = NSButton(title: AppText.text("Refresh"), target: self,
                               action: #selector(refresh))
         reload.frame = NSRect(x: 186, y: root.bounds.height - 44,
                               width: 90, height: 27)
         reload.autoresizingMask = [.minYMargin]
         root.addSubview(reload)
+        reloadButton = reload
 
-        let folder = NSButton(title: "Open CSV folder", target: self,
+        let folder = NSButton(title: AppText.text("Open CSV folder"), target: self,
                               action: #selector(openFolder))
         folder.frame = NSRect(x: 284, y: root.bounds.height - 44,
                               width: 146, height: 27)
         folder.autoresizingMask = [.minYMargin]
         root.addSubview(folder)
+        folderButton = folder
 
         plot.frame = NSRect(x: 10, y: 57, width: root.bounds.width - 20,
                             height: root.bounds.height - 113)
@@ -197,6 +203,20 @@ final class BatteryHistoryWindowController: NSWindowController {
         root.addSubview(status)
     }
 
+    /// Update open chart controls without changing the selected range.
+    func applyLanguage() {
+        window?.title = AppText.text("AJAZZ APEX — Battery history")
+        let selected = range.indexOfSelectedItem
+        range.removeAllItems()
+        range.addItems(withTitles: [
+            "Last 24 hours", "Last 7 days", "Last 30 days"
+        ].map(AppText.text))
+        range.selectItem(at: selected < 0 ? 1 : selected)
+        reloadButton?.title = AppText.text("Refresh")
+        folderButton?.title = AppText.text("Open CSV folder")
+        refresh()
+    }
+
     @objc func refresh() {
         let days: Double = range.indexOfSelectedItem == 0 ? 1 :
                            range.indexOfSelectedItem == 1 ? 7 : 30
@@ -208,11 +228,14 @@ final class BatteryHistoryWindowController: NSWindowController {
         plot.samples = points
 
         let last = points.last
-        let value = last?.percent.map { "\($0)%" } ?? last?.state ?? "no data"
+        let value = last?.percent.map { "\($0)%" } ??
+            last?.state ?? AppText.text("no data")
         let minimum = points.compactMap { $0.percent }.min().map { "\($0)%" } ?? "—"
         let absent = points.filter { $0.state == "disconnected" }.count
-        status.stringValue = "Latest: \(value)  •  Minimum: \(minimum)" +
-            "  •  Receiver absent: \(absent)  •  \(points.count) observations"
+        status.stringValue = AppText.format(
+            "Latest: %@  •  Minimum: %@", value, minimum) +
+            "  •  " + AppText.format(
+                "Receiver absent: %d  •  %d observations", absent, points.count)
     }
 
     @objc private func openFolder() {

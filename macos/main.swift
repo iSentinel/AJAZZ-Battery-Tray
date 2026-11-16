@@ -215,128 +215,165 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var historyWindow: BatteryHistoryWindowController?
     private var bluetoothWindow: BluetoothBatteryWindowController?
     private var startupMenuItem: NSMenuItem?
+    private var intervalItems = [NSMenuItem]()
+    private var displayedStatus = ApexBattery.Status.unavailable
+    private var lastClockSent: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = NSStatusBar.system.statusItem(
+            withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🔋?"
-        statusItem.button?.toolTip = "AJAZZ APEX battery: checking"
+        buildStatusMenu()
+        configureTimer()
+        refresh()
+    }
+
+    private func command(_ key: String, _ action: Selector) -> NSMenuItem {
+        let item = NSMenuItem(title: AppText.text(key),
+                              action: action, keyEquivalent: "")
+        item.target = self
+        return item
+    }
+
+    private func buildStatusMenu() {
         statusMenu = NSMenu(title: "AJAZZ Battery Tray")
-        detailItem = NSMenuItem(title: "Checking 2.4 GHz receiver…", action: nil, keyEquivalent: "")
+        detailItem = NSMenuItem(
+            title: AppText.text("Checking 2.4 GHz receiver…"),
+            action: nil, keyEquivalent: "")
         detailItem.isEnabled = false
         statusMenu.addItem(detailItem)
         statusMenu.addItem(.separator())
-
-        let refreshItem = NSMenuItem(title: "Refresh now", action: #selector(refresh), keyEquivalent: "r")
-        refreshItem.target = self
-        statusMenu.addItem(refreshItem)
-
-        let diagnostics = NSMenuItem(title: "Device diagnostics...",
-                                     action: #selector(showDiagnostics),
-                                     keyEquivalent: "")
-        diagnostics.target = self
+        statusMenu.addItem(command("Refresh now", #selector(refresh)))
+        statusMenu.addItem(command("Battery history chart...",
+                                   #selector(showBatteryHistory)))
+        statusMenu.addItem(command("Check connected Bluetooth battery...",
+                                   #selector(showBluetoothBattery)))
+        statusMenu.addItem(command("Sync dock time now", #selector(syncClockNow)))
+        clockItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        clockItem.isEnabled = false
+        updateClockStatus()
+        statusMenu.addItem(clockItem)
+        statusMenu.addItem(.separator())
+        let settings = NSMenuItem(title: AppText.text("Settings"),
+                                  action: nil, keyEquivalent: "")
+        settings.submenu = buildSettingsMenu()
+        statusMenu.addItem(settings)
+        let diagnostics = NSMenuItem(title: AppText.text("Diagnostics"),
+                                     action: nil, keyEquivalent: "")
+        diagnostics.submenu = buildDiagnosticsMenu()
         statusMenu.addItem(diagnostics)
-        let bluetooth = NSMenuItem(title: "Check connected Bluetooth battery...",
-                                   action: #selector(showBluetoothBattery),
-                                   keyEquivalent: "")
-        bluetooth.target = self
-        statusMenu.addItem(bluetooth)
-        let copyReport = NSMenuItem(title: "Copy diagnostic report",
-                                    action: #selector(copyDeviceReport),
-                                    keyEquivalent: "")
-        copyReport.target = self
-        statusMenu.addItem(copyReport)
-        let openHistory = NSMenuItem(title: "Open battery history folder...",
-                                     action: #selector(openHistoryFolder),
-                                     keyEquivalent: "")
-        openHistory.target = self
-        statusMenu.addItem(openHistory)
-        let chart = NSMenuItem(title: "Battery history chart...",
-                               action: #selector(showBatteryHistory),
-                               keyEquivalent: "")
-        chart.target = self
-        statusMenu.addItem(chart)
-        let recordHistory = NSMenuItem(title: "Record battery history",
-                                       action: #selector(toggleBatteryHistory(_:)),
-                                       keyEquivalent: "")
-        recordHistory.target = self
-        recordHistory.state = historyEnabled ? .on : .off
-        statusMenu.addItem(recordHistory)
-        let lowAlerts = NSMenuItem(title: "Low battery notifications",
-                                   action: #selector(toggleLowBatteryAlerts(_:)),
-                                   keyEquivalent: "")
-        lowAlerts.target = self
-        lowAlerts.state = lowAlertsEnabled ? .on : .off
-        statusMenu.addItem(lowAlerts)
-        let thresholdsMenu = NSMenuItem(
-            title: "Battery notification thresholds", action: nil, keyEquivalent: "")
+        statusMenu.addItem(.separator())
+        statusMenu.addItem(command("Quit AJAZZ Battery Tray", #selector(quit)))
+        statusItem.menu = statusMenu
+        refreshStartupMenu()
+    }
+
+    private func buildDiagnosticsMenu() -> NSMenu {
+        let menu = NSMenu(title: AppText.text("Diagnostics"))
+        menu.addItem(command("Device diagnostics...", #selector(showDiagnostics)))
+        menu.addItem(command("Copy diagnostic report", #selector(copyDeviceReport)))
+        menu.addItem(command("Open battery history folder...",
+                              #selector(openHistoryFolder)))
+        return menu
+    }
+
+    private func buildSettingsMenu() -> NSMenu {
+        let menu = NSMenu(title: AppText.text("Settings"))
+        let notifications = NSMenuItem(title: AppText.text("Notifications"),
+                                       action: nil, keyEquivalent: "")
+        notifications.submenu = buildNotificationsMenu()
+        menu.addItem(notifications)
+        let interval = NSMenuItem(title: AppText.text("Refresh interval"),
+                                  action: nil, keyEquivalent: "")
+        interval.submenu = buildIntervalMenu()
+        menu.addItem(interval)
+        let auto = command("Auto-sync dock clock (5 min)",
+                           #selector(toggleClockSync(_:)))
+        auto.state = autoClockEnabled ? .on : .off
+        menu.addItem(auto)
+        let history = command("Record battery history", #selector(toggleBatteryHistory(_:)))
+        history.state = historyEnabled ? .on : .off
+        menu.addItem(history)
+        let startup = command("Start at login", #selector(toggleLoginStartup(_:)))
+        startupMenuItem = startup
+        menu.addItem(startup)
+        menu.addItem(command("Open Login Items settings...",
+                              #selector(openLoginItemsSettings)))
+        menu.addItem(.separator())
+        let language = NSMenuItem(title: AppText.text("Language"),
+                                  action: nil, keyEquivalent: "")
+        language.submenu = buildLanguageMenu()
+        menu.addItem(language)
+        return menu
+    }
+
+    private func buildNotificationsMenu() -> NSMenu {
+        let menu = NSMenu(title: AppText.text("Notifications"))
+        let low = command("Low battery notifications",
+                          #selector(toggleLowBatteryAlerts(_:)))
+        low.state = lowAlertsEnabled ? .on : .off
+        menu.addItem(low)
+        let thresholds = NSMenuItem(
+            title: AppText.text("Battery notification thresholds"),
+            action: nil, keyEquivalent: "")
         let levels = NSMenu()
         for threshold in [50, 25, 10] {
             let item = NSMenuItem(
-                title: "Below \(threshold)%",
+                title: AppText.format("Below %d%%", threshold),
                 action: #selector(toggleBatteryThreshold(_:)), keyEquivalent: "")
             item.tag = threshold
             item.target = self
             item.state = thresholdEnabled(threshold) ? .on : .off
             levels.addItem(item)
         }
-        thresholdsMenu.submenu = levels
-        statusMenu.addItem(thresholdsMenu)
+        thresholds.submenu = levels
+        menu.addItem(thresholds)
+        let disconnect = command("Notify on receiver disconnect",
+                                  #selector(toggleDisconnectAlerts(_:)))
+        disconnect.state = disconnectAlertsEnabled ? .on : .off
+        menu.addItem(disconnect)
+        return menu
+    }
 
-        let disconnectAlerts = NSMenuItem(title: "Notify on receiver disconnect",
-                                          action: #selector(toggleDisconnectAlerts(_:)),
-                                          keyEquivalent: "")
-        disconnectAlerts.target = self
-        disconnectAlerts.state = disconnectAlertsEnabled ? .on : .off
-        statusMenu.addItem(disconnectAlerts)
-
-        let interval = NSMenuItem(title: "Refresh interval", action: nil, keyEquivalent: "")
-        let subMenu = NSMenu()
+    private func buildIntervalMenu() -> NSMenu {
+        let menu = NSMenu()
+        intervalItems = []
         for seconds in [15, 30, 60, 120] {
-            let item = NSMenuItem(title: "\(seconds) seconds", action: #selector(changeInterval(_:)), keyEquivalent: "")
+            let item = NSMenuItem(
+                title: AppText.format("%d seconds", seconds),
+                action: #selector(changeInterval(_:)), keyEquivalent: "")
             item.tag = seconds
             item.target = self
-            subMenu.addItem(item)
+            intervalItems.append(item)
+            menu.addItem(item)
         }
-        interval.submenu = subMenu
-        statusMenu.addItem(interval)
-        statusMenu.addItem(.separator())
+        return menu
+    }
 
-        let syncItem = NSMenuItem(title: "Sync dock time now",
-                                  action: #selector(syncClockNow), keyEquivalent: "")
-        syncItem.target = self
-        statusMenu.addItem(syncItem)
-        let automatic = NSMenuItem(title: "Auto-sync dock clock (5 min)",
-                                   action: #selector(toggleClockSync(_:)), keyEquivalent: "")
-        automatic.target = self
-        automatic.state = autoClockEnabled ? .on : .off
-        statusMenu.addItem(automatic)
-        clockItem = NSMenuItem(title: "Dock clock: not yet synchronized",
-                               action: nil, keyEquivalent: "")
-        clockItem.isEnabled = false
-        statusMenu.addItem(clockItem)
-        statusMenu.addItem(.separator())
+    private func buildLanguageMenu() -> NSMenu {
+        let menu = NSMenu()
+        for (code, title) in [("en", "English"), ("ru", "Русский"),
+                              ("uk", "Українська")] {
+            let item = NSMenuItem(title: title,
+                                  action: #selector(selectLanguage(_:)),
+                                  keyEquivalent: "")
+            item.target = self
+            item.representedObject = code
+            item.state = code == AppText.language ? .on : .off
+            menu.addItem(item)
+        }
+        return menu
+    }
 
-        let startup = NSMenuItem(title: "Start at login",
-                                 action: #selector(toggleLoginStartup(_:)),
-                                 keyEquivalent: "")
-        startup.target = self
-        startupMenuItem = startup
-        statusMenu.addItem(startup)
-        let loginSettings = NSMenuItem(title: "Open Login Items settings...",
-                                       action: #selector(openLoginItemsSettings),
-                                       keyEquivalent: "")
-        loginSettings.target = self
-        statusMenu.addItem(loginSettings)
-        statusMenu.addItem(.separator())
-        refreshStartupMenu()
-
-        let quit = NSMenuItem(title: "Quit AJAZZ Battery Tray", action: #selector(quit), keyEquivalent: "q")
-        quit.target = self
-        statusMenu.addItem(quit)
-        statusItem.menu = statusMenu
+    @objc private func selectLanguage(_ sender: NSMenuItem) {
+        guard let code = sender.representedObject as? String else { return }
+        AppText.choose(code)
+        buildStatusMenu()
         configureTimer()
-        refresh()
+        renderStatus(displayedStatus)
+        historyWindow?.applyLanguage()
+        bluetoothWindow?.applyLanguage()
     }
 
     private func configureTimer() {
@@ -345,10 +382,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         let interval = [15, 30, 60, 120].contains(seconds) ? seconds : 30
         timer = Timer.scheduledTimer(timeInterval: TimeInterval(interval), target: self,
                                      selector: #selector(refresh), userInfo: nil, repeats: true)
-        statusMenu.items
-            .compactMap { $0.submenu }
-            .flatMap { $0.items }
-            .forEach { $0.state = $0.tag == interval ? .on : .off }
+        intervalItems.forEach { $0.state = $0.tag == interval ? .on : .off }
     }
 
     @objc private func changeInterval(_ sender: NSMenuItem) {
@@ -446,8 +480,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
         clipboard.clearContents()
         if !clipboard.setString(report, forType: .string) {
             let alert = NSAlert()
-            alert.messageText = "Unable to copy diagnostic report"
-            alert.informativeText = "The macOS clipboard is unavailable."
+            alert.messageText = AppText.text("Unable to copy diagnostic report")
+            alert.informativeText = AppText.text("The macOS clipboard is unavailable.")
             alert.alertStyle = .warning
             alert.runModal()
         }
@@ -463,7 +497,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
 
     @objc private func showDiagnostics() {
         let alert = NSAlert()
-        alert.messageText = "AJAZZ APEX — Device diagnostics"
+        alert.messageText = AppText.text("AJAZZ APEX — Device diagnostics")
         alert.informativeText = ApexBattery.diagnostics()
         alert.alertStyle = .informational
         alert.runModal()
@@ -502,11 +536,20 @@ final class TrayController: NSObject, NSApplicationDelegate {
 
     private func recordClockResult(_ sent: Bool) {
         lastClockAttempt = Date()
+        lastClockSent = sent
+        updateClockStatus()
+    }
+
+    private func updateClockStatus() {
+        guard let sent = lastClockSent else {
+            clockItem.title = AppText.text("Dock clock: not yet synchronized")
+            return
+        }
         let stamp = DateFormatter.localizedString(
-            from: Date(), dateStyle: .none, timeStyle: .medium)
-        clockItem.title = sent
-            ? "Dock clock: command sent at " + stamp
-            : "Dock clock: unable to send at " + stamp
+            from: lastClockAttempt, dateStyle: .none, timeStyle: .medium)
+        clockItem.title = AppText.format(sent
+            ? "Dock clock: command sent at %@"
+            : "Dock clock: unable to send at %@", stamp)
     }
 
     private func update(_ status: ApexBattery.Status) {
@@ -522,16 +565,22 @@ final class TrayController: NSObject, NSApplicationDelegate {
         default: receiverWasPresent = true
         }
         polling = false
+        displayedStatus = status
+        renderStatus(status)
+    }
+
+    private func renderStatus(_ status: ApexBattery.Status) {
         switch status {
         case .battery(let level):
             statusItem.button?.title = "🔋\(level)%"
             detailItem.title = "AJAZZ APEX — \(level)% (2.4 GHz)"
         case .notConnected:
             statusItem.button?.title = "🔋—"
-            detailItem.title = "AJAZZ APEX receiver not found"
+            detailItem.title = AppText.text("AJAZZ APEX receiver not found")
         case .unavailable:
             statusItem.button?.title = "🔋?"
-            detailItem.title = "Receiver found; battery status unavailable"
+            detailItem.title = AppText.text(
+                "Receiver found; battery status unavailable")
         }
         statusItem.button?.toolTip = detailItem.title
     }
@@ -539,8 +588,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private func refreshStartupMenu() {
         let service = SMAppService.mainApp
         startupMenuItem?.state = service.status == .enabled ? .on : .off
-        startupMenuItem?.title = service.status == .requiresApproval
-            ? "Start at login (approval needed)" : "Start at login"
+        startupMenuItem?.title = AppText.text(service.status == .requiresApproval
+            ? "Start at login (approval needed)" : "Start at login")
     }
 
     @objc private func toggleLoginStartup(_ sender: NSMenuItem) {
@@ -553,9 +602,9 @@ final class TrayController: NSObject, NSApplicationDelegate {
             }
         } catch {
             let alert = NSAlert()
-            alert.messageText = "Unable to change Start at Login"
+            alert.messageText = AppText.text("Unable to change Start at Login")
             alert.informativeText = error.localizedDescription +
-                "\nInstall the app in Applications, then try again."
+                "\n" + AppText.text("Install the app in Applications, then try again.")
             alert.alertStyle = .warning
             alert.runModal()
         }
@@ -580,6 +629,18 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
     print("Tray menu: sync dock time now or every five minutes.")
     print("Requires macOS 13+ and a compatible VID_3151:PID_5007 receiver.")
 } else if CommandLine.arguments.contains("--self-test") {
+    let originalLanguage = AppText.language
+    AppText.choose("ru")
+    let russianValid = AppText.text("Settings") == "Настройки" &&
+        AppText.format("Below %d%%", 25) == "Ниже 25%"
+    AppText.choose("uk")
+    let ukrainianValid = AppText.text("Settings") == "Налаштування" &&
+        AppText.format("%d seconds", 30) == "30 с"
+    AppText.choose("en")
+    let fallbackValid = AppText.text("Settings") == "Settings" &&
+        AppText.normalize("other") == "en"
+    AppText.choose(originalLanguage)
+    let localizationValid = russianValid && ukrainianValid && fallbackValid
     let testDate = Calendar.current.date(from: DateComponents(
         year: 2026, month: 11, day: 6, hour: 9, minute: 57, second: 42))!
     let packet = ApexBattery.makeClockPayload(testDate)
@@ -679,7 +740,8 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         BluetoothBatteryPayload.likelyAjazz("AJ179 APEX") &&
         BluetoothBatteryPayload.likelyAjazz("Ajazz mouse") &&
         !BluetoothBatteryPayload.likelyAjazz("Keyboard")
-    let valid = bluetoothValid && alertTests && selectedTests && jumpTests &&
+    let valid = localizationValid && bluetoothValid && alertTests &&
+                selectedTests && jumpTests &&
                 chartValid && historyValid &&
                 clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&

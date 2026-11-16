@@ -33,6 +33,11 @@ Intel (x86_64) and Apple Silicon (arm64).
   standard Battery Service on already-connected AJAZZ mice, with no scanning
   or pairing. The device's GATT Battery Service availability is unverified.
   macOS 13+ supports optional Start at Login from the menu.
+- New **Settings** submenu contains notifications and thresholds, refresh
+  interval, history recording, dock clock auto-sync, login startup and
+  **Language → English / Русский / Українська**. The chosen language is saved
+  in UserDefaults and applies immediately. Diagnostics and history-folder
+  actions are grouped under **Diagnostics**; no USB or GATT commands change.
 - Optional **Low battery notifications** (strictly below 50%, 25%, 10%) and **Notify on
   receiver disconnect** are available in the menu bar. Both are off by
   default. Use **Battery notification thresholds** to toggle each level;

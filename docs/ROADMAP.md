@@ -37,6 +37,12 @@
 - [x] Windows battery chart (24h/7d/30d).
 - [x] Windows read-only interface diagnostics (VID/PID/HID usage/length).
 - [x] Optional Windows receiver-disconnect warning with debounce.
+- [x] Compact Settings and Diagnostics menus for Windows and macOS,
+  grouping notifications, refresh interval, history, clock and startup.
+- [x] Russian and Ukrainian UI language selection on both platforms,
+  preserved across restarts, with English fallback and CI string checks.
+- [ ] Validate localized menus, notifications and open windows on physical
+  Windows/macOS desktops (code tested; visual acceptance pending).
 - [x] Select independent battery notification thresholds below 50%, 25%,
   10% on Windows and macOS; persist choices and suppress repeat alerts.
 - [x] Include fresh, opted-in Bluetooth GATT battery readings in Windows

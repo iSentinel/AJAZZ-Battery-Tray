@@ -84,6 +84,30 @@ Check("older settings get new default thresholds", olderSettings is not null &&
     olderSettings.AlertBelow50 && olderSettings.AlertBelow25 &&
     olderSettings.AlertBelow10);
 
+Check("unknown language normalized", UiText.Normalize("invalid") == "en");
+Check("Russian language normalized", UiText.Normalize("ru") == "ru");
+Check("Ukrainian language normalized", UiText.Normalize("uk") == "uk");
+UiText.SetLanguage("en");
+Check("English settings label", UiText.Get("Settings") == "Settings");
+UiText.SetLanguage("ru");
+Check("Russian settings label", UiText.Get("Settings") == "Настройки");
+Check("Russian thresholds formatted", UiText.Format("Below {0}%", 25) ==
+    "Ниже 25%");
+UiText.SetLanguage("uk");
+Check("Ukrainian settings label", UiText.Get("Settings") == "Налаштування");
+Check("Ukrainian notification label",
+    UiText.Get("Low battery notifications") == "Сповіщення про низький заряд");
+Check("Ukrainian interval label", UiText.Format("{0} seconds", 30) == "30 с");
+UiText.SetLanguage("de");
+Check("unsupported language falls back to English",
+    UiText.Language == "en" && UiText.Get("Settings") == "Settings");
+AppSettings languageChoice = new() { Language = "uk" };
+string serializedLanguage = System.Text.Json.JsonSerializer.Serialize(languageChoice);
+Check("language choice survives serialization",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        serializedLanguage)?.Language == "uk");
+Check("legacy settings default to English", olderSettings?.Language == "en");
+
 // The Windows report includes an empty HID report ID at byte 0.
 var local = new DateTime(2026, 11, 6, 9, 57, 42);
 byte[] clock = DockClockReport.Create(local);
