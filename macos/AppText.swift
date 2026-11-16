@@ -166,7 +166,9 @@ enum AppText {
     ]
 
     static func normalize(_ code: String?) -> String {
-        switch code { case "ru": return "ru"; case "uk": return "uk"; default: return "en" }
+        if code == "ru" { return "ru" }
+        if code == "uk" { return "uk" }
+        return "en"
     }
 
     static var language: String {
