@@ -33,9 +33,11 @@ Intel (x86_64) and Apple Silicon (arm64).
   standard Battery Service on already-connected AJAZZ mice, with no scanning
   or pairing. The device's GATT Battery Service availability is unverified.
   macOS 13+ supports optional Start at Login from the menu.
-- Optional **Low battery notifications** (20%, 10%, 5%) and **Notify on
+- Optional **Low battery notifications** (strictly below 50%, 25%, 10%) and **Notify on
   receiver disconnect** are available in the menu bar. Both are off by
-  default. Enabling either requests macOS notification permission. A sleeping
+  default. Use **Battery notification thresholds** to toggle each level;
+  selected levels persist across restarts. Enabling either requests macOS
+  notification permission. A sleeping
   mouse with its receiver still present does not trigger a disconnect alert.
   Check System Settings → Notifications if alerts are not displayed.
 - The app is **ad-hoc signed, not Apple-notarized**. macOS Gatekeeper can show a
