@@ -37,6 +37,10 @@
 - [x] Windows battery chart (24h/7d/30d).
 - [x] Windows read-only interface diagnostics (VID/PID/HID usage/length).
 - [x] Optional Windows receiver-disconnect warning with debounce.
+- [x] Select independent battery notification thresholds below 50%, 25%,
+  10% on Windows and macOS; persist choices and suppress repeat alerts.
+- [x] Include fresh, opted-in Bluetooth GATT battery readings in Windows
+  low-battery alerts while the receiver is confirmed absent.
 - [x] Treat Windows HID enumeration failures as unknown, not confirmed USB
   removal, to avoid incorrect BLE fallback and false disconnect alerts.
 - [x] Check SetupAPI enumeration completion status: only Win32 259 ends
