@@ -343,8 +343,7 @@ jobs:
             AJAZZBatteryTray-Setup-win-x64.sha256 \
             AJAZZBatteryTray-macOS-universal.zip \
             AJAZZBatteryTray-macOS-universal.sha256; do
-            if ! printf '%s
-' "$ASSETS" | grep -Fxq "$file"; then
+            if ! printf '%s\n' "$ASSETS" | grep -Fxq "$file"; then
               echo "::error::Missing published release file: $file"
               exit 1
             fi
