@@ -8,6 +8,17 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.24 (2026-11-16)
+- Add individually selectable low-battery alert thresholds strictly below
+  50%, 25% and 10% on Windows and macOS.
+- Persist Windows alert levels in per-user JSON settings and macOS choices
+  in UserDefaults. Keep existing global notification toggles.
+- Suppress repeated alerts, use 5-point recharge hysteresis and emit only
+  the most urgent warning when a reading crosses several levels at once.
+- Allow fresh, session-opted-in Windows Bluetooth GATT readings to trigger
+  low-battery alerts when the USB receiver is confirmed absent.
+- Extend Windows unit tests and macOS self-tests; preserve HID write safety.
+
 ## 0.3.0-beta.23 (2026-11-07)
 - Validate both SetupAPI interface-detail calls instead of silently ignoring
   failed size queries, failed detail reads or invalid interface paths.
