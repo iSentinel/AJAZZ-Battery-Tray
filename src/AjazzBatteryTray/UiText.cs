@@ -1,0 +1,141 @@
+namespace AjazzBatteryTray;
+
+/// <summary>UI-only translations; protocol diagnostics remain in English.</summary>
+public static class UiText
+{
+    private static readonly Dictionary<string, (string Ru, string Uk)> Messages = new()
+    {
+        ["Connecting..."] = ("Подключение...", "Підключення..."),
+        ["Refresh now"] = ("Обновить сейчас", "Оновити зараз"),
+        ["Battery history..."] = ("История заряда...", "Історія заряду..."),
+        ["Check paired Bluetooth battery..."] = ("Проверить батарею Bluetooth...", "Перевірити батарею Bluetooth..."),
+        ["Bluetooth"] = ("Bluetooth", "Bluetooth"),
+        ["Bluetooth fallback: off"] = ("Bluetooth: отключён", "Bluetooth: вимкнено"),
+        ["Bluetooth fallback: standby (USB primary)"] = ("Bluetooth: ожидание (приоритет USB)", "Bluetooth: очікування (пріоритет USB)"),
+        ["Bluetooth fallback: checking battery..."] = ("Bluetooth: проверка заряда...", "Bluetooth: перевірка заряду..."),
+        ["Bluetooth fallback: paused (receiver status unknown)"] = ("Bluetooth: пауза (статус приёмника неизвестен)", "Bluetooth: пауза (стан приймача невідомий)"),
+        ["Disable Bluetooth tray fallback"] = ("Отключить Bluetooth-мониторинг", "Вимкнути Bluetooth-моніторинг"),
+        ["Refresh Bluetooth battery now"] = ("Обновить заряд Bluetooth", "Оновити заряд Bluetooth"),
+        ["Copy Bluetooth monitor status"] = ("Копировать статус Bluetooth", "Копіювати стан Bluetooth"),
+        ["Copy diagnostic report"] = ("Копировать отчёт диагностики", "Копіювати звіт діагностики"),
+        ["Sync dock time now"] = ("Синхронизировать часы док-станции", "Синхронізувати годинник док-станції"),
+        ["Dock clock: not yet synchronized"] = ("Часы док-станции: не синхронизированы", "Годинник док-станції: не синхронізовано"),
+        ["Dock clock: command sent at {0}"] = ("Часы док-станции: команда отправлена в {0}", "Годинник док-станції: команду надіслано о {0}"),
+        ["Dock clock: unable to send at {0}"] = ("Часы док-станции: ошибка отправки в {0}", "Годинник док-станції: помилка надсилання о {0}"),
+        ["Settings"] = ("Настройки", "Налаштування"),
+        ["Notifications"] = ("Уведомления", "Сповіщення"),
+        ["Low battery notifications"] = ("Уведомления о низком заряде", "Сповіщення про низький заряд"),
+        ["Battery notification thresholds"] = ("Пороги заряда", "Пороги заряду"),
+        ["Below {0}%"] = ("Ниже {0}%", "Нижче {0}%"),
+        ["Notify on receiver disconnect"] = ("Уведомлять об отключении приёмника", "Сповіщати про відключення приймача"),
+        ["Update interval"] = ("Интервал обновления", "Інтервал оновлення"),
+        ["{0} seconds"] = ("{0} сек.", "{0} с"),
+        ["Auto-sync dock clock (5 min)"] = ("Автосинхронизация часов (5 мин.)", "Автосинхронізація годинника (5 хв)"),
+        ["Record battery history"] = ("Записывать историю заряда", "Записувати історію заряду"),
+        ["Start with Windows"] = ("Запускать вместе с Windows", "Запускати разом із Windows"),
+        ["Language"] = ("Язык", "Мова"),
+        ["Diagnostics"] = ("Диагностика", "Діагностика"),
+        ["Device diagnostics..."] = ("Диагностика устройства...", "Діагностика пристрою..."),
+        ["Open log folder"] = ("Открыть папку журналов", "Відкрити теку журналів"),
+        ["Exit"] = ("Выход", "Вихід"),
+        ["unavailable"] = ("недоступно", "недоступно"),
+        ["AJAZZ APEX: low battery"] = ("AJAZZ APEX: низкий заряд", "AJAZZ APEX: низький заряд"),
+        ["Mouse battery is {0}% ({1}); below {2}%." ] =
+            ("Заряд мыши {0}% ({1}); ниже {2}%.", "Заряд миші {0}% ({1}); нижче {2}%."),
+        ["AJAZZ APEX disconnected"] = ("AJAZZ APEX: нет связи", "AJAZZ APEX: немає зв'язку"),
+        ["The 2.4 GHz receiver is no longer detected."] =
+            ("Приёмник 2,4 ГГц больше не обнаружен.", "Приймач 2,4 ГГц більше не виявлено."),
+        ["The Windows clipboard is currently unavailable."] =
+            ("Буфер обмена Windows недоступен.", "Буфер обміну Windows недоступний."),
+        ["AJAZZ APEX device diagnostics"] = ("AJAZZ APEX — диагностика устройства", "AJAZZ APEX — діагностика пристрою"),
+        ["Last 24 hours"] = ("Последние 24 часа", "Останні 24 години"),
+        ["Last 7 days"] = ("Последние 7 дней", "Останні 7 днів"),
+        ["Last 30 days"] = ("Последние 30 дней", "Останні 30 днів"),
+        ["Refresh"] = ("Обновить", "Оновити"),
+        ["Open CSV folder"] = ("Открыть папку CSV", "Відкрити теку CSV"),
+        ["AJAZZ APEX — Battery history"] = ("AJAZZ APEX — История заряда", "AJAZZ APEX — Історія заряду"),
+        ["No observations yet. History is saved locally."] =
+            ("Пока нет измерений. История хранится локально.", "Вимірювань ще немає. Історія зберігається локально."),
+        ["No battery observations yet"] = ("Пока нет измерений заряда", "Вимірювань заряду ще немає"),
+        ["Latest: {0}  |  Minimum: {1}  |  Absent: {2}  |  Unavailable: {3}"] =
+            ("Последний: {0}  |  Минимум: {1}  |  Нет связи: {2}  |  Недоступно: {3}",
+             "Останній: {0}  |  Мінімум: {1}  |  Немає зв'язку: {2}  |  Недоступно: {3}"),
+        ["Records: {0}  |  Local CSV: battery-history.csv (last 30 days)"] =
+            ("Записей: {0}  |  Локальный CSV: battery-history.csv (30 дней)",
+             "Записів: {0}  |  Локальний CSV: battery-history.csv (30 днів)"),
+        ["AJAZZ — Experimental Bluetooth battery check"] =
+            ("AJAZZ — Проверка батареи Bluetooth", "AJAZZ — Перевірка батареї Bluetooth"),
+        ["Show all paired Bluetooth devices (if mouse name is different)"] =
+            ("Показать все сопряжённые устройства Bluetooth", "Показати всі спарені пристрої Bluetooth"),
+        ["Copy lookup summary"] = ("Копировать результат поиска", "Копіювати результат пошуку"),
+        ["Find paired Bluetooth devices"] = ("Найти устройства Bluetooth", "Знайти пристрої Bluetooth"),
+        ["Read selected battery"] = ("Прочитать заряд", "Зчитати заряд"),
+        ["Use this mouse in tray when 2.4 GHz receiver is absent (this session)"] =
+            ("Показывать эту мышь при отсутствии USB (только в этой сессии)",
+             "Показувати цю мишу за відсутності USB (лише в цій сесії)"),
+        ["Manual check of already paired Bluetooth LE and Classic mice."] =
+            ("Проверка уже сопряжённых мышей Bluetooth LE и Classic.",
+             "Перевірка вже спарених мишей Bluetooth LE та Classic."),
+        ["No pairing or GATT writes. Automatic reads require opt-in."] =
+            ("Без сопряжения и записи GATT. Автоопрос — только с разрешения.",
+             "Без спарювання та запису GATT. Автоопитування — лише з дозволу."),
+        ["Choose Find to list already paired devices."] =
+            ("Нажмите «Найти», чтобы показать сопряжённые устройства.",
+             "Натисніть «Знайти», щоб показати спарені пристрої."),
+        ["Checking paired Bluetooth LE and Classic devices..."] =
+            ("Поиск сопряжённых устройств Bluetooth LE и Classic...", "Пошук спарених пристроїв Bluetooth LE та Classic..."),
+        ["No matching devices. Enable Show all and search again."] =
+            ("Устройства не найдены. Включите «Показать все» и повторите поиск.",
+             "Пристроїв не знайдено. Увімкніть «Показати всі» й повторіть пошук."),
+        ["Select your mouse and click Read selected battery."] =
+            ("Выберите мышь и нажмите «Прочитать заряд».",
+             "Виберіть мишу й натисніть «Зчитати заряд»."),
+        ["Bluetooth lookup timed out."] = ("Время поиска Bluetooth истекло.", "Час пошуку Bluetooth вичерпано."),
+        ["Wake the mouse and try again."] = ("Разбудите мышь и повторите.", "Розбудіть мишу та повторіть."),
+        ["Bluetooth lookup unavailable: {0}"] = ("Поиск Bluetooth недоступен: {0}", "Пошук Bluetooth недоступний: {0}"),
+        ["Reading selected mouse's GATT Battery Service..."] =
+            ("Чтение заряда GATT выбранной мыши...", "Зчитування заряду GATT вибраної миші..."),
+        ["No battery percentage inferred."] = ("Процент заряда неизвестен.", "Відсоток заряду невідомий."),
+        ["Bluetooth Battery Service read timed out. Try waking the mouse."] =
+            ("Превышено время чтения батареи Bluetooth. Разбудите мышь.",
+             "Перевищено час зчитування батареї Bluetooth. Розбудіть мишу."),
+        ["Unable to read this paired mouse's Battery Service."] =
+            ("Не удалось прочитать батарею сопряжённой мыши.",
+             "Не вдалося зчитати батарею спареної миші."),
+        ["Bluetooth tray fallback is enabled for this session."] =
+            ("Мониторинг Bluetooth включён на время этой сессии.",
+             "Моніторинг Bluetooth увімкнено на час цієї сесії."),
+        ["It is used only when the 2.4 GHz receiver is absent."] =
+            ("Используется только при отсутствии приёмника 2,4 ГГц.",
+             "Використовується лише за відсутності приймача 2,4 ГГц."),
+        ["Windows clipboard is unavailable."] =
+            ("Буфер обмена Windows недоступен.", "Буфер обміну Windows недоступний."),
+        ["Bluetooth fallback: {0}% (fresh GATT)"] =
+            ("Bluetooth: {0}% (свеже GATT)", "Bluetooth: {0}% (свіже GATT)"),
+        ["Bluetooth fallback: unavailable ({0} failed; last good {1})"] =
+            ("Bluetooth: недоступен ({0} ошибок; последнее чтение {1})",
+             "Bluetooth: недоступний ({0} помилок; останнє читання {1})")
+    };
+
+    public static string Language { get; private set; } = "en";
+
+    /// <summary>Reject unknown codes without changing previous settings.</summary>
+    public static string Normalize(string? code) => code is "ru" or "uk" ? code : "en";
+
+    public static void SetLanguage(string? code) => Language = Normalize(code);
+
+    public static string Get(string english)
+    {
+        if (!Messages.TryGetValue(english, out var translated)) return english;
+        return Language switch
+        {
+            "ru" => translated.Ru,
+            "uk" => translated.Uk,
+            _ => english
+        };
+    }
+
+    public static string Format(string english, params object[] values)
+        => string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            Get(english), values);
+}
