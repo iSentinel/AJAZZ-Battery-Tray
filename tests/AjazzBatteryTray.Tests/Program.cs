@@ -79,7 +79,7 @@ AppSettings? restored = System.Text.Json.JsonSerializer
 Check("threshold selection round-trips", restored is not null &&
     !restored.AlertBelow50 && restored.AlertBelow25 && !restored.AlertBelow10);
 AppSettings? olderSettings = System.Text.Json.JsonSerializer
-    .Deserialize<AppSettings>("{\\"PollSeconds\\":30}");
+    .Deserialize<AppSettings>("""{"PollSeconds":30}""");
 Check("older settings get new default thresholds", olderSettings is not null &&
     olderSettings.AlertBelow50 && olderSettings.AlertBelow25 &&
     olderSettings.AlertBelow10);
