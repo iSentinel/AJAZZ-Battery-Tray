@@ -156,7 +156,12 @@ jobs:
           cat > notes.md <<'NOTES'
           ## AJAZZ Battery Tray v0.3.0-beta.25 — Windows and macOS
 
-          **Settings and languages:** Cleaner Settings and Diagnostics menus\n          on Windows and macOS. Group notification thresholds, history, polling,\n          clock synchronization and startup controls. Choose English, Russian\n          or Ukrainian, stored per user and applied without restarting.\n\n          **Configurable battery alerts:** Independently select notifications
+          **Settings and languages:** Cleaner Settings and Diagnostics menus
+          on Windows and macOS. Group notification thresholds, history, polling,
+          clock synchronization and startup controls. Choose English, Russian
+          or Ukrainian, stored per user and applied without restarting.
+
+          **Configurable battery alerts:** Independently select notifications
           strictly below 50%, 25% and 10% in the tray/menu bar. Thresholds
           persist across restarts; repeated notifications are suppressed.
           Fresh, opted-in Windows Bluetooth battery reads may also alert when
@@ -338,7 +343,8 @@ jobs:
             AJAZZBatteryTray-Setup-win-x64.sha256 \
             AJAZZBatteryTray-macOS-universal.zip \
             AJAZZBatteryTray-macOS-universal.sha256; do
-            if ! printf '%s\n' "$ASSETS" | grep -Fxq "$file"; then
+            if ! printf '%s
+' "$ASSETS" | grep -Fxq "$file"; then
               echo "::error::Missing published release file: $file"
               exit 1
             fi
