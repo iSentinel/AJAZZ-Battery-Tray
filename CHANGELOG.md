@@ -8,7 +8,7 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
-## 0.3.0-beta.24 (2026-11-16)
+## 0.3.0-beta.25 (2026-11-16)\n- Group Windows and macOS tray/menu-bar settings into a dedicated Settings\n  submenu; keep status, refresh and dock clock sync easily accessible.\n- Move diagnostic tools into Diagnostics and group Bluetooth controls.\n- Add English, Russian and Ukrainian UI language choice, remembered across\n  restarts, with immediate menu translation and open-window caption updates.\n- Translate battery notifications and history/Bluetooth UI without changing\n  protocol-level diagnostics or hardware access.\n- Fix macOS refresh-interval updates clearing unrelated threshold checks.\n- Add pure Windows language tests and macOS localization self-tests.\n- Keep the verified HID write allowlist and Bluetooth consent unchanged.\n\n## 0.3.0-beta.24 (2026-11-16)
 - Add individually selectable low-battery alert thresholds strictly below
   50%, 25% and 10% on Windows and macOS.
 - Persist Windows alert levels in per-user JSON settings and macOS choices
