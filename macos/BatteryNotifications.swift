@@ -9,33 +9,35 @@ enum BatteryAlertEvent: Equatable {
 
 /// Debounces disconnects and suppresses repeated low-battery alerts.
 final class BatteryAlertPolicy {
-    private var reachedThreshold: Int?
+    private var notifiedThresholds = Set<Int>()
     private var observedConnection = false
     private var consecutiveMissing = 0
     private var disconnectNotified = false
 
-    /// Returns a new event, or nil when nothing needs user attention.
+    /// Returns a new event at enabled strictly-below battery thresholds.
     func evaluate(_ status: ApexBattery.Status,
-                  notifyLow: Bool, notifyDisconnect: Bool) -> BatteryAlertEvent? {
+                  notifyLow: Bool, notifyDisconnect: Bool,
+                  thresholds: Set<Int> = [50, 25, 10]) -> BatteryAlertEvent? {
         switch status {
         case .battery(let percent):
             observedConnection = true
             consecutiveMissing = 0
             disconnectNotified = false
-            if percent > 25 { reachedThreshold = nil }
+            // Five percent of hysteresis avoids repeated threshold warnings.
+            for threshold in [50, 25, 10] where percent >= threshold + 5 {
+                notifiedThresholds.remove(threshold)
+            }
             guard notifyLow else { return nil }
-            let threshold: Int?
-            switch percent {
-            case ...5: threshold = 5
-            case ...10: threshold = 10
-            case ...20: threshold = 20
-            default: threshold = nil
+            let reached = [10, 25, 50].first {
+                thresholds.contains($0) && percent < $0 &&
+                    !notifiedThresholds.contains($0)
             }
-            guard let threshold = threshold else { return nil }
-            if let previous = reachedThreshold, threshold >= previous {
-                return nil
+            guard let reached = reached else { return nil }
+            // A large drop should emit one most-urgent warning.
+            for threshold in [50, 25, 10] where percent < threshold {
+                notifiedThresholds.insert(threshold)
             }
-            reachedThreshold = threshold
+            _ = reached
             return .lowBattery(percent)
 
         case .unavailable:
