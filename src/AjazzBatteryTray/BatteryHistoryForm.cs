@@ -11,12 +11,14 @@ public sealed class BatteryHistoryForm : Form
     private readonly BatteryGraphPanel _graph = new();
     private readonly Label _summary = new();
     private readonly ComboBox _range = new();
+    private readonly Button _refresh = new();
+    private readonly Button _folder = new();
     private IReadOnlyList<BatterySample> _visible = Array.Empty<BatterySample>();
 
     public BatteryHistoryForm(BatteryHistory history)
     {
         _history = history;
-        Text = "AJAZZ APEX — Battery history";
+        Text = UiText.Get("AJAZZ APEX — Battery history");
         MinimumSize = new Size(650, 390);
         Size = new Size(900, 510);
         StartPosition = FormStartPosition.CenterScreen;
@@ -36,14 +38,14 @@ public sealed class BatteryHistoryForm : Form
         _range.SelectedIndex = 1;
         _range.SelectedIndexChanged += (_, _) => RefreshData();
 
-        Button refresh = new() { Text = "Refresh", Width = 85 };
-        refresh.Click += (_, _) => RefreshData();
-        Button folder = new() { Text = "Open CSV folder", Width = 140 };
-        folder.Click += (_, _) => OpenHistoryFolder();
+        _refresh.Width = 115;
+        _refresh.Click += (_, _) => RefreshData();
+        _folder.Width = 175;
+        _folder.Click += (_, _) => OpenHistoryFolder();
 
         buttons.Controls.Add(_range);
-        buttons.Controls.Add(refresh);
-        buttons.Controls.Add(folder);
+        buttons.Controls.Add(_refresh);
+        buttons.Controls.Add(_folder);
         _summary.Dock = DockStyle.Bottom;
         _summary.Height = 52;
         _summary.Padding = new Padding(14, 6, 14, 6);
@@ -52,6 +54,24 @@ public sealed class BatteryHistoryForm : Form
         Controls.Add(_graph);
         Controls.Add(_summary);
         Controls.Add(buttons);
+        ApplyLanguage();
+    }
+
+    /// <summary>Refresh captions without losing the chart or current range.</summary>
+    public void ApplyLanguage()
+    {
+        Text = UiText.Get("AJAZZ APEX — Battery history");
+        int selected = _range.SelectedIndex;
+        _range.Items.Clear();
+        foreach (string period in new[]
+        {
+            "Last 24 hours", "Last 7 days", "Last 30 days"
+        }) _range.Items.Add(UiText.Get(period));
+        _range.SelectedIndex = selected < 0 ? 1 : selected;
+        _refresh.Text = UiText.Get("Refresh");
+        _folder.Text = UiText.Get("Open CSV folder");
+        UpdateSummary();
+        _graph.Invalidate();
     }
 
     public void RefreshData()
@@ -69,7 +89,7 @@ public sealed class BatteryHistoryForm : Form
         BatterySample? latest = _visible.LastOrDefault();
         if (latest is null)
         {
-            _summary.Text = "No observations yet. History is saved locally.";
+            _summary.Text = UiText.Get("No observations yet. History is saved locally.");
             return;
         }
 
@@ -79,9 +99,11 @@ public sealed class BatteryHistoryForm : Form
                            .Select(x => x.Percent).Min();
         string value = latest.Percent.HasValue ? $"{latest.Percent}%" : latest.State;
         string minimum = min.HasValue ? $"{min}%" : "—";
-        _summary.Text = $"Latest: {value}  |  Minimum: {minimum}" +
-            $"  |  Absent: {missing}  |  Unavailable: {unavailable}" +
-            $"\nRecords: {_visible.Count}  |  Local CSV: battery-history.csv (last 30 days)";
+        _summary.Text = UiText.Format(
+            "Latest: {0}  |  Minimum: {1}  |  Absent: {2}  |  Unavailable: {3}",
+            value, minimum, missing, unavailable) + "\n" +
+            UiText.Format("Records: {0}  |  Local CSV: battery-history.csv (last 30 days)",
+                _visible.Count);
     }
 
     private static void OpenHistoryFolder()
