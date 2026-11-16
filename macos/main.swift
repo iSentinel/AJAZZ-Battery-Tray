@@ -629,6 +629,18 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
     print("Tray menu: sync dock time now or every five minutes.")
     print("Requires macOS 13+ and a compatible VID_3151:PID_5007 receiver.")
 } else if CommandLine.arguments.contains("--self-test") {
+    let originalLanguage = AppText.language
+    AppText.choose("ru")
+    let russianValid = AppText.text("Settings") == "Настройки" &&
+        AppText.format("Below %d%%", 25) == "Ниже 25%"
+    AppText.choose("uk")
+    let ukrainianValid = AppText.text("Settings") == "Налаштування" &&
+        AppText.format("%d seconds", 30) == "30 с"
+    AppText.choose("en")
+    let fallbackValid = AppText.text("Settings") == "Settings" &&
+        AppText.normalize("other") == "en"
+    AppText.choose(originalLanguage)
+    let localizationValid = russianValid && ukrainianValid && fallbackValid
     let testDate = Calendar.current.date(from: DateComponents(
         year: 2026, month: 11, day: 6, hour: 9, minute: 57, second: 42))!
     let packet = ApexBattery.makeClockPayload(testDate)
@@ -728,7 +740,8 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         BluetoothBatteryPayload.likelyAjazz("AJ179 APEX") &&
         BluetoothBatteryPayload.likelyAjazz("Ajazz mouse") &&
         !BluetoothBatteryPayload.likelyAjazz("Keyboard")
-    let valid = bluetoothValid && alertTests && selectedTests && jumpTests &&
+    let valid = localizationValid && bluetoothValid && alertTests &&
+                selectedTests && jumpTests &&
                 chartValid && historyValid &&
                 clockValid && guardValid &&
                 ApexBattery.parse([5, 0, 0, 73]) == 73 &&
