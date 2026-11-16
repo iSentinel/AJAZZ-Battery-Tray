@@ -152,9 +152,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.23"
+          TAG="v0.3.0-beta.24"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.23 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.24 — Windows and macOS
+
+          **Configurable battery alerts:** Independently select notifications
+          strictly below 50%, 25% and 10% in the tray/menu bar. Thresholds
+          persist across restarts; repeated notifications are suppressed.
+          Fresh, opted-in Windows Bluetooth battery reads may also alert when
+          the USB receiver is confirmed absent.
 
           Battery history, diagnostics and dock clock synchronization in
           the notification area on Windows 10/11 and the
@@ -213,7 +219,8 @@ jobs:
           **Windows asynchronous monitoring:** USB battery updates no longer
           wait for Bluetooth GATT. Only one BLE read runs at once; late
           replies from disabled or replaced sessions are ignored, and
-          BLE completion does not replay USB history or notifications.
+          BLE completion does not replay USB history or receiver-disconnect
+          notifications; fresh BLE readings may raise low-battery alerts.
 
           **Bluetooth fallback resilience:** Direct GATT readings now carry a
           typed source, not a textual label. A selected Bluetooth source
@@ -258,7 +265,8 @@ jobs:
           the menu bar, with system state and a Login Items settings shortcut.
 
           **macOS Notifications:** Optional, off-by-default alerts for low
-          battery at 20/10/5% and USB receiver disconnect after two missed polls.
+          battery below selected 50/25/10% levels and USB receiver disconnect
+          after two missed polls.
           macOS notification permission is requested only when enabled.
 
           **macOS Chart:** Native battery-history graph with 24h, 7d and 30d
@@ -306,7 +314,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.23" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.24" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
