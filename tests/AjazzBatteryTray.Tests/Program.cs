@@ -109,7 +109,7 @@ Check("language choice survives serialization",
 Check("legacy settings default to English", olderSettings?.Language == "en");
 
 // AULA's shared dongle must never be probed unless manually requested/opted in.
-Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);
+Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);\nCheck("AULA separate history CSV",\n    new BatteryHistory("aula-l99-history.csv").FileName ==\n    "aula-l99-history.csv");\nAppSettings aulaOptIn = new() { MonitorAulaL99 = true };\nCheck("AULA opt-in setting survives JSON",\n    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(\n        System.Text.Json.JsonSerializer.Serialize(aulaOptIn))?.MonitorAulaL99 == true);
 Check("AULA exact interface matching", AulaL99Protocol.MatchesPath(
     @"\\?\hid#vid_05ac&pid_024f&mi_03#7&abc"));
 Check("AULA wrong interface rejected", !AulaL99Protocol.MatchesPath(
