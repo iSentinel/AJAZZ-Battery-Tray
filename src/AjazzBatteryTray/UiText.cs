@@ -77,6 +77,8 @@ public static class UiText
         ["Monitor AULA automatically (experimental)"] =
             ("Мониторинг AULA автоматически (экспериментально)",
              "Моніторинг AULA автоматично (експериментально)"),
+        ["Copy AULA diagnostic summary"] =
+            ("Копировать диагностику AULA", "Копіювати діагностику AULA"),
         ["AULA battery history..."] =
             ("История заряда AULA...", "Історія заряду AULA..."),
         ["AULA L99: low battery"] =
