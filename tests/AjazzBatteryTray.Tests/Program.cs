@@ -108,6 +108,49 @@ Check("language choice survives serialization",
         serializedLanguage)?.Language == "uk");
 Check("legacy settings default to English", olderSettings?.Language == "en");
 
+// AULA's shared dongle must never be probed unless manually requested/opted in.
+Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);
+Check("AULA exact interface matching", AulaL99Protocol.MatchesPath(
+    @"\\?\hid#vid_05ac&pid_024f&mi_03#7&abc"));
+Check("AULA wrong interface rejected", !AulaL99Protocol.MatchesPath(
+    @"\\?\hid#vid_05ac&pid_024f&mi_01#7&abc"));
+Check("AULA AJAZZ receiver rejected", !AulaL99Protocol.MatchesPath(
+    @"\\?\hid#vid_3151&pid_5007&mi_02#7&abc"));
+Check("AULA vendor HID caps only",
+    AulaL99Protocol.MatchesCaps(0xff00, 33, 33) &&
+    !AulaL99Protocol.MatchesCaps(1, 33, 33) &&
+    !AulaL99Protocol.MatchesCaps(0xff00, 65, 65));
+byte[] aulaBatteryQuery = AulaL99Protocol.BatteryRequest();
+Check("AULA battery request exact 33 bytes",
+    aulaBatteryQuery.Length == 33 && aulaBatteryQuery[0] == 0 &&
+    aulaBatteryQuery[1] == 0x20 && aulaBatteryQuery[2] == 1 &&
+    aulaBatteryQuery[32] == 0x21 &&
+    aulaBatteryQuery.Skip(3).Take(29).All(x => x == 0));
+Check("AULA only battery query allowlisted",
+    AulaL99Protocol.IsApprovedRequest(aulaBatteryQuery));
+byte[] otherCommand = (byte[])aulaBatteryQuery.Clone();
+otherCommand[1] = 0x05;
+Check("AULA settings command blocked",
+    !AulaL99Protocol.IsApprovedRequest(otherCommand));
+byte[] aulaReply = new byte[33];
+aulaReply[1] = 0x20;
+aulaReply[2] = 1;
+aulaReply[4] = 83;
+Check("AULA battery 83% parsing", AulaL99Protocol.ParseBatteryReply(
+    aulaReply) == 83);
+Check("AULA raw 32 byte reply parsing", AulaL99Protocol.ParseBatteryReply(
+    aulaReply.AsSpan(1)) == 83);
+aulaReply[4] = 0;
+Check("AULA no reading is not zero", AulaL99Protocol.ParseBatteryReply(
+    aulaReply) is null);
+aulaReply[4] = 101;
+Check("AULA invalid percentage rejected", AulaL99Protocol.ParseBatteryReply(
+    aulaReply) is null);
+aulaReply[4] = 100;
+aulaReply[1] = 0x05;
+Check("AULA unrelated response rejected", AulaL99Protocol.ParseBatteryReply(
+    aulaReply) is null);
+
 // The Windows report includes an empty HID report ID at byte 0.
 var local = new DateTime(2026, 11, 6, 9, 57, 42);
 byte[] clock = DockClockReport.Create(local);
