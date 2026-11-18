@@ -156,7 +156,13 @@ jobs:
           cat > notes.md <<'NOTES'
           ## AJAZZ Battery Tray v0.3.0-beta.26 — Windows and macOS
 
-          **Experimental AULA L99 2.4 GHz:** Windows-only, opt-in battery\n          query through the exact vendor HID dongle interface; separate\n          keyboard history and independent 50/25/10% alerts. Shared dongle\n          identity is not proof of keyboard model; real-device acceptance\n          is pending. No AULA settings or lighting writes are implemented.\n\n          **Settings and languages:** Cleaner Settings and Diagnostics menus
+          **Experimental AULA L99 2.4 GHz:** Windows-only, opt-in battery
+          query through the exact vendor HID dongle interface; separate
+          keyboard history and independent 50/25/10% alerts. Shared dongle
+          identity is not proof of keyboard model; real-device acceptance
+          is pending. No AULA settings or lighting writes are implemented.
+
+          **Settings and languages:** Cleaner Settings and Diagnostics menus
           on Windows and macOS. Group notification thresholds, history, polling,
           clock synchronization and startup controls. Choose English, Russian
           or Ukrainian, stored per user and applied without restarting.
