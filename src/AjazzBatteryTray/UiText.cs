@@ -53,6 +53,37 @@ public static class UiText
         ["Last 30 days"] = ("Последние 30 дней", "Останні 30 днів"),
         ["Refresh"] = ("Обновить", "Оновити"),
         ["Open CSV folder"] = ("Открыть папку CSV", "Відкрити теку CSV"),
+        ["Battery history"] = ("История заряда", "Історія заряду"),
+        ["Records: {0}  |  Local CSV: {1} (last 30 days)"] =
+            ("Записей: {0}  |  Локальный CSV: {1} (30 дней)",
+             "Записів: {0}  |  Локальний CSV: {1} (30 днів)"),
+        ["AULA L99 (experimental)"] =
+            ("AULA L99 (экспериментально)", "AULA L99 (експериментально)"),
+        ["AULA L99: not checked"] =
+            ("AULA L99: ещё не проверена", "AULA L99: ще не перевірено"),
+        ["AULA L99: checking battery..."] =
+            ("AULA L99: проверка заряда...", "AULA L99: перевірка заряду..."),
+        ["AULA L99: dongle not found"] =
+            ("AULA L99: приёмник не найден", "AULA L99: приймач не знайдено"),
+        ["AULA L99: no valid battery reply"] =
+            ("AULA L99: заряд неизвестен", "AULA L99: заряд невідомий"),
+        ["AULA L99: HID status unknown"] =
+            ("AULA L99: ошибка HID", "AULA L99: помилка HID"),
+        ["AULA L99: {0}% (model unverified)"] =
+            ("AULA L99: {0}% (модель не подтверждена)",
+             "AULA L99: {0}% (модель не підтверджена)"),
+        ["Read AULA battery once"] =
+            ("Прочитать заряд AULA один раз", "Зчитати заряд AULA один раз"),
+        ["Monitor AULA automatically (experimental)"] =
+            ("Мониторинг AULA автоматически (экспериментально)",
+             "Моніторинг AULA автоматично (експериментально)"),
+        ["AULA battery history..."] =
+            ("История заряда AULA...", "Історія заряду AULA..."),
+        ["AULA L99: low battery"] =
+            ("AULA L99: низкий заряд", "AULA L99: низький заряд"),
+        ["Keyboard battery is {0}%; below {1}%."] =
+            ("Заряд клавиатуры {0}%; ниже {1}%.",
+             "Заряд клавіатури {0}%; нижче {1}%."),
         ["AJAZZ APEX — Battery history"] = ("AJAZZ APEX — История заряда", "AJAZZ APEX — Історія заряду"),
         ["No observations yet. History is saved locally."] =
             ("Пока нет измерений. История хранится локально.", "Вимірювань ще немає. Історія зберігається локально."),
