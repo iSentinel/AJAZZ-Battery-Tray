@@ -4,7 +4,7 @@ This table separates **implemented code**, **GitHub CI results**, and
 **tests actually completed with a physical mouse**. A successful build
 is not evidence that a dock clock or wireless handover works on hardware.
 
-## Evidence snapshot — 2026-11-06
+## AULA L99 experiment — 2026-11-18\n\n| Capability | Code / CI | Physical validation |\n| --- | --- | --- |\n| Windows L99 2.4 GHz battery via `05AC:024F MI_03` | Battery-only protocol and UI implemented; CI required | **Pending**: must verify exact dongle interface and fresh response |\n| Windows L99 history / notifications | Separate file and debouncing implemented | **Pending**: no device test |\n| AULA L99 vs S75 Pro identity | Shared receiver IDs; explicitly unverified in UI | **Pending**: vendor ID cannot uniquely identify model |\n| macOS L99 | Not implemented | Not tested |\n\n## Evidence snapshot — 2026-11-06
 
 | Capability | Implementation / CI | Physical validation |
 | --- | --- | --- |
