@@ -136,14 +136,14 @@ public sealed class TrayAppContext : ApplicationContext
     private void CopyAulaSummary()
     {
         AulaL99Reading? state = _aulaLatest;
-        string text = "AULA L99 2.4 GHz experimental battery check\\n" +
-            $"Version: {Application.ProductVersion}\\n" +
-            $"Automatic monitoring enabled: {_settings.MonitorAulaL99}\\n" +
-            $"Receiver present: {state?.ReceiverPresent.ToString() ?? "not checked"}\\n" +
-            $"Presence known: {state?.PresenceKnown.ToString() ?? "not checked"}\\n" +
-            $"Battery percentage: {state?.Percent?.ToString() ?? "unavailable"}\\n" +
-            $"Status: {state?.Details ?? "not checked"}\\n" +
-            "Model identity unverified (dongle IDs shared with S75 Pro).\\n" +
+        string text = "AULA L99 2.4 GHz experimental battery check\n" +
+            $"Version: {Application.ProductVersion}\n" +
+            $"Automatic monitoring enabled: {_settings.MonitorAulaL99}\n" +
+            $"Receiver present: {state?.ReceiverPresent.ToString() ?? "not checked"}\n" +
+            $"Presence known: {state?.PresenceKnown.ToString() ?? "not checked"}\n" +
+            $"Battery percentage: {state?.Percent?.ToString() ?? "unavailable"}\n" +
+            $"Status: {state?.Details ?? "not checked"}\n" +
+            "Model identity unverified (dongle IDs shared with S75 Pro).\n" +
             "No serial numbers or HID interface paths are included.";
         try { Clipboard.SetText(text); }
         catch (Exception error)
