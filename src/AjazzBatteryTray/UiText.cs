@@ -69,9 +69,9 @@ public static class UiText
             ("AULA L99: заряд неизвестен", "AULA L99: заряд невідомий"),
         ["AULA L99: HID status unknown"] =
             ("AULA L99: ошибка HID", "AULA L99: помилка HID"),
-        ["AULA L99: {0}% (model unverified)"] =
-            ("AULA L99: {0}% (модель не подтверждена)",
-             "AULA L99: {0}% (модель не підтверджена)"),
+        ["AULA L99: last {0}% at {1} (unverified)"] =
+            ("AULA L99: последний {0}% в {1} (модель не подтверждена)",
+             "AULA L99: останній {0}% о {1} (модель не підтверджена)"),
         ["Read AULA battery once"] =
             ("Прочитать заряд AULA один раз", "Зчитати заряд AULA один раз"),
         ["Monitor AULA automatically (experimental)"] =
