@@ -8,6 +8,7 @@ namespace AjazzBatteryTray;
 public sealed class BatteryHistoryForm : Form
 {
     private readonly BatteryHistory _history;
+    private readonly string _deviceTitle;
     private readonly BatteryGraphPanel _graph = new();
     private readonly Label _summary = new();
     private readonly ComboBox _range = new();
@@ -15,10 +16,12 @@ public sealed class BatteryHistoryForm : Form
     private readonly Button _folder = new();
     private IReadOnlyList<BatterySample> _visible = Array.Empty<BatterySample>();
 
-    public BatteryHistoryForm(BatteryHistory history)
+    public BatteryHistoryForm(BatteryHistory history,
+        string deviceTitle = "AJAZZ APEX")
     {
         _history = history;
-        Text = UiText.Get("AJAZZ APEX — Battery history");
+        _deviceTitle = deviceTitle;
+        Text = _deviceTitle + " — " + UiText.Get("Battery history");
         MinimumSize = new Size(650, 390);
         Size = new Size(900, 510);
         StartPosition = FormStartPosition.CenterScreen;
@@ -60,7 +63,7 @@ public sealed class BatteryHistoryForm : Form
     /// <summary>Refresh captions without losing the chart or current range.</summary>
     public void ApplyLanguage()
     {
-        Text = UiText.Get("AJAZZ APEX — Battery history");
+        Text = _deviceTitle + " — " + UiText.Get("Battery history");
         int selected = _range.SelectedIndex;
         _range.Items.Clear();
         foreach (string period in new[]
@@ -102,8 +105,8 @@ public sealed class BatteryHistoryForm : Form
         _summary.Text = UiText.Format(
             "Latest: {0}  |  Minimum: {1}  |  Absent: {2}  |  Unavailable: {3}",
             value, minimum, missing, unavailable) + "\n" +
-            UiText.Format("Records: {0}  |  Local CSV: battery-history.csv (last 30 days)",
-                _visible.Count);
+            UiText.Format("Records: {0}  |  Local CSV: {1} (last 30 days)",
+                _visible.Count, _history.FileName);
     }
 
     private static void OpenHistoryFolder()

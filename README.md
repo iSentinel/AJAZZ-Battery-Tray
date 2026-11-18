@@ -3,9 +3,9 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.25 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.26 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
-## Platforms and hardware status
+## Experimental AULA L99 2.4 GHz battery monitor (Windows only)\n\nAULA L99 monitoring is **disabled by default**. In the Windows tray open\n**AULA L99 (experimental) → Read AULA battery once** to query the connected\n2.4 GHz dongle manually, or explicitly enable **Monitor AULA automatically**\nto poll it with the normal refresh interval. The keyboard has its own status,\nlocal history file (`aula-l99-history.csv`) and independent low-battery\nnotification debounce. Global notification thresholds (below 50, 25, 10%)\nand the Record battery history toggle apply to both devices. Use\n**Copy AULA diagnostic summary** to share a privacy-safe result.\n\nThe reader accepts only the documented battery query (`0x20`) on the\n`05AC:024F / MI_03` vendor interface and validates 1–100% responses.\nThe receiver identifier is shared with AULA S75 Pro: a response is **not**\nproof of L99 identity. Actual AULA L99 hardware behavior is **unverified**,\nand a sleeping keyboard, mismatched dongle revision or missing response\nwill show unavailable rather than an invented percentage. No keyboard\nsettings/firmware/RGB command is implemented. **macOS L99 is not supported**.\n\n## Platforms and hardware status
 
 | Platform | AJ179 APEX | AJ159 APEX |
 |---|---|---|

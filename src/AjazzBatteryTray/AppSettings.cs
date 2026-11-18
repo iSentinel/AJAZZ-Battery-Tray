@@ -14,6 +14,7 @@ public sealed class AppSettings
     public bool RecordBatteryHistory { get; set; } = true;
     public bool NotifyOnDisconnect { get; set; } = false;
     public bool AutomaticDockClockSync { get; set; } = true;
+    public bool MonitorAulaL99 { get; set; } = false;
 
     public static string DirectoryPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

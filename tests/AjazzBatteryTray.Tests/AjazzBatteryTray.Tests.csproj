@@ -20,6 +20,8 @@
              Link="BatteryHistoryCsv.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ConnectionAlertPolicy.cs"
              Link="ConnectionAlertPolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/AulaL99Protocol.cs"
+             Link="AulaL99Protocol.cs" />
     <Compile Include="../../src/AjazzBatteryTray/UiText.cs"
              Link="UiText.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AppSettings.cs"

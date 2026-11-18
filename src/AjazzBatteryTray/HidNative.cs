@@ -138,18 +138,23 @@ internal static class HidNative
 
     /// <summary>Enumerates current HID interface paths (not all PnP devices).</summary>
     internal static IReadOnlyList<string> FindAjazzPaths()
+        => FindPaths(path => path.Contains("vid_3151&pid_5007&mi_02",
+            StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Discover only the known L99 vendor dongle interface.</summary>
+    internal static IReadOnlyList<string> FindAulaL99Paths()
+        => FindPaths(AulaL99Protocol.MatchesPath);
+
+    private static IReadOnlyList<string> FindPaths(Func<string, bool> matches)
     {
         HidD_GetHidGuid(out Guid guid);
         IntPtr deviceSet = SetupDiGetClassDevs(ref guid, null,
             IntPtr.Zero, PresentDeviceInterfaces);
         if (deviceSet == InvalidPointer)
-        {
             throw new Win32Exception(Marshal.GetLastWin32Error());
-        }
-
         try
         {
-            return ReadPaths(deviceSet, ref guid);
+            return ReadPaths(deviceSet, ref guid, matches);
         }
         finally
         {
@@ -157,7 +162,8 @@ internal static class HidNative
         }
     }
 
-    private static IReadOnlyList<string> ReadPaths(IntPtr deviceSet, ref Guid guid)
+    private static IReadOnlyList<string> ReadPaths(
+        IntPtr deviceSet, ref Guid guid, Func<string, bool> matches)
     {
         List<string> paths = new();
         for (uint index = 0; ; index++)
@@ -173,8 +179,7 @@ internal static class HidNative
             }
 
             string? path = ReadPath(deviceSet, ref data);
-            if (path is not null && path.Contains("vid_3151&pid_5007&mi_02",
-                    StringComparison.OrdinalIgnoreCase))
+            if (path is not null && matches(path))
             {
                 paths.Add(path);
             }
@@ -229,6 +234,11 @@ internal static class HidNative
         return CreateFile(path, 0, ShareReadWrite,
             IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
     }
+
+    /// <summary>Async HID I/O allows cancellation on a sleeping dongle.</summary>
+    internal static SafeFileHandle OpenOverlapped(string path)
+        => CreateFile(path, ReadWrite, ShareReadWrite, IntPtr.Zero,
+            OpenExisting, 0x40000000, IntPtr.Zero);
 
     internal static bool TryGetCaps(SafeFileHandle handle, out HidCaps caps)
     {

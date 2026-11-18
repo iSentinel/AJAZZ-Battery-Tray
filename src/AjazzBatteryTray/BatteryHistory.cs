@@ -30,11 +30,15 @@ public sealed class BatteryHistory
     public static string FilePath => Path.Combine(
         AppSettings.DirectoryPath, "battery-history.csv");
 
+    private readonly string _filePath;
+    public string FileName { get; }
     private BatterySample? _last;
     private DateTime _lastPrune = DateTime.MinValue;
 
-    public BatteryHistory()
+    public BatteryHistory(string fileName = "battery-history.csv")
     {
+        FileName = Path.GetFileName(fileName);
+        _filePath = Path.Combine(AppSettings.DirectoryPath, FileName);
         _last = ReadRecent().LastOrDefault();
     }
 
@@ -46,8 +50,8 @@ public sealed class BatteryHistory
         try
         {
             Directory.CreateDirectory(AppSettings.DirectoryPath);
-            bool needsHeader = !File.Exists(FilePath);
-            using (StreamWriter writer = new(FilePath, append: true))
+            bool needsHeader = !File.Exists(_filePath);
+            using (StreamWriter writer = new(_filePath, append: true))
             {
                 if (needsHeader) writer.WriteLine(BatteryHistoryCsv.Header);
                 writer.WriteLine(BatteryHistoryCsv.Format(sample));
@@ -66,7 +70,7 @@ public sealed class BatteryHistory
     {
         try
         {
-            if (!File.Exists(FilePath)) return Array.Empty<BatterySample>();
+            if (!File.Exists(_filePath)) return Array.Empty<BatterySample>();
             return BatteryHistoryRules.Retain(ReadFile(), DateTimeOffset.UtcNow);
         }
         catch (Exception error)
@@ -79,15 +83,15 @@ public sealed class BatteryHistory
     private void Prune(DateTimeOffset now)
     {
         IReadOnlyList<BatterySample> points = BatteryHistoryRules.Retain(ReadFile(), now);
-        string temporary = FilePath + ".tmp";
+        string temporary = _filePath + ".tmp";
         File.WriteAllLines(temporary, new[] { BatteryHistoryCsv.Header }
             .Concat(points.Select(BatteryHistoryCsv.Format)));
-        File.Move(temporary, FilePath, overwrite: true);
+        File.Move(temporary, _filePath, overwrite: true);
         _lastPrune = now.UtcDateTime;
     }
 
-    private static IEnumerable<BatterySample> ReadFile()
-        => File.ReadLines(FilePath)
+    private IEnumerable<BatterySample> ReadFile()
+        => File.ReadLines(_filePath)
             .Where(x => x != BatteryHistoryCsv.Header)
             .Select(BatteryHistoryCsv.Parse)
             .OfType<BatterySample>();

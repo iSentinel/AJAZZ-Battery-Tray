@@ -10,6 +10,14 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _timer;
     private readonly AjazzHidReader _reader = new();
+    private readonly AulaL99Reader _aulaReader = new();
+    private readonly AlertPolicy _aulaAlerts = new();
+    private readonly BatteryHistory _aulaHistory = new("aula-l99-history.csv");
+    private BatteryHistoryForm? _aulaHistoryWindow;
+    private AulaL99Reading? _aulaLatest;
+    private DateTimeOffset? _aulaLastReadAt;
+    private bool _aulaBusy;
+    private ToolStripMenuItem _aulaStatus = new();
     private readonly AlertPolicy _alerts = new();
     private readonly ConnectionAlertPolicy _connectionAlerts = new();
     private readonly BatteryHistory _history = new();
@@ -62,6 +70,7 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(UiText.Get("Battery history..."), null,
             (_, _) => ShowHistory());
         menu.Items.Add(BuildBluetoothMenu());
+        menu.Items.Add(BuildAulaMenu());
         menu.Items.Add(UiText.Get("Sync dock time now"), null,
             (_, _) => RequestClockSync());
         _clockStatus = new ToolStripMenuItem { Enabled = false };
@@ -96,6 +105,124 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(_refreshBluetooth);
         UpdateBluetoothStatus();
         return menu;
+    }
+
+    private ToolStripMenuItem BuildAulaMenu()
+    {
+        ToolStripMenuItem menu = new(UiText.Get("AULA L99 (experimental)"));
+        _aulaStatus = new ToolStripMenuItem { Enabled = false };
+        menu.DropDownItems.Add(_aulaStatus);
+        menu.DropDownItems.Add(UiText.Get("Read AULA battery once"), null,
+            (_, _) => _ = PollAulaAsync(manual: true));
+        ToolStripMenuItem auto = new(
+            UiText.Get("Monitor AULA automatically (experimental)"))
+        {
+            Checked = _settings.MonitorAulaL99, CheckOnClick = true
+        };
+        auto.CheckedChanged += (_, _) =>
+        {
+            _settings.MonitorAulaL99 = auto.Checked;
+            _settings.Save();
+            if (auto.Checked) _ = PollAulaAsync(manual: true);
+        };
+        menu.DropDownItems.Add(auto);
+        menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
+            (_, _) => ShowAulaHistory());
+        menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
+            (_, _) => CopyAulaSummary());
+        UpdateAulaStatus();
+        return menu;
+    }
+
+    private void CopyAulaSummary()
+    {
+        AulaL99Reading? state = _aulaLatest;
+        string text = "AULA L99 2.4 GHz experimental battery check\n" +
+            $"Version: {Application.ProductVersion}\n" +
+            $"Automatic monitoring enabled: {_settings.MonitorAulaL99}\n" +
+            $"Receiver present: {state?.ReceiverPresent.ToString() ?? "not checked"}\n" +
+            $"Presence known: {state?.PresenceKnown.ToString() ?? "not checked"}\n" +
+            $"Battery percentage: {state?.Percent?.ToString() ?? "unavailable"}\n" +
+            $"Status: {state?.Details ?? "not checked"}\n" +
+            $"Last read UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
+            "Model identity unverified (dongle IDs shared with S75 Pro).\n" +
+            "No serial numbers or HID interface paths are included.";
+        try { Clipboard.SetText(text); }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "AULA clipboard unavailable: " +
+                error.GetType().Name);
+        }
+    }
+
+    private void ShowAulaHistory()
+    {
+        if (_aulaHistoryWindow is null || _aulaHistoryWindow.IsDisposed)
+            _aulaHistoryWindow = new BatteryHistoryForm(_aulaHistory, "AULA L99");
+        _aulaHistoryWindow.RefreshData();
+        _aulaHistoryWindow.Show();
+        _aulaHistoryWindow.BringToFront();
+    }
+
+    private void UpdateAulaStatus()
+    {
+        if (_aulaBusy)
+            _aulaStatus.Text = UiText.Get("AULA L99: checking battery...");
+        else if (_aulaLatest is null)
+            _aulaStatus.Text = UiText.Get("AULA L99: not checked");
+        else if (!_aulaLatest.PresenceKnown)
+            _aulaStatus.Text = UiText.Get("AULA L99: HID status unknown");
+        else if (!_aulaLatest.ReceiverPresent)
+            _aulaStatus.Text = UiText.Get("AULA L99: dongle not found");
+        else if (_aulaLatest.Percent is int level)
+            _aulaStatus.Text = UiText.Format(
+                "AULA L99: last {0}% at {1} (unverified)", level,
+                _aulaLastReadAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
+        else
+            _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
+    }
+
+    /// <summary>Run at most one explicit, battery-only dongle poll at a time.</summary>
+    private async Task PollAulaAsync(bool manual = false)
+    {
+        if (_closing || _aulaBusy ||
+            (!manual && !_settings.MonitorAulaL99)) return;
+        _aulaBusy = true;
+        UpdateAulaStatus();
+        try
+        {
+            AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
+            if (_closing) return;
+            _aulaLatest = result;
+            _aulaLastReadAt = DateTimeOffset.UtcNow;
+            if (_settings.RecordBatteryHistory)
+                _aulaHistory.Record(DateTimeOffset.UtcNow, result.Percent,
+                    result.ReceiverPresent || !result.PresenceKnown);
+            if (_settings.MonitorAulaL99 && result.Percent is int percent)
+                NotifyAulaBattery(percent);
+        }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "AULA monitoring failed: " +
+                error.GetType().Name);
+        }
+        finally
+        {
+            _aulaBusy = false;
+            if (!_closing) UpdateAulaStatus();
+        }
+    }
+
+    private void NotifyAulaBattery(int percent)
+    {
+        int? threshold = _aulaAlerts.Evaluate(percent,
+            _settings.NotificationsEnabled && _settings.AlertBelow50,
+            _settings.NotificationsEnabled && _settings.AlertBelow25,
+            _settings.NotificationsEnabled && _settings.AlertBelow10);
+        if (!threshold.HasValue) return;
+        _tray.ShowBalloonTip(5000, UiText.Get("AULA L99: low battery"),
+            UiText.Format("Keyboard battery is {0}%; below {1}%.",
+                percent, threshold), ToolTipIcon.Warning);
     }
 
     private ToolStripMenuItem BuildSettingsMenu()
@@ -171,6 +298,7 @@ public sealed class TrayAppContext : ApplicationContext
         _tray.ContextMenuStrip = BuildMenu();
         if (_latestUsbReading is not null) UpdateTrayDisplay(_latestUsbReading);
         _historyWindow?.ApplyLanguage();
+        _aulaHistoryWindow?.ApplyLanguage();
         _bluetoothWindow?.ApplyLanguage();
     }
 
@@ -469,6 +597,7 @@ public sealed class TrayAppContext : ApplicationContext
                 ApplyReading(result.Reading);
                 ApplyClockResult(result.Attempted, result.Succeeded);
                 StartBluetoothPoll(result.Reading.ReceiverPresent);
+                _ = PollAulaAsync();
             }
         }
         catch (Exception error)
@@ -691,6 +820,7 @@ public sealed class TrayAppContext : ApplicationContext
         _bluetoothSelection = null;
         _bluetoothPolicy.Disable();
         _historyWindow?.Close();
+        _aulaHistoryWindow?.Close();
         _bluetoothWindow?.Close();
         _tray.Visible = false;
         _tray.Dispose();
