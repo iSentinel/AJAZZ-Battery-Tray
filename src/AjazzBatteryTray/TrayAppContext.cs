@@ -15,6 +15,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly BatteryHistory _aulaHistory = new("aula-l99-history.csv");
     private BatteryHistoryForm? _aulaHistoryWindow;
     private AulaL99Reading? _aulaLatest;
+    private DateTimeOffset? _aulaLastReadAt;
     private bool _aulaBusy;
     private ToolStripMenuItem _aulaStatus = new();
     private readonly AlertPolicy _alerts = new();
@@ -143,6 +144,7 @@ public sealed class TrayAppContext : ApplicationContext
             $"Presence known: {state?.PresenceKnown.ToString() ?? "not checked"}\n" +
             $"Battery percentage: {state?.Percent?.ToString() ?? "unavailable"}\n" +
             $"Status: {state?.Details ?? "not checked"}\n" +
+            $"Last read UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
             "Model identity unverified (dongle IDs shared with S75 Pro).\n" +
             "No serial numbers or HID interface paths are included.";
         try { Clipboard.SetText(text); }
@@ -174,7 +176,8 @@ public sealed class TrayAppContext : ApplicationContext
             _aulaStatus.Text = UiText.Get("AULA L99: dongle not found");
         else if (_aulaLatest.Percent is int level)
             _aulaStatus.Text = UiText.Format(
-                "AULA L99: {0}% (model unverified)", level);
+                "AULA L99: last {0}% at {1} (unverified)", level,
+                _aulaLastReadAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
         else
             _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
     }
@@ -191,6 +194,7 @@ public sealed class TrayAppContext : ApplicationContext
             AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
             if (_closing) return;
             _aulaLatest = result;
+            _aulaLastReadAt = DateTimeOffset.UtcNow;
             if (_settings.RecordBatteryHistory)
                 _aulaHistory.Record(DateTimeOffset.UtcNow, result.Percent,
                     result.ReceiverPresent || !result.PresenceKnown);
