@@ -22,7 +22,7 @@
 - Track confirmed vs unverified behavior in
   [Hardware Validation Matrix](VALIDATION_MATRIX.md).
 
-## Stage 1 — Monitoring and Diagnostics
+## AULA L99 keyboard support (Windows, experimental)\n\n- [x] Add separate opt-in 2.4 GHz battery monitor, manual check and status.\n- [x] Accept only the exact AULA battery request and constrained HID path;\n  model shares dongle IDs with S75 Pro, so identity remains unverified.\n- [x] Add separate history CSV/chart and independent 50/25/10% alert state.\n- [x] Localize AULA controls and add privacy-safe diagnostic summary.\n- [ ] Confirm real L99 receiver is enumerated under `05AC:024F MI_03` and\n  a fresh battery reply can be read through Windows (no hardware access in CI).\n- [ ] Check sleep/wake, Bluetooth-vs-dongle handover, charging behavior,\n  low-battery notifications and real desktop UI on user's keyboard.\n- [ ] Research macOS implementation after Windows hardware validation.\n\n## Stage 1 — Monitoring and Diagnostics
 
 - [x] Battery percentage in Windows tray and macOS menu bar.
 - [x] USB receiver detection and unknown/sleep handling.
