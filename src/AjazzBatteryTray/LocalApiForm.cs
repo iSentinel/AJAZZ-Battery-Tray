@@ -6,7 +6,9 @@ namespace AjazzBatteryTray;
 /// <summary>Explicit, session-only local API control. Closing this window stops the listener.</summary>
 internal sealed class LocalApiForm : Form
 {
-    private readonly LocalSnapshotStore _store;
+    private readonly Action<LocalSnapshotStore> _activate;
+    private readonly Action<LocalSnapshotStore> _deactivate;
+    private LocalSnapshotStore? _store;
     private LocalApiServer? _server;
     private readonly Button _start = new() { AutoSize = true };
     private readonly Button _stop = new() { AutoSize = true, Enabled = false };
@@ -15,9 +17,10 @@ internal sealed class LocalApiForm : Form
     private readonly Label _status = new() { AutoSize = true, MaximumSize = new Size(430, 0) };
     private bool _stopping;
 
-    internal LocalApiForm(LocalSnapshotStore store)
+    internal LocalApiForm(Action<LocalSnapshotStore> activate, Action<LocalSnapshotStore> deactivate)
     {
-        _store = store;
+        _activate = activate;
+        _deactivate = deactivate;
         Text = UiText.Get("Local battery API...");
         StartPosition = FormStartPosition.CenterScreen;
         AutoSize = true;
@@ -29,7 +32,7 @@ internal sealed class LocalApiForm : Form
         _start.Text = UiText.Get("Start local API");
         _stop.Text = UiText.Get("Stop local API");
         _copy.Text = UiText.Get("Copy API token");
-        _start.Click += (_, _) => Start();
+        _start.Click += async (_, _) => await StartAsync();
         _stop.Click += async (_, _) => await StopAsync();
         _copy.Click += (_, _) => CopyToken();
         _status.Text = UiText.Get("Local API stopped.");
@@ -37,12 +40,15 @@ internal sealed class LocalApiForm : Form
         Controls.Add(panel);
     }
 
-    private void Start()
+    private async Task StartAsync()
     {
         if (_server is not null || _stopping) return;
         try
         {
-            _server = new LocalApiServer(_store);
+            var store = new LocalSnapshotStore();
+            _server = new LocalApiServer(store);
+            _store = store;
+            _activate(store);
             _endpoint.Text = _server.Endpoint;
             _status.Text = UiText.Get("Local API running. Keep this window open.");
             _start.Enabled = false;
@@ -50,7 +56,9 @@ internal sealed class LocalApiForm : Form
         }
         catch (Exception)
         {
-            _status.Text = UiText.Get("Unable to start local API; port may be in use.");
+            await StopAsync();
+            if (!IsDisposed)
+                _status.Text = UiText.Get("Unable to start local API; port may be in use.");
         }
     }
 
@@ -67,6 +75,8 @@ internal sealed class LocalApiForm : Form
         _stopping = true;
         var server = _server;
         _server = null;
+        if (_store is { } store) _deactivate(store);
+        _store = null;
         _stop.Enabled = _copy.Enabled = false;
         _endpoint.Clear();
         try { await server.DisposeAsync(); }

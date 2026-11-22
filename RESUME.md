@@ -10,3 +10,10 @@
   entity identity from session slots.
 - Physical acceptance: both AJ159 reports/HAR, multi-BLE, prolonged
   AULA sleep, backup restore and actual Windows HTTP UI pending.
+
+- Owner explicitly requires opt-in HA and minimal resource usage. Reopened
+  beta.47 before merge to eliminate inactive snapshot projection/storage and
+  inactive update timer. Copy is one-off; start/stop owns API state.
+  Previous final CI 45083360011 / 45083360053 PASS; changed head needs CI.
+  HA development remains isolated; no MQTT dependencies or auto-start.
+  Actual resource measurements on Windows remain pending.

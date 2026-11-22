@@ -19,12 +19,13 @@ Home Assistant integration. The optional HTTP listener is session-only and never
 
 Twenty-five pure assertions exercise freshness, privacy, shape, bounds,
 immutable publication and read-time expiration. The existing monitoring
-refresh path publishes a sanitized snapshot independently of the dashboard.
-Receiver ordinals are assigned once per process; BLE uses its existing
-session number. Overflow or projection errors clear the snapshot rather
+refresh path publishes a sanitized snapshot only while the API is running.
+Receiver ordinals are assigned once per active API session; BLE uses its existing
+session number. Stopping the API clears its snapshot and slot map. Overflow or projection errors clear the snapshot rather
 than returning partial data. The AULA row excludes manual-only readings
 when monitoring is disabled. Diagnostics > Copy local battery snapshot
-explicitly copies the current projection without polling hardware.
+explicitly copies the current projection without polling hardware; when the API
+is stopped it constructs a one-off snapshot, not a background store.
 The store re-ages values at read time without changing measurement or
 generation timestamps. Initial snapshot Windows 45082634886 / macOS 45082634877 PASS.
 Combined HTTP Windows 45083205204 / macOS 45083205268 PASS. Physical UI acceptance pending.
@@ -60,3 +61,13 @@ client cancellation and actual interactions while HID monitoring runs.
 LAN binding, TLS/proxy configuration, stable entity identities and Home
 Assistant connectivity require separate explicit choices and acceptance.
 Never expose device-control endpoints.
+
+## Idle resource policy (owner requirement)
+- No listener, snapshot store, receiver slot map, projection allocation,
+  or serialization while the API is stopped (except explicit clipboard copy).
+- No automatic update timer while checks or notifications are disabled.
+- Home Assistant is a separate optional future bridge, never bundled into
+  or started by the default tray installer. No broker client, integration
+  polling, discovery, persistent credentials or network tasks by default.
+- CI tests functionality; actual idle CPU, private working set, handles,
+  threads and wakeups require before/after Windows measurements.

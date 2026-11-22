@@ -11,10 +11,10 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _timer;
     private readonly System.Windows.Forms.Timer _aulaTimer;
     private readonly DevicePollSchedule _usbSchedule = new();
-    private readonly LocalSnapshotStore _localSnapshot = new();
+    private LocalSnapshotStore? _localSnapshot;
     private LocalApiForm? _localApiWindow;
-    private readonly Dictionary<string, int> _snapshotReceiverSlots = new(StringComparer.Ordinal);
-    private readonly System.Windows.Forms.Timer _updateTimer = new() { Interval = 10000 };
+    private Dictionary<string, int>? _snapshotReceiverSlots;
+    private System.Windows.Forms.Timer? _updateTimer;
     private readonly AutomaticUpdatePolicy _updatePolicy = new();
     private CancellationTokenSource? _updateRequestCancellation;
     private bool _manualUpdateDialog;
@@ -89,10 +89,7 @@ public sealed class TrayAppContext : ApplicationContext
         _aulaTimer.Tick += (_, _) => _ = PollAulaAsync();
         _timer.Start();
         if (_settings.MonitorAulaL99) _aulaTimer.Start();
-        _updateTimer.Tick += (_, _) => _ = PollUpdatesAsync();
         ApplyUpdatePreferences();
-        _updateTimer.Start();
-        PublishLocalSnapshot();
     }
 
     private ContextMenuStrip BuildMenu()
@@ -313,48 +310,66 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void PublishLocalSnapshot()
     {
-        if (_closing) return;
+        if (_closing || _localSnapshot is not { } store || _snapshotReceiverSlots is not { } slots)
+            return;
         try
         {
-            var inputs = new List<LocalBatterySnapshot.Input>();
-            foreach (var receiver in _receivers.Devices)
-            {
-                if (!_snapshotReceiverSlots.TryGetValue(receiver.Key, out int slot))
-                {
-                    if (_snapshotReceiverSlots.Count >= LocalBatterySnapshot.MaximumDevices)
-                        throw new InvalidDataException("Snapshot slot limit exceeded.");
-                    slot = _snapshotReceiverSlots.Count + 1;
-                    _snapshotReceiverSlots.Add(receiver.Key, slot);
-                }
-                var reading = receiver.Reading;
-                var state = DeviceDashboardState.FromPoll("", "", true,
-                    reading.PresenceKnown, receiver.Present, reading.Percent,
-                    receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
-                inputs.Add(new(LocalBatterySource.ApexReceiver, slot, state));
-            }
-            var aula = !_settings.MonitorAulaL99
-                ? new DeviceDashboardState("", "", DeviceDashboardStatus.Disabled, null, null)
-                : DeviceDashboardState.FromPoll("", "", _aulaLatest is not null,
-                    _aulaLatest?.PresenceKnown == true, _aulaLatest?.ReceiverPresent == true,
-                    _aulaLatest?.Percent, _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
-            inputs.Add(new(LocalBatterySource.AulaReceiver, 1, aula));
-            foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
-                inputs.Add(new(LocalBatterySource.Bluetooth, pair.Value.Number,
-                    BluetoothDashboardState(pair.Key, pair.Value)));
-            _localSnapshot.Publish(DateTimeOffset.UtcNow, inputs);
+            var inputs = CollectSnapshotInputs(slots);
+            store.Publish(DateTimeOffset.UtcNow, inputs);
         }
-        catch (Exception)
+        catch (Exception) { store.Clear(); }
+    }
+
+    private List<LocalBatterySnapshot.Input> CollectSnapshotInputs(Dictionary<string, int> slots)
+    {
+        var inputs = new List<LocalBatterySnapshot.Input>();
+        foreach (var receiver in _receivers.Devices)
         {
-            // Fail closed; never expose a previous snapshot after a projection failure.
-            _localSnapshot.Clear();
+            if (!slots.TryGetValue(receiver.Key, out int slot))
+            {
+                if (slots.Count >= LocalBatterySnapshot.MaximumDevices)
+                    throw new InvalidDataException("Snapshot slot limit exceeded.");
+                slot = slots.Count + 1;
+                slots.Add(receiver.Key, slot);
+            }
+            var reading = receiver.Reading;
+            var state = DeviceDashboardState.FromPoll("", "", true,
+                reading.PresenceKnown, receiver.Present, reading.Percent,
+                receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
+            inputs.Add(new(LocalBatterySource.ApexReceiver, slot, state));
         }
+        var aula = !_settings.MonitorAulaL99
+            ? new DeviceDashboardState("", "", DeviceDashboardStatus.Disabled, null, null)
+            : DeviceDashboardState.FromPoll("", "", _aulaLatest is not null,
+                _aulaLatest?.PresenceKnown == true, _aulaLatest?.ReceiverPresent == true,
+                _aulaLatest?.Percent, _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
+        inputs.Add(new(LocalBatterySource.AulaReceiver, 1, aula));
+        foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
+            inputs.Add(new(LocalBatterySource.Bluetooth, pair.Value.Number,
+                BluetoothDashboardState(pair.Key, pair.Value)));
+        return inputs;
+    }
+
+    private void ActivateLocalSnapshot(LocalSnapshotStore store)
+    {
+        _snapshotReceiverSlots = new(StringComparer.Ordinal);
+        _localSnapshot = store;
+        PublishLocalSnapshot();
+    }
+
+    private void DeactivateLocalSnapshot(LocalSnapshotStore store)
+    {
+        store.Clear();
+        if (!ReferenceEquals(_localSnapshot, store)) return;
+        _localSnapshot = null;
+        _snapshotReceiverSlots = null;
     }
 
     private void ShowLocalApi()
     {
         if (_closing) return;
         if (_localApiWindow is not { IsDisposed: false })
-            _localApiWindow = new LocalApiForm(_localSnapshot);
+            _localApiWindow = new LocalApiForm(ActivateLocalSnapshot, DeactivateLocalSnapshot);
         _localApiWindow.Show();
         _localApiWindow.Activate();
     }
@@ -364,7 +379,17 @@ public sealed class TrayAppContext : ApplicationContext
         if (_closing) return;
         try
         {
-            var snapshot = _localSnapshot.Read(DateTimeOffset.UtcNow);
+            LocalBatterySnapshot? snapshot;
+            if (_localSnapshot is { } store)
+            {
+                PublishLocalSnapshot();
+                snapshot = store.Read(DateTimeOffset.UtcNow);
+            }
+            else
+            {
+                var inputs = CollectSnapshotInputs(new(StringComparer.Ordinal));
+                snapshot = LocalBatterySnapshot.Create(DateTimeOffset.UtcNow, inputs);
+            }
             if (snapshot is null) throw new InvalidOperationException();
             Clipboard.SetText(System.Text.Encoding.UTF8.GetString(snapshot.Export()));
             MessageBox.Show(UiText.Get("Local battery snapshot copied."),
@@ -753,6 +778,23 @@ public sealed class TrayAppContext : ApplicationContext
         _updatePolicy.Configure(active,
             _settings.ExperimentalUpdateChannel, Environment.TickCount64);
         if (changed) _updateRequestCancellation?.Cancel();
+        if (active && !_closing)
+        {
+            if (_updateTimer is null)
+            {
+                _updateTimer = new System.Windows.Forms.Timer { Interval = 10000 };
+                _updateTimer.Tick += (_, _) => _ = PollUpdatesAsync();
+                _updateTimer.Start();
+            }
+        }
+        else StopUpdateTimer();
+    }
+
+    private void StopUpdateTimer()
+    {
+        _updateTimer?.Stop();
+        _updateTimer?.Dispose();
+        _updateTimer = null;
     }
 
     private void ShowManualUpdateCheck()
@@ -1655,10 +1697,10 @@ public sealed class TrayAppContext : ApplicationContext
     {
         _closing = true;
         _localApiWindow?.Close();
-        _localSnapshot.Clear();
-        _snapshotReceiverSlots.Clear();
-        _updateTimer.Stop();
-        _updateTimer.Dispose();
+        _localSnapshot?.Clear();
+        _localSnapshot = null;
+        _snapshotReceiverSlots = null;
+        StopUpdateTimer();
         _updatePolicy.Configure(false, _settings.ExperimentalUpdateChannel, Environment.TickCount64);
         _updateRequestCancellation?.Cancel();
         _timer.Stop();
