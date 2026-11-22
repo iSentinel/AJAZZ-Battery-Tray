@@ -4,7 +4,7 @@ namespace AjazzBatteryTray;
 
 /// <summary>One L99 dongle poll, independent from AJAZZ receiver state.</summary>
 public sealed record AulaL99Reading(
-    bool ReceiverPresent, int? Percent, string Details, bool PresenceKnown = true);
+    bool ReceiverPresent, int? Percent, string Details, bool PresenceKnown = true, string? LocalKey = null);
 
 /// <summary>Opt-in battery-only polling of the known AULA L99 2.4 GHz interface.</summary>
 public sealed class AulaL99Reader
@@ -18,20 +18,24 @@ public sealed class AulaL99Reader
             if (paths.Count == 0)
                 return new(false, null, "2.4 GHz dongle not found");
 
+            if (paths.Count != 1)
+                return new(false, null, "Multiple AULA candidates; receiver identity ambiguous", PresenceKnown: false);
+
             foreach (string path in paths)
             {
                 int? level = await QueryPathAsync(path);
                 if (level.HasValue)
-                    return new(true, level, "Fresh 2.4 GHz battery reply");
+                    return new(true, level, "Fresh 2.4 GHz battery reply", LocalKey: ReceiverIdentity.LocalKey(path));
 
                 // One bounded retry using only the same approved battery query.
                 await Task.Delay(150);
                 level = await QueryPathAsync(path);
                 if (level.HasValue)
-                    return new(true, level, "Fresh 2.4 GHz battery reply after retry");
+                    return new(true, level, "Fresh 2.4 GHz battery reply after retry", LocalKey: ReceiverIdentity.LocalKey(path));
             }
 
-            return new(true, null, "Receiver present; keyboard asleep or no valid reply");
+            return new(true, null, "Receiver present; keyboard asleep or no valid reply",
+                LocalKey: ReceiverIdentity.LocalKey(paths[0]));
         }
         catch (Exception error)
         {
