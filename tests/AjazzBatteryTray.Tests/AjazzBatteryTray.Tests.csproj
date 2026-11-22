@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/AjazzBatteryTray/UpdateRules.cs" Link="UpdateRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BatteryReportParser.cs"
              Link="BatteryReportParser.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AlertPolicy.cs"
