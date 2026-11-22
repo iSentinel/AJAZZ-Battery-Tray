@@ -381,3 +381,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Verify final beta.43 CI, release and real Windows dialog.
 - [ ] Add explicit local artifact checksum verification and optional
   auto-check policy with consent; never auto-execute installers.
+
+## beta.44 local verification checkpoint
+- [x] beta.43 published; workflow 45078947181 PASS, six assets.
+- [x] Implement and test local setup/portable SHA-256 verification.
+- [x] Initial PR #58 Windows 45079025110 / macOS 45079025042 PASS.
+- [ ] Final beta.44 CI, release and local Windows dialog acceptance.
+- [ ] Integrate opt-in automatic update notification policy.
