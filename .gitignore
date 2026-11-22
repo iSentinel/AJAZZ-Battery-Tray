@@ -4,3 +4,7 @@ dist/
 .vs/
 *.user
 *.suo
+
+# Python diagnostic tool caches
+__pycache__/
+*.py[cod]
