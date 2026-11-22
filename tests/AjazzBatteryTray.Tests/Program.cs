@@ -194,8 +194,10 @@ aulaCache.Observe(true, true, null, aulaTime.AddSeconds(31));
 Check("AULA retains last good percentage on transient no reply",
     aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(31)) == 98 &&
     aulaCache.ConsecutiveFailures == 1 && aulaCache.LastGoodAt == aulaTime);
-Check("AULA cached percentage expires after two minutes",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddMinutes(2)) is null);
+Check("AULA cached percentage remains visible during eight-hour sleep",
+    aulaCache.DisplayPercent(true, true, null, aulaTime.AddHours(8)) == 98);
+Check("AULA cached percentage expires after 24 hours",
+    aulaCache.DisplayPercent(true, true, null, aulaTime.AddHours(24)) is null);
 Check("AULA unknown presence hides cache",
     aulaCache.DisplayPercent(true, false, null, aulaTime.AddSeconds(32)) is null);
 Check("AULA clock rollback hides old cache",
@@ -210,6 +212,10 @@ Check("AULA unplug invalidates cache",
 aulaCache.Observe(true, true, 96, aulaTime.AddSeconds(70));
 aulaCache.Reset();
 Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
+aulaCache.Observe(true, true, 93, aulaTime);
+aulaCache.Observe(false, false, null, aulaTime.AddSeconds(30));
+Check("AULA uncertain receiver identity invalidates cache",
+    aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null);
 
 // Local aliases are presentation-only, never hardware identity.
 string aliasKeyA = new string('A', 64);
