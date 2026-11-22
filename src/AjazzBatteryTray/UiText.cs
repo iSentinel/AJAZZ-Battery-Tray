@@ -87,6 +87,7 @@ public static class UiText
         ["Start with Windows"] = ("Запускать вместе с Windows", "Запускати разом із Windows"),
         ["Language"] = ("Язык", "Мова"),
         ["Diagnostics"] = ("Диагностика", "Діагностика"),
+        ["Full APEX comparison report..."] = ("Полная диагностика APEX...", "Повна діагностика APEX..."),
         ["Device polling interval..."] = ("Интервал опроса устройства...", "Інтервал опитування пристрою..."),
         ["Use global interval ({0} seconds)"] = ("Общий интервал ({0} сек.)", "Загальний інтервал ({0} с)"),
         ["Last scheduled reading"] = ("Последнее плановое измерение", "Останнє планове вимірювання"),
