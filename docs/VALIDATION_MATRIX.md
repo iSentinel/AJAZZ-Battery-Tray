@@ -40,8 +40,16 @@ No new receiver write commands have been enabled.
   assets; actual recovery and visual tray acceptance pending.
 - Windows read-only dashboard implemented: distinct receiver observations,
   AULA cached/manual state, selected Bluetooth fallback and history shortcuts.
-  CI and real desktop acceptance pending. No new HID writes or polling
+  beta.31 CI and release PASS; real desktop acceptance pending. No new HID writes or polling
   triggered merely by opening the window.
+
+## Windows Device Manager friendly names — beta.32 candidate
+
+- Read-only Configuration Manager inventory, parent mapping and proposed
+  naming preview implemented; CI and owner mapping validation pending.
+- No Windows property writes. Administrator-only rename, original-property
+  backup, readback, exact-instance restore and standard Device Manager
+  display acceptance remain pending.
 
 ## AULA system telemetry preview — beta.29
 - Host-only native CPU load and optional loopback LibreHardwareMonitor
