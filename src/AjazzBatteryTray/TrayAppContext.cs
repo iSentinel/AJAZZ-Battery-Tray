@@ -20,6 +20,7 @@ public sealed class TrayAppContext : ApplicationContext
     private bool _aulaBusy;
     private int _aulaGeneration;
     private bool _hostMetricsBusy;
+    private bool _pnpPreviewBusy;
     private ToolStripMenuItem _aulaStatus = new();
     private readonly AlertPolicy _alerts = new();
     private readonly ReceiverMonitor _receivers = new();
@@ -384,6 +385,8 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(BuildNotificationsMenu());
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
+        menu.DropDownItems.Add(UiText.Get("Windows device names preview..."), null,
+            (_, _) => _ = ShowPnpNamesAsync());
         ToolStripMenuItem multiple = new(UiText.Get("Separate tray icons"))
         {
             Checked = _settings.MultipleTrayIcons, CheckOnClick = true
@@ -411,6 +414,47 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(new ToolStripSeparator());
         menu.DropDownItems.Add(BuildLanguageMenu());
         return menu;
+    }
+
+    private async Task ShowPnpNamesAsync()
+    {
+        if (_closing || _pnpPreviewBusy) return;
+        _pnpPreviewBusy = true;
+        try
+        {
+            var entries = await Task.Run(PnpNamePreview.Read);
+            if (_closing) return;
+            List<string> lines = new()
+            {
+                UiText.Get("Preview only — no Windows device names changed."),
+                UiText.Get("Model names are provisional; confirm the receiver before applying."),
+                ""
+            };
+            foreach (var entry in entries.Take(24))
+            {
+                lines.Add($"#{entry.Group} | {entry.Family} | rev. {entry.Revision?.ToString("X4") ?? "?"}");
+                lines.Add(UiText.Get(entry.Role));
+                lines.Add(UiText.Format("Current: {0}", entry.CurrentName));
+                lines.Add(UiText.Format("Proposed: {0}", entry.ProposedName));
+                lines.Add("");
+            }
+            if (entries.Count == 0)
+                lines.Add(UiText.Get("No matching present USB receivers found."));
+            if (entries.Count > 24)
+                lines.Add(UiText.Get("Additional candidates omitted; no changes applied."));
+            MessageBox.Show(string.Join(Environment.NewLine, lines),
+                UiText.Get("Windows device names preview..."),
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception error)
+        {
+            FileLog.Write("WARN", "PnP name preview failed: " + error.GetType().Name);
+            if (!_closing)
+                MessageBox.Show(UiText.Get("Unable to read Windows device names."),
+                    UiText.Get("Windows device names preview..."),
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally { _pnpPreviewBusy = false; }
     }
 
     private ToolStripMenuItem BuildNotificationsMenu()
