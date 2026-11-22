@@ -656,9 +656,13 @@ public sealed class TrayAppContext : ApplicationContext
         _settings.ExperimentalUpdateChannel = experimental;
         if (!_settings.Save())
         {
-            _settings.AutomaticUpdateChecks = oldEnabled;
+            // A failed save must not keep a revoked consent active this session.
+            _settings.AutomaticUpdateChecks = oldEnabled && enabled;
             _settings.ExperimentalUpdateChannel = oldExperimental;
-            MessageBox.Show(UiText.Get("Unable to save device preference."),
+            ApplyUpdatePreferences();
+            MessageBox.Show(UiText.Get(oldEnabled && !enabled
+                ? "Automatic checks stopped for this session; disabling could not be saved."
+                : "Unable to save device preference."),
                 UiText.Get("Update preferences"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -667,9 +671,10 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void ApplyUpdatePreferences()
     {
-        bool changed = _updatePolicy.Enabled != _settings.AutomaticUpdateChecks ||
+        bool active = _settings.AutomaticUpdateChecks && _settings.NotificationsEnabled;
+        bool changed = _updatePolicy.Enabled != active ||
             _updatePolicy.Experimental != _settings.ExperimentalUpdateChannel;
-        _updatePolicy.Configure(_settings.AutomaticUpdateChecks,
+        _updatePolicy.Configure(active,
             _settings.ExperimentalUpdateChannel, Environment.TickCount64);
         if (changed) _updateRequestCancellation?.Cancel();
     }
@@ -1224,6 +1229,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         _settings.NotificationsEnabled = enabled;
         _settings.Save();
+        ApplyUpdatePreferences();
     }
 
     private void ChangeInterval(int seconds, ToolStripMenuItem menu)
