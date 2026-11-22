@@ -195,7 +195,8 @@ internal sealed class ReceiverMonitor : IDisposable
     internal void RefreshIcons(bool enabled, bool showAula, int? aulaLevel, bool aulaStale,
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
         string? visiblePrimaryKey, IReadOnlySet<string> hidden,
-        Func<string, string> color)
+        Func<string, string> color,
+        IReadOnlyList<(string Key, string Name, int? Percent)> bluetooth)
     {
         HashSet<string> wanted = new();
         if (enabled)
@@ -212,6 +213,11 @@ internal sealed class ReceiverMonitor : IDisposable
                 wanted.Add("AULA");
                 SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale,
                     color(DeviceAliasRules.AulaSlot));
+            }
+            foreach (var item in bluetooth)
+            {
+                wanted.Add(item.Key);
+                SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
             }
         }
 
