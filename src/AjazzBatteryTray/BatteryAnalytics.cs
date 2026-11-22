@@ -40,10 +40,11 @@ public static class BatteryAnalytics
 
     /// <summary>Sum observed percentage drops only across adjacent valid samples.
     /// This is not a full charge-cycle count or a measure of capacity/health.</summary>
-    public static double ObservedDischargeEquivalent(IReadOnlyList<BatterySample> samples,
+    public static double? ObservedDischargeEquivalent(IReadOnlyList<BatterySample> samples,
         DateTimeOffset now)
     {
         long points = 0;
+        int pairs = 0;
         for (int i = 1; i < samples.Count; i++)
         {
             var previous = samples[i - 1];
@@ -52,9 +53,10 @@ public static class BatteryAnalytics
             if (!Valid(previous) || !Valid(current) || current.Timestamp > now ||
                 gap <= TimeSpan.Zero || gap > MaxGap)
                 continue;
+            pairs++;
             points += Math.Max(0, previous.Percent!.Value - current.Percent!.Value);
         }
-        return points / 100.0;
+        return pairs == 0 ? null : points / 100.0;
     }
 
     private static bool Valid(BatterySample sample)
