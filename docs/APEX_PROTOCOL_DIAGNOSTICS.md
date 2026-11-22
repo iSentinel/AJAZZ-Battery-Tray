@@ -3,8 +3,8 @@
 ## Scope
 
 Owner reports an APEX-series mouse with no battery reading in our app while
-the official utility reads it correctly. Exact AJ159/AJ179 model is pending
-physical confirmation. The shared USB receiver ID and revision are not a
+the official utility reads it correctly. The owner confirmed AJ159 APEX
+on 2026-11-22 (issue #53); actual receiver revision remains to be verified. The shared USB receiver ID and revision are not a
 universal identity or firmware version. Treat the previously working AJ159
 and AJ179 as independent regression cases.
 
@@ -71,7 +71,8 @@ review before sharing. Nothing is uploaded automatically. Normal diagnostic
 reports and logs must continue to exclude raw payloads and private paths.
 
 - [ ] Windows/macOS CI passes with unchanged existing parser and polling.
-- [ ] Verified exact physical model and official utility version.
+- [x] Owner confirmed AJ159 APEX physical model.
+- [ ] Verify official utility version and receiver revision.
 - [ ] Matching ordinary and official reference captures.
 - [ ] Identify the first meaningful difference; validate the candidate parser
   or query against actual samples, including a known valid battery level.
