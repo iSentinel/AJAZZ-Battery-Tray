@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
+      - 'tools/Measure-TrayResources.ps1'
       - '.github/workflows/build.yml'
   pull_request:
   workflow_dispatch:
@@ -29,6 +30,24 @@ jobs:
         run: |
           dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
           if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
+      - name: Smoke-test resource sampler
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP ('ajazz-resource-' + [Guid]::NewGuid().ToString('N') + '.csv')
+          try {
+            & ./tools/Measure-TrayResources.ps1 -ProcessId $PID -DurationSeconds 30 -IntervalSeconds 10 -OutputPath $output
+            $rows = @(Import-Csv -LiteralPath $output)
+            if ($rows.Count -lt 3 -or [double]$rows[-1].elapsed_seconds -lt 29 -or
+                [long]$rows[-1].private_bytes -le 0 -or [int]$rows[-1].threads -le 0) {
+              throw 'Invalid resource sampler output'
+            }
+            $rejected = $false
+            try { & ./tools/Measure-TrayResources.ps1 -ProcessId $PID -DurationSeconds 30 -OutputPath $output }
+            catch { $rejected = $_.Exception.Message -like '*Output already exists*' }
+            if (-not $rejected) { throw 'Sampler must reject existing output' }
+          } finally {
+            Remove-Item -LiteralPath $output -ErrorAction SilentlyContinue
+          }
       - name: Publish single-file Windows executable
         shell: pwsh
         run: |
