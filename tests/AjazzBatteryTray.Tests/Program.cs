@@ -1453,5 +1453,37 @@ Check("Icon neutral state ignores all other inputs", TrayIconRenderKey.Create(nu
 Check("Icon neutral differs from unknown", TrayIconRenderKey.Create(null, false, false, true) !=
     TrayIconRenderKey.Create(null, false, false));
 
+// History startup must not open files until an actual recording or graph request.
+var historyNow = DateTimeOffset.UtcNow;
+var historyEarlier = new BatterySample(historyNow.AddMinutes(-2), 70, "online");
+var historyTie = historyEarlier with { Percent = 71 };
+var historyRows = new[] { historyEarlier, historyTie,
+    new BatterySample(historyNow.AddDays(-31), 50, "online"),
+    new BatterySample(historyNow.AddMinutes(5), 99, "online") };
+Check("History latest matches full retention including tied timestamps",
+    BatteryHistoryRules.Latest(historyRows, historyNow) ==
+    BatteryHistoryRules.Retain(historyRows, historyNow).LastOrDefault());
+Check("History latest skips future and expired rows", BatteryHistoryRules.Latest(historyRows.Skip(2), historyNow) is null);
+Check("History unchanged primitive sample suppressed",
+    !BatteryHistoryRules.ShouldRecord(historyEarlier, historyNow, 70, "online"));
+Check("History five-minute boundary still records",
+    BatteryHistoryRules.ShouldRecord(historyEarlier, historyEarlier.Timestamp.AddMinutes(5), 70, "online"));
+string lazyHistoryDir = Path.Combine(Path.GetTempPath(), "ajazz-lazy-history-" + Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(lazyHistoryDir);
+try
+{
+    string lazyHistoryPath = Path.Combine(lazyHistoryDir, "history.csv");
+    var lazyHistory = new BatteryHistory("history.csv", lazyHistoryDir);
+    Check("History construction does not create file", !File.Exists(lazyHistoryPath));
+    File.WriteAllLines(lazyHistoryPath, new[] { BatteryHistoryCsv.Header, BatteryHistoryCsv.Format(historyEarlier) });
+    lazyHistory.Record(historyNow, 70, true);
+    Check("History first record loads existing last sample lazily", File.ReadAllLines(lazyHistoryPath).Length == 2);
+    lazyHistory.Record(historyNow, 69, true);
+    Check("History new sample written and retained", lazyHistory.ReadRecent().LastOrDefault()?.Percent == 69);
+    lazyHistory.Record(historyNow.AddSeconds(1), 69, true);
+    Check("History repeated sample does not append", File.ReadAllLines(lazyHistoryPath).Length == 3);
+}
+finally { Directory.Delete(lazyHistoryDir, true); }
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
