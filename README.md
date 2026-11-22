@@ -3,7 +3,10 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.44 (offline release verification candidate).
+**Version:** v0.3.0-beta.45 (opt-in automatic update notifications candidate).
+
+Use **Settings > Update preferences** to enable daily GitHub release checks
+and select the stable or experimental channel. Automatic checks default off.
 
 Use **Verify downloaded release...** to compare a local Windows EXE with
 its companion SHA-256 manifest from the same GitHub release.

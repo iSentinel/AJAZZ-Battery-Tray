@@ -1,12 +1,12 @@
-# Resume — beta.44 local verification candidate
+# Resume — beta.45 automatic update candidate
 
-- beta.43 PR #57 merged 29af7347053cc629d62a57f01db0fabe364f7afe.
-  Release workflow 45078947181 PASS; six assets verified.
-- PR #58 initial Windows 45079025110 and macOS 45079025042 PASS.
-  Local setup/portable SHA-256 verifier with 12 new synthetic-file tests.
-  Explicit selection, no network or execution; checksum is not a signature.
-- beta.44 metadata prepared; final CI and release pending.
-- Next: automatic update policy branch, explicit consent/settings/channel,
-  monotonic timer, no auto-install; fifteen pure schedule tests already added.
-- P0 AJ159 capture + GearHub HAR outstanding; no changes to live HID parser.
-  Multi-BLE and AULA sleep physical acceptance also outstanding.
+- beta.44 PR #58 merged 8c2b2ed9c0ee227dc1fab14b487c07f788afcd52;
+  release workflow 45079507680 PASS, six assets verified.
+- PR #59 initial Windows 45079657693 and macOS 45079657689 PASS.
+  Twenty scheduling/preferences checks, explicit consent, stable default,
+  cancellation and no unattended download/install.
+- beta.45 metadata prepared; final CI and publication pending.
+- Next: local application preferences backup with privacy-safe allowlisted
+  schema and validated preview; no hardware configuration restore.
+- P0 AJ159 full reports and GearHub HAR outstanding. Multi-BLE and
+  prolonged AULA L99 sleep still require hardware validation.

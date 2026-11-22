@@ -41,3 +41,25 @@
 - Twelve local synthetic-file regression cases; Windows CI and physical
   dialog acceptance pending. Automatic release notifications remain a
   separate opt-in feature.
+
+## Automatic update policy foundation
+- Disabled until explicit consent. Monotonic elapsed ticks, first delay
+  60 seconds, 24 hours after success and one hour after failure.
+- Only one pending automatic request; channel change or opt-out invalidates
+  its result without prematurely releasing the request gate.
+- Deduplicate available versions for the current process session; stable
+  channel never notifies for beta tags. No binary download or execution.
+- Twenty pure scheduling and preferences checks plus integration: Settings > Update preferences,
+  explicit confirmation (default No), persisted opt-in and channel; stable
+  default even on beta builds. Automatic request is independently timed
+  every ten seconds for due checks, paused while global notifications are
+  disabled or the manual update dialog is open. Manual dialog is blocked
+  while automatic lookup is active. Opt-out/channel change cancels and
+  invalidates pending results; exit cancels without posting notifications.
+- Notifications do not open links, download files, or execute installers.
+  Deduplication is in memory only; a restart can notify again.
+- Network and physical Windows UI acceptance still pending; CI required.
+
+- Disabling global notifications cancels and invalidates in-flight automatic
+  checks. Failed persistence of an opt-out stops checks for the current
+  session and warns that the change could not be saved for restart.

@@ -6,6 +6,8 @@ namespace AjazzBatteryTray;
 public sealed class AppSettings
 {
     public int PollSeconds { get; set; } = 30;
+    public bool AutomaticUpdateChecks { get; set; } = false;
+    public bool ExperimentalUpdateChannel { get; set; } = false;
     public string Language { get; set; } = "en";
     public bool NotificationsEnabled { get; set; } = true;
     public bool AlertBelow50 { get; set; } = true;

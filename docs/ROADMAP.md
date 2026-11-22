@@ -388,3 +388,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Initial PR #58 Windows 45079025110 / macOS 45079025042 PASS.
 - [ ] Final beta.44 CI, release and local Windows dialog acceptance.
 - [ ] Integrate opt-in automatic update notification policy.
+
+## beta.45 automatic update notification checkpoint
+- [x] beta.44 published; workflow 45079507680 PASS, six assets verified.
+- [x] Implement consent-based automatic checks and notification cancellation.
+- [x] Initial PR #59 Windows 45079657693 / macOS 45079657689 PASS.
+- [ ] Final beta.45 CI, release and Windows network/UI acceptance.
+- [ ] Local application preferences backup and validated restore preview.
