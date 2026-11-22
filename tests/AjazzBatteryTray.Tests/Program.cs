@@ -1351,5 +1351,28 @@ Check("API oversized set rejected", RejectSnapshot(Enumerable.Range(1, 65)
     .Select(i => SnapshotInput(DeviceDashboardStatus.Disabled, null, null, i))));
 Check("API invalid session slot rejected", RejectSnapshot(new[] { SnapshotInput(DeviceDashboardStatus.Disabled, null, null, 0) }));
 
+var snapshotStore = new LocalSnapshotStore();
+Check("Snapshot store initially unavailable", snapshotStore.Read(snapshotNow) is null);
+snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 83, snapshotNow) });
+Check("Snapshot store publishes current reading", snapshotStore.Read(snapshotNow)?.Devices[0].BatteryPercent == 83);
+var agedSnapshot = snapshotStore.Read(snapshotNow.AddMinutes(6));
+Check("Snapshot read automatically ages fresh value", agedSnapshot?.Devices[0].LastKnownPercent == 83 &&
+    agedSnapshot.Devices[0].BatteryPercent is null && agedSnapshot.Devices[0].Status == "stale");
+Check("Snapshot read does not rewrite generation or measurement time",
+    agedSnapshot?.GeneratedAt == snapshotNow && agedSnapshot.Devices[0].MeasuredAt == snapshotNow);
+Check("Snapshot read expires old values", snapshotStore.Read(snapshotNow.AddHours(25))?.Devices[0].LastKnownPercent is null);
+Check("Snapshot clock rollback unavailable", snapshotStore.Read(snapshotNow.AddSeconds(-1)) is null);
+bool invalidSnapshotPublish = false;
+try { snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 1, snapshotNow, 0) }); }
+catch (InvalidDataException) { invalidSnapshotPublish = true; }
+Check("Snapshot projection failure invalidates previous value", invalidSnapshotPublish && snapshotStore.Read(snapshotNow) is null);
+snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 44, snapshotNow) });
+var retainedSnapshot = snapshotStore.Read(snapshotNow);
+snapshotStore.Publish(snapshotNow.AddSeconds(1), new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 45, snapshotNow.AddSeconds(1)) });
+Check("Snapshot previously returned value remains immutable", retainedSnapshot?.Devices[0].BatteryPercent == 44 &&
+    snapshotStore.Read(snapshotNow.AddSeconds(1))?.Devices[0].BatteryPercent == 45);
+snapshotStore.Clear();
+Check("Snapshot clear hides prior data", snapshotStore.Read(snapshotNow) is null);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
