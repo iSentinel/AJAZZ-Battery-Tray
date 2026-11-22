@@ -53,6 +53,37 @@ public sealed record PreferencesBackup(
             throw new InvalidDataException("Unsupported backup version or preference value.");
     }
 
+    /// <summary>Apply only the allowlisted fields; restore the previous values on save failure.</summary>
+    public bool TryRestore(AppSettings settings, Func<bool> persist)
+    {
+        Validate();
+        var previous = Capture(settings);
+        Apply(settings);
+        try
+        {
+            if (persist()) return true;
+        }
+        catch (Exception)
+        {
+            // Persistence failure must not leave the in-memory preferences changed.
+        }
+        previous.Apply(settings);
+        return false;
+    }
+
+    private void Apply(AppSettings settings)
+    {
+        settings.PollSeconds = PollSeconds;
+        settings.Language = Language;
+        settings.NotificationsEnabled = NotificationsEnabled;
+        settings.AlertBelow50 = AlertBelow50;
+        settings.AlertBelow25 = AlertBelow25;
+        settings.AlertBelow10 = AlertBelow10;
+        settings.RecordBatteryHistory = RecordBatteryHistory;
+        settings.NotifyOnDisconnect = NotifyOnDisconnect;
+        settings.MultipleTrayIcons = MultipleTrayIcons;
+    }
+
     public static PreferencesBackup ReadFile(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
