@@ -1485,5 +1485,27 @@ try
 }
 finally { Directory.Delete(lazyHistoryDir, true); }
 
+// Hot-path selection must preserve the former ordinal order and preferred receiver.
+Check("Primary streaming selection handles duplicates and unsorted keys",
+    ReceiverIdentity.SelectPrimary(null, new[] { "c", "a", "b", "a" }) == "a");
+Check("Primary streaming selection retains preferred receiver",
+    ReceiverIdentity.SelectPrimary("c", new[] { "a", "c", "b" }) == "c");
+Check("Primary streaming selection falls back when preferred absent",
+    ReceiverIdentity.SelectPrimary("z", new[] { "b", "a" }) == "a");
+Check("Primary streaming selection handles empty inventory",
+    ReceiverIdentity.SelectPrimary("a", Array.Empty<string>()) is null);
+Check("Primary streaming selection remains ordinal",
+    ReceiverIdentity.SelectPrimary(null, new[] { "a", "B" }) == "B");
+Check("Discovery interval empty overrides uses global",
+    DevicePollSchedule.DiscoverySeconds(60, new Dictionary<string, int>()) == 60);
+Check("Discovery interval excludes AULA override",
+    DevicePollSchedule.DiscoverySeconds(60, new Dictionary<string, int> { [DeviceAliasRules.AulaSlot] = 15 }) == 60);
+Check("Discovery interval picks shortest USB override",
+    DevicePollSchedule.DiscoverySeconds(60, new Dictionary<string, int> { ["one"] = 120, ["two"] = 15 }) == 15);
+Check("Discovery interval normalizes invalid override",
+    DevicePollSchedule.DiscoverySeconds(60, new Dictionary<string, int> { ["one"] = 17 }) == 30);
+Check("Discovery interval retains shorter global",
+    DevicePollSchedule.DiscoverySeconds(15, new Dictionary<string, int> { ["one"] = 120 }) == 15);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

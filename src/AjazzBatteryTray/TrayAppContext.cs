@@ -46,7 +46,21 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem _bleDevicesMenu = new();
     private static string BleKey(BluetoothCandidate candidate) => candidate.DeviceId.ToUpperInvariant();
     private bool BleEnabled => _bleSlots.Count > 0;
-    private string? PrimaryBleKey => _bleSlots.OrderBy(x => x.Value.Number).Select(x => x.Key).FirstOrDefault();
+    private string? PrimaryBleKey
+    {
+        get
+        {
+            string? key = null;
+            int lowest = int.MaxValue;
+            foreach (var pair in _bleSlots)
+            {
+                if (key is not null && pair.Value.Number >= lowest) continue;
+                key = pair.Key;
+                lowest = pair.Value.Number;
+            }
+            return key;
+        }
+    }
     private static string BleLabel(BleSlot slot) => $"AJAZZ — Bluetooth #{slot.Number}";
     private static string BleDisplayLabel(BleSlot slot)
         => $"{slot.Candidate.DisplayName} (BLE #{slot.Number})";
@@ -1396,10 +1410,7 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     private int DiscoveryInterval()
-        => Math.Min(_settings.PollSeconds, _settings.DevicePollIntervals
-            .Where(x => x.Key != DeviceAliasRules.AulaSlot)
-            .Select(x => DevicePollSchedule.NormalizeInterval(x.Value))
-            .DefaultIfEmpty(_settings.PollSeconds).Min()) * 1000;
+        => DevicePollSchedule.DiscoverySeconds(_settings.PollSeconds, _settings.DevicePollIntervals) * 1000;
 
     private void PollSoon()
     {
@@ -1668,7 +1679,8 @@ public sealed class TrayAppContext : ApplicationContext
     private IReadOnlyList<(string Key, string Name, int? Percent)> BluetoothExtraIcons(
         AjazzHidReader.Reading reading, string? primary)
     {
-        if (!reading.PresenceKnown || reading.ReceiverPresent)
+        if (!_settings.MultipleTrayIcons || _bleSlots.Count == 0 ||
+            !reading.PresenceKnown || reading.ReceiverPresent)
             return Array.Empty<(string, string, int?)>();
         DateTimeOffset now = DateTimeOffset.UtcNow;
         return _bleSlots.Where(x => x.Key != primary).OrderBy(x => x.Value.Number)

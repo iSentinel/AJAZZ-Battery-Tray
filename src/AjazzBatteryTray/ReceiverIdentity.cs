@@ -13,10 +13,15 @@ public static class ReceiverIdentity
     /// <summary>Keep the same primary receiver while present, independent of battery replies.</summary>
     public static string? SelectPrimary(string? current, IEnumerable<string> keys)
     {
-        string[] present = keys.Distinct(StringComparer.Ordinal)
-            .OrderBy(x => x, StringComparer.Ordinal).ToArray();
-        return current is not null && present.Contains(current, StringComparer.Ordinal)
-            ? current : present.FirstOrDefault();
+        string? first = null;
+        foreach (string key in keys)
+        {
+            if (current is not null && StringComparer.Ordinal.Equals(current, key))
+                return current;
+            if (first is null || StringComparer.Ordinal.Compare(key, first) < 0)
+                first = key;
+        }
+        return first;
     }
 
     /// <summary>Provisional labels based on the owner's observed USB revisions.</summary>
