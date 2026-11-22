@@ -8,7 +8,10 @@ internal sealed class ReceiverMonitor : IDisposable
 {
     internal sealed class State : IDisposable
     {
+        internal string Key { get; }
         internal string Label { get; set; }
+        internal string? Alias { get; set; }
+        internal string DisplayLabel => DeviceAliasRules.DisplayName(Label, Alias);
         internal ushort? Revision { get; set; }
         internal BatteryHistory History { get; }
         internal AlertPolicy Alerts { get; } = new();
@@ -19,6 +22,7 @@ internal sealed class ReceiverMonitor : IDisposable
 
         internal State(AjazzHidReader.ReceiverReading item, string label)
         {
+            Key = item.Key;
             Label = label;
             Revision = item.Revision;
             Reading = item.Reading;
@@ -52,6 +56,7 @@ internal sealed class ReceiverMonitor : IDisposable
         {
             seen.Add(item.Key);
             State state = FindOrCreate(item);
+            state.Alias = settings.DeviceAliases.GetValueOrDefault(item.Key);
             state.Present = true;
             state.Reading = item.Reading;
             Record(state, settings, notifier, bluetoothEnabled, now);
@@ -106,7 +111,7 @@ internal sealed class ReceiverMonitor : IDisposable
             state.History.Record(now, percent, state.Present);
         if (state.Connection.Evaluate(percent.HasValue, state.Present) &&
             settings.NotifyOnDisconnect && !bluetoothEnabled)
-            notifier.ShowBalloonTip(4000, state.Label,
+            notifier.ShowBalloonTip(4000, state.DisplayLabel,
                 UiText.Get("The 2.4 GHz receiver is no longer detected."),
                 ToolTipIcon.Warning);
         if (percent is not int level) return;
@@ -115,7 +120,7 @@ internal sealed class ReceiverMonitor : IDisposable
             settings.NotificationsEnabled && settings.AlertBelow25,
             settings.NotificationsEnabled && settings.AlertBelow10);
         if (threshold.HasValue)
-            notifier.ShowBalloonTip(5000, state.Label,
+            notifier.ShowBalloonTip(5000, state.DisplayLabel,
                 UiText.Format("Mouse battery is {0}% ({1}); below {2}%.",
                     level, "2.4 GHz", threshold), ToolTipIcon.Warning);
     }
@@ -124,16 +129,17 @@ internal sealed class ReceiverMonitor : IDisposable
         => !state.Present ? UiText.Get("unavailable") :
             state.Reading.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
 
-    internal void PopulateMenu(ToolStripMenuItem menu)
+    internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
         menu.DropDownItems.Clear();
         foreach (State state in _states.Values)
         {
-            ToolStripMenuItem item = new($"{state.Label}: {Status(state)}");
+            ToolStripMenuItem item = new($"{state.DisplayLabel}: {Status(state)}");
             item.DropDownItems.Add(UiText.Get("Battery history..."), null,
                 (_, _) => ShowHistory(state));
+            item.DropDownItems.Add(UiText.Get("Edit local name..."), null, (_, _) => edit(state));
             menu.DropDownItems.Add(item);
         }
         if (menu.DropDownItems.Count == 0)
@@ -143,7 +149,7 @@ internal sealed class ReceiverMonitor : IDisposable
     internal static void ShowHistory(State state)
     {
         if (state.Window is null || state.Window.IsDisposed)
-            state.Window = new BatteryHistoryForm(state.History, state.Label);
+            state.Window = new BatteryHistoryForm(state.History, state.DisplayLabel);
         state.Window.RefreshData();
         state.Window.Show();
         state.Window.BringToFront();
@@ -157,7 +163,7 @@ internal sealed class ReceiverMonitor : IDisposable
 
     /// <summary>One shared menu; primary icon is owned by TrayAppContext.</summary>
     internal void RefreshIcons(bool enabled, bool showAula, int? aulaLevel, bool aulaStale,
-        bool aulaIsPrimary, ContextMenuStrip menu, Action refresh)
+        bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName)
     {
         HashSet<string> wanted = new();
         if (enabled)
@@ -166,12 +172,12 @@ internal sealed class ReceiverMonitor : IDisposable
             {
                 if (!pair.Value.Present || pair.Key == PrimaryKey) continue;
                 wanted.Add(pair.Key);
-                SetIcon(pair.Key, pair.Value.Label, pair.Value.Reading.Percent, menu, refresh);
+                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh);
             }
             if (showAula && !aulaIsPrimary)
             {
                 wanted.Add("AULA");
-                SetIcon("AULA", "AULA L99", aulaLevel, menu, refresh, aulaStale);
+                SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale);
             }
         }
 
@@ -213,8 +219,8 @@ internal sealed class ReceiverMonitor : IDisposable
         internal void Update(string name, int? level, ContextMenuStrip menu, bool stale)
         {
             _tray.ContextMenuStrip = menu;
-            string label = $"{name}: {(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))}";
-            if (stale) label += " (" + UiText.Get("cached") + ")";
+            string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} — {name}";
+            if (stale) label = UiText.Get("cached") + ": " + label;
             _tray.Text = label[..Math.Min(63, label.Length)];
             if (_icon is null || _last != level || _stale != stale)
             {

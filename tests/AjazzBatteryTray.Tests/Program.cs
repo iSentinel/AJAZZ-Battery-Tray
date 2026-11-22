@@ -211,6 +211,36 @@ aulaCache.Observe(true, true, 96, aulaTime.AddSeconds(70));
 aulaCache.Reset();
 Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
 
+// Local aliases are presentation-only, never hardware identity.
+string aliasKeyA = new string('A', 64);
+string aliasKeyB = new string('B', 64);
+Check("Alias validates local hashed keys only",
+    DeviceAliasRules.ValidKey(aliasKeyA) &&
+    DeviceAliasRules.ValidKey(DeviceAliasRules.AulaSlot) &&
+    !DeviceAliasRules.ValidKey("HID-device-path"));
+Check("Alias trims whitespace and preserves Unicode",
+    DeviceAliasRules.TryNormalize("  Моя мышь  ", out string aliasName) && aliasName == "Моя мышь");
+Check("Alias empty resets", DeviceAliasRules.TryNormalize(" ", out string emptyAlias) &&
+    emptyAlias == "" && DeviceAliasRules.DisplayName("AJ159", emptyAlias) == "AJ159");
+Check("Alias rejects overlong names",
+    !DeviceAliasRules.TryNormalize(new string('a', 41), out _));
+Check("Alias rejects internal controls and invisible formatting",
+    !DeviceAliasRules.TryNormalize("a\nb", out _) &&
+    !DeviceAliasRules.TryNormalize("a\u202Eb", out _));
+Check("Alias keeps detected label",
+    DeviceAliasRules.DisplayName("AJ159", "Desk") == "Desk — AJ159");
+var cleanAliases = DeviceAliasRules.Clean(new Dictionary<string, string>
+{
+    [aliasKeyA] = "Desk", [aliasKeyB] = "Desk", ["raw-path"] = "Ignored"
+});
+Check("Alias keys distinguish duplicate names", cleanAliases.Count == 2 &&
+    cleanAliases[aliasKeyA] == cleanAliases[aliasKeyB]);
+Check("Alias null settings safe", DeviceAliasRules.Clean(null).Count == 0);
+var aliasSettings = new AppSettings { DeviceAliases = cleanAliases };
+Check("Aliases round trip in settings",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(aliasSettings))?.DeviceAliases.Count == 2);
+
 // Windows friendly-name preview is restricted to exact eligible families.
 Check("PnP AJAZZ root only", PnpNameRules.IsRoot(@"USB\VID_3151&PID_5007\local") &&
     !PnpNameRules.IsRoot(@"USB\VID_3151&PID_5007&MI_00\local"));

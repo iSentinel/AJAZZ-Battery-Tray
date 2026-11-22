@@ -46,10 +46,18 @@ No new receiver write commands have been enabled.
 ## Windows Device Manager friendly names — beta.32 candidate
 
 - Read-only Configuration Manager inventory, parent mapping and proposed
-  naming preview implemented; CI and owner mapping validation pending.
+  naming preview: beta.32 CI and release PASS; owner mapping validation pending.
 - No Windows property writes. Administrator-only rename, original-property
   backup, readback, exact-instance restore and standard Device Manager
   display acceptance remain pending.
+
+## Local device names — beta.33 candidate
+
+- Local alias editor, persistence, validation, explicit reset, dashboard/tray
+  labels and unchanged history identifiers implemented. Pure tests added;
+  CI and real UI acceptance pending.
+- AULA is a single monitoring profile, not a confirmed physical identity;
+  Bluetooth-only aliases and Windows PnP writes are not implemented.
 
 ## AULA system telemetry preview — beta.29
 - Host-only native CPU load and optional loopback LibreHardwareMonitor

@@ -152,9 +152,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.32"
+          TAG="v0.3.0-beta.33"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.32 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.33 — Windows and macOS
+
+          **Local device names:** persistent per-receiver AJAZZ aliases and the
+          single AULA monitoring profile alias, editable from the dashboard
+          and tray. Original model labels and history identifiers are retained.
 
           **Windows names preview:** read-only PnP receiver/primary HID grouping
           and current/proposed display names. No administrator rights, name
@@ -352,7 +356,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.32" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.33" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

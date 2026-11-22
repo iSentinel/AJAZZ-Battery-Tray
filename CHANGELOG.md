@@ -8,6 +8,16 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.33 (2026-11-22)
+- Add persistent local per-receiver AJAZZ aliases and a single AULA profile alias.
+- Edit or reset names from Device Manager or tray menus; retain detected model
+  labels, independent history keys and selection during refresh.
+- Validate alias length, control/format characters and local identity keys;
+  roll back the in-memory edit if settings cannot be saved.
+- Localize controls in EN/RU/UK. No Windows PnP writes, elevation or new HID I/O.
+- Record verified beta.32 release; hardware mapping and actual Windows
+  Device Manager rename remain pending.
+
 ## 0.3.0-beta.32 (2026-11-22)
 - Add a read-only Windows PnP names preview from Settings.
 - Group exact supported USB receiver families and candidate primary HID

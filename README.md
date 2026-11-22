@@ -3,7 +3,20 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.32 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.33 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+
+## Local device names (Windows)
+
+Select a known device in Device Manager and choose **Edit local name...**,
+or use its tray submenu. Enter up to 40 characters; clear the field to
+restore the detected name. The application keeps the model label alongside
+the alias in the dashboard, tray and history window. Aliases persist locally
+in settings; AJAZZ aliases use the same local hashed receiver identity as
+history, so changing a name does not change or migrate history. AULA has
+one alias for its monitoring profile, not a confirmed physical identity.
+A different USB instance may obtain a different AJAZZ identity.
+Bluetooth-only aliases and actual Windows property changes are not included.
+No elevation or new HID commands are required.
 
 ## Windows Device Manager names preview
 

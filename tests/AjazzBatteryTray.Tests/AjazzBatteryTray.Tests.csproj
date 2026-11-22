@@ -20,6 +20,8 @@
              Link="BatteryHistoryCsv.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ConnectionAlertPolicy.cs"
              Link="ConnectionAlertPolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DeviceAliasRules.cs"
+             Link="DeviceAliasRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/PnpNameRules.cs"
              Link="PnpNameRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardState.cs"

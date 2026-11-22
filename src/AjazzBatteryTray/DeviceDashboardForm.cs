@@ -6,11 +6,13 @@ namespace AjazzBatteryTray;
 /// <summary>Shows existing polling results; opening the window never issues HID requests.</summary>
 internal sealed class DeviceDashboardForm : Form
 {
-    internal sealed record Entry(DeviceDashboardState State, Action? ShowHistory = null);
+    internal sealed record Entry(DeviceDashboardState State, Action? ShowHistory = null,
+        string? Key = null, Action? EditName = null);
 
     private readonly DataGridView _grid = new();
     private readonly Button _refresh = new();
     private readonly Button _history = new();
+    private readonly Button _rename = new();
     private readonly Button _diagnostics = new();
     private readonly Button _telemetry = new();
     private readonly Button _close = new();
@@ -27,6 +29,7 @@ internal sealed class DeviceDashboardForm : Form
         _diagnostics.Click += (_, _) => diagnostics();
         _telemetry.Click += (_, _) => telemetry();
         _history.Click += (_, _) => CurrentEntry()?.ShowHistory?.Invoke();
+        _rename.Click += (_, _) => CurrentEntry()?.EditName?.Invoke();
         _close.Click += (_, _) => Close();
         _grid.SelectionChanged += (_, _) => UpdateSelection();
         _grid.CellDoubleClick += (_, e) =>
@@ -55,7 +58,7 @@ internal sealed class DeviceDashboardForm : Form
         {
             Dock = DockStyle.Fill, AutoSize = true, WrapContents = true
         };
-        foreach (Button button in new[] { _refresh, _history, _diagnostics, _telemetry, _close })
+        foreach (Button button in new[] { _refresh, _history, _rename, _diagnostics, _telemetry, _close })
         {
             button.AutoSize = true;
             button.Padding = new Padding(6, 3, 6, 3);
@@ -98,6 +101,7 @@ internal sealed class DeviceDashboardForm : Form
         _note.Text = UiText.Get("Live monitor — existing readings only; cached values are marked.");
         _refresh.Text = UiText.Get("Refresh now");
         _history.Text = UiText.Get("Battery history...");
+        _rename.Text = UiText.Get("Edit local name...");
         _diagnostics.Text = UiText.Get("Extended device diagnostics...");
         _telemetry.Text = UiText.Get("System telemetry preview...");
         _close.Text = UiText.Get("Close");
@@ -121,8 +125,10 @@ internal sealed class DeviceDashboardForm : Form
                     StatusText(state.Status), FormatBattery(state),
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
-                if (previous is not null && previous.State.Name == state.Name &&
-                    previous.State.Transport == state.Transport) selected = row;
+                if (previous is not null && (previous.Key is not null
+                    ? previous.Key == entry.Key
+                    : entry.Key is null && previous.State.Name == state.Name &&
+                      previous.State.Transport == state.Transport)) selected = row;
             }
             if (selected >= 0) _grid.CurrentCell = _grid.Rows[selected].Cells[0];
         }
@@ -155,6 +161,7 @@ internal sealed class DeviceDashboardForm : Form
     {
         Entry? entry = CurrentEntry();
         _history.Enabled = entry?.ShowHistory is not null;
+        _rename.Enabled = entry?.EditName is not null;
         _detail.Text = entry is null ? UiText.Get("No device readings yet") :
             $"{entry.State.Name} — {StatusText(entry.State.Status)}";
     }
