@@ -18,6 +18,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly AulaBatteryState _aulaBattery = new();
     private DateTimeOffset? _aulaLastReadAt;
     private bool _aulaBusy;
+    private int _aulaGeneration;
     private bool _hostMetricsBusy;
     private ToolStripMenuItem _aulaStatus = new();
     private readonly AlertPolicy _alerts = new();
@@ -133,10 +134,14 @@ public sealed class TrayAppContext : ApplicationContext
         };
         auto.CheckedChanged += (_, _) =>
         {
+            _aulaGeneration++;
             _settings.MonitorAulaL99 = auto.Checked;
+            _aulaLatest = null;
+            _aulaLastReadAt = null;
+            _aulaBattery.Reset();
             _settings.Save();
             if (auto.Checked) _ = PollAulaAsync(manual: true);
-            else _aulaBattery.Reset();
+            UpdateAulaStatus();
             RefreshDeviceDisplay();
         };
         menu.DropDownItems.Add(auto);
@@ -252,11 +257,12 @@ public sealed class TrayAppContext : ApplicationContext
         if (_closing || _aulaBusy ||
             (!manual && !_settings.MonitorAulaL99)) return;
         _aulaBusy = true;
+        int generation = _aulaGeneration;
         UpdateAulaStatus();
         try
         {
             AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
-            if (_closing) return;
+            if (_closing || generation != _aulaGeneration) return;
             _aulaLatest = result;
             _aulaLastReadAt = DateTimeOffset.UtcNow;
             _aulaBattery.Observe(result.ReceiverPresent, result.PresenceKnown,
@@ -279,6 +285,11 @@ public sealed class TrayAppContext : ApplicationContext
         {
             FileLog.Write("WARN", "AULA monitoring failed: " +
                 error.GetType().Name);
+            if (!_closing && generation == _aulaGeneration)
+            {
+                _aulaLatest = new(false, null, "Unexpected read error", PresenceKnown: false);
+                _aulaLastReadAt = DateTimeOffset.UtcNow;
+            }
         }
         finally
         {
