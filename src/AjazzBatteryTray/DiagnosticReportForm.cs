@@ -26,7 +26,7 @@ internal sealed class DiagnosticReportForm : Form
         Button copy = new() { Text = UiText.Get("Copy report"), AutoSize = true };
         copy.Click += (_, _) => Copy(report);
         Button save = new() { Text = UiText.Get("Save report..."), AutoSize = true };
-        save.Click += (_, _) => Save(report);
+        save.Click += (_, _) => PromptSave(report, this);
         Button close = new() { Text = UiText.Get("Close"), AutoSize = true };
         close.Click += (_, _) => Close();
         buttons.Controls.AddRange(new Control[] { copy, save, close });
@@ -44,19 +44,25 @@ internal sealed class DiagnosticReportForm : Form
         }
     }
 
-    private void Save(string report)
+    internal static bool PromptSave(string report, IWin32Window? owner = null)
     {
         using SaveFileDialog dialog = new()
         {
-            FileName = "ajazz-diagnostics.txt", Filter = "Text (*.txt)|*.txt",
+            FileName = $"ajazz-diagnostics-{DateTime.Now:yyyyMMdd-HHmmss}.txt",
+            Filter = UiText.Get("Text files (*.txt)") + "|*.txt",
             DefaultExt = "txt", AddExtension = true, OverwritePrompt = true
         };
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        try { File.WriteAllText(dialog.FileName, report); }
+        if (dialog.ShowDialog(owner) != DialogResult.OK) return false;
+        try
+        {
+            File.WriteAllText(dialog.FileName, report);
+            return true;
+        }
         catch (Exception)
         {
-            MessageBox.Show(this, UiText.Get("Unable to save diagnostic report."),
-                Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(owner, UiText.Get("Unable to save diagnostic report."),
+                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return false;
         }
     }
 }
