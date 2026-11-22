@@ -10,10 +10,15 @@
   AULA L99 candidate 05AC:024F MI_03 FF60:0061 input/output 33, fresh 100%
   twice. Windows Save As tested by owner. No raw diagnostic files committed.
 
+## Implementation checkpoint
+- Code through 03ab00d23933016d3009f3c6b838ba5f39223ac7: multi-poll, local receiver state, per-device history and optional icons, EN/RU/UK controls, tests for identity and stable primary selection.
+- Next: review PR checks, fix failures, merge only after successful Windows/macOS checks, verify release workflow and assets. Hardware UI remains pending.
+- Current limitations: model labels are provisional; manual aliases deferred; local HID path may change when moved to another port; BLE fallback remains one selected session endpoint and RTC retains first-accepting target.
+
 ## Sequence
-1. [ ] Independent per-receiver sampling with local stable identity, preserve existing HID allowlist.
-2. [ ] Separate tray icons / status, per-device history and alerts, diagnostic trace.
-3. [ ] Unit tests, Windows/macOS CI, beta.28 release after green checks.
+1. [x] Independent per-receiver sampling with local stable identity, preserve existing HID allowlist.
+2. [x] Separate tray icons / status, per-device history and alerts, diagnostic trace.
+3. [ ] Unit tests added; run Windows/macOS CI, beta.28 release after green checks.
 4. [ ] AULA system metrics preview; verify wireless RTC/device telemetry layout
    before any opt-in manual write. No automatic unverified commands.
 5. [ ] Physical owner acceptance, then automatic AULA screen synchronization.
