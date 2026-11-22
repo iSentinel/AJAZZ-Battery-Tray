@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.33 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.34 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
 
 ## Local device names (Windows)
 
@@ -89,9 +89,10 @@ settings/firmware/RGB command is implemented. **macOS L99 is not supported**.
 
 For an intermittent AULA reply failure, beta.30 retries the existing battery
 query once. A recent last-good percentage can appear in grey with an asterisk
-for up to two minutes (expiry applied during refresh), with a cached label
-and timestamp in the menu. Unknown presence hides cached values; confirmed
-removal clears them. History and warnings never use cached battery data.
+for up to 24 hours (expiry applied during refresh), with a cached label
+and timestamp in the menu. Unknown presence, receiver identity change, ambiguous multiple candidates,
+confirmed removal or opt-out clear cached values. The cache is session-only;
+a new application session needs a successful reply before displaying it. History and warnings never use cached battery data.
 This does not prove that every sleeping keyboard wakes or responds.
 
 ## AULA system telemetry preview (Windows)
