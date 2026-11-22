@@ -11,6 +11,11 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _timer;
     private readonly System.Windows.Forms.Timer _aulaTimer;
     private readonly DevicePollSchedule _usbSchedule = new();
+    private readonly System.Windows.Forms.Timer _updateTimer = new() { Interval = 10000 };
+    private readonly AutomaticUpdatePolicy _updatePolicy = new();
+    private CancellationTokenSource? _updateRequestCancellation;
+    private bool _manualUpdateDialog;
+    private bool _automaticUpdateBusy;
     private bool _forcePoll;
     private readonly AjazzHidReader _reader = new();
     private readonly AulaL99Reader _aulaReader = new();
@@ -81,6 +86,9 @@ public sealed class TrayAppContext : ApplicationContext
         _aulaTimer.Tick += (_, _) => _ = PollAulaAsync();
         _timer.Start();
         if (_settings.MonitorAulaL99) _aulaTimer.Start();
+        _updateTimer.Tick += (_, _) => _ = PollUpdatesAsync();
+        ApplyUpdatePreferences();
+        _updateTimer.Start();
     }
 
     private ContextMenuStrip BuildMenu()
@@ -116,9 +124,7 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(BuildDiagnosticsMenu());
         menu.Items.Add(UiText.Get("Check for updates..."), null, (_, _) =>
         {
-            if (_closing) return;
-            using var dialog = new UpdateCheckForm();
-            dialog.ShowDialog();
+            ShowManualUpdateCheck();
         });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(UiText.Get("Verify downloaded release..."), null, (_, _) =>
@@ -582,6 +588,7 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(BuildNotificationsMenu());
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
+        menu.DropDownItems.Add(BuildUpdateSettingsMenu());
         menu.DropDownItems.Add(UiText.Get("Windows device names preview..."), null,
             (_, _) => _ = ShowPnpNamesAsync());
         ToolStripMenuItem multiple = new(UiText.Get("Separate tray icons"))
@@ -611,6 +618,109 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(new ToolStripSeparator());
         menu.DropDownItems.Add(BuildLanguageMenu());
         return menu;
+    }
+
+    private ToolStripMenuItem BuildUpdateSettingsMenu()
+    {
+        var menu = new ToolStripMenuItem(UiText.Get("Update preferences"));
+        var enabled = new ToolStripMenuItem(UiText.Get("Automatically check GitHub releases"));
+        var stable = new ToolStripMenuItem(UiText.Get("Stable"));
+        var beta = new ToolStripMenuItem(UiText.Get("Experimental (beta)"));
+        void Refresh()
+        {
+            enabled.Checked = _settings.AutomaticUpdateChecks;
+            stable.Checked = !_settings.ExperimentalUpdateChannel;
+            beta.Checked = _settings.ExperimentalUpdateChannel;
+        }
+        enabled.Click += (_, _) =>
+        {
+            bool next = !_settings.AutomaticUpdateChecks;
+            if (next && MessageBox.Show(UiText.Get("Allow daily GitHub release checks? No files will be downloaded."),
+                UiText.Get("Update preferences"), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+            SaveUpdatePreferences(next, _settings.ExperimentalUpdateChannel);
+            Refresh();
+        };
+        stable.Click += (_, _) => { SaveUpdatePreferences(_settings.AutomaticUpdateChecks, false); Refresh(); };
+        beta.Click += (_, _) => { SaveUpdatePreferences(_settings.AutomaticUpdateChecks, true); Refresh(); };
+        menu.DropDownItems.AddRange(new ToolStripItem[] { enabled, new ToolStripSeparator(), stable, beta });
+        Refresh();
+        return menu;
+    }
+
+    private void SaveUpdatePreferences(bool enabled, bool experimental)
+    {
+        bool oldEnabled = _settings.AutomaticUpdateChecks;
+        bool oldExperimental = _settings.ExperimentalUpdateChannel;
+        _settings.AutomaticUpdateChecks = enabled;
+        _settings.ExperimentalUpdateChannel = experimental;
+        if (!_settings.Save())
+        {
+            _settings.AutomaticUpdateChecks = oldEnabled;
+            _settings.ExperimentalUpdateChannel = oldExperimental;
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Update preferences"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        ApplyUpdatePreferences();
+    }
+
+    private void ApplyUpdatePreferences()
+    {
+        bool changed = _updatePolicy.Enabled != _settings.AutomaticUpdateChecks ||
+            _updatePolicy.Experimental != _settings.ExperimentalUpdateChannel;
+        _updatePolicy.Configure(_settings.AutomaticUpdateChecks,
+            _settings.ExperimentalUpdateChannel, Environment.TickCount64);
+        if (changed) _updateRequestCancellation?.Cancel();
+    }
+
+    private void ShowManualUpdateCheck()
+    {
+        if (_closing || _manualUpdateDialog) return;
+        if (_automaticUpdateBusy)
+        {
+            MessageBox.Show(UiText.Get("A background update check is in progress."),
+                UiText.Get("Check for updates..."), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        _manualUpdateDialog = true;
+        try
+        {
+            using var dialog = new UpdateCheckForm(_settings.ExperimentalUpdateChannel);
+            dialog.ShowDialog();
+        }
+        finally { _manualUpdateDialog = false; }
+    }
+
+    private async Task PollUpdatesAsync()
+    {
+        if (_closing || _manualUpdateDialog || _automaticUpdateBusy || !_settings.NotificationsEnabled)
+            return;
+        var installed = ReleaseVersion.Parse(Application.ProductVersion.Split('+')[0]);
+        if (installed is null) return;
+        var request = _updatePolicy.TryBegin(Environment.TickCount64);
+        if (request is null) return;
+        _automaticUpdateBusy = true;
+        using var cancel = new CancellationTokenSource();
+        _updateRequestCancellation = cancel;
+        bool success = false;
+        UpdateClient.Candidate? candidate = null;
+        try
+        {
+            candidate = await UpdateClient.CheckAsync(installed, request.Experimental, cancel.Token);
+            success = true;
+        }
+        catch (Exception) { /* Keep battery polling independent of network failures. */ }
+        finally
+        {
+            _updateRequestCancellation = null;
+            _automaticUpdateBusy = false;
+            bool notify = _updatePolicy.Complete(request, success,
+                _settings.NotificationsEnabled ? candidate?.Version : null, Environment.TickCount64);
+            if (notify && !_closing && _settings.NotificationsEnabled && candidate is not null)
+                _tray.ShowBalloonTip(5000, "AJAZZ Battery Tray",
+                    UiText.Format("Update available: {0}", candidate.Tag), ToolTipIcon.Info);
+        }
     }
 
     private async Task ShowPnpNamesAsync()
@@ -1437,6 +1547,10 @@ public sealed class TrayAppContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         _closing = true;
+        _updateTimer.Stop();
+        _updateTimer.Dispose();
+        _updatePolicy.Configure(false, _settings.ExperimentalUpdateChannel, Environment.TickCount64);
+        _updateRequestCancellation?.Cancel();
         _timer.Stop();
         _timer.Dispose();
         _aulaTimer.Stop();
