@@ -32,6 +32,7 @@
              Link="BatteryHistoryCsv.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ConnectionAlertPolicy.cs"
              Link="ConnectionAlertPolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/TrayIconRenderKey.cs" Link="TrayIconRenderKey.cs" />
     <Compile Include="../../src/AjazzBatteryTray/TrayColorRules.cs"
              Link="TrayColorRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/TrayVisibilityRules.cs"
