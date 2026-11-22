@@ -39,8 +39,8 @@ available beta number is assigned at release preparation.
 | beta.31 | L99 RTC clock synchronization | BLOCKED: actual 2.4 GHz vendor RTC capture |
 | beta.32 | L99 CPU/GPU load, temperatures, GPU selection | BLOCKED on verified RTC/telemetry layout and owner screen test |
 | beta.33 | L99 weather | Verified field semantics, explicit location/provider consent |
-| beta.34 | Unified Device Manager dashboard | beta.31 PR #42 CI PASS and merged; release verification pending |
-| beta.35 | Per-device names, tray visibility/color, alert and poll settings | Stable local identity, duplicate/unknown revision handling |
+| beta.34 | Unified Device Manager dashboard | beta.31 PR #42 CI PASS, merged and six-asset release verified; visual acceptance pending |
+| beta.35 | Per-device names, Windows PnP friendly names, tray visibility/color, alert and poll settings | beta.32 read-only PnP preview implemented; verified mapping and rollback required before writes |
 | beta.36 | Battery analytics | Local fresh history, estimated runtime and charge cycles with uncertainty |
 | beta.37 | Multi-device Bluetooth | Paired-only selection, transport identity, independent backoff |
 | beta.38 | Update checker | GitHub releases, stable/experimental channel, checksum verification, opt-in |
@@ -63,8 +63,9 @@ available beta number is assigned at release preparation.
 - [x] Initial Windows dashboard implementation: device states, battery freshness,
   source, measurement timestamps, history shortcuts, diagnostics, refresh,
   English/Russian/Ukrainian labels; reuse existing polling.
-- [ ] Dashboard CI, real desktop acceptance, keyboard accessibility review,
-  theme options and future macOS parity.
+- [x] Dashboard beta.31 Windows/macOS CI and release verified.
+- [ ] Real desktop acceptance, keyboard accessibility review, theme options
+  and future macOS parity.
 - [ ] AJ159/AJ179: verified current DPI and stages, polling rates supported by
   revision, sleep, debounce, LOD, motion sync, button mapping, RGB, macros,
   profile import/export and actual firmware version (not USB bcdDevice).
@@ -82,11 +83,13 @@ available beta number is assigned at release preparation.
 
 ### Windows Device Manager friendly names (owner approved)
 
-- [ ] Enumerate present PnP nodes, read current FriendlyName/DeviceDesc and
-  hardware IDs, correlate HID children to their actual USB receiver ancestor.
-- [ ] Preview proposed names for AJ159, AJ179 and AULA L99, including
-  receiver and mouse/keyboard nodes. Keep shared VID/PID and revision
-  mappings provisional; require explicit model confirmation before writes.
+- [x] Implement present PnP inventory and read current FriendlyName/DeviceDesc,
+  root hardware IDs and actual parent ancestry for primary HID candidates.
+- [x] Implement proposed names preview for AJ159, AJ179 and AULA L99,
+  including root and candidate primary HID nodes; shared IDs and revision
+  mappings remain provisional.
+- [ ] Validate actual root/child mapping in owner preview and require
+  explicit model confirmation before any property change.
 - [ ] Add local manual aliases independent of Windows PnP metadata.
 - [ ] Implement explicit per-node administrative apply using only
   DEVPKEY_Device_FriendlyName (documented Configuration Manager/SetupAPI).
