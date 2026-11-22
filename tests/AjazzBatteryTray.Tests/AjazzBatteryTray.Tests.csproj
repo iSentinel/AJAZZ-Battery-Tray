@@ -22,6 +22,8 @@
              Link="ConnectionAlertPolicy.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AulaL99Protocol.cs"
              Link="AulaL99Protocol.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/HostMetricsRules.cs"
+             Link="HostMetricsRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ReceiverIdentity.cs"
              Link="ReceiverIdentity.cs" />
     <Compile Include="../../src/AjazzBatteryTray/DiagnosticHidIdentity.cs"
