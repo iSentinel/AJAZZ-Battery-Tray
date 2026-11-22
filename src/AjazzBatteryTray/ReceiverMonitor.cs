@@ -138,7 +138,8 @@ internal sealed class ReceiverMonitor : IDisposable
             state.Reading.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
-        Func<string, bool> visible, Action<string> toggle)
+        Func<string, bool> visible, Action<string> toggle,
+        Action<State> editColor)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
@@ -159,6 +160,7 @@ internal sealed class ReceiverMonitor : IDisposable
                 visibility.Checked = visible(state.Key);
             };
             item.DropDownItems.Add(visibility);
+            item.DropDownItems.Add(UiText.Get("Tray icon color..."), null, (_, _) => editColor(state));
             menu.DropDownItems.Add(item);
         }
         if (menu.DropDownItems.Count == 0)
@@ -183,7 +185,8 @@ internal sealed class ReceiverMonitor : IDisposable
     /// <summary>One shared menu; primary icon is owned by TrayAppContext.</summary>
     internal void RefreshIcons(bool enabled, bool showAula, int? aulaLevel, bool aulaStale,
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
-        string? visiblePrimaryKey, IReadOnlySet<string> hidden)
+        string? visiblePrimaryKey, IReadOnlySet<string> hidden,
+        Func<string, string> color)
     {
         HashSet<string> wanted = new();
         if (enabled)
@@ -192,12 +195,14 @@ internal sealed class ReceiverMonitor : IDisposable
             {
                 if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
-                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh);
+                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
+                    color: color(pair.Key));
             }
             if (showAula && !aulaIsPrimary)
             {
                 wanted.Add("AULA");
-                SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale);
+                SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale,
+                    color(DeviceAliasRules.AulaSlot));
             }
         }
 
@@ -209,14 +214,14 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private void SetIcon(string key, string name, int? level, ContextMenuStrip menu,
-        Action refresh, bool stale = false)
+        Action refresh, bool stale = false, string? color = null)
     {
         if (!_icons.TryGetValue(key, out ExtraIcon? icon))
         {
             icon = new ExtraIcon(refresh);
             _icons.Add(key, icon);
         }
-        icon.Update(name, level, menu, stale);
+        icon.Update(name, level, menu, stale, color);
     }
 
     public void Dispose()
@@ -233,23 +238,25 @@ internal sealed class ReceiverMonitor : IDisposable
         private Icon? _icon;
         private int? _last;
         private bool _stale;
+        private string? _color;
 
         internal ExtraIcon(Action refresh) => _tray.DoubleClick += (_, _) => refresh();
 
-        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale)
+        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color)
         {
             _tray.ContextMenuStrip = menu;
             string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} — {name}";
             if (stale) label = UiText.Get("cached") + ": " + label;
             _tray.Text = label[..Math.Min(63, label.Length)];
-            if (_icon is null || _last != level || _stale != stale)
+            if (_icon is null || _last != level || _stale != stale || _color != color)
             {
-                Icon next = TrayIconFactory.Create(level, level.HasValue, stale);
+                Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color);
                 _tray.Icon = next;
                 _icon?.Dispose();
                 _icon = next;
                 _last = level;
                 _stale = stale;
+                _color = color;
             }
             _tray.Visible = true;
         }
