@@ -1171,5 +1171,47 @@ try
 }
 finally { Directory.Delete(verifyDirectory, true); }
 
+// Opt-in automatic checks use elapsed ticks, not wall-clock time.
+var updatePolicy = new AutomaticUpdatePolicy();
+const long autoStart = 1000;
+var betaUpdate = ReleaseVersion.Parse("v0.3.0-beta.45")!;
+Check("Automatic update disabled by default", updatePolicy.TryBegin(autoStart) is null);
+updatePolicy.Configure(true, true, autoStart);
+Check("Automatic update startup delay", updatePolicy.TryBegin(autoStart + 59999) is null);
+long autoDue = autoStart + AutomaticUpdatePolicy.InitialDelayMs;
+var autoRequest = updatePolicy.TryBegin(autoDue);
+Check("Automatic update begins after explicit opt-in", autoRequest?.Experimental == true);
+Check("Automatic update serializes requests", updatePolicy.TryBegin(autoDue + 1) is null);
+Check("Automatic update notifies new candidate", autoRequest is not null &&
+    updatePolicy.Complete(autoRequest, true, betaUpdate, autoDue));
+Check("Automatic update success interval", updatePolicy.TryBegin(autoDue + AutomaticUpdatePolicy.SuccessDelayMs - 1) is null);
+autoDue += AutomaticUpdatePolicy.SuccessDelayMs;
+var autoRepeat = updatePolicy.TryBegin(autoDue);
+Check("Automatic update suppresses duplicate candidate", autoRepeat is not null &&
+    !updatePolicy.Complete(autoRepeat, true, betaUpdate, autoDue));
+autoDue += AutomaticUpdatePolicy.SuccessDelayMs;
+var autoFailure = updatePolicy.TryBegin(autoDue);
+Check("Automatic update failure suppresses notification", autoFailure is not null &&
+    !updatePolicy.Complete(autoFailure, false, betaUpdate, autoDue));
+Check("Automatic update failure backoff", updatePolicy.TryBegin(autoDue + AutomaticUpdatePolicy.FailureDelayMs - 1) is null);
+autoDue += AutomaticUpdatePolicy.FailureDelayMs;
+var autoStale = updatePolicy.TryBegin(autoDue);
+updatePolicy.Configure(false, true, autoDue);
+updatePolicy.Configure(true, false, autoDue);
+Check("Automatic update opt-out/reconfigure keeps pending gate", updatePolicy.TryBegin(autoDue + 60000) is null);
+Check("Automatic update discards prior channel reply", autoStale is not null &&
+    !updatePolicy.Complete(autoStale, true, betaUpdate, autoDue));
+autoDue += AutomaticUpdatePolicy.InitialDelayMs;
+var autoStable = updatePolicy.TryBegin(autoDue);
+Check("Automatic update switches channel", autoStable?.Experimental == false);
+Check("Automatic stable policy rejects beta candidate", autoStable is not null &&
+    !updatePolicy.Complete(autoStable, true, betaUpdate, autoDue));
+autoDue += AutomaticUpdatePolicy.SuccessDelayMs;
+var autoStable2 = updatePolicy.TryBegin(autoDue);
+Check("Automatic stable policy accepts stable candidate", autoStable2 is not null &&
+    updatePolicy.Complete(autoStable2, true, ReleaseVersion.Parse("1.0.0"), autoDue));
+updatePolicy.Configure(false, false, autoDue);
+Check("Automatic opt-out stops scheduling", updatePolicy.TryBegin(long.MaxValue - 1) is null);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
