@@ -146,7 +146,7 @@ internal sealed class ReceiverMonitor : IDisposable
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
         Func<string, bool> visible, Action<string> toggle,
-        Action<State> editColor, Action<State> editAlerts)
+        Action<State> editColor, Action<State> editAlerts, Action<State> editInterval)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
@@ -169,6 +169,7 @@ internal sealed class ReceiverMonitor : IDisposable
             item.DropDownItems.Add(visibility);
             item.DropDownItems.Add(UiText.Get("Tray icon color..."), null, (_, _) => editColor(state));
             item.DropDownItems.Add(UiText.Get("Device battery alerts..."), null, (_, _) => editAlerts(state));
+            item.DropDownItems.Add(UiText.Get("Device polling interval..."), null, (_, _) => editInterval(state));
             menu.DropDownItems.Add(item);
         }
         if (menu.DropDownItems.Count == 0)
