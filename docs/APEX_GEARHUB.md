@@ -80,8 +80,40 @@ the buffer length is not evidence of wire length.
 
 A regression test reconstructs only the observed status prefix with
 synthetic padding. No owner raw report or device identifiers are stored.
-The web driver's independently displayed level has not yet been supplied.
+The web UI displays five bars rather than an exact percentage. The
+subsequently supplied local bridge HAR independently reports 100% (below).
 Repeat at a different actual battery level if possible. This is a positive
 reference for the working AJ179, not proof of AJ159 compatibility or a
 reason to loosen the live parser yet.
 
+
+## AJ179 local GearHub bridge HAR — owner hardware
+
+The owner supplied a Chrome Network HAR. GearHub used the local gRPC-Web
+HID service (loopback port 3838), not the browser WebHID methods; the
+passive WebHID console hook therefore recorded no transactions.
+The HAR analysis matched 266 F7 sends to subsequent feature reads on the
+same 3151:5007 MI_02 endpoint. All 266 returned 65-byte buffers with
+mouse battery 100, online link, mouse mask 2 and boot flag 0.
+Five other F7 sends were not matched; this does not establish failures.
+
+| Bridge response prefix (first 10 bytes) | Count |
+|---|---:|
+| 00 00 00 64 01 00 01 02 00 00 | 258 |
+| 00 01 00 64 01 00 01 02 00 00 | 6 |
+| 00 00 00 64 01 00 00 02 00 00 | 2 |
+
+The bridge leading byte 00 differs from the Windows capture's 05. Do not
+interpret it as a proven wire report ID. For analysis only, substituting
+05 yields 260/266 accepted by the legacy parser versus 266/266 by the
+candidate. Six replies show that the read-ready flag can be nonzero
+while battery is valid. This does not establish the failing AJ159 cause.
+No live normalization, relaxed parser, alternate request or bridge
+integration is authorized by this finding alone.
+
+For each AJ159 collect a separate beta.41 full report and a Chrome Network
+HAR with response content after 20–30 seconds of GearHub polling. Close
+one application before using the other. No console script is required
+when GearHub uses the local bridge. Review HAR for private identifiers
+and keep raw captures out of the repository. Only aggregate counts and
+synthetic test prefixes are retained here.
