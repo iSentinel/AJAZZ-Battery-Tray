@@ -3,7 +3,18 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.35 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.36 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+
+## Individual tray colors (Windows)
+
+Open **Tray icon color...** from the device submenu or select a device
+in Device Manager and open its color editor. Choose from six normal-charge
+colors; the editor previews normal, warning, critical and cached icons.
+Colors persist locally independently for each AJAZZ receiver and the
+single AULA monitoring profile. Default is green. Red at 10% or less,
+amber at 20% or less, and gray for unavailable/cached values take priority.
+Bluetooth fallback retains the default palette. This changes neither
+measurements nor notification thresholds.
 
 ## Individual tray visibility (Windows)
 
