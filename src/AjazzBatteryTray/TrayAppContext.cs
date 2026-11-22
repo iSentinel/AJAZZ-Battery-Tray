@@ -557,6 +557,7 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
 
+    private static void CopyDeviceReport()
     {
         string report = "AJAZZ Battery Tray diagnostic report\n" +
             $"Version: {Application.ProductVersion}\n" +
