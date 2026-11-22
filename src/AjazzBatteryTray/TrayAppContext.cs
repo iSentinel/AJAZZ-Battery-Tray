@@ -19,7 +19,8 @@ public sealed class TrayAppContext : ApplicationContext
     private bool _aulaBusy;
     private ToolStripMenuItem _aulaStatus = new();
     private readonly AlertPolicy _alerts = new();
-    private readonly ConnectionAlertPolicy _connectionAlerts = new();
+    private readonly ReceiverMonitor _receivers = new();
+    private readonly ConnectionAlertPolicy _aulaConnection = new();
     private readonly BatteryHistory _history = new();
     private BatteryHistoryForm? _historyWindow;
     private BluetoothBatteryForm? _bluetoothWindow;
@@ -40,6 +41,7 @@ public sealed class TrayAppContext : ApplicationContext
     private bool _lastClockSucceeded;
     private readonly AppSettings _settings = AppSettings.Load();
     private ToolStripMenuItem _statusItem = new();
+    private ToolStripMenuItem _devicesMenu = new();
     private ToolStripMenuItem _startupItem = new();
     private Icon? _icon;
     private int? _lastPercent;
@@ -69,7 +71,11 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(_statusItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(UiText.Get("Refresh now"), null, (_, _) => PollSoon());
-        menu.Items.Add(UiText.Get("Battery history..."), null,
+        _devicesMenu = new ToolStripMenuItem(UiText.Get("AJAZZ receivers"));
+        _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu);
+        _receivers.PopulateMenu(_devicesMenu);
+        menu.Items.Add(_devicesMenu);
+        menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
         menu.Items.Add(BuildBluetoothMenu());
         menu.Items.Add(BuildAulaMenu());
@@ -126,6 +132,7 @@ public sealed class TrayAppContext : ApplicationContext
             _settings.MonitorAulaL99 = auto.Checked;
             _settings.Save();
             if (auto.Checked) _ = PollAulaAsync(manual: true);
+            RefreshDeviceDisplay();
         };
         menu.DropDownItems.Add(auto);
         menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
@@ -200,8 +207,16 @@ public sealed class TrayAppContext : ApplicationContext
             if (_settings.RecordBatteryHistory)
                 _aulaHistory.Record(DateTimeOffset.UtcNow, result.Percent,
                     result.ReceiverPresent || !result.PresenceKnown);
-            if (_settings.MonitorAulaL99 && result.Percent is int percent)
-                NotifyAulaBattery(percent);
+            if (_settings.MonitorAulaL99)
+            {
+                if (result.PresenceKnown && _aulaConnection.Evaluate(
+                        result.Percent.HasValue, result.ReceiverPresent) &&
+                    _settings.NotifyOnDisconnect)
+                    _tray.ShowBalloonTip(4000, "AULA L99",
+                        UiText.Get("The 2.4 GHz receiver is no longer detected."),
+                        ToolTipIcon.Warning);
+                if (result.Percent is int percent) NotifyAulaBattery(percent);
+            }
         }
         catch (Exception error)
         {
@@ -211,7 +226,11 @@ public sealed class TrayAppContext : ApplicationContext
         finally
         {
             _aulaBusy = false;
-            if (!_closing) UpdateAulaStatus();
+            if (!_closing)
+            {
+                UpdateAulaStatus();
+                RefreshDeviceDisplay();
+            }
         }
     }
 
@@ -233,6 +252,17 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(BuildNotificationsMenu());
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
+        ToolStripMenuItem multiple = new(UiText.Get("Separate tray icons"))
+        {
+            Checked = _settings.MultipleTrayIcons, CheckOnClick = true
+        };
+        multiple.CheckedChanged += (_, _) =>
+        {
+            _settings.MultipleTrayIcons = multiple.Checked;
+            _settings.Save();
+            RefreshDeviceDisplay();
+        };
+        menu.DropDownItems.Add(multiple);
         ToolStripMenuItem history = new(UiText.Get("Record battery history"))
         {
             Checked = _settings.RecordBatteryHistory, CheckOnClick = true
@@ -297,8 +327,11 @@ public sealed class TrayAppContext : ApplicationContext
         _settings.Language = UiText.Normalize(code);
         _settings.Save();
         UiText.SetLanguage(_settings.Language);
+        ContextMenuStrip? previous = _tray.ContextMenuStrip;
         _tray.ContextMenuStrip = BuildMenu();
-        if (_latestUsbReading is not null) UpdateTrayDisplay(_latestUsbReading);
+        RefreshDeviceDisplay();
+        previous?.Dispose();
+        _receivers.ApplyLanguage();
         _historyWindow?.ApplyLanguage();
         _aulaHistoryWindow?.ApplyLanguage();
         _bluetoothWindow?.ApplyLanguage();
@@ -545,7 +578,11 @@ public sealed class TrayAppContext : ApplicationContext
             $"Completed UTC: {_latestUsbReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {usb?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {usb?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {usb?.Percent?.ToString() ?? "unavailable"}; status: {usb?.Details ?? "not checked"}\n" +
-            attempts + "\n\n[AULA L99 last measurement]\n" +
+            attempts + "\n\n[Independent AJAZZ receivers]\n" +
+            string.Join("\n", _receivers.Devices.Select(x =>
+                $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}")) +
+            $"\nSeparate tray icons: {_settings.MultipleTrayIcons}\n" +
+            "\n[AULA L99 last measurement]\n" +
             $"Auto monitoring: {_settings.MonitorAulaL99}; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {aula?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {aula?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n\n" +
@@ -649,11 +686,11 @@ public sealed class TrayAppContext : ApplicationContext
             var result = await Task.Run(QueryAndSync);
             if (!_closing)
             {
-                _latestUsbReading = result.Reading;
+                _latestUsbReading = result.Batch.Summary;
                 _latestUsbReadAt = DateTimeOffset.UtcNow;
-                ApplyReading(result.Reading);
+                ApplyReading(result.Batch);
                 ApplyClockResult(result.Attempted, result.Succeeded);
-                StartBluetoothPoll(result.Reading.ReceiverPresent);
+                StartBluetoothPoll(result.Batch.Summary.ReceiverPresent);
                 _ = PollAulaAsync();
             }
         }
@@ -665,7 +702,8 @@ public sealed class TrayAppContext : ApplicationContext
                 _latestUsbReading = new AjazzHidReader.Reading(
                     false, null, "Unexpected error", PresenceKnown: false);
                 _latestUsbReadAt = DateTimeOffset.UtcNow;
-                ApplyReading(_latestUsbReading);
+                ApplyReading(new AjazzHidReader.Batch(_latestUsbReading,
+                    Array.Empty<AjazzHidReader.ReceiverReading>()));
             }
         }
         finally
@@ -679,10 +717,11 @@ public sealed class TrayAppContext : ApplicationContext
         }
     }
 
-    private (AjazzHidReader.Reading Reading, bool Attempted, bool Succeeded)
+    private (AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded)
         QueryAndSync()
     {
-        AjazzHidReader.Reading reading = _reader.Read();
+        AjazzHidReader.Batch batch = _reader.ReadAll();
+        AjazzHidReader.Reading reading = batch.Summary;
         DateTimeOffset now = DateTimeOffset.UtcNow;
         bool manual = _manualClockSync;
         _manualClockSync = false;
@@ -690,17 +729,17 @@ public sealed class TrayAppContext : ApplicationContext
             now, _settings.AutomaticDockClockSync, reading.ReceiverPresent);
         if (!manual && !automatic)
         {
-            return (reading, false, false);
+            return (batch, false, false);
         }
 
         if (!reading.ReceiverPresent)
         {
-            return (reading, true, false);
+            return (batch, true, false);
         }
 
         bool sent = _reader.TrySyncDockClock(DateTime.Now);
         _clockSchedule.RecordAttempt(now);
-        return (reading, true, sent);
+        return (batch, true, sent);
     }
 
     private void StartBluetoothPoll(bool receiverPresent, bool force = false)
@@ -779,31 +818,11 @@ public sealed class TrayAppContext : ApplicationContext
                 _lastClockUpdate.Value.ToString("HH:mm:ss"));
     }
 
-    private void ApplyReading(AjazzHidReader.Reading reading)
+    private void ApplyReading(AjazzHidReader.Batch batch)
     {
-        bool connected = reading.Percent.HasValue;
-        if (_settings.RecordBatteryHistory)
-        {
-            _history.Record(DateTimeOffset.UtcNow, reading.Percent,
-                BatteryDisplayState.SafeReceiverPresent(
-                    reading.ReceiverPresent, reading.PresenceKnown));
-        }
-
-        bool receiverLost = _connectionAlerts.Evaluate(
-            connected, BatteryDisplayState.SafeReceiverPresent(
-                reading.ReceiverPresent, reading.PresenceKnown));
-        if (_settings.NotifyOnDisconnect &&
-            BatteryDisplayState.NotifyReceiverDisconnect(
-                receiverLost, _bluetoothPolicy.Enabled))
-        {
-            _tray.ShowBalloonTip(4000, UiText.Get("AJAZZ APEX disconnected"),
-                UiText.Get("The 2.4 GHz receiver is no longer detected."),
-                ToolTipIcon.Warning);
-        }
-        if (connected)
-            ShowLowBatteryAlert(reading.Percent!.Value, "2.4 GHz");
-
-        UpdateTrayDisplay(reading);
+        _receivers.Apply(batch, _settings, _tray, _bluetoothPolicy.Enabled,
+            DateTimeOffset.UtcNow);
+        UpdateTrayDisplay(batch.Summary);
     }
 
     /// <summary>Notify only for a fresh, currently selected battery source.</summary>
@@ -820,6 +839,13 @@ public sealed class TrayAppContext : ApplicationContext
             ToolTipIcon.Warning);
     }
 
+    private void RefreshDeviceDisplay()
+    {
+        if (_closing) return;
+        UpdateTrayDisplay(_latestUsbReading ??
+            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false));
+    }
+
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
     private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
     {
@@ -829,14 +855,28 @@ public sealed class TrayAppContext : ApplicationContext
         BatteryDisplayState display = BatteryDisplayState.Resolve(
             reading.ReceiverPresent, reading.Percent,
             _bluetoothPolicy.Enabled, blePercent, reading.PresenceKnown);
-        int? displayPercent = display.Percent;
-        bool displayConnected = display.HasReading;
+        bool showAula = _settings.MonitorAulaL99 &&
+            _aulaLatest is { ReceiverPresent: true, PresenceKnown: true };
+        bool aulaIsPrimary = showAula && reading.PresenceKnown &&
+            !reading.ReceiverPresent && !_bluetoothPolicy.Enabled;
+        var receiver = _settings.MultipleTrayIcons
+            ? _receivers.PrimaryState : _receivers.SummaryState;
+        string device = receiver?.Label ?? "AJAZZ APEX";
+        int? displayPercent = receiver is not null && reading.PresenceKnown
+            ? receiver.Reading.Percent : display.Percent;
         string source = display.SourceName;
+        if (aulaIsPrimary)
+        {
+            device = "AULA L99";
+            displayPercent = _aulaLatest?.Percent;
+            source = "2.4 GHz";
+        }
+        bool displayConnected = displayPercent.HasValue;
         int? previousPercent = _lastPercent;
         if (displayConnected != _lastConnected ||
             previousPercent != displayPercent || source != _lastSource)
         {
-            FileLog.Write("INFO", $"{source} battery: " +
+            FileLog.Write("INFO", $"{device} {source} battery: " +
                 (displayConnected ? $"{displayPercent}%" : "unavailable"));
         }
 
@@ -844,10 +884,13 @@ public sealed class TrayAppContext : ApplicationContext
         _lastConnected = displayConnected;
         _lastSource = source;
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
-        _statusItem.Text = $"AJAZZ APEX — {source}: {value}";
-        string tooltip = $"AJAZZ APEX: {source} {value}";
+        _statusItem.Text = $"{device} — {source}: {value}";
+        string tooltip = $"{device}: {source} {value}";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
         UpdateIcon(displayPercent, displayConnected);
+        if (_tray.ContextMenuStrip is { } menu)
+            _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
+                _aulaLatest, aulaIsPrimary, menu, PollSoon);
         UpdateBluetoothStatus();
     }
 
@@ -880,7 +923,9 @@ public sealed class TrayAppContext : ApplicationContext
         _historyWindow?.Close();
         _aulaHistoryWindow?.Close();
         _bluetoothWindow?.Close();
+        _receivers.Dispose();
         _tray.Visible = false;
+        _tray.ContextMenuStrip?.Dispose();
         _tray.Dispose();
         _icon?.Dispose();
         FileLog.Write("INFO", "Application stopped");
