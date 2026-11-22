@@ -159,3 +159,12 @@ battery or clock problem.
   app icon implemented. Seven pure preference/selection tests added.
 - CI and actual Windows tray behavior pending, including hide all, restore,
   global single-icon mode, persisted settings and unaffected history/alerts.
+
+## Individual tray colors — beta.36 candidate
+
+- beta.35 PR #46 and release workflow 45049517485 PASS; six release assets
+  verified. Physical hide/show/persistence validation remains pending.
+- beta.36 six normal-charge palettes, warning/cache precedence, editor,
+  main and extra icon refresh, local settings persistence and eleven pure
+  tests implemented. Windows/macOS CI and owner visual acceptance pending.
+- No change to hardware writes, polling, history or alert policy.
