@@ -13,7 +13,8 @@ public sealed class AjazzHidReader
         IReadOnlyList<string>? Attempts = null);
 
     /// <summary>One receiver, identified locally; never export Key.</summary>
-    public sealed record ReceiverReading(string Key, ushort? Revision, Reading Reading);
+    public sealed record ReceiverReading(string Key, ushort? Revision, Reading Reading,
+        bool Sampled = true, DateTimeOffset? MeasuredAt = null, long CompletedTick = 0);
 
     public sealed record Batch(Reading Summary, IReadOnlyList<ReceiverReading> Receivers);
 
@@ -21,7 +22,7 @@ public sealed class AjazzHidReader
         => receivers.FirstOrDefault(x => x.Reading.Percent.HasValue)
             ?? receivers.FirstOrDefault();
 
-    public Batch ReadAll(bool captureProtocol = false)
+    public Batch ReadAll(bool captureProtocol = false, Func<string, bool>? shouldSample = null)
     {
         List<string> attempts = new();
         List<ReceiverReading> receivers = new();
@@ -31,6 +32,14 @@ public sealed class AjazzHidReader
             attempts.Add($"Matching MI_02 paths: {paths.Count}");
             foreach (string path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
             {
+                string key = ReceiverIdentity.LocalKey(path);
+                if (!captureProtocol && shouldSample is not null && !shouldSample(key))
+                {
+                    attempts.Add($"Interface: {DiagnosticHidIdentity.FromPath(path)}; scheduled skip");
+                    receivers.Add(new ReceiverReading(key, null,
+                        new Reading(true, null, "Sampling not due"), Sampled: false));
+                    continue;
+                }
                 List<string> trace = new();
                 Reading? reading;
                 ushort? revision = null;
@@ -44,8 +53,9 @@ public sealed class AjazzHidReader
                     reading = null;
                 }
                 reading ??= new Reading(true, null, "HID collection unavailable");
-                receivers.Add(new ReceiverReading(ReceiverIdentity.LocalKey(path),
-                    revision, reading with { Attempts = trace.ToArray() }));
+                receivers.Add(new ReceiverReading(key,
+                    revision, reading with { Attempts = trace.ToArray() },
+                    MeasuredAt: DateTimeOffset.UtcNow, CompletedTick: Environment.TickCount64));
                 attempts.AddRange(trace);
             }
 
