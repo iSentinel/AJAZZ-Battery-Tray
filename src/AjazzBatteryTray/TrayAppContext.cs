@@ -121,6 +121,12 @@ public sealed class TrayAppContext : ApplicationContext
             dialog.ShowDialog();
         });
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(UiText.Get("Verify downloaded release..."), null, (_, _) =>
+        {
+            if (_closing) return;
+            using var dialog = new ArtifactVerificationForm();
+            dialog.ShowDialog();
+        });
         menu.Items.Add(UiText.Get("Exit"), null, (_, _) => ExitThread());
         return menu;
     }
