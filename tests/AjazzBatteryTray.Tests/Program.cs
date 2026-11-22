@@ -63,6 +63,38 @@ Check("Diagnostic header excludes remaining payload",
 Check("Diagnostic short header", DiagnosticHidIdentity.BatteryHeader(
     new byte[] { 5, 0 }) == "0500");
 
+// Independent completion-based polling deadlines; no HID I/O.
+var deviceSchedule = new DevicePollSchedule();
+string fastPollKey = new string('C', 64);
+string slowPollKey = new string('D', 64);
+Check("New receivers immediately due", deviceSchedule.IsDue(fastPollKey, 0, 15));
+deviceSchedule.Complete(fastPollKey, 1000);
+deviceSchedule.Complete(slowPollKey, 1000);
+Check("Fast receiver not early", !deviceSchedule.IsDue(fastPollKey, 15999, 15));
+Check("Fast receiver due at boundary", deviceSchedule.IsDue(fastPollKey, 16000, 15));
+Check("Slow receiver independently deferred", !deviceSchedule.IsDue(slowPollKey, 16000, 120));
+Check("Force bypasses delay", deviceSchedule.IsDue(slowPollKey, 2000, 120, force: true));
+Check("Slow receiver due at boundary", deviceSchedule.IsDue(slowPollKey, 121000, 120));
+deviceSchedule.Complete(fastPollKey, 200000);
+Check("Missed intervals do not cause catch-up burst", !deviceSchedule.IsDue(fastPollKey, 200001, 15));
+Check("Clock discontinuity permits fresh sample", deviceSchedule.IsDue(fastPollKey, 0, 15));
+deviceSchedule.Reconcile(Array.Empty<string>(), presenceKnown: false);
+Check("Unknown enumeration does not forget schedule", !deviceSchedule.IsDue(fastPollKey, 200001, 15));
+deviceSchedule.Reconcile(new[] { slowPollKey }, presenceKnown: true);
+Check("Confirmed unplug resets removed receiver", deviceSchedule.IsDue(fastPollKey, 200001, 15));
+Check("Invalid key never due even when forced", !deviceSchedule.IsDue("invalid", 0, 15, force: true));
+Check("Inherited interval", DevicePollSchedule.ResolveInterval(60, null) == 60);
+Check("Custom interval overrides default", DevicePollSchedule.ResolveInterval(60, 15) == 15);
+Check("Invalid overrides inherit", DevicePollSchedule.ResolveInterval(60, 0) == 60);
+Check("Invalid global normalizes", DevicePollSchedule.ResolveInterval(5, null) == 30);
+Check("Clean poll override map", DevicePollSchedule.CleanOverrides(new Dictionary<string, int>
+{
+    [fastPollKey] = 15, [slowPollKey] = 999, ["invalid"] = 30,
+    [DeviceAliasRules.AulaSlot] = 120
+}).Count == 2);
+deviceSchedule.Reset(slowPollKey);
+Check("Explicit reset forces next reading", deviceSchedule.IsDue(slowPollKey, 2000, 120));
+
 Check("Separate tray icons default on", new AppSettings().MultipleTrayIcons);
 
 var alertSettings = new AppSettings { AlertBelow25 = false };
