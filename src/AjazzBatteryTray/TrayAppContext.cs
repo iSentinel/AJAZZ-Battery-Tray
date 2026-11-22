@@ -80,8 +80,8 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(UiText.Get("Device Manager"), null, (_, _) => ShowDashboard());
         menu.Items.Add(UiText.Get("Refresh now"), null, (_, _) => PollSoon());
         _devicesMenu = new ToolStripMenuItem(UiText.Get("AJAZZ receivers"));
-        _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu);
-        _receivers.PopulateMenu(_devicesMenu);
+        _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName);
+        _receivers.PopulateMenu(_devicesMenu, EditReceiverName);
         menu.Items.Add(_devicesMenu);
         menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
@@ -98,6 +98,42 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(UiText.Get("Exit"), null, (_, _) => ExitThread());
         return menu;
+    }
+
+    private string AulaName => DeviceAliasRules.DisplayName("AULA L99",
+        _settings.DeviceAliases.GetValueOrDefault(DeviceAliasRules.AulaSlot));
+
+    private void EditReceiverName(ReceiverMonitor.State state)
+    {
+        if (!EditLocalName(state.Key, state.Label)) return;
+        state.Alias = _settings.DeviceAliases.GetValueOrDefault(state.Key);
+        state.Window?.Dispose();
+        state.Window = null;
+        RefreshDeviceDisplay();
+    }
+
+    private void EditAulaName()
+    {
+        if (!EditLocalName(DeviceAliasRules.AulaSlot, "AULA L99")) return;
+        _aulaHistoryWindow?.Dispose();
+        _aulaHistoryWindow = null;
+        RefreshDeviceDisplay();
+    }
+
+    private bool EditLocalName(string key, string model)
+    {
+        if (_closing || !DeviceAliasRules.ValidKey(key)) return false;
+        string? original = _settings.DeviceAliases.GetValueOrDefault(key);
+        using var dialog = new DeviceAliasForm(model, original);
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return false;
+        if (dialog.Alias.Length == 0) _settings.DeviceAliases.Remove(key);
+        else _settings.DeviceAliases[key] = dialog.Alias;
+        if (_settings.Save()) return true;
+        if (original is null) _settings.DeviceAliases.Remove(key);
+        else _settings.DeviceAliases[key] = original;
+        MessageBox.Show(UiText.Get("Unable to save local device name."),
+            UiText.Get("Edit local name..."), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return false;
     }
 
     private void ShowDashboard()
@@ -119,10 +155,11 @@ public sealed class TrayAppContext : ApplicationContext
         foreach (var receiver in _receivers.Devices)
         {
             var reading = receiver.Reading;
-            var item = DeviceDashboardState.FromPoll(receiver.Label, "2.4 GHz",
+            var item = DeviceDashboardState.FromPoll(receiver.DisplayLabel, "2.4 GHz",
                 true, reading.PresenceKnown, receiver.Present, reading.Percent,
                 _latestUsbReadAt);
-            entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver)));
+            entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
+                () => EditReceiverName(receiver)));
         }
         if (entries.Count == 0)
         {
@@ -131,7 +168,8 @@ public sealed class TrayAppContext : ApplicationContext
                 reading is not null, reading?.PresenceKnown == true,
                 reading?.ReceiverPresent == true, reading?.Percent, _latestUsbReadAt)));
         }
-        entries.Add(new(AulaDashboardState(), ShowAulaHistory));
+        entries.Add(new(AulaDashboardState(), ShowAulaHistory, DeviceAliasRules.AulaSlot,
+            EditAulaName));
         if (_bluetoothPolicy.Enabled) entries.Add(new(BluetoothDashboardState()));
         _dashboard.SetEntries(entries);
     }
@@ -139,8 +177,8 @@ public sealed class TrayAppContext : ApplicationContext
     private DeviceDashboardState AulaDashboardState()
     {
         if (!_settings.MonitorAulaL99 && _aulaLatest is null)
-            return new("AULA L99", "2.4 GHz", DeviceDashboardStatus.Disabled, null, null);
-        var state = DeviceDashboardState.FromPoll("AULA L99", "2.4 GHz",
+            return new(AulaName, "2.4 GHz", DeviceDashboardStatus.Disabled, null, null);
+        var state = DeviceDashboardState.FromPoll(AulaName, "2.4 GHz",
             _aulaLatest is not null, _aulaLatest?.PresenceKnown == true,
             _aulaLatest?.ReceiverPresent == true, _aulaLatest?.Percent,
             _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
@@ -210,6 +248,8 @@ public sealed class TrayAppContext : ApplicationContext
             RefreshDeviceDisplay();
         };
         menu.DropDownItems.Add(auto);
+        menu.DropDownItems.Add(UiText.Get("Edit local name..."), null,
+            (_, _) => EditAulaName());
         menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
             (_, _) => ShowAulaHistory());
         menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
@@ -284,7 +324,7 @@ public sealed class TrayAppContext : ApplicationContext
     private void ShowAulaHistory()
     {
         if (_aulaHistoryWindow is null || _aulaHistoryWindow.IsDisposed)
-            _aulaHistoryWindow = new BatteryHistoryForm(_aulaHistory, "AULA L99");
+            _aulaHistoryWindow = new BatteryHistoryForm(_aulaHistory, AulaName);
         _aulaHistoryWindow.RefreshData();
         _aulaHistoryWindow.Show();
         _aulaHistoryWindow.BringToFront();
@@ -1083,15 +1123,16 @@ public sealed class TrayAppContext : ApplicationContext
         _lastSource = source;
         _lastDevice = device;
         _lastStale = stale;
+        string displayName = aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device;
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
-        _statusItem.Text = $"{device} — {source}: {value}";
-        string tooltip = $"{device}: {source} {value}";
+        _statusItem.Text = $"{displayName} — {source}: {value}";
+        string tooltip = $"{value} — {displayName} ({source})";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
         UpdateIcon(displayPercent, displayConnected, stale);
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
-                aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon);
+                aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName);
         UpdateBluetoothStatus();
         RefreshDashboard();
     }
