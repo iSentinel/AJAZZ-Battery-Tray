@@ -35,3 +35,15 @@
 
 Do not claim hardware acceptance from CI alone. Do not upload private
 device paths, captures, serials, or raw vendor bytes automatically.
+
+## Independent follow-up branch: feat/per-device-alerts
+- Based on beta.37 candidate 63f04297feba27296dbfc4038868a91d2290df24.
+- Implemented optional local 50/25/10 threshold masks for each AJAZZ
+  receiver and the single AULA profile, with inheritance, explicit mute,
+  global master switch, settings rollback and validated keys/values.
+- Tray and dashboard editor in EN/RU/UK; nine pure settings tests added.
+- Low-battery hysteresis, Bluetooth global policy, disconnect alerts,
+  polling intervals and device I/O unchanged.
+- [ ] Final code review / CI after beta.37 merges. Do not mix this feature
+  into the beta.37 diagnostic release. Assign a new beta at release preparation.
+- [ ] Physical UI and notification acceptance; then per-device poll intervals.
