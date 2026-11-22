@@ -11,6 +11,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _timer;
     private readonly System.Windows.Forms.Timer _aulaTimer;
     private readonly DevicePollSchedule _usbSchedule = new();
+    private readonly LocalSnapshotStore _localSnapshot = new();
     private readonly System.Windows.Forms.Timer _updateTimer = new() { Interval = 10000 };
     private readonly AutomaticUpdatePolicy _updatePolicy = new();
     private CancellationTokenSource? _updateRequestCancellation;
@@ -89,6 +90,7 @@ public sealed class TrayAppContext : ApplicationContext
         _updateTimer.Tick += (_, _) => _ = PollUpdatesAsync();
         ApplyUpdatePreferences();
         _updateTimer.Start();
+        PublishLocalSnapshot();
     }
 
     private ContextMenuStrip BuildMenu()
@@ -273,6 +275,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void RefreshDashboard()
     {
+        PublishLocalSnapshot();
         if (_dashboard is not { IsDisposed: false }) return;
         List<DeviceDashboardForm.Entry> entries = new();
         foreach (var receiver in _receivers.Devices)
@@ -304,6 +307,58 @@ public sealed class TrayAppContext : ApplicationContext
         foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
             entries.Add(new(BluetoothDashboardState(pair.Key, pair.Value), Key: $"BLE:{pair.Value.Number}"));
         _dashboard.SetEntries(entries);
+    }
+
+    private void PublishLocalSnapshot()
+    {
+        if (_closing) return;
+        try
+        {
+            var inputs = new List<LocalBatterySnapshot.Input>();
+            int slot = 0;
+            foreach (var receiver in _receivers.Devices)
+            {
+                // ReceiverMonitor retains insertion order and disconnected rows for this session.
+                var reading = receiver.Reading;
+                var state = DeviceDashboardState.FromPoll("", "", true,
+                    reading.PresenceKnown, receiver.Present, reading.Percent,
+                    receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
+                inputs.Add(new(LocalBatterySource.ApexReceiver, ++slot, state));
+            }
+            var aula = !_settings.MonitorAulaL99
+                ? new DeviceDashboardState("", "", DeviceDashboardStatus.Disabled, null, null)
+                : DeviceDashboardState.FromPoll("", "", _aulaLatest is not null,
+                    _aulaLatest?.PresenceKnown == true, _aulaLatest?.ReceiverPresent == true,
+                    _aulaLatest?.Percent, _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
+            inputs.Add(new(LocalBatterySource.AulaReceiver, 1, aula));
+            foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
+                inputs.Add(new(LocalBatterySource.Bluetooth, pair.Value.Number,
+                    BluetoothDashboardState(pair.Key, pair.Value)));
+            _localSnapshot.Publish(DateTimeOffset.UtcNow, inputs);
+        }
+        catch (Exception)
+        {
+            // Fail closed; never expose a previous snapshot after a projection failure.
+            _localSnapshot.Clear();
+        }
+    }
+
+    private void CopyLocalSnapshot()
+    {
+        if (_closing) return;
+        try
+        {
+            var snapshot = _localSnapshot.Read(DateTimeOffset.UtcNow);
+            if (snapshot is null) throw new InvalidOperationException();
+            Clipboard.SetText(System.Text.Encoding.UTF8.GetString(snapshot.Export()));
+            MessageBox.Show(UiText.Get("Local battery snapshot copied."),
+                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception)
+        {
+            MessageBox.Show(UiText.Get("Unable to copy local battery snapshot."),
+                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private DeviceDashboardState AulaDashboardState()
@@ -883,6 +938,7 @@ public sealed class TrayAppContext : ApplicationContext
             (_, _) => CopyDeviceReport());
         menu.DropDownItems.Add(UiText.Get("Copy Bluetooth monitor status"), null,
             (_, _) => CopyBluetoothStatus());
+        menu.DropDownItems.Add(UiText.Get("Copy local battery snapshot"), null, (_, _) => CopyLocalSnapshot());
         menu.DropDownItems.Add(UiText.Get("Open log folder"), null,
             (_, _) => OpenLogFolder());
         return menu;
@@ -1581,6 +1637,7 @@ public sealed class TrayAppContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         _closing = true;
+        _localSnapshot.Clear();
         _updateTimer.Stop();
         _updateTimer.Dispose();
         _updatePolicy.Configure(false, _settings.ExperimentalUpdateChannel, Environment.TickCount64);
