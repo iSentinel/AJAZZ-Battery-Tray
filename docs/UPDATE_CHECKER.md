@@ -9,6 +9,14 @@
 - Require exact artifact name and single SHA-256 entry. A checksum detects
   corruption; it is not an independent publisher signature.
 
+## Implemented manual lookup
+- Fixed GitHub API requests, no authentication or cookies, no redirects.
+- Overall 15-second cancellation deadline, 2 MiB response limit, first 100 releases.
+- Explicit tray dialog, EN/RU/UK, session channel selector and release-page link.
+- No automatic check, download, installer execution, or use of remote URL fields.
+- 26 pure version/checksum/metadata checks; CI pending. HTTP errors are shown
+  generically; live network and UI acceptance pending.
+
 ## Remaining integration
 - Explicit manual check first; optional periodic checks disabled by default.
 - Fixed GitHub repository API, HTTPS, bounded response and timeouts, no tokens.
