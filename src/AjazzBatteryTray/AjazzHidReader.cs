@@ -146,25 +146,19 @@ public sealed class AjazzHidReader
         attempts.Add($"  Feature report size: {caps.FeatureReportByteLength}");
         if (captureProtocol)
             attempts.Add($"  Usage: {caps.UsagePage:X4}:{caps.Usage:X4}; input={caps.InputReportByteLength}; output={caps.OutputReportByteLength}");
-        int[] lengths = { caps.FeatureReportByteLength, 65, 67 };
         // Normal polling retains the original order and timing.
-        int[] delays = captureProtocol ? new[] { 30, 100, 250 } : new[] { 30 };
         int? firstValid = null;
         int validAttempts = 0, totalAttempts = 0;
-        foreach (int delay in delays)
+        foreach (var (length, delay) in ApexProtocolMatrix.Build(caps.FeatureReportByteLength, captureProtocol))
         {
-            foreach (int length in lengths.Distinct())
+            int? percent = PollBattery(handle, length, attempts, delay, captureProtocol);
+            totalAttempts++;
+            if (percent.HasValue)
             {
-                if (length is < 65 or > 256) continue;
-                int? percent = PollBattery(handle, length, attempts, delay, captureProtocol);
-                totalAttempts++;
-                if (percent.HasValue)
-                {
-                    if (!captureProtocol)
-                        return new Reading(true, percent, "2.4 GHz / 8K");
-                    firstValid ??= percent;
-                    validAttempts++;
-                }
+                if (!captureProtocol)
+                    return new Reading(true, percent, "2.4 GHz / 8K");
+                firstValid ??= percent;
+                validAttempts++;
             }
         }
         if (captureProtocol)
