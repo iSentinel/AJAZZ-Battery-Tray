@@ -11,6 +11,8 @@ public sealed class BluetoothMultiSession
     private long _sequence;
     private Request? _inFlight;
     private long _requestGeneration;
+    private bool _requestInvalidated;
+    private bool _usbBlocked;
 
     public int Count => _slots.Count;
     public bool IsBusy => _inFlight is not null;
@@ -21,12 +23,30 @@ public sealed class BluetoothMultiSession
         if (string.IsNullOrWhiteSpace(key) || !reading.IsFreshGatt) return false;
         BluetoothAutoPolicy policy = new();
         policy.Enable(reading.Percent!.Value, now);
+        if (_usbBlocked) policy.InvalidateForUsb();
         _slots[key] = new Slot(++_sequence, policy);
         return true;
     }
 
     public void Disable(string key) => _slots.Remove(key);
     public void DisableAll() => _slots.Clear();
+
+    public DateTimeOffset? LastSuccess(string key)
+        => _slots.TryGetValue(key, out Slot? slot) ? slot.Policy.LastSuccessfulRead : null;
+
+    public DateTimeOffset? LastAttempt(string key)
+        => _slots.TryGetValue(key, out Slot? slot) ? slot.Policy.LastAttempt : null;
+
+    public void ObserveUsbPresence(bool known, bool present)
+    {
+        bool blocked = !known || present;
+        if (blocked && !_usbBlocked)
+        {
+            foreach (Slot slot in _slots.Values) slot.Policy.InvalidateForUsb();
+            if (IsBusy) _requestInvalidated = true;
+        }
+        _usbBlocked = blocked;
+    }
 
     /// <summary>Global USB priority is conservative until physical association is verified.</summary>
     public Request? TryBegin(bool presenceKnown, bool usbPresent, DateTimeOffset now,
@@ -39,6 +59,7 @@ public sealed class BluetoothMultiSession
         var next = eligible.OrderBy(pair => pair.Value.Policy.LastAttempt)
             .ThenBy(pair => pair.Value.Generation).FirstOrDefault();
         if (next.Value is null) return null;
+        _requestInvalidated = false;
         _requestGeneration = next.Value.Generation;
         _inFlight = new Request(next.Key, ++_sequence);
         return _inFlight;
@@ -50,7 +71,7 @@ public sealed class BluetoothMultiSession
     {
         if (_inFlight != request) return false;
         _inFlight = null;
-        if (!_slots.TryGetValue(request.Key, out Slot? slot) ||
+        if (_requestInvalidated || !_slots.TryGetValue(request.Key, out Slot? slot) ||
             slot.Generation != _requestGeneration || !presenceKnown || usbPresent)
             return false;
         slot.Policy.RecordRead(result, now);
