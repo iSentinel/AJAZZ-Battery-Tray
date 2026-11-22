@@ -153,7 +153,11 @@ internal sealed class ReceiverMonitor : IDisposable
             {
                 Checked = visible(state.Key)
             };
-            visibility.Click += (_, _) => toggle(state.Key);
+            visibility.Click += (_, _) =>
+            {
+                toggle(state.Key);
+                visibility.Checked = visible(state.Key);
+            };
             item.DropDownItems.Add(visibility);
             menu.DropDownItems.Add(item);
         }
