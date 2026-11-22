@@ -1,28 +1,34 @@
-# Resume — beta.28 multi-device Windows monitoring
+# Resume — AULA host telemetry preview (beta.29)
 
-## Last verified checkpoint
-- Base main: 3f825548ed246d6b349f02e9696cd6efc98f9675; published latest v0.3.0-beta.27.
-- Working branch: feat/multi-device-tray-beta28. No open PR at start.
-- Work handoff was declined; continue through the repository connector.
-- Owner evidence (2026-11-22): AJ159 alone, 3151:5007 MI_02 FFFF:0002,
-  bcdDevice 0300, feature 65, F7/05 returned 95%. Both receivers present:
-  revisions 0002 and 0300, first valid reading 100% (identity not recorded).
-  AULA L99 candidate 05AC:024F MI_03 FF60:0061 input/output 33, fresh 100%
-  twice. Windows Save As tested by owner. No raw diagnostic files committed.
+## Completed release checkpoint
+- beta.28 PR #39 merged as 5ae3339b4f7d58ed05a5c683df3d92aef61812dc.
+- PR Windows and macOS tests passed; release workflow 45034643287 completed
+  successfully. GitHub Latest verified v0.3.0-beta.28 with six assets.
+- Owner's beta.27 diagnostics (2026-11-22): AJ159 alone rev 0300 returned
+  95%, AJ179 rev 0002 inferred by removal; AULA L99 100% twice. No raw
+  device IDs committed. beta.28 three-device physical UI test still pending.
 
-## Implementation checkpoint
-- Code through 03ab00d23933016d3009f3c6b838ba5f39223ac7: multi-poll, local receiver state, per-device history and optional icons, EN/RU/UK controls, tests for identity and stable primary selection.
-- Next: review PR checks, fix failures, merge only after successful Windows/macOS checks, verify release workflow and assets. Hardware UI remains pending.
-- Current limitations: model labels are provisional; manual aliases deferred; local HID path may change when moved to another port; BLE fallback remains one selected session endpoint and RTC retains first-accepting target.
+## Current branch
+- feat/aula-system-metrics-preview, based on beta.28 main.
+- Code checkpoint f3758dcd9df0aedf2c8faefced5efd1c90a73a10: native Windows
+  CPU load, local-only optional LibreHardwareMonitor provider, manual preview
+  menu (EN/RU/UK), pure tests for units, missing values, adapter separation.
+- Research checkpoint 206e997534b028e79f1c10be5d41dd70e7e439d8:
+  docs/AULA_L99_SCREEN_SYNC.md records conflicting radio packet layouts
+  and required filtered capture/physical validation before new writes.
 
-## Sequence
-1. [x] Independent per-receiver sampling with local stable identity, preserve existing HID allowlist.
-2. [x] Separate tray icons / status, per-device history and alerts, diagnostic trace.
-3. [ ] Unit tests added; run Windows/macOS CI, beta.28 release after green checks.
-4. [ ] AULA system metrics preview; verify wireless RTC/device telemetry layout
-   before any opt-in manual write. No automatic unverified commands.
-5. [ ] Physical owner acceptance, then automatic AULA screen synchronization.
+## Next actions
+1. [x] beta.28 independent devices, icons, history, alerts, CI and release.
+2. [x] beta.29 host-only metrics implementation and tests added.
+3. [ ] Verify PR CI, merge green changes and verify beta.29 release assets.
+4. [ ] Owner tests multiple tray icons, numeric host preview and sensor access.
+5. [ ] Obtain actual official L99 wireless Instant Data packet evidence;
+   validate time/monitor framing and weather semantics. No screen writes yet.
+6. [ ] Manual opt-in single transfer with exact allowlist and serialized
+   keyboard transport; confirm screen fields on real hardware before auto sync.
+7. [ ] Optional periodic CPU/GPU and later weather sync once verified.
 
-Resume by reading this file, inspecting git branch/head and open PRs, and
-checking completed CI runs. Do not repeat completed changes or assume hardware
-acceptance from CI. Never commit raw receiver paths or serial numbers.
+Resume by inspecting main, branches, PRs and release workflow before
+continuing. Do not repeat completed stages or assume hardware acceptance.
+No generic HID command probes, raw identifiers, driver installation, or
+automatic unverified telemetry transfer.
