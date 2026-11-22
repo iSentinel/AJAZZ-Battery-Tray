@@ -1110,6 +1110,15 @@ Check("Release decoder rejects absent flags",
 Check("Release decoder rejects nonboolean flags",
     RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":"false","prerelease":false}]""")));
 Check("Release decoder rejects over-limit body", RejectReleaseJson(new byte[2 * 1024 * 1024 + 1]));
+var ordinaryApexPlan = ApexProtocolMatrix.Build(65, false);
+Check("Ordinary APEX retains original two lengths and 30ms", ordinaryApexPlan.SequenceEqual(new[] { (65, 30), (67, 30) }));
+var fullApexPlan = ApexProtocolMatrix.Build(65, true);
+Check("Full APEX six combinations for common descriptor", fullApexPlan.Count == 6 &&
+    fullApexPlan.SequenceEqual(new[] { (65, 30), (67, 30), (65, 100), (67, 100), (65, 250), (67, 250) }));
+Check("Distinct descriptor length first at each delay", ApexProtocolMatrix.Build(128, true).Count == 9 &&
+    ApexProtocolMatrix.Build(128, true)[3] == (128, 100));
+Check("Invalid descriptor sizes filtered", ApexProtocolMatrix.Build(257, true).SequenceEqual(fullApexPlan) &&
+    ApexProtocolMatrix.Build(0, true).SequenceEqual(fullApexPlan));
 
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

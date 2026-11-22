@@ -1,7 +1,7 @@
 ; AJAZZ Battery Tray - per-machine installer for Windows x64.
 ; Self-contained portable EXE is created by dotnet publish before ISCC runs.
 #define AppName "AJAZZ Battery Tray"
-#define AppVersion "0.3.0-beta.40"
+#define AppVersion "0.3.0-beta.42"
 #define AppExe "AJAZZBatteryTray.exe"
 
 [Setup]

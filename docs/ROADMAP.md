@@ -141,9 +141,11 @@ hardware acceptance remain separate.
 ## P0 — APEX battery protocol compatibility (2026-11-22)
 
 - Owner reports an additional APEX mouse whose battery is unavailable in our
-  app but available in the original utility; owner confirmed AJ159 APEX.
-- [x] Physical model confirmed; tracked in P0 issue #53.
-- [ ] Obtain actual receiver/protocol captures; do not infer revision mapping.
+  app but available in the original utility; owner confirmed AJ159 APEX (#53).
+- [x] Implement one-action inventory + full existing HID timing/length matrix.
+- [x] Study public GearHub WebHID F7 decoder and prepare tested offline report comparator.
+- [ ] Validate candidate Windows alignment, status prefix, report IDs and timing against three physical captures. See [GearHub investigation](APEX_GEARHUB.md).
+- [ ] CI and comparison captures from working AJ179, working AJ159 and affected AJ159.
 - [x] Implement explicit local full-buffer battery capture and parser reasons
   without changing normal sampling, allowlist or model mappings.
 - [x] Add diagnostic-only bounded timing sweep and instructions for official
@@ -191,7 +193,8 @@ hardware acceptance remain separate.
 - [x] beta.39 final CI, PR #51 merged, six-asset Latest release verified (45067421661).
 - [ ] Mixed-device physical timing acceptance.
 - [x] Local per-device analytics and observed runtime/discharge equivalents implemented; initial PR #52 CI PASS.
-- [ ] Final beta.40 CI, publication and real-history UI acceptance.
+- [x] Final beta.40 CI and PR #52 merge; six release assets visible.
+- [ ] Real-history UI acceptance; final release workflow conclusion.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.
@@ -361,3 +364,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - https://github.com/Aiacos/ajazz-control-center
 - https://github.com/Aiacos/ajazz-control-center/blob/develop/docs/protocols/mouse/aj_series_opcode_table.md
 - https://github.com/Aiacos/ajazz-control-center/blob/develop/docs/protocols/mouse/aj_series_vendor.md
+
+## beta.42 integration checkpoint
+- [x] Implement independent session-only paired BLE monitors, UI, retry and
+  USB transition invalidation. Initial and post-beta.41 CI PASS.
+- [x] Record AJ179 GearHub bridge comparison, 266 matched pairs; offline
+  synthetic flag regression. No raw owner HAR committed.
+- [ ] Final combined beta.42 CI/release; physical multi-BLE acceptance.
+- [ ] Collect both AJ159 full reports and GearHub HAR before deciding
+  whether to alter the live parser.
+- [ ] Continue opt-in update checker in its own branch.

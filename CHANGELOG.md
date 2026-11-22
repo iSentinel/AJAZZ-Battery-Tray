@@ -8,6 +8,21 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.42 (2026-11-23)
+- Independent, session-only paired BLE battery monitors, per-device retry,
+  alerts, dashboard and tray icons; global conservative USB precedence.
+- Serialized feature-independent WinRT battery reads, including timeout isolation.
+- Offline GearHub reference analysis and eight regression checks; the live
+  AJAZZ HID decoder and existing USB queries are unchanged.
+- Hardware validation for multiple BLE devices and affected AJ159 remains pending.
+
+## 0.3.0-beta.41 (2026-11-22)
+- Combine HID descriptor inventory, last ordinary monitor state and fresh
+  full APEX protocol timing/length matrix in one explicit diagnostic report.
+- Continue the bounded diagnostic sweep after successful responses; normal
+  polling still stops at first success. No new HID opcodes.
+- Four pure matrix checks and a three-mouse comparison procedure.
+
 ## 0.3.0-beta.40 (2026-11-22)
 - Add observed discharge rate and conditional runtime projection to individual
   Windows receiver and AULA profile history, with localized evidence labels.
