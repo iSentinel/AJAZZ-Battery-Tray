@@ -49,7 +49,7 @@
   its result without prematurely releasing the request gate.
 - Deduplicate available versions for the current process session; stable
   channel never notifies for beta tags. No binary download or execution.
-- Fifteen pure scheduling checks plus integration: Settings > Update preferences,
+- Twenty pure scheduling and preferences checks plus integration: Settings > Update preferences,
   explicit confirmation (default No), persisted opt-in and channel; stable
   default even on beta builds. Automatic request is independently timed
   every ten seconds for due checks, paused while global notifications are
@@ -59,3 +59,7 @@
 - Notifications do not open links, download files, or execute installers.
   Deduplication is in memory only; a restart can notify again.
 - Network and physical Windows UI acceptance still pending; CI required.
+
+- Disabling global notifications cancels and invalidates in-flight automatic
+  checks. Failed persistence of an opt-out stops checks for the current
+  session and warns that the change could not be saved for restart.
