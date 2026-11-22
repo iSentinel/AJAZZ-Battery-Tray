@@ -168,3 +168,12 @@ battery or clock problem.
   main and extra icon refresh, local settings persistence and eleven pure
   tests implemented. Windows/macOS CI and owner visual acceptance pending.
 - No change to hardware writes, polling, history or alert policy.
+
+## Individual device notifications — beta.37 candidate
+
+- beta.36 PR #47 and release workflow 45050597164 PASS; six assets verified.
+- beta.37 independent threshold/disconnect overrides, global defaults and
+  master switch, existing hysteresis, settings persistence and eleven pure
+  regression tests implemented. CI and actual Windows notification delivery
+  remain pending. Cached AULA values do not trigger low-charge alerts.
+- No new hardware I/O or change to polling intervals.
