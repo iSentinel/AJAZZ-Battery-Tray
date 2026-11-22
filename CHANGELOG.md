@@ -8,6 +8,18 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.28 (2026-11-22)
+- Poll each supported Windows AJAZZ receiver independently instead of
+  returning after the first successful response.
+- Add optional multiple tray icons (on by default), per-receiver status,
+  history and notification debounce, and per-receiver extended diagnostics.
+- Label the owner's AJ159/AJ179 USB revisions provisionally; maintain
+  separate local identifiers even for receivers with the same revision.
+- Expose previous mixed history read-only; retain AULA opt-in, BLE fallback
+  and the existing HID allowlist. macOS behavior unchanged.
+- Owner diagnostics confirmed AJ159 battery 95% and L99 battery 100%;
+  simultaneous multi-device UI acceptance remains pending.
+
 ## 0.3.0-beta.27 (2026-11-22)
 - Add extended Windows HID diagnostics with automatic local TXT Save As dialog
   and a copy/save fallback after cancellation.
