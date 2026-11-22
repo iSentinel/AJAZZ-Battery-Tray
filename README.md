@@ -3,7 +3,18 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.36 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.37 (diagnostic candidate; earlier AJ179/AJ159 reads confirmed on owner hardware; additional APEX compatibility remains under investigation).
+
+## APEX battery protocol capture (Windows)
+
+Open **Diagnostics → Capture AJAZZ battery protocol...** after closing the
+official utility and waking the mouse. Confirm local raw-buffer capture,
+review the report, then save if needed. This explicitly invoked diagnostic
+uses only the existing battery query and checks 30/100/250 ms delays.
+Ordinary monitoring and normal privacy-safe diagnostics are unchanged.
+The raw buffers may contain undocumented data; review before sharing.
+See [APEX protocol diagnostics](docs/APEX_PROTOCOL_DIAGNOSTICS.md) for
+official utility comparison and hardware acceptance.
 
 ## Individual tray colors (Windows)
 
