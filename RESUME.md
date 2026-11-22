@@ -1,18 +1,17 @@
-# Resume — lightweight tray and history candidate
+# Resume — monitoring hot path optimization
 
-- beta.47 PR #61 final Windows 45083807213 / macOS 45083807201 PASS;
-  merged 7c67549ac4a9022901d566677fc9b43022662eee.
-  Release workflow 45084000358 PASS; all six assets verified.
-- PR #62: primary/secondary icon visual keys and redundant shell updates.
-  Eleven icon assertions. Lazy history loading, streaming newest retained
-  sample and unchanged-record allocation suppression, eight additional
-  assertions. Existing history format/retention unchanged.
-- Windows resource sampler plus new CI smoke step with temporary CSV and
-  no-overwrite check. Actual tray CPU, RAM, GDI and wakeup measurements
-  remain pending; no measured resource improvement claimed.
-  Initial combined Windows 45084378739 / macOS 45084378734 PASS.
-- Next: beta.48 metadata prepared; check final CI and publish only after
-  success. Compare actual Windows builds. Further idle audit in separate branch.
-- HA remains optional and isolated; no MQTT dependency or auto-start.
-- Hardware gates: both AJ159 reports/HAR, multi-BLE, AULA long sleep,
-  backup restore and actual Windows API. No HID reader/parser changes.
+- beta.47 release 45084000358 PASS, six assets verified.
+- PR #62 initial combined Windows 45084378739 / macOS 45084378734 PASS,
+  including 19 icon/history assertions and PowerShell sampler smoke test.
+  beta.48 final candidate 5462e482c1d26d581cc06f58857181de4215df9e;
+  Windows 45085165165 / macOS 45085165171 running.
+- perf/monitor-hot-path based on beta.48 candidate; replaces sorted
+  receiver selection and temporary summary arrays with streaming selection,
+  skips inactive extra tray icon and BLE collections, uses direct USB
+  discovery interval minimum. Ten new assertions; C# CI not yet run.
+  Gateway Python APEX regression 8/8 PASS, git diff --check PASS.
+- Next: verify beta.48 final CI, merge #62 and verify release assets;
+  sync hot-path branch to new main, open draft PR and run CI. Compare real
+  Windows CPU, memory, handles, GDI and wakeups before claiming improvement.
+- HA optional and isolated. Hardware gates unchanged: two AJ159 reports/HAR,
+  multi-BLE, AULA sleep, backup restore and real API acceptance.
