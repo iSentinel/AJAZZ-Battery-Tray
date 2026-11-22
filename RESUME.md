@@ -1,19 +1,15 @@
-# Resume — beta.47 experimental local API candidate
+# Resume — lightweight tray refresh candidate
 
-- beta.46 release 45082464200 PASS, all six assets verified.
-- PR #61 initial full API Windows 45083205204 / macOS 45083205268 PASS.
-  44 snapshot and HTTP assertions; loopback only, ephemeral bearer,
-  request limits, explicit start/stop, no additional HID polls.
-- beta.47 metadata prepared; final CI and publication pending.
-- Next: verify final PR #61 CI and beta.47 assets. Design a secure HA
-  bridge separately; do not bind the tray API to LAN or imply durable
-  entity identity from session slots.
-- Physical acceptance: both AJ159 reports/HAR, multi-BLE, prolonged
-  AULA sleep, backup restore and actual Windows HTTP UI pending.
-
-- Owner explicitly requires opt-in HA and minimal resource usage. Reopened
-  beta.47 before merge to eliminate inactive snapshot projection/storage and
-  inactive update timer. Copy is one-off; start/stop owns API state.
-  Previous final CI 45083360011 / 45083360053 PASS; changed head needs CI.
-  HA development remains isolated; no MQTT dependencies or auto-start.
-  Actual resource measurements on Windows remain pending.
+- beta.47 PR #61 final Windows 45083807213 / macOS 45083807201 PASS;
+  merged 7c67549ac4a9022901d566677fc9b43022662eee. Publication pending.
+  Local API and update timer are inactive without explicit opt-in.
+- Main idle optimization branch: primary/secondary icon visual keys,
+  avoid identical tooltip/status updates, no additional polling or timers.
+  Eleven pure tests added. Resource measurement PowerShell script and
+  controlled Windows comparison documented. CI and actual measurement pending.
+- HA session mapping remains isolated in feat/ha-snapshot-adapter; no
+  integration dependency, startup, network jobs or MQTT in default tray.
+- Next: verify beta.47 publication, draft PR CI and compare Windows idle
+  metrics. Review other idle overhead only with regression protection.
+- Hardware gates: two AJ159 reports/HAR, multi-BLE, AULA long sleep,
+  backup restore and actual Windows API. No HID reader/parser changes.
