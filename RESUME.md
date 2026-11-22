@@ -25,3 +25,13 @@
    hardware becomes available; no speculative HID configuration writes.
 
 Never treat CI as device acceptance. No automatic upload of raw buffers.
+
+## Independent follow-up: feat/battery-analytics
+- Pure BatteryAnalytics.EstimateDrain implemented; consumes only recent
+  contiguous non-increasing online observations, with 15-minute maximum gap,
+  30-minute minimum duration, at least three points and three percentage
+  points of decline. Returns no estimate on insufficient/stale evidence.
+- Eleven pure regression checks added; not integrated into the history UI.
+- Next: expose rate and qualified runtime in the existing local history
+  window, add translations and document uncertainty. No capacity/health claim.
+- Branch depends on polling PR #51; do not merge ahead of its validation.
