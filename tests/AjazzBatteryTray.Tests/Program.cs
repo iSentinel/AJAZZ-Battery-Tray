@@ -217,6 +217,47 @@ aulaCache.Observe(false, false, null, aulaTime.AddSeconds(30));
 Check("AULA uncertain receiver identity invalidates cache",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null);
 
+// Individual notification overrides preserve global defaults and master switch.
+string alertsKeyA = new string('A', 64);
+string alertsKeyB = new string('B', 64);
+var alertsSettings = new AppSettings { AlertBelow50 = false, NotifyOnDisconnect = true };
+var defaults = DeviceAlertPreferences.Resolve(alertsSettings, alertsKeyA);
+Check("Device alerts inherit global defaults", !defaults.Below50 && defaults.Below25 &&
+    defaults.Below10 && defaults.NotifyOnDisconnect);
+alertsSettings.DeviceAlerts[alertsKeyA] = new(true, false, true, false);
+alertsSettings.DeviceAlerts[alertsKeyB] = new(false, true, false, true);
+var prefsA = DeviceAlertPreferences.Resolve(alertsSettings, alertsKeyA);
+var prefsB = DeviceAlertPreferences.Resolve(alertsSettings, alertsKeyB);
+Check("Device notification overrides independent", prefsA.Below50 && !prefsB.Below50 &&
+    !prefsA.NotifyOnDisconnect && prefsB.NotifyOnDisconnect);
+Check("Device low charge uses selected threshold", prefsA.Evaluate(new AlertPolicy(), 49, true) == 50 &&
+    prefsB.Evaluate(new AlertPolicy(), 49, true) is null);
+Check("Global low-battery switch suppresses custom thresholds",
+    prefsA.Evaluate(new AlertPolicy(), 8, false) is null);
+Check("Individual threshold remains strictly below",
+    prefsB.Evaluate(new AlertPolicy(), 25, true) is null &&
+    prefsB.Evaluate(new AlertPolicy(), 24, true) == 25);
+var alertDevicePolicy = new AlertPolicy();
+Check("Device notifications preserve debounce",
+    prefsA.Evaluate(alertDevicePolicy, 49, true) == 50 &&
+    prefsA.Evaluate(alertDevicePolicy, 49, true) is null);
+Check("Other device notification state independent",
+    prefsA.Evaluate(new AlertPolicy(), 49, true) == 50);
+alertsSettings.DeviceAlerts.Remove(alertsKeyA);
+alertsSettings.AlertBelow50 = true;
+Check("Removing override follows changed defaults",
+    DeviceAlertPreferences.Resolve(alertsSettings, alertsKeyA).Below50);
+alertsSettings.DeviceAlerts[DeviceAliasRules.AulaSlot] = prefsA;
+alertsSettings.DeviceAlerts["raw-path"] = prefsB;
+alertsSettings.DeviceAlerts = DeviceAlertPreferences.Clean(alertsSettings.DeviceAlerts);
+Check("Alert preference keys validated", alertsSettings.DeviceAlerts.Count == 2 &&
+    alertsSettings.DeviceAlerts.ContainsKey(DeviceAliasRules.AulaSlot));
+Check("Null notification preference map safe", DeviceAlertPreferences.Clean(null).Count == 0);
+Check("Device alert preferences persist",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(alertsSettings))
+        ?.DeviceAlerts[DeviceAliasRules.AulaSlot] == prefsA);
+
 // Setting a palette changes appearance, not battery status.
 string colorKeyA = new string('A', 64);
 string colorKeyB = new string('B', 64);
