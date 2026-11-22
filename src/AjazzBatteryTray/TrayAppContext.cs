@@ -25,16 +25,23 @@ public sealed class TrayAppContext : ApplicationContext
     private bool _hostMetricsBusy;
     private bool _pnpPreviewBusy;
     private ToolStripMenuItem _aulaStatus = new();
-    private readonly AlertPolicy _alerts = new();
     private readonly ReceiverMonitor _receivers = new();
     private readonly ConnectionAlertPolicy _aulaConnection = new();
     private readonly BatteryHistory _history = new();
     private BatteryHistoryForm? _historyWindow;
     private DeviceDashboardForm? _dashboard;
     private BluetoothBatteryForm? _bluetoothWindow;
-    private readonly BluetoothAutoPolicy _bluetoothPolicy = new();
-    private BluetoothCandidate? _bluetoothSelection;
-    private bool _bluetoothReadInFlight;
+    private sealed record BleSlot(BluetoothCandidate Candidate, int Number, AlertPolicy Alerts);
+    private readonly BluetoothMultiSession _ble = new();
+    private readonly Dictionary<string, BleSlot> _bleSlots = new(StringComparer.Ordinal);
+    private int _bleSequence;
+    private ToolStripMenuItem _bleDevicesMenu = new();
+    private static string BleKey(BluetoothCandidate candidate) => candidate.DeviceId.ToUpperInvariant();
+    private bool BleEnabled => _bleSlots.Count > 0;
+    private string? PrimaryBleKey => _bleSlots.OrderBy(x => x.Value.Number).Select(x => x.Key).FirstOrDefault();
+    private static string BleLabel(BleSlot slot) => $"AJAZZ — Bluetooth #{slot.Number}";
+    private static string BleDisplayLabel(BleSlot slot)
+        => $"{slot.Candidate.DisplayName} (BLE #{slot.Number})";
     private AjazzHidReader.Reading? _latestUsbReading;
     private DateTimeOffset? _latestUsbReadAt;
     private bool _diagnosticsBusy;
@@ -276,7 +283,8 @@ public sealed class TrayAppContext : ApplicationContext
             () => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName),
             () => EditDeviceAlerts(DeviceAliasRules.AulaSlot, AulaName),
             () => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName)));
-        if (_bluetoothPolicy.Enabled) entries.Add(new(BluetoothDashboardState()));
+        foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
+            entries.Add(new(BluetoothDashboardState(pair.Key, pair.Value), Key: $"BLE:{pair.Value.Number}"));
         _dashboard.SetEntries(entries);
     }
 
@@ -293,18 +301,18 @@ public sealed class TrayAppContext : ApplicationContext
             ? state with { Status = DeviceDashboardStatus.ManualReading } : state;
     }
 
-    private DeviceDashboardState BluetoothDashboardState()
+    private DeviceDashboardState BluetoothDashboardState(string key, BleSlot slot)
     {
-        const string name = "AJAZZ — Bluetooth";
+        string name = BleDisplayLabel(slot);
         const string transport = "Bluetooth";
-        if (_latestUsbReading is null || !_latestUsbReading.PresenceKnown)
+        if (_latestUsbReading is not { PresenceKnown: true })
             return new(name, transport, DeviceDashboardStatus.PresenceUnknown, null, null);
         if (_latestUsbReading.ReceiverPresent)
             return new(name, transport, DeviceDashboardStatus.Standby, null, null);
-        int? percent = _bluetoothPolicy.VisiblePercent(false, DateTimeOffset.UtcNow);
+        int? percent = _ble.VisiblePercent(key, true, false, DateTimeOffset.UtcNow);
         return new(name, transport, percent.HasValue
             ? DeviceDashboardStatus.Fresh : DeviceDashboardStatus.NoReply,
-            percent, percent.HasValue ? _bluetoothPolicy.LastSuccessfulRead : null);
+            percent, percent.HasValue ? _ble.LastSuccess(key) : null);
     }
 
     private ToolStripMenuItem BuildBluetoothMenu()
@@ -317,15 +325,18 @@ public sealed class TrayAppContext : ApplicationContext
         _disableBluetooth = new ToolStripMenuItem(
             UiText.Get("Disable Bluetooth tray fallback"))
         {
-            Enabled = _bluetoothSelection is not null
+            Enabled = BleEnabled
         };
-        _disableBluetooth.Click += (_, _) => SelectBluetoothFallback(null, null);
+        _disableBluetooth.Click += (_, _) => DisableAllBluetooth();
         menu.DropDownItems.Add(_disableBluetooth);
         _refreshBluetooth = new ToolStripMenuItem(
             UiText.Get("Refresh Bluetooth battery now"));
         _refreshBluetooth.Click += (_, _) => StartBluetoothPoll(
             _latestUsbReading?.ReceiverPresent ?? false, force: true);
         menu.DropDownItems.Add(_refreshBluetooth);
+        _bleDevicesMenu = new ToolStripMenuItem(UiText.Get("Opted-in BLE devices"));
+        _bleDevicesMenu.DropDownOpening += (_, _) => PopulateBleMenu();
+        menu.DropDownItems.Add(_bleDevicesMenu);
         UpdateBluetoothStatus();
         return menu;
     }
@@ -812,7 +823,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_bluetoothWindow is null || _bluetoothWindow.IsDisposed)
         {
-            _bluetoothWindow = new BluetoothBatteryForm(SelectBluetoothFallback);
+            _bluetoothWindow = new BluetoothBatteryForm(EnableBluetooth, DisableBluetooth, candidate => _bleSlots.ContainsKey(BleKey(candidate)));
             _bluetoothWindow.FormClosing += (_, e) =>
             {
                 if (!_closing)
@@ -826,85 +837,99 @@ public sealed class TrayAppContext : ApplicationContext
         _bluetoothWindow.BringToFront();
     }
 
-    private void SelectBluetoothFallback(BluetoothCandidate? candidate, int? level)
+    private void EnableBluetooth(BluetoothCandidate candidate, BluetoothBatteryResult result, DateTimeOffset readAt)
     {
-        if (candidate is not null && candidate.IsLowEnergy &&
-            level is >= 0 and <= 100)
-        {
-            _bluetoothSelection = candidate;
-            _bluetoothPolicy.Enable(level.Value, DateTimeOffset.UtcNow);
-            _disableBluetooth.Enabled = true;
-        }
-        else
-        {
-            _bluetoothSelection = null;
-            _bluetoothPolicy.Disable();
-            _disableBluetooth.Enabled = false;
-            _bluetoothWindow?.DisableAutomatic();
-        }
-        UpdateBluetoothStatus();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        if (_closing || !candidate.IsLowEnergy || string.IsNullOrWhiteSpace(candidate.DeviceId) ||
+            now < readAt || now - readAt > TimeSpan.FromMinutes(1)) return;
+        string key = BleKey(candidate);
+        if (_bleSlots.ContainsKey(key)) return;
+        _ble.ObserveUsbPresence(_latestUsbReading?.PresenceKnown == true, _latestUsbReading?.ReceiverPresent == true);
+        if (!_ble.Enable(key, result, readAt)) return;
+        _bleSlots[key] = new BleSlot(candidate, ++_bleSequence, new AlertPolicy());
+        RefreshDeviceDisplay();
         PollSoon();
+    }
+
+    private void DisableBluetooth(BluetoothCandidate candidate) => DisableBluetoothKey(BleKey(candidate));
+
+    private void DisableBluetoothKey(string key)
+    {
+        _ble.Disable(key);
+        _bleSlots.Remove(key);
+        _bluetoothWindow?.DisableAutomatic();
+        RefreshDeviceDisplay();
+    }
+
+    private void DisableAllBluetooth()
+    {
+        _ble.DisableAll();
+        _bleSlots.Clear();
+        _bluetoothWindow?.DisableAutomatic();
+        RefreshDeviceDisplay();
+    }
+
+    private void PopulateBleMenu()
+    {
+        foreach (ToolStripItem old in _bleDevicesMenu.DropDownItems.Cast<ToolStripItem>().ToArray()) old.Dispose();
+        _bleDevicesMenu.DropDownItems.Clear();
+        foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
+        {
+            string key = pair.Key;
+            var state = BluetoothDashboardState(key, pair.Value);
+            string value = state.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
+            var item = new ToolStripMenuItem($"{BleDisplayLabel(pair.Value)}: {value}");
+            var read = new ToolStripMenuItem(UiText.Get("Refresh Bluetooth battery now"))
+            {
+                Enabled = !_ble.IsBusy && _latestUsbReading is { PresenceKnown: true, ReceiverPresent: false }
+            };
+            read.Click += (_, _) => StartBluetoothPoll(false, force: true, key: key);
+            item.DropDownItems.Add(read);
+            item.DropDownItems.Add(UiText.Get("Disable selected BLE monitor"), null,
+                (_, _) => DisableBluetoothKey(key));
+            _bleDevicesMenu.DropDownItems.Add(item);
+        }
+        if (_bleDevicesMenu.DropDownItems.Count == 0)
+            _bleDevicesMenu.DropDownItems.Add(new ToolStripMenuItem(UiText.Get("unavailable")) { Enabled = false });
     }
 
     private void UpdateBluetoothStatus()
     {
-        bool usbPresent = _latestUsbReading?.ReceiverPresent ?? false;
-        bool presenceKnown = _latestUsbReading?.PresenceKnown ?? false;
+        bool known = _latestUsbReading?.PresenceKnown == true;
+        bool present = _latestUsbReading?.ReceiverPresent == true;
+        if (!BleEnabled) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: off");
+        else if (!known) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: paused (receiver status unknown)");
+        else if (present) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: standby (USB primary)");
+        else if (_ble.IsBusy) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: checking battery...");
+        else _bluetoothStatus.Text = UiText.Format("Bluetooth monitors: {0}", _bleSlots.Count);
+        _disableBluetooth.Enabled = BleEnabled;
+        _bleDevicesMenu.Enabled = BleEnabled;
+        _refreshBluetooth.Enabled = !_closing && !_ble.IsBusy && BleEnabled && known && !present;
+    }
+
+    private string BleDiagnosticSummary()
+    {
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        if (!_bluetoothPolicy.Enabled)
-            _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: off");
-        else if (!presenceKnown)
-            _bluetoothStatus.Text = UiText.Get(
-                "Bluetooth fallback: paused (receiver status unknown)");
-        else if (usbPresent)
-            _bluetoothStatus.Text = UiText.Get(
-                "Bluetooth fallback: standby (USB primary)");
-        else if (_bluetoothReadInFlight)
-            _bluetoothStatus.Text = UiText.Get(
-                "Bluetooth fallback: checking battery...");
-        else if (_bluetoothPolicy.VisiblePercent(false, now) is int percent)
-            _bluetoothStatus.Text = UiText.Format(
-                "Bluetooth fallback: {0}% (fresh GATT)", percent);
-        else
-            _bluetoothStatus.Text = UiText.Format(
-                "Bluetooth fallback: unavailable ({0} failed; last good {1})",
-                _bluetoothPolicy.ConsecutiveFailures,
-                _bluetoothPolicy.LastSuccessfulRead?.ToLocalTime()
-                    .ToString("HH:mm:ss") ?? "never");
-        _refreshBluetooth.Enabled = !_closing && !_bluetoothReadInFlight &&
-            presenceKnown && _bluetoothSelection is not null &&
-            _bluetoothPolicy.CanRefreshNow(usbPresent);
+        bool known = _latestUsbReading?.PresenceKnown == true;
+        bool present = _latestUsbReading?.ReceiverPresent == true;
+        return string.Join("\n", _bleSlots.OrderBy(x => x.Value.Number).Select(x =>
+            $"{BleLabel(x.Value)}: battery={_ble.VisiblePercent(x.Key, known, present, now)?.ToString() ?? "unavailable"}; " +
+            $"failures={_ble.Failures(x.Key)}; last attempt UTC={_ble.LastAttempt(x.Key)?.ToString("O") ?? "never"}; " +
+            $"last success UTC={_ble.LastSuccess(x.Key)?.ToString("O") ?? "never"}"));
     }
 
     private void CopyBluetoothStatus()
     {
-        string usb = _latestUsbReading is null ? "not checked" :
-            !_latestUsbReading.PresenceKnown ? "unknown (HID error)" :
+        string usb = _latestUsbReading is not { PresenceKnown: true } ? "unknown" :
             _latestUsbReading.ReceiverPresent ? "present" : "absent";
-        string last = _bluetoothPolicy.LastSuccessfulRead?.ToString("O") ?? "never";
-        string attempt = _bluetoothPolicy.LastAttempt?.ToString("O") ?? "never";
         string report = "AJAZZ Bluetooth monitor status\n" +
-            $"App version: {Application.ProductVersion}\n" +
-            $"Auto fallback: {_bluetoothPolicy.Enabled}\n" +
-            $"USB receiver: {usb}\n" +
-            $"Displayed device: {_lastDevice}\n" +
-            $"Displayed source: {_lastSource}\n" +
-            $"Displayed percent: {_lastPercent?.ToString() ?? "unknown"}\n" +
-            $"GATT request pending: {_bluetoothReadInFlight}\n" +
-            $"Consecutive failed reads: {_bluetoothPolicy.ConsecutiveFailures}\n" +
-            $"Automatic retry (minutes): " +
-            $"{BluetoothAutoPolicy.RetryInterval(_bluetoothPolicy.ConsecutiveFailures).TotalMinutes}\n" +
-            $"Last GATT attempt (UTC): {attempt}\n" +
-            $"Last successful GATT (UTC): {last}\n" +
-            "No Bluetooth addresses, serial numbers or device IDs are included.";
-        try
-        {
-            Clipboard.SetText(report);
-        }
+            $"App version: {Application.ProductVersion}\nUSB receiver: {usb}\n" +
+            $"Opted-in devices: {_bleSlots.Count}\nGATT request pending: {_ble.IsBusy}\n" +
+            BleDiagnosticSummary() + "\nNo Bluetooth addresses, serial numbers or device IDs are included.";
+        try { Clipboard.SetText(report); }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Bluetooth status clipboard unavailable: " +
-                error.GetType().Name);
+            FileLog.Write("WARN", "Bluetooth status clipboard unavailable: " + error.GetType().Name);
         }
     }
 
@@ -1007,8 +1032,8 @@ public sealed class TrayAppContext : ApplicationContext
             $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n" +
             AulaCacheReport() + "\n\n" +
             "[Bluetooth fallback state]\n" +
-            $"Enabled: {_bluetoothPolicy.Enabled}; displayed device: {_lastDevice}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
-            $"GATT failures: {_bluetoothPolicy.ConsecutiveFailures}; last success UTC: {_bluetoothPolicy.LastSuccessfulRead?.ToString("O") ?? "never"}\n" +
+            $"Enabled: {BleEnabled}; displayed device: {_lastDevice}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
+            $"Opted-in BLE devices: {_bleSlots.Count}; request pending: {_ble.IsBusy}\n" + BleDiagnosticSummary() + "\n" +
             "\nNo device paths, serial numbers, Bluetooth addresses, usernames, or raw report payloads are included.\n" +
             "Collection does not issue additional HID commands or scan Bluetooth devices.";
     }
@@ -1188,58 +1213,39 @@ public sealed class TrayAppContext : ApplicationContext
         return (batch, true, sent);
     }
 
-    private void StartBluetoothPoll(bool receiverPresent, bool force = false)
+    private void StartBluetoothPoll(bool receiverPresent, bool force = false, string? key = null)
     {
-        BluetoothCandidate? selected = _bluetoothSelection;
-        if (_latestUsbReading is not { PresenceKnown: true }) return;
-        if (_closing || _bluetoothReadInFlight || selected is null ||
-            !_bluetoothPolicy.CanRefreshNow(receiverPresent) ||
-            (!force && !_bluetoothPolicy.ShouldRead(receiverPresent,
-                DateTimeOffset.UtcNow)))
-            return;
-
-        _bluetoothReadInFlight = true;
+        if (_closing || _latestUsbReading is not { PresenceKnown: true, ReceiverPresent: false }) return;
+        var request = _ble.TryBegin(true, receiverPresent, DateTimeOffset.UtcNow,
+            force ? key ?? PrimaryBleKey : null);
+        if (request is null || !_bleSlots.TryGetValue(request.Key, out var slot)) return;
         UpdateBluetoothStatus();
-        _ = PollBluetoothFallbackAsync(selected, _bluetoothPolicy.Generation);
+        _ = PollBluetoothFallbackAsync(slot, request);
     }
 
-    private async Task PollBluetoothFallbackAsync(
-        BluetoothCandidate selected, int generation)
+    private async Task PollBluetoothFallbackAsync(BleSlot slot, BluetoothMultiSession.Request request)
     {
         BluetoothBatteryResult response;
         try
         {
             response = await BluetoothOperationTimeout.Run(
-                BluetoothBatteryReader.ReadAsync(selected), TimeSpan.FromSeconds(12));
+                BluetoothBatteryReader.ReadAsync(slot.Candidate), TimeSpan.FromSeconds(12));
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Bluetooth fallback read failed: " +
-                error.GetType().Name);
-            response = new BluetoothBatteryResult(null,
-                BluetoothBatterySource.Unavailable, "Read failed.");
+            FileLog.Write("WARN", "Bluetooth fallback read failed: " + error.GetType().Name);
+            response = new BluetoothBatteryResult(null, BluetoothBatterySource.Unavailable, "Read failed.");
         }
-        finally
-        {
-            _bluetoothReadInFlight = false;
-            if (!_closing) UpdateBluetoothStatus();
-        }
-
-        if (!IsCurrentBluetoothRequest(selected, generation)) return;
-        _bluetoothPolicy.RecordRead(response, DateTimeOffset.UtcNow);
-        if (_latestUsbReading is { PresenceKnown: true, ReceiverPresent: false })
-        {
-            if (response.IsFreshGatt && response.Percent.HasValue)
-                ShowLowBatteryAlert(response.Percent.Value, "Bluetooth");
-        }
-        if (_latestUsbReading is not null)
-            UpdateTrayDisplay(_latestUsbReading);
+        if (_closing) return;
+        bool known = _latestUsbReading?.PresenceKnown == true;
+        bool present = _latestUsbReading?.ReceiverPresent == true;
+        if (_ble.Complete(request, response, DateTimeOffset.UtcNow, known, present) &&
+            response.IsFreshGatt && response.Percent is int percent)
+            ShowLowBatteryAlert(slot, percent);
+        RefreshDeviceDisplay();
+        // Continue with another due device, not another read of the same slot.
+        if (known && !present) StartBluetoothPoll(false);
     }
-
-    private bool IsCurrentBluetoothRequest(
-        BluetoothCandidate selected, int generation)
-        => !_closing && _bluetoothSelection == selected &&
-           _bluetoothPolicy.Enabled && _bluetoothPolicy.Generation == generation;
 
     private void ApplyClockResult(bool attempted, bool succeeded)
     {
@@ -1266,7 +1272,8 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void ApplyReading(AjazzHidReader.Batch batch)
     {
-        _receivers.Apply(batch, _settings, _tray, _bluetoothPolicy.Enabled,
+        _ble.ObserveUsbPresence(batch.Summary.PresenceKnown, batch.Summary.ReceiverPresent);
+        _receivers.Apply(batch, _settings, _tray, BleEnabled,
             DateTimeOffset.UtcNow);
         _latestUsbReading = batch.Summary.PresenceKnown && _receivers.SummaryState is { } primary
             ? primary.Reading with { Attempts = batch.Summary.Attempts,
@@ -1276,16 +1283,16 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     /// <summary>Notify only for a fresh, currently selected battery source.</summary>
-    private void ShowLowBatteryAlert(int percent, string source)
+    private void ShowLowBatteryAlert(BleSlot slot, int percent)
     {
-        int? level = _alerts.Evaluate(percent,
+        int? level = slot.Alerts.Evaluate(percent,
             _settings.NotificationsEnabled && _settings.AlertBelow50,
             _settings.NotificationsEnabled && _settings.AlertBelow25,
             _settings.NotificationsEnabled && _settings.AlertBelow10);
         if (!level.HasValue) return;
         _tray.ShowBalloonTip(5000, UiText.Get("AJAZZ APEX: low battery"),
             UiText.Format("Mouse battery is {0}% ({1}); below {2}%.",
-                percent, source, level),
+                percent, "Bluetooth #" + slot.Number, level),
             ToolTipIcon.Warning);
     }
 
@@ -1299,12 +1306,13 @@ public sealed class TrayAppContext : ApplicationContext
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
     private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
     {
-        int? blePercent = reading.PresenceKnown
-            ? _bluetoothPolicy.VisiblePercent(
+        string? primaryBle = PrimaryBleKey;
+        int? blePercent = primaryBle is not null
+            ? _ble.VisiblePercent(primaryBle, reading.PresenceKnown,
                 reading.ReceiverPresent, DateTimeOffset.UtcNow) : null;
         BatteryDisplayState display = BatteryDisplayState.Resolve(
             reading.ReceiverPresent, reading.Percent,
-            _bluetoothPolicy.Enabled, blePercent, reading.PresenceKnown);
+            BleEnabled, blePercent, reading.PresenceKnown);
         bool aulaPresent = _settings.MonitorAulaL99 &&
             _aulaLatest is { ReceiverPresent: true, PresenceKnown: true };
         bool showAula = aulaPresent && IsTrayVisible(DeviceAliasRules.AulaSlot);
@@ -1313,12 +1321,13 @@ public sealed class TrayAppContext : ApplicationContext
         int? aulaLevel = AulaDisplayPercent();
         bool aulaStale = _aulaLatest?.Percent is null && aulaLevel.HasValue;
         bool bluetoothPrimary = reading.PresenceKnown &&
-            !reading.ReceiverPresent && _bluetoothPolicy.Enabled;
+            !reading.ReceiverPresent && BleEnabled;
         bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary;
         bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary &&
             (reading.ReceiverPresent || aulaPresent);
 
-        string device = receiver?.Label ?? "AJAZZ APEX";
+        string device = bluetoothPrimary && primaryBle is not null ? BleLabel(_bleSlots[primaryBle]) :
+            receiver?.Label ?? "AJAZZ APEX";
         int? displayPercent = receiver is not null && reading.PresenceKnown
             ? receiver.Reading.Percent : display.Percent;
         string source = display.SourceName;
@@ -1349,7 +1358,8 @@ public sealed class TrayAppContext : ApplicationContext
         _lastSource = source;
         _lastDevice = device;
         _lastStale = stale;
-        string displayName = aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device;
+        string displayName = bluetoothPrimary && primaryBle is not null ? BleDisplayLabel(_bleSlots[primaryBle]) :
+            aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device;
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
         else if (displayConnected && !aulaIsPrimary && receiver?.ScheduledSkip == true)
@@ -1395,8 +1405,8 @@ public sealed class TrayAppContext : ApplicationContext
         _timer.Dispose();
         _aulaTimer.Stop();
         _aulaTimer.Dispose();
-        _bluetoothSelection = null;
-        _bluetoothPolicy.Disable();
+        _ble.DisableAll();
+        _bleSlots.Clear();
         _dashboard?.Close();
         _historyWindow?.Close();
         _aulaHistoryWindow?.Close();
