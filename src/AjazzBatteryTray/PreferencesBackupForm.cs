@@ -3,10 +3,13 @@ using System.Windows.Forms;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Local export and validated preview; never changes active preferences.</summary>
+/// <summary>Local export, validated preview and explicit restore selection.</summary>
 internal sealed class PreferencesBackupForm : Form
 {
     private readonly AppSettings _settings;
+    private readonly Button _restore = new() { AutoSize = true, Enabled = false };
+    private PreferencesBackup? _selected;
+    internal PreferencesBackup? SelectedBackup { get; private set; }
     private readonly TextBox _preview = new() { Multiline = true, ReadOnly = true,
         ScrollBars = ScrollBars.Vertical, Width = 450, Height = 270 };
 
@@ -27,9 +30,11 @@ internal sealed class PreferencesBackupForm : Form
         export.Click += (_, _) => Export();
         var preview = new Button { AutoSize = true, Text = UiText.Get("Preview backup...") };
         preview.Click += (_, _) => Preview();
+        _restore.Text = UiText.Get("Restore previewed preferences...");
+        _restore.Click += (_, _) => ConfirmRestore();
         var close = new Button { AutoSize = true, Text = UiText.Get("Close") };
         close.Click += (_, _) => Close();
-        panel.Controls.AddRange(new Control[] { export, preview, _preview, close });
+        panel.Controls.AddRange(new Control[] { export, preview, _preview, _restore, close });
         Controls.Add(panel);
         ShowPreview(PreferencesBackup.Capture(settings));
     }
@@ -58,11 +63,29 @@ internal sealed class PreferencesBackupForm : Form
             RestoreDirectory = true, CheckFileExists = true, Multiselect = false,
             DereferenceLinks = false };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        try { ShowPreview(PreferencesBackup.ReadFile(dialog.FileName)); }
+        _selected = null;
+        _restore.Enabled = false;
+        try
+        {
+            _selected = PreferencesBackup.ReadFile(dialog.FileName);
+            ShowPreview(_selected);
+            _restore.Enabled = true;
+        }
         catch (Exception)
         {
             _preview.Text = UiText.Get("Invalid or unsupported preferences backup.");
         }
+    }
+
+    private void ConfirmRestore()
+    {
+        if (_selected is null) return;
+        if (MessageBox.Show(this, UiText.Get("Replace global preferences with the previewed values? Existing device settings and update consent are preserved. Notification preferences may resume already authorized checks."),
+            Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+            MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+        SelectedBackup = _selected;
+        DialogResult = DialogResult.OK;
+        Close();
     }
 
     private void ShowPreview(PreferencesBackup value)
