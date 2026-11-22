@@ -10,8 +10,9 @@
 - Windows resource sampler plus new CI smoke step with temporary CSV and
   no-overwrite check. Actual tray CPU, RAM, GDI and wakeup measurements
   remain pending; no measured resource improvement claimed.
-- Next: check latest PR #62 Windows/macOS CI, prepare beta.48 metadata
-  only after success, final CI and publish. Compare actual Windows builds.
+  Initial combined Windows 45084378739 / macOS 45084378734 PASS.
+- Next: beta.48 metadata prepared; check final CI and publish only after
+  success. Compare actual Windows builds. Further idle audit in separate branch.
 - HA remains optional and isolated; no MQTT dependency or auto-start.
 - Hardware gates: both AJ159 reports/HAR, multi-BLE, AULA long sleep,
   backup restore and actual Windows API. No HID reader/parser changes.

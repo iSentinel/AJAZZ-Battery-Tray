@@ -3,7 +3,10 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.47 (experimental local battery API candidate).
+**Version:** v0.3.0-beta.48 (lightweight tray and history candidate).
+
+See [resource optimization and measurement](docs/RESOURCE_OPTIMIZATION.md)
+for the controlled Windows comparison procedure.
 
 Use **Diagnostics > Local battery API...** for an explicitly started,
 loopback-only authenticated battery snapshot. See [API documentation](docs/LOCAL_API.md).

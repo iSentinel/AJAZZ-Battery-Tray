@@ -428,5 +428,6 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Skip equivalent primary and secondary icon rendering and redundant shell updates.
 - [x] Defer history file reads, stream newest retained row and skip unchanged sample allocation.
 - [x] Add eleven icon and eight history assertions; resource sampler and CI smoke step.
-- [ ] Combined CI, beta.48 release metadata and publication.
+- [x] Combined Windows 45084378739 / macOS 45084378734 PASS.
+- [ ] Final beta.48 CI and publication.
 - [ ] Real Windows resource comparison and visual/hardware acceptance.
