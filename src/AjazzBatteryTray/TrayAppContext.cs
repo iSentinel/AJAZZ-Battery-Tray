@@ -117,6 +117,7 @@ public sealed class TrayAppContext : ApplicationContext
         if (!EditLocalName(DeviceAliasRules.AulaSlot, "AULA L99")) return;
         _aulaHistoryWindow?.Dispose();
         _aulaHistoryWindow = null;
+        UpdateAulaStatus();
         RefreshDeviceDisplay();
     }
 
@@ -226,6 +227,7 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem BuildAulaMenu()
     {
         ToolStripMenuItem menu = new(UiText.Get("AULA L99 (experimental)"));
+        menu.DropDownOpening += (_, _) => UpdateAulaStatus();
         _aulaStatus = new ToolStripMenuItem { Enabled = false };
         menu.DropDownItems.Add(_aulaStatus);
         menu.DropDownItems.Add(UiText.Get("Read AULA battery once"), null,
@@ -350,6 +352,8 @@ public sealed class TrayAppContext : ApplicationContext
                 _aulaBattery.LastGoodAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
         else
             _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
+        if (_settings.DeviceAliases.TryGetValue(DeviceAliasRules.AulaSlot, out string? alias))
+            _aulaStatus.Text = alias + " — " + _aulaStatus.Text;
     }
 
     private int? AulaDisplayPercent()
@@ -380,7 +384,7 @@ public sealed class TrayAppContext : ApplicationContext
                 if (result.PresenceKnown && _aulaConnection.Evaluate(
                         result.Percent.HasValue, result.ReceiverPresent) &&
                     _settings.NotifyOnDisconnect)
-                    _tray.ShowBalloonTip(4000, "AULA L99",
+                    _tray.ShowBalloonTip(4000, AulaName,
                         UiText.Get("The 2.4 GHz receiver is no longer detected."),
                         ToolTipIcon.Warning);
                 if (result.Percent is int percent) NotifyAulaBattery(percent);
@@ -414,7 +418,7 @@ public sealed class TrayAppContext : ApplicationContext
             _settings.NotificationsEnabled && _settings.AlertBelow25,
             _settings.NotificationsEnabled && _settings.AlertBelow10);
         if (!threshold.HasValue) return;
-        _tray.ShowBalloonTip(5000, UiText.Get("AULA L99: low battery"),
+        _tray.ShowBalloonTip(5000, AulaName + " — " + UiText.Get("Low battery notifications"),
             UiText.Format("Keyboard battery is {0}%; below {1}%.",
                 percent, threshold), ToolTipIcon.Warning);
     }
