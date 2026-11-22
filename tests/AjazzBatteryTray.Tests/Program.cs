@@ -106,6 +106,22 @@ Check("Poll settings persist", pollRoundtrip?.EffectivePollInterval(fastPollKey)
     pollRoundtrip.EffectivePollInterval(DeviceAliasRules.AulaSlot) == 120);
 pollSettings.DevicePollIntervals.Remove(fastPollKey);
 Check("Interval reset inherits", pollSettings.EffectivePollInterval(fastPollKey) == 60);
+var scheduleMeasurement = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
+var scheduledDashboard = DeviceDashboardState.FromPoll("Mouse", "2.4 GHz",
+    true, true, true, 83, scheduleMeasurement, scheduled: true);
+Check("Scheduled display preserves measurement time and percent",
+    scheduledDashboard.Status == DeviceDashboardStatus.Scheduled &&
+    scheduledDashboard.MeasuredAt == scheduleMeasurement && scheduledDashboard.Percent == 83);
+Check("Scheduled flag cannot hide confirmed disconnect",
+    DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, true, false,
+        83, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.Disconnected);
+Check("Scheduled flag cannot hide unknown presence",
+    DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, false, true,
+        83, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.PresenceUnknown);
+Check("Scheduled flag cannot invent a valid reply",
+    DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, true, true,
+        null, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.NoReply);
+
 
 
 Check("Separate tray icons default on", new AppSettings().MultipleTrayIcons);
