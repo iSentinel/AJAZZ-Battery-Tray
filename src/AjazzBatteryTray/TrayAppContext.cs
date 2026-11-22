@@ -80,8 +80,8 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(UiText.Get("Device Manager"), null, (_, _) => ShowDashboard());
         menu.Items.Add(UiText.Get("Refresh now"), null, (_, _) => PollSoon());
         _devicesMenu = new ToolStripMenuItem(UiText.Get("AJAZZ receivers"));
-        _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName);
-        _receivers.PopulateMenu(_devicesMenu, EditReceiverName);
+        _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible, ToggleTrayVisibility);
+        _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible, ToggleTrayVisibility);
         menu.Items.Add(_devicesMenu);
         menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
@@ -137,6 +137,25 @@ public sealed class TrayAppContext : ApplicationContext
         return false;
     }
 
+    private bool IsTrayVisible(string key)
+        => TrayVisibilityRules.IsVisible(_settings.HiddenTrayDevices, key);
+
+    private void ToggleTrayVisibility(string key)
+    {
+        if (_closing || !DeviceAliasRules.ValidKey(key)) return;
+        bool wasVisible = IsTrayVisible(key);
+        if (wasVisible) _settings.HiddenTrayDevices.Add(key);
+        else _settings.HiddenTrayDevices.Remove(key);
+        if (!_settings.Save())
+        {
+            if (wasVisible) _settings.HiddenTrayDevices.Remove(key);
+            else _settings.HiddenTrayDevices.Add(key);
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        RefreshDeviceDisplay();
+    }
+
     private void ShowDashboard()
     {
         if (_closing) return;
@@ -160,7 +179,8 @@ public sealed class TrayAppContext : ApplicationContext
                 true, reading.PresenceKnown, receiver.Present, reading.Percent,
                 _latestUsbReadAt);
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
-                () => EditReceiverName(receiver)));
+                () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
+                () => ToggleTrayVisibility(receiver.Key)));
         }
         if (entries.Count == 0)
         {
@@ -170,7 +190,8 @@ public sealed class TrayAppContext : ApplicationContext
                 reading?.ReceiverPresent == true, reading?.Percent, _latestUsbReadAt)));
         }
         entries.Add(new(AulaDashboardState(), ShowAulaHistory, DeviceAliasRules.AulaSlot,
-            EditAulaName));
+            EditAulaName, IsTrayVisible(DeviceAliasRules.AulaSlot),
+            () => ToggleTrayVisibility(DeviceAliasRules.AulaSlot)));
         if (_bluetoothPolicy.Enabled) entries.Add(new(BluetoothDashboardState()));
         _dashboard.SetEntries(entries);
     }
@@ -252,6 +273,15 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(auto);
         menu.DropDownItems.Add(UiText.Get("Edit local name..."), null,
             (_, _) => EditAulaName());
+        ToolStripMenuItem visibility = new(UiText.Get("Show device in tray"));
+        menu.DropDownOpening += (_, _) =>
+            visibility.Checked = IsTrayVisible(DeviceAliasRules.AulaSlot);
+        visibility.Click += (_, _) =>
+        {
+            ToggleTrayVisibility(DeviceAliasRules.AulaSlot);
+            visibility.Checked = IsTrayVisible(DeviceAliasRules.AulaSlot);
+        };
+        menu.DropDownItems.Add(visibility);
         menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
             (_, _) => ShowAulaHistory());
         menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
@@ -1097,14 +1127,19 @@ public sealed class TrayAppContext : ApplicationContext
         BatteryDisplayState display = BatteryDisplayState.Resolve(
             reading.ReceiverPresent, reading.Percent,
             _bluetoothPolicy.Enabled, blePercent, reading.PresenceKnown);
-        bool showAula = _settings.MonitorAulaL99 &&
+        bool aulaPresent = _settings.MonitorAulaL99 &&
             _aulaLatest is { ReceiverPresent: true, PresenceKnown: true };
+        bool showAula = aulaPresent && IsTrayVisible(DeviceAliasRules.AulaSlot);
+        var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons,
+            _settings.HiddenTrayDevices);
         int? aulaLevel = AulaDisplayPercent();
         bool aulaStale = _aulaLatest?.Percent is null && aulaLevel.HasValue;
-        bool aulaIsPrimary = showAula && reading.PresenceKnown &&
-            !reading.ReceiverPresent && !_bluetoothPolicy.Enabled;
-        var receiver = _settings.MultipleTrayIcons
-            ? _receivers.PrimaryState : _receivers.SummaryState;
+        bool bluetoothPrimary = reading.PresenceKnown &&
+            !reading.ReceiverPresent && _bluetoothPolicy.Enabled;
+        bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary;
+        bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary &&
+            (reading.ReceiverPresent || aulaPresent);
+
         string device = receiver?.Label ?? "AJAZZ APEX";
         int? displayPercent = receiver is not null && reading.PresenceKnown
             ? receiver.Reading.Percent : display.Percent;
@@ -1114,6 +1149,12 @@ public sealed class TrayAppContext : ApplicationContext
             device = "AULA L99";
             displayPercent = aulaLevel;
             source = "2.4 GHz";
+        }
+        if (neutral)
+        {
+            device = "Device Manager";
+            source = "";
+            displayPercent = null;
         }
         bool displayConnected = displayPercent.HasValue;
         bool stale = aulaIsPrimary && aulaStale;
@@ -1133,20 +1174,21 @@ public sealed class TrayAppContext : ApplicationContext
         string displayName = aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device;
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
-        _statusItem.Text = $"{displayName} — {source}: {value}";
-        string tooltip = $"{value} — {displayName} ({source})";
+        _statusItem.Text = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
+        string tooltip = neutral ? UiText.Get("Device Manager") : $"{value} — {displayName} ({source})";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
-        UpdateIcon(displayPercent, displayConnected, stale);
+        UpdateIcon(displayPercent, displayConnected, stale, neutral);
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
-                aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName);
+                aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
+                receiver?.Key, _settings.HiddenTrayDevices);
         UpdateBluetoothStatus();
         RefreshDashboard();
     }
 
-    private void UpdateIcon(int? percent, bool connected, bool stale = false)
+    private void UpdateIcon(int? percent, bool connected, bool stale = false, bool neutral = false)
     {
-        Icon next = TrayIconFactory.Create(percent, connected, stale);
+        Icon next = TrayIconFactory.Create(percent, connected, stale, neutral);
         Icon? previous = _icon;
         _icon = next;
         _tray.Icon = next;
