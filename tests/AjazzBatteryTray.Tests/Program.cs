@@ -55,6 +55,25 @@ Check("Diagnostic header excludes remaining payload",
 Check("Diagnostic short header", DiagnosticHidIdentity.BatteryHeader(
     new byte[] { 5, 0 }) == "0500");
 
+Check("Separate tray icons default on", new AppSettings().MultipleTrayIcons);
+Check("Primary stable despite enumeration order",
+    ReceiverIdentity.SelectPrimary("b", new[] { "c", "b", "a" }) == "b");
+Check("Primary replaced after unplug",
+    ReceiverIdentity.SelectPrimary("b", new[] { "c", "a", "a" }) == "a");
+Check("No primary when every receiver unplugged",
+    ReceiverIdentity.SelectPrimary("a", Array.Empty<string>()) is null);
+Check("Receiver identity stable regardless of path case",
+    ReceiverIdentity.LocalKey("HID#ReceiverA") == ReceiverIdentity.LocalKey("hid#receivera"));
+Check("Distinct receivers keep distinct local histories",
+    ReceiverIdentity.LocalKey("HID#ReceiverA") != ReceiverIdentity.LocalKey("HID#ReceiverB"));
+Check("Local receiver key does not expose device path",
+    ReceiverIdentity.LocalKey("private-receiver-path").Length == 64 &&
+    !ReceiverIdentity.LocalKey("private-receiver-path").Contains("private"));
+Check("AJ159 revision label", ReceiverIdentity.Label(0x0300).Contains("AJ159"));
+Check("AJ179 revision label", ReceiverIdentity.Label(0x0002).Contains("AJ179"));
+Check("Unknown revision remains generic", ReceiverIdentity.Label(0x4321) == "AJAZZ (rev. 4321)");
+Check("Missing revision remains generic", ReceiverIdentity.Label(null) == "AJAZZ (unknown revision)");
+
 AlertPolicy policy = new();
 Check("normal battery no alert", policy.Evaluate(75) is null);
 Check("at 50 is not below 50", policy.Evaluate(50) is null);

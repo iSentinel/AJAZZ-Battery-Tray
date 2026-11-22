@@ -11,34 +11,54 @@ public sealed class AjazzHidReader
         string Details, bool PresenceKnown = true,
         IReadOnlyList<string>? Attempts = null);
 
-    public Reading Read()
+    /// <summary>One receiver, identified locally; never export Key.</summary>
+    public sealed record ReceiverReading(string Key, ushort? Revision, Reading Reading);
+
+    public sealed record Batch(Reading Summary, IReadOnlyList<ReceiverReading> Receivers);
+
+    public static ReceiverReading? Primary(IReadOnlyList<ReceiverReading> receivers)
+        => receivers.FirstOrDefault(x => x.Reading.Percent.HasValue)
+            ?? receivers.FirstOrDefault();
+
+    public Batch ReadAll()
     {
         List<string> attempts = new();
+        List<ReceiverReading> receivers = new();
         try
         {
             IReadOnlyList<string> paths = HidNative.FindAjazzPaths();
             attempts.Add($"Matching MI_02 paths: {paths.Count}");
-            foreach (string path in paths)
+            foreach (string path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
             {
-                Reading? reading = QueryPath(path, attempts);
-                if (reading?.Percent is not null)
+                List<string> trace = new();
+                Reading? reading;
+                ushort? revision = null;
+                try
                 {
-                    return reading with { Attempts = attempts.ToArray() };
+                    reading = QueryPath(path, trace, out revision);
                 }
+                catch (Exception error)
+                {
+                    trace.Add("  Receiver poll exception: " + error.GetType().Name);
+                    reading = null;
+                }
+                reading ??= new Reading(true, null, "HID collection unavailable");
+                receivers.Add(new ReceiverReading(ReceiverIdentity.LocalKey(path),
+                    revision, reading with { Attempts = trace.ToArray() }));
+                attempts.AddRange(trace);
             }
 
-            return paths.Count > 0
-                ? new Reading(true, null, "Receiver found; mouse may be asleep",
-                    Attempts: attempts.ToArray())
-                : new Reading(false, null, "Receiver not found",
-                    Attempts: attempts.ToArray());
+            Reading summary = Primary(receivers)?.Reading
+                ?? new Reading(paths.Count > 0, null, paths.Count > 0
+                    ? "Receiver found; mouse may be asleep" : "Receiver not found");
+            return new Batch(summary with { Attempts = attempts.ToArray() }, receivers);
         }
         catch (Exception error)
         {
+            FileLog.Write("WARN", "HID read failed: " + error.GetType().Name);
             attempts.Add("Poll exception: " + error.GetType().Name);
-            FileLog.Write("WARN", "HID read failed", error);
-            return new Reading(false, null, "HID read error; see log",
-                PresenceKnown: false, Attempts: attempts.ToArray());
+            return new Batch(new Reading(false, null, "HID read error; see log",
+                PresenceKnown: false, Attempts: attempts.ToArray()), Array.Empty<ReceiverReading>());
         }
     }
 
@@ -77,8 +97,9 @@ public sealed class AjazzHidReader
         return false;
     }
 
-    private static Reading? QueryPath(string path, List<string> attempts)
+    private static Reading? QueryPath(string path, List<string> attempts, out ushort? revision)
     {
+        revision = null;
         attempts.Add($"Interface: {DiagnosticHidIdentity.FromPath(path)}");
         using SafeFileHandle handle = HidNative.Open(path);
         if (handle.IsInvalid)
@@ -98,6 +119,15 @@ public sealed class AjazzHidReader
             return null;
         }
 
+        var attributes = HidNative.GetAttributes(handle);
+        revision = attributes?.VersionNumber;
+        if (attributes is { } identity &&
+            (identity.VendorID != 0x3151 || identity.ProductID != 0x5007))
+        {
+            attempts.Add("  Descriptor VID/PID mismatch; skipped");
+            return null;
+        }
+        attempts.Add($"  USB revision: {(revision.HasValue ? $"0x{revision:X4}" : "unknown")}");
         attempts.Add($"  Feature report size: {caps.FeatureReportByteLength}");
         int[] lengths = { caps.FeatureReportByteLength, 65, 67 };
         foreach (int length in lengths.Distinct())

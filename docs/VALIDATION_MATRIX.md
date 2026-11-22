@@ -8,18 +8,21 @@ is not evidence that a dock clock or wireless handover works on hardware.
 
 | Capability | Code / CI | Physical validation |
 | --- | --- | --- |
-| Windows L99 2.4 GHz battery via `05AC:024F MI_03` | Battery-only protocol and UI implemented; CI required | **Pending**: must verify exact dongle interface and fresh response |
+| Windows L99 2.4 GHz battery via `05AC:024F MI_03` | Battery-only protocol and UI implemented; CI required | **Confirmed on owner's L99:** FF60:0061, 33-byte input/output, fresh 100% twice on 2026-11-22 |
 | Windows L99 history / notifications | Separate file and debouncing implemented | **Pending**: no device test |
 | AULA L99 vs S75 Pro identity | Shared receiver IDs; explicitly unverified in UI | **Pending**: vendor ID cannot uniquely identify model |
 | macOS L99 | Not implemented | Not tested |
 
 ## AJ159 investigation — 2026-11-22
 
-User reported unavailable AJ159 2.4 GHz battery; only AJ179 was previously
-tested. This is not an established regression. Extended Windows diagnostics
-are implemented to identify alternate receiver PIDs and the last supported
-poll failure, with local Save As. Real desktop Save As and AJ159 report
-remain pending. No new receiver write commands have been enabled.
+Owner returned two local Save As reports. AJ159 alone: revision 0300,
+3151:5007 MI_02 FFFF:0002, feature length 65; F7/05 returned 95%.
+Both receivers: revisions 0300 and 0002, one 100% response (model not
+distinguished by beta.27). AJ179 revision inferred by receiver removal.
+These observations do not establish universal revision-to-model mappings.
+Windows beta.28 independent sampling and optional multiple tray icons
+are implemented; simultaneous hardware acceptance and CI remain pending.
+No new receiver write commands have been enabled.
 
 ## Evidence snapshot — 2026-11-06
 
@@ -36,7 +39,7 @@ remain pending. No new receiver write commands have been enabled.
 
 | USB receiver disconnect and reconnect | State-handling code and unit tests | **Pending:** real sleep/replug matrix |
 | Dock time and date sync | Documented 0x28 report implemented and tested | **Pending:** visibly confirm clock update on dock screen |
-| AJ159 APEX via 8K receiver | Experimental shared-receiver implementation | **Pending:** actual AJ159 hardware |
+| AJ159 APEX via 8K receiver | Experimental shared-receiver implementation | **Confirmed:** owner's AJ159 returned 95% via F7/05 on Windows |
 | AJ159 APEX via Bluetooth | Standard Battery Service inspector available | **Pending:** actual AJ159 hardware |
 | macOS battery / dock RTC | Swift universal build and self-tests PASS | **Pending:** real AJ179/AJ159 on a Mac |
 | macOS Bluetooth and notifications | Manual CoreBluetooth and notification code build PASS | **Pending:** actual device and OS permission prompts |

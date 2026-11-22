@@ -7,6 +7,9 @@ public static class UiText
     {
         ["Connecting..."] = ("Подключение...", "Підключення..."),
         ["Refresh now"] = ("Обновить сейчас", "Оновити зараз"),
+        ["AJAZZ receivers"] = ("Приёмники AJAZZ", "Приймачі AJAZZ"),
+        ["Legacy battery history..."] = ("Старая история заряда...", "Стара історія заряду..."),
+        ["Separate tray icons"] = ("Отдельные иконки в трее", "Окремі значки в треї"),
         ["Battery history..."] = ("История заряда...", "Історія заряду..."),
         ["Check paired Bluetooth battery..."] = ("Проверить батарею Bluetooth...", "Перевірити батарею Bluetooth..."),
         ["Bluetooth"] = ("Bluetooth", "Bluetooth"),

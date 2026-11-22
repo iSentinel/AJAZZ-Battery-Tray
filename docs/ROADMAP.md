@@ -29,8 +29,8 @@
   model shares dongle IDs with S75 Pro, so identity remains unverified.
 - [x] Add separate history CSV/chart and independent 50/25/10% alert state.
 - [x] Localize AULA controls and add privacy-safe diagnostic summary.
-- [ ] Confirm real L99 receiver is enumerated under `05AC:024F MI_03` and
-  a fresh battery reply can be read through Windows (no hardware access in CI).
+- [x] Owner's L99 showed `05AC:024F MI_03`, FF60:0061, reports 33 bytes
+  and two fresh 100% replies on 2026-11-22. Shared model ID caveat remains.
 - [ ] Check sleep/wake, Bluetooth-vs-dongle handover, charging behavior,
   low-battery notifications and real desktop UI on user's keyboard.
 - [ ] Research macOS implementation after Windows hardware validation.
@@ -40,11 +40,19 @@
 - [x] Add Windows extended diagnostics for all AJAZZ VID 3151 HID
   interfaces and known AULA receiver IDs, including ordinary polling trace.
 - [x] Automatically open local TXT Save As after report collection.
-- [ ] Validate the diagnostic Save As workflow on a physical Windows desktop.
-- [ ] Obtain AJ159 hardware report (first attempted on owner's AJ159:
-  battery unavailable over 2.4 GHz; no previous known-good AJ159 baseline).
-- [ ] Determine receiver revision and verify telemetry protocol before extending
-  HID writes beyond the currently supported AJAZZ receiver.
+- [x] Owner completed diagnostic Save As twice on Windows.
+- [x] AJ159 isolated: 3151:5007 MI_02 FFFF:0002, bcdDevice 0300,
+  Feature 65, F7/05 returned 95%. With both receivers attached, the prior
+  version returned only one valid response; AJ179 inferred as bcdDevice 0002.
+- [x] Independent per-receiver sampling, history, notification state,
+  diagnostic trace and optional extra tray icons (Windows beta.28 code).
+- [ ] Run beta.28 CI and hardware acceptance with both mice + AULA;
+  test sleep/replug, unavailable data and icon setting persistence.
+- [ ] Add manual model aliases if needed for identical/unknown revisions.
+- [ ] Investigate AULA host CPU/GPU telemetry preview and exact radio RTC
+  packet layout before enabling any additional approved write command.
+- [ ] Confirm manual L99 time/telemetry transfer on hardware before automatic
+  sync; weather is a later, separately validated stage.
 
 ## Stage 1 — Monitoring and Diagnostics
 
