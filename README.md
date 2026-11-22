@@ -3,7 +3,22 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.31 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.32 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+
+## Windows Device Manager names preview
+
+Open **Settings → Windows device names preview...** from the Windows tray.
+The local read-only preview lists supported present USB receiver nodes
+and candidate primary HID mouse/keyboard nodes by their actual parent
+ancestry, with receiver group, VID/PID, USB revision, current and suggested
+display names. Suggestions based on the owner's observed revisions are
+provisional, not proof of model identity. Instance paths and serials are
+not displayed or logged by this feature. The window does not rename devices,
+install drivers, elevate privileges, or issue HID commands.
+
+The next stage is explicitly confirmed, reversible, per-instance changes
+to Windows' DEVPKEY_Device_FriendlyName after validating the target mapping
+on physical hardware. See [the Windows naming plan](docs/WINDOWS_DEVICE_NAMES.md).
 
 ## Device Manager dashboard (Windows)
 
