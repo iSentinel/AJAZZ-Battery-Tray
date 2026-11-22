@@ -17,6 +17,7 @@ public sealed class AppSettings
     public bool MonitorAulaL99 { get; set; } = false;
     public bool MultipleTrayIcons { get; set; } = true;
     // Absent key inherits global thresholds; zero explicitly mutes this device.
+    public Dictionary<string, int> DevicePollIntervals { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, int> DeviceAlertMasks { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceTrayColors { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> HiddenTrayDevices { get; set; } = new(StringComparer.Ordinal);
@@ -38,6 +39,7 @@ public sealed class AppSettings
                     File.ReadAllText(FilePath));
                 if (result is not null)
                 {
+                    result.DevicePollIntervals = DevicePollSchedule.CleanOverrides(result.DevicePollIntervals);
                     result.DeviceAlertMasks = CleanDeviceAlertMasks(result.DeviceAlertMasks);
                     result.DeviceTrayColors = TrayColorRules.Clean(result.DeviceTrayColors);
                     result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
@@ -56,6 +58,11 @@ public sealed class AppSettings
 
         return new AppSettings();
     }
+
+    public int EffectivePollInterval(string key)
+        => DevicePollSchedule.ResolveInterval(PollSeconds,
+            DeviceAliasRules.ValidKey(key) && DevicePollIntervals.TryGetValue(key, out int seconds)
+                ? seconds : null);
 
     [System.Text.Json.Serialization.JsonIgnore]
     public int GlobalAlertMask => (AlertBelow50 ? 1 : 0) |
