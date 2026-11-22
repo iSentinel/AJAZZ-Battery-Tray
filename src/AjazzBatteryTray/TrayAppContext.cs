@@ -15,6 +15,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly BatteryHistory _aulaHistory = new("aula-l99-history.csv");
     private BatteryHistoryForm? _aulaHistoryWindow;
     private AulaL99Reading? _aulaLatest;
+    private readonly AulaBatteryState _aulaBattery = new();
     private DateTimeOffset? _aulaLastReadAt;
     private bool _aulaBusy;
     private bool _hostMetricsBusy;
@@ -48,6 +49,7 @@ public sealed class TrayAppContext : ApplicationContext
     private Icon? _icon;
     private int? _lastPercent;
     private bool _lastConnected;
+    private bool _lastStale;
     private bool _busy;
     private bool _closing;
 
@@ -134,6 +136,7 @@ public sealed class TrayAppContext : ApplicationContext
             _settings.MonitorAulaL99 = auto.Checked;
             _settings.Save();
             if (auto.Checked) _ = PollAulaAsync(manual: true);
+            else _aulaBattery.Reset();
             RefreshDeviceDisplay();
         };
         menu.DropDownItems.Add(auto);
@@ -180,6 +183,12 @@ public sealed class TrayAppContext : ApplicationContext
         finally { _hostMetricsBusy = false; }
     }
 
+    private string AulaCacheReport()
+        => $"Last successful battery: {_aulaBattery.LastGoodPercent?.ToString() ?? "unavailable"}; " +
+           $"UTC: {_aulaBattery.LastGoodAt?.ToString("O") ?? "never"}; " +
+           $"Consecutive no-reply polls: {_aulaBattery.ConsecutiveFailures}; " +
+           $"Display cache active: {_aulaLatest?.Percent is null && AulaDisplayPercent().HasValue}";
+
     private void CopyAulaSummary()
     {
         AulaL99Reading? state = _aulaLatest;
@@ -191,6 +200,7 @@ public sealed class TrayAppContext : ApplicationContext
             $"Battery percentage: {state?.Percent?.ToString() ?? "unavailable"}\n" +
             $"Status: {state?.Details ?? "not checked"}\n" +
             $"Last read UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
+            AulaCacheReport() + "\n" +
             "Model identity unverified (dongle IDs shared with S75 Pro).\n" +
             "No serial numbers or HID interface paths are included.";
         try { Clipboard.SetText(text); }
@@ -224,9 +234,17 @@ public sealed class TrayAppContext : ApplicationContext
             _aulaStatus.Text = UiText.Format(
                 "AULA L99: last {0}% at {1} (unverified)", level,
                 _aulaLastReadAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
+        else if (AulaDisplayPercent() is int cached)
+            _aulaStatus.Text = UiText.Format(
+                "AULA L99: cached {0}% at {1}; no fresh reply", cached,
+                _aulaBattery.LastGoodAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
         else
             _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
     }
+
+    private int? AulaDisplayPercent()
+        => _aulaBattery.DisplayPercent(_aulaLatest?.ReceiverPresent == true,
+            _aulaLatest?.PresenceKnown == true, _aulaLatest?.Percent, DateTimeOffset.UtcNow);
 
     /// <summary>Run at most one explicit, battery-only dongle poll at a time.</summary>
     private async Task PollAulaAsync(bool manual = false)
@@ -241,6 +259,8 @@ public sealed class TrayAppContext : ApplicationContext
             if (_closing) return;
             _aulaLatest = result;
             _aulaLastReadAt = DateTimeOffset.UtcNow;
+            _aulaBattery.Observe(result.ReceiverPresent, result.PresenceKnown,
+                result.Percent, _aulaLastReadAt.Value);
             if (_settings.RecordBatteryHistory)
                 _aulaHistory.Record(DateTimeOffset.UtcNow, result.Percent,
                     result.ReceiverPresent || !result.PresenceKnown);
@@ -623,7 +643,8 @@ public sealed class TrayAppContext : ApplicationContext
             "\n[AULA L99 last measurement]\n" +
             $"Auto monitoring: {_settings.MonitorAulaL99}; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {aula?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {aula?.PresenceKnown.ToString() ?? "unknown"}\n" +
-            $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n\n" +
+            $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n" +
+            AulaCacheReport() + "\n\n" +
             "[Bluetooth fallback state]\n" +
             $"Enabled: {_bluetoothPolicy.Enabled}; displayed device: {_lastDevice}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
             $"GATT failures: {_bluetoothPolicy.ConsecutiveFailures}; last success UTC: {_bluetoothPolicy.LastSuccessfulRead?.ToString("O") ?? "never"}\n" +
@@ -895,6 +916,8 @@ public sealed class TrayAppContext : ApplicationContext
             _bluetoothPolicy.Enabled, blePercent, reading.PresenceKnown);
         bool showAula = _settings.MonitorAulaL99 &&
             _aulaLatest is { ReceiverPresent: true, PresenceKnown: true };
+        int? aulaLevel = AulaDisplayPercent();
+        bool aulaStale = _aulaLatest?.Percent is null && aulaLevel.HasValue;
         bool aulaIsPrimary = showAula && reading.PresenceKnown &&
             !reading.ReceiverPresent && !_bluetoothPolicy.Enabled;
         var receiver = _settings.MultipleTrayIcons
@@ -906,36 +929,39 @@ public sealed class TrayAppContext : ApplicationContext
         if (aulaIsPrimary)
         {
             device = "AULA L99";
-            displayPercent = _aulaLatest?.Percent;
+            displayPercent = aulaLevel;
             source = "2.4 GHz";
         }
         bool displayConnected = displayPercent.HasValue;
+        bool stale = aulaIsPrimary && aulaStale;
         int? previousPercent = _lastPercent;
         if (displayConnected != _lastConnected ||
-            previousPercent != displayPercent || source != _lastSource || device != _lastDevice)
+            previousPercent != displayPercent || source != _lastSource || device != _lastDevice || stale != _lastStale)
         {
             FileLog.Write("INFO", $"{device} {source} battery: " +
-                (displayConnected ? $"{displayPercent}%" : "unavailable"));
+                (displayConnected ? $"{displayPercent}%" + (stale ? " (cached)" : "") : "unavailable"));
         }
 
         _lastPercent = displayPercent;
         _lastConnected = displayConnected;
         _lastSource = source;
         _lastDevice = device;
+        _lastStale = stale;
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
+        if (stale) value += " (" + UiText.Get("cached") + ")";
         _statusItem.Text = $"{device} — {source}: {value}";
         string tooltip = $"{device}: {source} {value}";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
-        UpdateIcon(displayPercent, displayConnected);
+        UpdateIcon(displayPercent, displayConnected, stale);
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
-                _aulaLatest, aulaIsPrimary, menu, PollSoon);
+                aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon);
         UpdateBluetoothStatus();
     }
 
-    private void UpdateIcon(int? percent, bool connected)
+    private void UpdateIcon(int? percent, bool connected, bool stale = false)
     {
-        Icon next = TrayIconFactory.Create(percent, connected);
+        Icon next = TrayIconFactory.Create(percent, connected, stale);
         Icon? previous = _icon;
         _icon = next;
         _tray.Icon = next;
