@@ -7,8 +7,16 @@ public sealed class LocalSnapshotStore
 
     public void Publish(DateTimeOffset now, IEnumerable<LocalBatterySnapshot.Input> inputs)
     {
-        var snapshot = LocalBatterySnapshot.Create(now, inputs);
-        Volatile.Write(ref _latest, snapshot);
+        try
+        {
+            var snapshot = LocalBatterySnapshot.Create(now, inputs);
+            Volatile.Write(ref _latest, snapshot);
+        }
+        catch
+        {
+            Clear();
+            throw;
+        }
     }
 
     public void Clear() => Volatile.Write(ref _latest, null);
