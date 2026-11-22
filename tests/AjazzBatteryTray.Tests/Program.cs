@@ -1434,5 +1434,32 @@ async Task TestLoopbackApi()
 }
 TestLoopbackApi().GetAwaiter().GetResult();
 
+// HA consumers must explicitly bind to a process session and a source/slot.
+var haStore = new LocalSnapshotStore();
+haStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 83, snapshotNow) });
+var haSnapshot = haStore.Read(snapshotNow)!;
+var haMapping = HaSessionMapping.Bind(haSnapshot, "apex_receiver", 1);
+Check("HA session-bound fresh reading available", haMapping.Read(haSnapshot, snapshotNow).BatteryPercent == 83);
+Check("HA rejects missing snapshot", !haMapping.Read(null, snapshotNow).Available);
+Check("HA rejects stale reading", !haMapping.Read(haSnapshot, snapshotNow.AddMinutes(6)).Available);
+Check("HA rejects clock rollback", !haMapping.Read(haSnapshot, snapshotNow.AddSeconds(-1)).Available);
+haStore.Publish(snapshotNow.AddSeconds(1), new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 82, snapshotNow.AddSeconds(1)) });
+var haNext = haStore.Read(snapshotNow.AddSeconds(1))!;
+Check("HA session epoch stays unchanged across publication", haNext.SessionEpoch == haSnapshot.SessionEpoch);
+Check("HA existing mapping reads next sample", haMapping.Read(haNext, snapshotNow.AddSeconds(1)).BatteryPercent == 82);
+var haOther = new LocalSnapshotStore();
+haOther.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 50, snapshotNow) });
+Check("HA new process cannot inherit prior slot mapping", haMapping.Read(haOther.Read(snapshotNow), snapshotNow).Status == "mapping_required");
+Check("HA rejects missing mapped slot", !haMapping.Read(haSnapshot with { Devices = Array.Empty<LocalBatterySnapshot.Entry>() }, snapshotNow).Available);
+Check("HA rejects ambiguous mapped slot", !haMapping.Read(haSnapshot with { Devices = new[] { haSnapshot.Devices[0], haSnapshot.Devices[0] } }, snapshotNow).Available);
+haStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Cached, 80, snapshotNow) });
+Check("HA does not report cached battery as current", !haMapping.Read(haStore.Read(snapshotNow), snapshotNow).Available);
+bool rejectedHaBind = false;
+try { HaSessionMapping.Bind(haSnapshot with { SessionEpoch = null }, "apex_receiver", 1); }
+catch (InvalidDataException) { rejectedHaBind = true; }
+Check("HA legacy snapshot requires session mapping support", rejectedHaBind);
+Check("HA session epoch serialized without hardware ID",
+    System.Text.Encoding.UTF8.GetString(haSnapshot.Export()).Contains("sessionEpoch"));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
