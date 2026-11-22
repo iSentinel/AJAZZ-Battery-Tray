@@ -30,16 +30,16 @@ internal sealed class ReceiverMonitor : IDisposable
     private readonly Dictionary<string, ExtraIcon> _icons = new();
     internal IEnumerable<State> Devices => _states.Values;
     internal string? PrimaryKey { get; private set; }
-    internal string? PrimaryLabel => PrimaryKey is not null &&
-        _states.TryGetValue(PrimaryKey, out State? state) ? state.Label : null;
+    internal State? PrimaryState => PrimaryKey is not null &&
+        _states.TryGetValue(PrimaryKey, out State? state) ? state : null;
+    internal State? SummaryState { get; private set; }
 
     internal void Apply(AjazzHidReader.Batch batch, AppSettings settings,
         NotifyIcon notifier, bool bluetoothEnabled, DateTimeOffset now)
     {
-        PrimaryKey = AjazzHidReader.Primary(batch.Receivers)?.Key;
         if (!batch.Summary.PresenceKnown)
         {
-            foreach (State state in _states.Values)
+            foreach (State state in _states.Values.Where(s => s.Present))
                 state.Reading = new(false, null, "HID enumeration unavailable",
                     PresenceKnown: false);
             return;
@@ -59,8 +59,14 @@ internal sealed class ReceiverMonitor : IDisposable
         {
             pair.Value.Present = false;
             pair.Value.Reading = new(false, null, "Receiver absent");
-            Record(pair.Value, settings, notifier, bluetoothEnabled, now);
+            Record(pair.Value, settings, notifier,
+                bluetoothEnabled && batch.Receivers.Count == 0, now);
         }
+
+        if (PrimaryKey is null || !seen.Contains(PrimaryKey))
+            PrimaryKey = seen.OrderBy(x => x, StringComparer.Ordinal).FirstOrDefault();
+        var summary = AjazzHidReader.Primary(batch.Receivers);
+        SummaryState = summary is not null ? _states[summary.Key] : null;
     }
 
     private State FindOrCreate(AjazzHidReader.ReceiverReading item)
