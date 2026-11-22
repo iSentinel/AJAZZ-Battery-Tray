@@ -94,6 +94,19 @@ Check("Clean poll override map", DevicePollSchedule.CleanOverrides(new Dictionar
 }).Count == 2);
 deviceSchedule.Reset(slowPollKey);
 Check("Explicit reset forces next reading", deviceSchedule.IsDue(slowPollKey, 2000, 120));
+var pollSettings = new AppSettings { PollSeconds = 60 };
+pollSettings.DevicePollIntervals[fastPollKey] = 15;
+pollSettings.DevicePollIntervals[DeviceAliasRules.AulaSlot] = 120;
+Check("Settings independent intervals", pollSettings.EffectivePollInterval(fastPollKey) == 15 &&
+    pollSettings.EffectivePollInterval(slowPollKey) == 60 &&
+    pollSettings.EffectivePollInterval(DeviceAliasRules.AulaSlot) == 120);
+var pollRoundtrip = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(pollSettings));
+Check("Poll settings persist", pollRoundtrip?.EffectivePollInterval(fastPollKey) == 15 &&
+    pollRoundtrip.EffectivePollInterval(DeviceAliasRules.AulaSlot) == 120);
+pollSettings.DevicePollIntervals.Remove(fastPollKey);
+Check("Interval reset inherits", pollSettings.EffectivePollInterval(fastPollKey) == 60);
+
 
 Check("Separate tray icons default on", new AppSettings().MultipleTrayIcons);
 
