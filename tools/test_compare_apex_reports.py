@@ -41,6 +41,17 @@ class ApexComparisonTests(unittest.TestCase):
                 self.assertEqual(legacy_percent(data), 100)
                 self.assertEqual(vendor_candidate(data), ("candidate-only", 100))
 
+    def test_aj179_bridge_flags(self):
+        """Observed flag variants; normalization is offline hypothetical only."""
+        for ready, send, count in ((0, 1, 258), (1, 1, 6), (0, 0, 2)):
+            with self.subTest(ready=ready, send=send, count=count):
+                bridge = bytes([0, ready, 0, 100, 1, 0, send, 2, 0, 0])
+                self.assertIsNone(legacy_percent(bridge))
+                self.assertIsNone(vendor_candidate(bridge)[1])
+                windows = bytes([5]) + bridge[1:]
+                self.assertEqual(legacy_percent(windows), None if ready else 100)
+                self.assertEqual(vendor_candidate(windows), ("candidate-only", 100))
+
     def test_malformed(self):
         with self.assertRaises(ValueError):
             list(read_attempts("no capture"))
