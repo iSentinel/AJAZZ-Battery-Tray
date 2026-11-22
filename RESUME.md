@@ -1,34 +1,37 @@
-# Resume — independent icon colors (beta.36 candidate)
+# Resume — beta.37 APEX protocol diagnostics candidate
 
 ## Verified baseline
-- beta.34 release verified; prolonged AULA sleep behavior not yet
-  physically accepted.
-- beta.35 PR #46 Windows/macOS CI PASS, merged as
-  e5d3c8729afe5206afbec2a6e2587167e68b7beb.
-  Release workflow 45049517485 PASS, Latest beta.35 verified with six assets.
-- Owner beta.32 confirmed three live dashboard rows: AJ179 100%,
-  AJ159 100%, L99 93%. Additional hardware acceptance is still pending.
+- Main at 0a2705a0f35a7d6890174b2587fa7f17f145a553 (beta.36 source).
+- Earlier owner measurements confirmed both AJ159 and AJ179 APEX on the
+  shared receiver; model labels based on revision remain provisional.
+- Owner reports another APEX mouse (exact model pending) works in the
+  original utility but does not show battery in ours.
+- Prior beta.35 CI/release verified; beta.36 publication must be verified
+  independently. AULA long-sleep and tray appearance acceptance remain open.
 
 ## Current work
-- Branch feat/per-device-icon-colors-beta36 from beta.35 main.
-- Code checkpoint 4f820faffa07f712449bb67ee4b759a84c882c68:
-  independent normal-charge palette (six choices), local persistence,
-  warning/cache color precedence, localized preview dialog, dashboard and
-  tray actions, primary/extra icon refresh, eleven pure tests.
-- Existing monitoring, history and alert rules remain unchanged. AULA
-  is one monitoring profile; Bluetooth fallback uses default colors.
-- No new device writes, elevation or PnP property changes.
+- Branch feat/apex-protocol-diagnostics from beta.36 main.
+- Added explicit local full TX/RX feature buffer capture, parser rejection
+  explanations, bounded 30/100/250 ms diagnostic-only delay sweep, localized
+  consent/menu and six pure classification tests.
+- Normal poll stays at 30 ms, same allowlist, parser, lengths and ordering;
+  no model mapping change, no additional normal I/O, no RTC in capture.
+- Capture instructions: docs/APEX_PROTOCOL_DIAGNOSTICS.md.
+- Initial PR #49 Windows CI 45062122792 and macOS CI 45062122761 PASS.
+- Prepared beta.37 Windows/installer version, macOS build 41, release
+  tag/title and release notes. Final CI and release gates remain pending.
 
 ## Next
-1. [ ] Open beta.36 PR; verify Windows/macOS checks and release.
-2. [ ] Owner checks AULA long sleep, alias/visibility/color persistence,
-   actual tray icon placement and warning appearance.
-3. [ ] Implement per-device alert preferences and then polling intervals
-   without changing the approved battery protocols.
-4. [ ] Battery analytics from existing fresh observations.
-5. [ ] Windows PnP mapping preview must be physically confirmed before
-   reversible per-instance FriendlyName changes.
-6. [ ] L99 screen synchronization remains gated on official radio capture.
+1. [x] Initial PR Windows/macOS CI.
+   [ ] Verify final metadata CI, merge and six-asset publication for beta.37.
+   Diagnostic release may precede hardware acceptance; do not claim fix.
+2. [ ] Collect target device traces with official app closed, and passive
+   reference traffic with our app closed. Physical model number pending.
+3. [ ] Compare exact battery transactions, implement evidence-backed fix
+   only after validation, regress previously working APEX receivers.
+4. [ ] Verify release gates before publishing a new beta.
+5. [ ] Resume per-device alert/poll settings, battery analytics, AULA
+   sleep and PnP confirmation work when independent of this defect.
 
-Resume from actual main, branch, PR, CI and release state; update this
-checkpoint at each completed stage. Keep local receiver keys private.
+Do not claim hardware acceptance from CI alone. Do not upload private
+device paths, captures, serials, or raw vendor bytes automatically.

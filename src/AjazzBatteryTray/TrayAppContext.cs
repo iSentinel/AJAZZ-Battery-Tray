@@ -639,6 +639,8 @@ public sealed class TrayAppContext : ApplicationContext
         ToolStripMenuItem menu = new(UiText.Get("Diagnostics"));
         menu.DropDownItems.Add(UiText.Get("Extended device diagnostics..."), null,
             (_, _) => _ = ShowExtendedDiagnosticsAsync());
+        menu.DropDownItems.Add(UiText.Get("Capture AJAZZ battery protocol..."), null,
+            (_, _) => _ = ShowProtocolDiagnosticsAsync());
         menu.DropDownItems.Add(UiText.Get("Device diagnostics..."), null,
             (_, _) => ShowDiagnostics());
         menu.DropDownItems.Add(UiText.Get("Copy diagnostic report"), null,
@@ -833,6 +835,55 @@ public sealed class TrayAppContext : ApplicationContext
         {
             FileLog.Write("WARN", "Bluetooth status clipboard unavailable: " +
                 error.GetType().Name);
+        }
+    }
+
+    // Explicit capture uses the same AJAZZ I/O exclusion as ordinary polling.
+    private async Task ShowProtocolDiagnosticsAsync()
+    {
+        if (_closing) return;
+        if (_busy || _diagnosticsBusy)
+        {
+            MessageBox.Show(UiText.Get("A poll or diagnostic is running. Try again."),
+                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        if (MessageBox.Show(UiText.Get("Capture full vendor battery buffers locally? Close the official utility first. Review raw data before sharing."),
+                "AJAZZ Battery Tray", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+            != DialogResult.Yes || _closing || _busy || _diagnosticsBusy) return;
+
+        _busy = true;
+        _diagnosticsBusy = true;
+        _timer.Stop();
+        try
+        {
+            var batch = await Task.Run(() => _reader.ReadAll(captureProtocol: true));
+            if (_closing) return;
+            string report = "AJAZZ APEX explicit battery protocol capture\n" +
+                $"Version: {Application.ProductVersion}\nUTC: {DateTimeOffset.UtcNow:O}\n" +
+                "Model labels are provisional. USB feature buffers are not USB wire captures.\n" +
+                "Only the existing F7/05 query; no RTC or configuration writes.\n" +
+                "Raw vendor bytes may contain undocumented data. Review before sharing.\n\n" +
+                (batch.Summary.Attempts is { } trace ? string.Join("\n", trace) : "No trace");
+            using DiagnosticReportForm review = new(report);
+            review.ShowDialog();
+        }
+        catch (Exception error)
+        {
+            if (!_closing)
+                MessageBox.Show(UiText.Get("Unable to collect diagnostic report.") +
+                    " (" + error.GetType().Name + ")", "AJAZZ Battery Tray",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            _busy = false;
+            _diagnosticsBusy = false;
+            if (!_closing)
+            {
+                _timer.Interval = _settings.PollSeconds * 1000;
+                _timer.Start();
+            }
         }
     }
 
