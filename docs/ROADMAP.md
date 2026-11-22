@@ -64,7 +64,8 @@ available beta number is assigned at release preparation.
   source, measurement timestamps, history shortcuts, diagnostics, refresh,
   English/Russian/Ukrainian labels; reuse existing polling.
 - [x] Dashboard beta.31 Windows/macOS CI and release verified.
-- [ ] Real desktop acceptance, keyboard accessibility review, theme options
+- [x] Owner beta.32 screenshot and diagnostics confirm all three live dashboard rows.
+- [ ] Keyboard accessibility review, theme options, actual tray icon count
   and future macOS parity.
 - [ ] AJ159/AJ179: verified current DPI and stages, polling rates supported by
   revision, sleep, debounce, LOD, motion sync, button mapping, RGB, macros,
@@ -155,7 +156,9 @@ hardware acceptance remain separate.
 - [x] beta.30 implement bounded AULA retry and labelled last-good cache.
 - [x] beta.30 PR #41 Windows and macOS CI PASS; merged.
 - [x] beta.30 six-asset Latest publication verified (release workflow 45042853053).
-- [ ] beta.30 hardware recovery check.
+- [x] Owner beta.32 report: fresh L99 battery 93%; prolonged sleep can still hide battery.
+- [x] beta.34 implement 24-hour session-only stale display and receiver continuity.
+- [ ] Verify beta.34 recovery after prolonged sleep and receiver removal.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.
