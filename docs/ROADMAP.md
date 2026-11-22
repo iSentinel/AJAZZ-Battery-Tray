@@ -407,7 +407,8 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] beta.46 release 45082464200 PASS; all six assets verified.
 - [x] Integrated immutable snapshot and authenticated loopback endpoint;
   Windows 45083205204 / macOS 45083205268 PASS.
-- [ ] Final beta.47 CI, publication and actual Windows/HID acceptance.
+- [x] Final beta.47 CI and publication: 45084000358 PASS, six assets.
+- [ ] Actual Windows/HID acceptance.
 - [ ] Independent secure Home Assistant bridge design and explicit device mapping.
   No LAN binding or unauthenticated HTTP.
 
@@ -416,8 +417,16 @@ configuration commands. USB `VersionNumber` is a device revision,
   or one-off copy, release on stop. No separate API polling.
 - [x] Allocate/run automatic update timer only with existing explicit consent
   and notifications enabled; stop/dispose on disable.
-- [ ] Verify revised beta.47 CI and Windows idle resource baseline.
+- [x] Revised beta.47 Windows 45083807213 / macOS 45083807201 PASS.
+- [ ] Windows idle resource baseline.
 - [ ] Keep Home Assistant / MQTT as a separately installed optional bridge;
   never start by default or add broker dependencies to the tray distribution.
 - [ ] Measure idle CPU, memory, handles, thread count and wakeups before
   and after changes with comparable devices, settings and poll interval.
+
+## beta.48 lightweight tray and history candidate
+- [x] Skip equivalent primary and secondary icon rendering and redundant shell updates.
+- [x] Defer history file reads, stream newest retained row and skip unchanged sample allocation.
+- [x] Add eleven icon and eight history assertions; resource sampler and CI smoke step.
+- [ ] Combined CI, beta.48 release metadata and publication.
+- [ ] Real Windows resource comparison and visual/hardware acceptance.
