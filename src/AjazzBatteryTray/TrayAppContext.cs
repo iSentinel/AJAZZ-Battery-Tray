@@ -88,10 +88,12 @@ public sealed class TrayAppContext : ApplicationContext
         _devicesMenu = new ToolStripMenuItem(UiText.Get("AJAZZ receivers"));
         _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
             ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
-            state => EditDeviceAlerts(state.Key, state.DisplayLabel));
+            state => EditDeviceAlerts(state.Key, state.DisplayLabel),
+            state => EditDeviceInterval(state.Key, state.DisplayLabel));
         _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
             ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
-            state => EditDeviceAlerts(state.Key, state.DisplayLabel));
+            state => EditDeviceAlerts(state.Key, state.DisplayLabel),
+            state => EditDeviceInterval(state.Key, state.DisplayLabel));
         menu.Items.Add(_devicesMenu);
         menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
@@ -204,6 +206,34 @@ public sealed class TrayAppContext : ApplicationContext
         }
     }
 
+    private void EditDeviceInterval(string key, string name)
+    {
+        if (_closing || !DeviceAliasRules.ValidKey(key)) return;
+        int? original = _settings.DevicePollIntervals.TryGetValue(key, out int value) ? value : null;
+        using var dialog = new DeviceIntervalForm(name, original, _settings.PollSeconds);
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
+        if (dialog.Interval is int seconds) _settings.DevicePollIntervals[key] = seconds;
+        else _settings.DevicePollIntervals.Remove(key);
+        if (!_settings.Save())
+        {
+            if (original is int old) _settings.DevicePollIntervals[key] = old;
+            else _settings.DevicePollIntervals.Remove(key);
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        if (key == DeviceAliasRules.AulaSlot)
+        {
+            if (_settings.MonitorAulaL99 && !_aulaBusy)
+            {
+                _aulaTimer.Stop();
+                _aulaTimer.Interval = 100;
+                _aulaTimer.Start();
+            }
+        }
+        else PollSoon();
+    }
+
     private void ShowDashboard()
     {
         if (_closing) return;
@@ -232,7 +262,8 @@ public sealed class TrayAppContext : ApplicationContext
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
                 () => ToggleTrayVisibility(receiver.Key),
                 () => EditTrayColor(receiver.Key, receiver.DisplayLabel),
-                () => EditDeviceAlerts(receiver.Key, receiver.DisplayLabel)));
+                () => EditDeviceAlerts(receiver.Key, receiver.DisplayLabel),
+                () => EditDeviceInterval(receiver.Key, receiver.DisplayLabel)));
         }
         if (entries.Count == 0)
         {
@@ -245,7 +276,8 @@ public sealed class TrayAppContext : ApplicationContext
             EditAulaName, IsTrayVisible(DeviceAliasRules.AulaSlot),
             () => ToggleTrayVisibility(DeviceAliasRules.AulaSlot),
             () => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName),
-            () => EditDeviceAlerts(DeviceAliasRules.AulaSlot, AulaName)));
+            () => EditDeviceAlerts(DeviceAliasRules.AulaSlot, AulaName),
+            () => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName)));
         if (_bluetoothPolicy.Enabled) entries.Add(new(BluetoothDashboardState()));
         _dashboard.SetEntries(entries);
     }
@@ -341,6 +373,8 @@ public sealed class TrayAppContext : ApplicationContext
             (_, _) => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName));
         menu.DropDownItems.Add(UiText.Get("Device battery alerts..."), null,
             (_, _) => EditDeviceAlerts(DeviceAliasRules.AulaSlot, AulaName));
+        menu.DropDownItems.Add(UiText.Get("Device polling interval..."), null,
+            (_, _) => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName));
         menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
             (_, _) => ShowAulaHistory());
         menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
@@ -966,10 +1000,10 @@ public sealed class TrayAppContext : ApplicationContext
             $"Battery: {usb?.Percent?.ToString() ?? "unavailable"}; status: {usb?.Details ?? "not checked"}\n" +
             attempts + "\n\n[Independent AJAZZ receivers]\n" +
             string.Join("\n", _receivers.Devices.Select(x =>
-                $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}")) +
+                $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}")) +
             $"\nSeparate tray icons: {_settings.MultipleTrayIcons}\n" +
             "\n[AULA L99 last measurement]\n" +
-            $"Auto monitoring: {_settings.MonitorAulaL99}; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
+            $"Auto monitoring: {_settings.MonitorAulaL99}; interval={_settings.EffectivePollInterval(DeviceAliasRules.AulaSlot)}s; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {aula?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {aula?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n" +
             AulaCacheReport() + "\n\n" +
