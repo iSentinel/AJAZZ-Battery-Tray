@@ -1039,5 +1039,46 @@ pausedBle.Enable("y", bleDirect, multiAt.AddMinutes(1));
 pausedBle.ObserveUsbPresence(true, false);
 Check("Opt-in while USB blocked requires a new read", pausedBle.VisiblePercent("y", true, false, multiAt.AddMinutes(1)) is null);
 
+// Release checks are local, deterministic, and perform no HTTP requests.
+var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
+Check("Update accepts beta tag", installedVersion.Beta == 41);
+Check("Update compares beta numbers numerically",
+    ReleaseVersion.Parse("0.3.0-beta.100")!.CompareTo(installedVersion) > 0);
+Check("Stable beats same base beta", ReleaseVersion.Parse("0.3.0")!.CompareTo(installedVersion) > 0);
+Check("Older base beta never beats newer stable",
+    ReleaseVersion.Parse("0.2.99-beta.100")!.CompareTo(ReleaseVersion.Parse("0.3.0")) < 0);
+Check("Reject malformed release tags", new[] { "0.3", "v0.3.0-rc.1", "0.3.0-beta.0",
+    "0.03.0", "0.3.0-beta.2147483648", "0.3.0+build", "0.3.0\n" }
+    .All(tag => ReleaseVersion.Parse(tag) is null));
+var releaseRows = new (string Tag, bool Draft, bool Prerelease)[] {
+    ("v0.3.0-beta.42", false, false), ("v0.3.0-beta.43", false, true),
+    ("v0.3.0-beta.99", true, false), ("v0.3.0-beta.40", false, false),
+    ("v0.3.0-rc.1", false, true), ("v9.0.0", false, true) };
+Check("Experimental accepts project beta marked Latest",
+    UpdateRules.Newest(installedVersion, releaseRows.Take(1), true)?.Beta == 42);
+Check("Experimental picks highest beta excluding draft and invalid tags",
+    UpdateRules.Newest(installedVersion, releaseRows, true)?.Beta == 43);
+Check("Stable channel never accepts beta tagged Latest",
+    UpdateRules.Newest(installedVersion, releaseRows, false) is null);
+Check("Stable channel accepts actual stable release",
+    UpdateRules.Newest(installedVersion, releaseRows.Append(("v0.3.0", false, false)), false)
+        == ReleaseVersion.Parse("0.3.0"));
+Check("Equal and older releases ignored",
+    UpdateRules.Newest(installedVersion, new[] { ("v0.3.0-beta.41", false, false),
+        ("v0.3.0-beta.39", false, false) }, true) is null);
+byte[] updateFixture = System.Text.Encoding.UTF8.GetBytes("local test fixture");
+string updateHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(updateFixture));
+const string updateName = "AJAZZBatteryTray-win-x64.exe";
+bool VerifyUpdate(string manifest, string name = updateName) =>
+    UpdateRules.VerifyChecksum(new System.IO.MemoryStream(updateFixture), manifest, name);
+Check("Update validates actual SHA256 manifest format", VerifyUpdate($"{updateHash}  {updateName}\r\n"));
+Check("Update validates binary checksum format", VerifyUpdate($"{updateHash} *{updateName}"));
+Check("Update rejects hash mismatch", !VerifyUpdate($"{new string('0', 64)}  {updateName}"));
+Check("Update rejects wrong artifact or additional entries",
+    !VerifyUpdate($"{updateHash}  Other.exe") &&
+    !VerifyUpdate($"{updateHash}  {updateName}\n{updateHash}  Other.exe"));
+Check("Update rejects unsafe artifact names", !VerifyUpdate($"{updateHash}  ../x.exe", "../x.exe"));
+Check("Update rejects malformed hash", !VerifyUpdate($"not-a-hash  {updateName}"));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
