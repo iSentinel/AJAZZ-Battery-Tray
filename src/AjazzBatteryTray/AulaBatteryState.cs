@@ -3,14 +3,18 @@ namespace AjazzBatteryTray;
 /// <summary>Transient reply loss must not turn a cached value into fresh telemetry.</summary>
 public sealed class AulaBatteryState
 {
-    public static readonly TimeSpan CacheLifetime = TimeSpan.FromMinutes(2);
+    public static readonly TimeSpan CacheLifetime = TimeSpan.FromHours(24);
     public int? LastGoodPercent { get; private set; }
     public DateTimeOffset? LastGoodAt { get; private set; }
     public int ConsecutiveFailures { get; private set; }
 
     public void Observe(bool present, bool known, int? percent, DateTimeOffset now)
     {
-        if (!known) return;
+        if (!known)
+        {
+            Reset();
+            return;
+        }
         if (!present)
         {
             Reset();

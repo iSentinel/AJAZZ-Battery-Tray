@@ -299,6 +299,7 @@ public sealed class TrayAppContext : ApplicationContext
         => $"Last successful battery: {_aulaBattery.LastGoodPercent?.ToString() ?? "unavailable"}; " +
            $"UTC: {_aulaBattery.LastGoodAt?.ToString("O") ?? "never"}; " +
            $"Consecutive no-reply polls: {_aulaBattery.ConsecutiveFailures}; " +
+           $"Cache lifetime hours: {AulaBatteryState.CacheLifetime.TotalHours}; " +
            $"Display cache active: {_aulaLatest?.Percent is null && AulaDisplayPercent().HasValue}";
 
     private void CopyAulaSummary()
@@ -349,7 +350,7 @@ public sealed class TrayAppContext : ApplicationContext
         else if (AulaDisplayPercent() is int cached)
             _aulaStatus.Text = UiText.Format(
                 "AULA L99: cached {0}% at {1}; no fresh reply", cached,
-                _aulaBattery.LastGoodAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
+                _aulaBattery.LastGoodAt?.ToLocalTime().ToString("g") ?? "—");
         else
             _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
         if (_settings.DeviceAliases.TryGetValue(DeviceAliasRules.AulaSlot, out string? alias))
@@ -372,6 +373,8 @@ public sealed class TrayAppContext : ApplicationContext
         {
             AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
             if (_closing || generation != _aulaGeneration) return;
+            if (result.LocalKey != _aulaLatest?.LocalKey)
+                _aulaBattery.Reset();
             _aulaLatest = result;
             _aulaLastReadAt = DateTimeOffset.UtcNow;
             _aulaBattery.Observe(result.ReceiverPresent, result.PresenceKnown,

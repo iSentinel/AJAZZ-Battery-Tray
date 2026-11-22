@@ -8,6 +8,17 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.34 (2026-11-22)
+- Retain the AULA last-good battery display for prolonged sleep, up to
+  24 hours, clearly marked cached with its original measurement time.
+- Bind cache continuity to a single local receiver identity; reset on
+  unknown presence, ambiguity, receiver replacement, disconnect or opt-out.
+- Keep actual poll failures in diagnostics and avoid recording cached
+  values as fresh history or evaluating low-battery alerts from them.
+- Record beta.32 owner evidence: all three dashboard rows displayed fresh
+  battery readings (AJ179 100%, AJ159 100%, L99 93%). Owner reports that
+  prolonged L99 sleep can hide the reading; sleep fix remains unverified.
+
 ## 0.3.0-beta.33 (2026-11-22)
 - Add persistent local per-receiver AJAZZ aliases and a single AULA profile alias.
 - Edit or reset names from Device Manager or tray menus; retain detected model

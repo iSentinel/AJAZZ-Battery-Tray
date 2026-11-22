@@ -138,3 +138,15 @@ USB captures.
 
 Do not enable unverified RGB/GIF/DPI/firmware operations to try to fix a
 battery or clock problem.
+
+## Owner beta.32 dashboard acceptance and prolonged AULA sleep
+
+- 2026-11-22 16:52:40Z: AJ179 rev 0002 and AJ159 rev 0300 both
+  independently returned 100%, AULA L99 returned 93% on 2.4 GHz.
+- Screenshot confirms all three dashboard rows with fresh state, Russian
+  UI and measurement time. Actual individual tray icons not shown.
+- Owner reports periodic L99 sleep hides the charge. Provided report
+  is a fresh success, not a capture of the sleeping state.
+- beta.34 candidate extends explicitly stale display to 24 hours,
+  invalidates cache on uncertain/changed identity and does not add writes.
+  CI and prolonged sleep/recovery physical acceptance pending.
