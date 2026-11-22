@@ -442,9 +442,21 @@ public sealed class TrayAppContext : ApplicationContext
                 lines.Add(UiText.Get("No matching present USB receivers found."));
             if (entries.Count > 24)
                 lines.Add(UiText.Get("Additional candidates omitted; no changes applied."));
-            MessageBox.Show(string.Join(Environment.NewLine, lines),
-                UiText.Get("Windows device names preview..."),
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            using Form preview = new()
+            {
+                Text = UiText.Get("Windows device names preview..."),
+                Size = new Size(760, 560),
+                MinimumSize = new Size(480, 300),
+                StartPosition = FormStartPosition.CenterScreen
+            };
+            using TextBox content = new()
+            {
+                Dock = DockStyle.Fill, Multiline = true, ReadOnly = true,
+                ScrollBars = ScrollBars.Both, WordWrap = false,
+                Text = string.Join(Environment.NewLine, lines)
+            };
+            preview.Controls.Add(content);
+            preview.ShowDialog();
         }
         catch (Exception error)
         {
