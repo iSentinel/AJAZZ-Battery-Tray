@@ -1021,5 +1021,23 @@ multiBle.DisableAll();
 Check("Multi BLE opt-out clears all visible state", multiBle.Count == 0 &&
     multiBle.VisiblePercent("a", true, false, multiAt) is null);
 
+var pausedBle = new BluetoothMultiSession();
+pausedBle.Enable("x", bleDirect, multiAt);
+var pausedRequest = pausedBle.TryBegin(true, false, multiAt.AddMinutes(1));
+pausedBle.ObserveUsbPresence(true, true);
+Check("USB transition invalidates old percentage", pausedBle.VisiblePercent("x", true, false, multiAt.AddMinutes(1)) is null);
+pausedBle.ObserveUsbPresence(true, false);
+Check("USB roundtrip invalidates in-flight reply", pausedRequest is not null &&
+    !pausedBle.Complete(pausedRequest, bleDirect, multiAt.AddMinutes(1), true, false));
+var resumedRequest = pausedBle.TryBegin(true, false, multiAt.AddMinutes(1));
+Check("BLE resume requires fresh attempt", resumedRequest?.Key == "x");
+Check("Fresh resume response accepted", resumedRequest is not null &&
+    pausedBle.Complete(resumedRequest, bleDirect, multiAt.AddMinutes(1), true, false));
+pausedBle.ObserveUsbPresence(false, false);
+Check("Unknown USB invalidates visible value", pausedBle.VisiblePercent("x", true, false, multiAt.AddMinutes(1)) is null);
+pausedBle.Enable("y", bleDirect, multiAt.AddMinutes(1));
+pausedBle.ObserveUsbPresence(true, false);
+Check("Opt-in while USB blocked requires a new read", pausedBle.VisiblePercent("y", true, false, multiAt.AddMinutes(1)) is null);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
