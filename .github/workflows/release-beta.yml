@@ -152,9 +152,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.42"
+          TAG="v0.3.0-beta.43"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.42 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.43 — Windows and macOS
+
+          **Manual update checker (Windows):** choose the stable or experimental
+          channel and explicitly check GitHub releases. No automatic network
+          polling, download or installer execution.
 
           **Multiple Bluetooth monitors (Windows):** independently opt in to paired LE
           endpoints, with separate battery values, retry state and tray icons.
@@ -404,7 +408,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.42" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.43" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

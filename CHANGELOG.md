@@ -8,6 +8,12 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.43 (2026-11-23)
+- Manual Windows update checker, stable/experimental channels and EN/RU/UK.
+- Fixed GitHub API, bounded response and timeout, locally constructed links.
+- 26 pure version/checksum/metadata regression cases; final CI pending.
+- No automatic downloads, installation or background network activity.
+
 ## 0.3.0-beta.42 (2026-11-23)
 - Independent, session-only paired BLE battery monitors, per-device retry,
   alerts, dashboard and tray icons; global conservative USB precedence.

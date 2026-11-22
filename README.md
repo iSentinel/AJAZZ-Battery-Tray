@@ -3,7 +3,10 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.42 (multi-Bluetooth and APEX research candidate).
+**Version:** v0.3.0-beta.43 (manual update checker candidate).
+
+Use **Check for updates...** in the Windows tray to select a release channel
+and explicitly look up GitHub releases. See [update checker](docs/UPDATE_CHECKER.md).
 
 Windows supports multiple explicitly selected paired LE monitors in one session.
 See [limitations and acceptance](docs/MULTI_BLUETOOTH.md) and
