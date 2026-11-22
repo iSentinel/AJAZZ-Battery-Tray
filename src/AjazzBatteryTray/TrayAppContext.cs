@@ -589,6 +589,12 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
         menu.DropDownItems.Add(BuildUpdateSettingsMenu());
+        menu.DropDownItems.Add(UiText.Get("Preferences backup..."), null, (_, _) =>
+        {
+            if (_closing) return;
+            using var dialog = new PreferencesBackupForm(_settings);
+            dialog.ShowDialog();
+        });
         menu.DropDownItems.Add(UiText.Get("Windows device names preview..."), null,
             (_, _) => _ = ShowPnpNamesAsync());
         ToolStripMenuItem multiple = new(UiText.Get("Separate tray icons"))
