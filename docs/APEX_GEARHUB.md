@@ -66,3 +66,22 @@ Do not change settings or update firmware during the comparison. A browser
 screen showing charge is a reference observation, not a USB traffic capture.
 If the web driver also fails, record that outcome. No whole-bus capture or
 private identifiers are needed for the initial comparison.
+
+## AJ179 reference capture — owner hardware, beta.41
+
+The working AJ179 APEX 2.4 GHz/8K report identifies 3151:5007,
+bcdDevice 0002, MI_02, usage FFFF:0002 and 65-byte descriptor feature
+capacity. Six of six existing F7/05 queries returned 100% and shared
+the same ten-byte status prefix (both candidate and current decoders
+return 100). Requested waits 30/100/250 ms measured 30–45, 110–111
+and 252 ms respectively. Both 65- and 67-byte Windows buffers succeeded;
+the two extra bytes in the 67-byte buffer are not interpreted, and
+the buffer length is not evidence of wire length.
+
+A regression test reconstructs only the observed status prefix with
+synthetic padding. No owner raw report or device identifiers are stored.
+The web driver's independently displayed level has not yet been supplied.
+Repeat at a different actual battery level if possible. This is a positive
+reference for the working AJ179, not proof of AJ159 compatibility or a
+reason to loosen the live parser yet.
+
