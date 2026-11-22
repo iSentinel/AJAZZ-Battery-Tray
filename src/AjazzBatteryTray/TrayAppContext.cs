@@ -12,6 +12,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _aulaTimer;
     private readonly DevicePollSchedule _usbSchedule = new();
     private readonly LocalSnapshotStore _localSnapshot = new();
+    private LocalApiForm? _localApiWindow;
     private readonly Dictionary<string, int> _snapshotReceiverSlots = new(StringComparer.Ordinal);
     private readonly System.Windows.Forms.Timer _updateTimer = new() { Interval = 10000 };
     private readonly AutomaticUpdatePolicy _updatePolicy = new();
@@ -347,6 +348,15 @@ public sealed class TrayAppContext : ApplicationContext
             // Fail closed; never expose a previous snapshot after a projection failure.
             _localSnapshot.Clear();
         }
+    }
+
+    private void ShowLocalApi()
+    {
+        if (_closing) return;
+        if (_localApiWindow is not { IsDisposed: false })
+            _localApiWindow = new LocalApiForm(_localSnapshot);
+        _localApiWindow.Show();
+        _localApiWindow.Activate();
     }
 
     private void CopyLocalSnapshot()
@@ -945,6 +955,7 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(UiText.Get("Copy Bluetooth monitor status"), null,
             (_, _) => CopyBluetoothStatus());
         menu.DropDownItems.Add(UiText.Get("Copy local battery snapshot"), null, (_, _) => CopyLocalSnapshot());
+        menu.DropDownItems.Add(UiText.Get("Local battery API..."), null, (_, _) => ShowLocalApi());
         menu.DropDownItems.Add(UiText.Get("Open log folder"), null,
             (_, _) => OpenLogFolder());
         return menu;
@@ -1643,6 +1654,7 @@ public sealed class TrayAppContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         _closing = true;
+        _localApiWindow?.Close();
         _localSnapshot.Clear();
         _snapshotReceiverSlots.Clear();
         _updateTimer.Stop();
