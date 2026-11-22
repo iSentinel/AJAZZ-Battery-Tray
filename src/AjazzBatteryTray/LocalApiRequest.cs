@@ -17,6 +17,7 @@ public static class LocalApiRequest
         if (header.Any(c => c != '\r' && c != '\n' && (c < 32 || c > 126)))
             return 400;
         string[] lines = header[..^4].Split("\r\n");
+        if (lines.Any(line => line.Contains('\r') || line.Contains('\n'))) return 400;
         string[] request = lines[0].Split(' ');
         if (request.Length != 3 || request[2] != "HTTP/1.1") return 400;
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
