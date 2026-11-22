@@ -18,12 +18,20 @@ request is implemented or enabled by this foundation.
 - No names, aliases, receiver fingerprints, BLE IDs, filesystem paths,
   history, credentials, or raw HID traffic.
 
-Sixteen pure assertions exercise freshness, privacy, shape and bounds.
-Projection is not connected to live tray state yet; CI pending.
+Twenty-five pure assertions exercise freshness, privacy, shape, bounds,
+immutable publication and read-time expiration. The existing monitoring
+refresh path publishes a sanitized snapshot independently of the dashboard.
+Receiver ordinals are assigned once per process; BLE uses its existing
+session number. Overflow or projection errors clear the snapshot rather
+than returning partial data. The AULA row excludes manual-only readings
+when monitoring is disabled. Diagnostics > Copy local battery snapshot
+explicitly copies the current projection without polling hardware.
+The store re-ages values at read time without changing measurement or
+generation timestamps. CI and hardware/UI acceptance pending.
 
 ## Next
-Publish immutable snapshots from existing in-memory monitoring only; never
-trigger a HID request from an API read. Then consider a disabled-by-default,
+The immutable snapshot uses existing monitoring only; API reads must never
+trigger a HID request. Next, consider a disabled-by-default,
 explicitly enabled loopback-only listener with a random per-user bearer
 credential, route/method/size/time limits and safe shutdown. Test unauthorized
 requests, malformed requests, concurrent reads, port conflicts and revocation.
