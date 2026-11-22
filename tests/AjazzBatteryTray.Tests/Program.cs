@@ -217,6 +217,27 @@ aulaCache.Observe(false, false, null, aulaTime.AddSeconds(30));
 Check("AULA uncertain receiver identity invalidates cache",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null);
 
+// Tray visibility must not alter receiver measurement identity.
+string trayKeyA = new string('A', 64);
+string trayKeyB = new string('B', 64);
+var hiddenTray = TrayVisibilityRules.Clean(new[] { trayKeyA, "raw path", trayKeyA });
+Check("Tray visibility defaults on", TrayVisibilityRules.IsVisible(
+    new AppSettings().HiddenTrayDevices, trayKeyA));
+Check("Tray preference rejects invalid keys and duplicates", hiddenTray.Count == 1);
+Check("Hidden preferred receiver replaced by visible receiver",
+    TrayVisibilityRules.SelectMouse(trayKeyA, new[] { trayKeyA, trayKeyB }, hiddenTray) == trayKeyB);
+Check("No visible receiver returns null",
+    TrayVisibilityRules.SelectMouse(trayKeyA, new[] { trayKeyA }, hiddenTray) is null);
+Check("Visible preferred receiver remains primary",
+    TrayVisibilityRules.SelectMouse(trayKeyB, new[] { trayKeyA, trayKeyB },
+        new HashSet<string>()) == trayKeyB);
+Check("AULA can be hidden independently", !TrayVisibilityRules.IsVisible(
+    TrayVisibilityRules.Clean(new[] { DeviceAliasRules.AulaSlot }), DeviceAliasRules.AulaSlot));
+Check("Tray hidden keys survive settings round trip",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(new AppSettings { HiddenTrayDevices = hiddenTray }))
+        ?.HiddenTrayDevices.SetEquals(hiddenTray) == true);
+
 // Local aliases are presentation-only, never hardware identity.
 string aliasKeyA = new string('A', 64);
 string aliasKeyB = new string('B', 64);
