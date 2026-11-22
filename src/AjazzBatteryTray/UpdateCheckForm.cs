@@ -15,7 +15,7 @@ internal sealed class UpdateCheckForm : Form
     private string? _page;
     private bool _busy;
 
-    internal UpdateCheckForm()
+    internal UpdateCheckForm(bool experimental)
     {
         Text = UiText.Get("Check for updates...");
         StartPosition = FormStartPosition.CenterScreen;
@@ -30,7 +30,7 @@ internal sealed class UpdateCheckForm : Form
             Text = UiText.Format("Installed version: {0}", Application.ProductVersion.Split('+')[0]) });
         panel.Controls.Add(new Label { AutoSize = true, Text = UiText.Get("Release channel") });
         _channel.Items.AddRange(new object[] { UiText.Get("Stable"), UiText.Get("Experimental (beta)") });
-        _channel.SelectedIndex = Application.ProductVersion.Contains("-beta.", StringComparison.Ordinal) ? 1 : 0;
+        _channel.SelectedIndex = experimental ? 1 : 0;
         panel.Controls.Add(_channel);
         _check.Text = UiText.Get("Check now");
         _check.Click += async (_, _) => await CheckAsync();
