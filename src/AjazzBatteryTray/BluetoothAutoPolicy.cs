@@ -43,6 +43,15 @@ public sealed class BluetoothAutoPolicy
         _lastAttempt = null;
     }
 
+    /// <summary>Require a fresh reading after an observed USB priority transition.</summary>
+    public void InvalidateForUsb()
+    {
+        _percent = null;
+        _lastReading = null;
+        _lastAttempt = null;
+        ConsecutiveFailures = 0;
+    }
+
     /// <summary>Delay repeated reads to avoid waking a sleeping mouse too often.</summary>
     public static TimeSpan RetryInterval(int consecutiveFailures)
         => consecutiveFailures switch
