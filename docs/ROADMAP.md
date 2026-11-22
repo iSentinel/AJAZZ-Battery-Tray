@@ -138,6 +138,19 @@ hardware acceptance remain separate.
   low-battery notifications and real desktop UI on user's keyboard.
 - [ ] Research macOS implementation after Windows hardware validation.
 
+## P0 — APEX battery protocol compatibility (2026-11-22)
+
+- Owner reports an additional APEX mouse whose battery is unavailable in our
+  app but available in the original utility; exact model number pending.
+- [x] Implement explicit local full-buffer battery capture and parser reasons
+  without changing normal sampling, allowlist or model mappings.
+- [x] Add diagnostic-only bounded timing sweep and instructions for official
+  utility comparison: [APEX protocol diagnostics](APEX_PROTOCOL_DIAGNOSTICS.md).
+- [ ] Windows/macOS CI and capture dialog smoke test.
+- [ ] Obtain reference captures and physically confirm model.
+- [ ] Compare actual interface, report IDs, sequence, lengths, data and delays.
+- [ ] Evidence-backed protocol correction and regression on previous APEX models.
+
 ## AJ159 receiver compatibility investigation
 
 - [x] Add Windows extended diagnostics for all AJAZZ VID 3151 HID
