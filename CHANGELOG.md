@@ -8,6 +8,16 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.35 (2026-11-22)
+- Add persistent per-device tray visibility controls in the dashboard and
+  receiver/AULA submenus without changing sampling, history or notifications.
+- Select a visible primary receiver, show eligible extra icons only, and
+  retain a neutral application icon when all active icons are hidden.
+- Add privacy-safe preference validation, settings round-trip tests and
+  EN/RU/UK controls. No new HID commands or Windows property writes.
+- Keep actual Windows icon placement and physical UI validation separate
+  from application preference and automated CI.
+
 ## 0.3.0-beta.34 (2026-11-22)
 - Retain the AULA last-good battery display for prolonged sleep, up to
   24 hours, clearly marked cached with its original measurement time.

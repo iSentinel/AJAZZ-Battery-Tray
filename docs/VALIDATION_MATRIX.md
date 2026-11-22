@@ -150,3 +150,12 @@ battery or clock problem.
 - beta.34 candidate extends explicitly stale display to 24 hours,
   invalidates cache on uncertain/changed identity and does not add writes.
   CI and prolonged sleep/recovery physical acceptance pending.
+
+## Independent tray visibility — beta.35 candidate
+
+- beta.33 six-asset release verified; beta.34 PR and main builds PASS,
+  release publication in progress at checkpoint.
+- beta.35 local per-device visibility, visible primary selection and neutral
+  app icon implemented. Seven pure preference/selection tests added.
+- CI and actual Windows tray behavior pending, including hide all, restore,
+  global single-icon mode, persisted settings and unaffected history/alerts.

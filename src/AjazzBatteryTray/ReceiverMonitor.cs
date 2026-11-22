@@ -40,6 +40,14 @@ internal sealed class ReceiverMonitor : IDisposable
         _states.TryGetValue(PrimaryKey, out State? state) ? state : null;
     internal State? SummaryState { get; private set; }
 
+    internal State? VisiblePrimary(bool multiple, IReadOnlySet<string> hidden)
+    {
+        string? key = TrayVisibilityRules.SelectMouse(
+            multiple ? PrimaryKey : SummaryState?.Key,
+            _states.Values.Where(s => s.Present).Select(s => s.Key), hidden);
+        return key is not null ? _states[key] : null;
+    }
+
     internal void Apply(AjazzHidReader.Batch batch, AppSettings settings,
         NotifyIcon notifier, bool bluetoothEnabled, DateTimeOffset now)
     {
@@ -129,7 +137,8 @@ internal sealed class ReceiverMonitor : IDisposable
         => !state.Present ? UiText.Get("unavailable") :
             state.Reading.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
 
-    internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit)
+    internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
+        Func<string, bool> visible, Action<string> toggle)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
@@ -140,6 +149,16 @@ internal sealed class ReceiverMonitor : IDisposable
             item.DropDownItems.Add(UiText.Get("Battery history..."), null,
                 (_, _) => ShowHistory(state));
             item.DropDownItems.Add(UiText.Get("Edit local name..."), null, (_, _) => edit(state));
+            ToolStripMenuItem visibility = new(UiText.Get("Show device in tray"))
+            {
+                Checked = visible(state.Key)
+            };
+            visibility.Click += (_, _) =>
+            {
+                toggle(state.Key);
+                visibility.Checked = visible(state.Key);
+            };
+            item.DropDownItems.Add(visibility);
             menu.DropDownItems.Add(item);
         }
         if (menu.DropDownItems.Count == 0)
@@ -163,14 +182,15 @@ internal sealed class ReceiverMonitor : IDisposable
 
     /// <summary>One shared menu; primary icon is owned by TrayAppContext.</summary>
     internal void RefreshIcons(bool enabled, bool showAula, int? aulaLevel, bool aulaStale,
-        bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName)
+        bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
+        string? visiblePrimaryKey, IReadOnlySet<string> hidden)
     {
         HashSet<string> wanted = new();
         if (enabled)
         {
             foreach (var pair in _states)
             {
-                if (!pair.Value.Present || pair.Key == PrimaryKey) continue;
+                if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
                 SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh);
             }

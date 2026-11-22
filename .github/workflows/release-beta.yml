@@ -152,9 +152,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.34"
+          TAG="v0.3.0-beta.35"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.34 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.35 — Windows and macOS
+
+          **Individual tray visibility:** hide or show each AJAZZ receiver
+          and the AULA monitoring profile without stopping monitoring,
+          history or notifications. Keep a neutral application icon when
+          the active device icons are hidden.
 
           **AULA prolonged sleep:** retain the explicitly stale last-good reading
           for up to 24 hours while the same single receiver remains present.
@@ -360,7 +365,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.34" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.35" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

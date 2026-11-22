@@ -16,6 +16,7 @@ public sealed class AppSettings
     public bool AutomaticDockClockSync { get; set; } = true;
     public bool MonitorAulaL99 { get; set; } = false;
     public bool MultipleTrayIcons { get; set; } = true;
+    public HashSet<string> HiddenTrayDevices { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceAliases { get; set; } = new(StringComparer.Ordinal);
 
     public static string DirectoryPath => Path.Combine(
@@ -34,6 +35,7 @@ public sealed class AppSettings
                     File.ReadAllText(FilePath));
                 if (result is not null)
                 {
+                    result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
                     result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
                     result.Language = UiText.Normalize(result.Language);
                     result.PollSeconds = result.PollSeconds is 15 or 30 or 60 or 120
