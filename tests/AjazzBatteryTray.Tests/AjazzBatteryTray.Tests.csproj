@@ -58,6 +58,8 @@
              Link="BluetoothBatteryRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothOperationTimeout.cs"
              Link="BluetoothOperationTimeout.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/BluetoothMultiSession.cs"
+             Link="BluetoothMultiSession.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothAutoPolicy.cs"
              Link="BluetoothAutoPolicy.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothBatteryResult.cs"
