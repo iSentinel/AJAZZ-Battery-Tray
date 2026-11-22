@@ -1,19 +1,18 @@
-# Resume — update verification and automatic policy
+# Resume — automatic update notification candidate
 
-- beta.42 release workflow 45078486972 PASS, six assets verified.
-- beta.43 PR #57 merged 29af7347053cc629d62a57f01db0fabe364f7afe,
-  Windows 45078769289 and macOS 45078769317 PASS.
-  Release workflow 45078947181 still in progress at checkpoint; Latest beta.42.
-- PR #58 local artifact verifier head d3ceabb903e8d637eaac913e02be19d5f9b16777:
-  macOS 45079025042 PASS; Windows 45079025110 running.
-  Twelve new C# local tests; eight Python APEX tests PASS locally.
-  Strict matching setup/portable manifests, cancelable read-only hashing, no
-  installation. Checksum equality is not authentication.
-- This branch adds automatic schedule foundation, fifteen further pure tests:
-  disabled by default, 60s initial / 24h success / 1h failure, generation
-  invalidation, duplicate suppression. Not yet connected to UI or network.
-- Next: verify beta.43 release and PR #58 CI, prepare beta.44 metadata,
-  final CI and publish. Integrate automatic opt-in after sync with beta.44,
-  use monotonic clock and no unsolicited networking or automatic downloads.
-- Hardware gates still open: affected and working AJ159 full reports/HAR,
-  multiple BLE, prolonged AULA L99 sleep. No changes to live HID legacy parser.
+- beta.43 PR #57 merged 29af7347053cc629d62a57f01db0fabe364f7afe;
+  release workflow 45078947181 PASS, six assets verified.
+- PR #58 initial Windows 45079025110 and macOS 45079025042 PASS.
+  beta.44 final candidate 442221807ecb725841a63e79153fc7f3d70d9f43;
+  final workflows Windows 45079329678 / macOS 45079329674 in progress.
+- Automatic update branch adds fifteen schedule tests, explicit consent,
+  persisted opt-in/channel, independent 10s timer, global notification
+  gating, mutual exclusion with manual dialog, cancellation on preferences
+  change/exit. Disabled by default, stable channel default. No download
+  or execution; in-memory duplicate suppression only. CI not yet run.
+- Next: verify final beta.44 CI, merge #58 and verify release assets.
+  Sync this branch with beta.44, preserve its release metadata and validation
+  notes, open draft PR and verify CI; review timer/cancellation and Windows
+  UI acceptance. No automatic-update release until those checks.
+- P0 AJ159 comparison data outstanding; live HID parser unchanged.
+  Physical multi-BLE and AULA L99 prolonged sleep acceptance outstanding.
