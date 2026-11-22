@@ -123,8 +123,10 @@ public sealed class BatteryHistoryForm : Form
         if (!_estimateEnabled) return;
         DateTimeOffset now = DateTimeOffset.UtcNow;
         var estimate = BatteryAnalytics.EstimateDrain(_visible, now);
-        string equivalent = UiText.Format("Observed discharge equivalents: {0:N2} (selected range; not battery health).",
-            BatteryAnalytics.ObservedDischargeEquivalent(_visible, now));
+        double? observed = BatteryAnalytics.ObservedDischargeEquivalent(_visible, now);
+        string equivalent = observed is double value
+            ? UiText.Format("Observed discharge equivalents: {0:N2} (selected range; not battery health).", value)
+            : UiText.Get("Observed discharge: insufficient observations.");
         if (estimate is null)
         {
             _analytics.Text = UiText.Get("Runtime estimate unavailable: insufficient recent discharge observations.") + "\n" + equivalent;
