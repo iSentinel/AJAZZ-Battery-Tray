@@ -49,6 +49,13 @@
   its result without prematurely releasing the request gate.
 - Deduplicate available versions for the current process session; stable
   channel never notifies for beta tags. No binary download or execution.
-- Fifteen pure scheduling checks added; no settings, timer, network or tray
-  integration yet. Next: integrate explicit locally persisted opt-in and
-  channel, respect notification settings, cancel on app exit, test CI/UI.
+- Fifteen pure scheduling checks plus integration: Settings > Update preferences,
+  explicit confirmation (default No), persisted opt-in and channel; stable
+  default even on beta builds. Automatic request is independently timed
+  every ten seconds for due checks, paused while global notifications are
+  disabled or the manual update dialog is open. Manual dialog is blocked
+  while automatic lookup is active. Opt-out/channel change cancels and
+  invalidates pending results; exit cancels without posting notifications.
+- Notifications do not open links, download files, or execute installers.
+  Deduplication is in memory only; a restart can notify again.
+- Network and physical Windows UI acceptance still pending; CI required.
