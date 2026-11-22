@@ -152,9 +152,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.30"
+          TAG="v0.3.0-beta.31"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.30 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.31 — Windows and macOS
+
+          **Device Manager:** a unified Windows dashboard for AJAZZ receivers,
+          AULA battery state and selected Bluetooth fallback. Existing polling,
+          freshness, timestamps, history and diagnostics; no new HID writes.
 
           **AULA battery recovery:** retry the existing approved query once,
           mark cached values in grey with an asterisk for up to two minutes
@@ -344,7 +348,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.30" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.31" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

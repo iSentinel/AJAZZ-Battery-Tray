@@ -22,6 +22,76 @@
 - Track confirmed vs unverified behavior in
   [Hardware Validation Matrix](VALIDATION_MATRIX.md).
 
+## Device Manager expansion — approved 2026-11-22
+
+Goal: one lightweight AJAZZ/AULA application for AJ159, AJ179 and L99,
+with a shared dashboard and independently managed devices. Keep the tray
+workflow, Windows/macOS compatibility and evidence-first hardware policy.
+
+These are feature milestones, not fixed promises of release numbers.
+The initial proposed beta.31–44 sequence is retained below. If a hardware
+gate blocks a milestone, advance independent software work; the next
+available beta number is assigned at release preparation.
+
+| Proposed milestone | Scope | Dependency / status |
+| --- | --- | --- |
+| beta.30 | AULA battery stability | PR 41 CI PASS, merged and six-asset release verified; owner recovery check pending |
+| beta.31 | L99 RTC clock synchronization | BLOCKED: actual 2.4 GHz vendor RTC capture |
+| beta.32 | L99 CPU/GPU load, temperatures, GPU selection | BLOCKED on verified RTC/telemetry layout and owner screen test |
+| beta.33 | L99 weather | Verified field semantics, explicit location/provider consent |
+| beta.34 | Unified Device Manager dashboard | IMPLEMENTED early as beta.31 candidate: read-only UI proceeds while radio evidence is pending |
+| beta.35 | Per-device names, tray visibility/color, alert and poll settings | Stable local identity, duplicate/unknown revision handling |
+| beta.36 | Battery analytics | Local fresh history, estimated runtime and charge cycles with uncertainty |
+| beta.37 | Multi-device Bluetooth | Paired-only selection, transport identity, independent backoff |
+| beta.38 | Update checker | GitHub releases, stable/experimental channel, checksum verification, opt-in |
+| beta.39 | Read-only mouse configuration and firmware reporting | Capture/readback verified per model/revision |
+| beta.40 | Mouse settings and button control | Verified readback, backup, rollback and explicit apply |
+| beta.41 | Lighting and sleep configuration | Readback/recovery and model-specific guarded writes |
+| beta.42 | Screen brightness, images/GIF and editor | Verified display transport and capacity, reversible validation |
+| beta.43 | Profiles, backup, restore | Safe round trip; import validation and explicit apply |
+| beta.44 | Local API and Home Assistant | Local-only by default, authentication, privacy and permissions |
+| v1.0.0 | Stable Device Manager | Hardware matrix, CI, release and acceptance gates |
+
+### Cross-cutting feature backlog
+
+- [ ] Battery/transport: wired and Bluetooth support per model, identified
+  charging status only when verified, USB/BLE/2.4 GHz handover, no duplicate
+  physical devices; separate intervals and device visibility/notifications.
+- [ ] Battery analytics: charge/discharge sessions, estimated remaining
+  runtime, equivalent cycle estimates, CSV export, timestamps and confidence.
+  Never claim battery health or remaining capacity from percentage alone.
+- [x] Initial Windows dashboard implementation: device states, battery freshness,
+  source, measurement timestamps, history shortcuts, diagnostics, refresh,
+  English/Russian/Ukrainian labels; reuse existing polling.
+- [ ] Dashboard CI, real desktop acceptance, keyboard accessibility review,
+  theme options and future macOS parity.
+- [ ] AJ159/AJ179: verified current DPI and stages, polling rates supported by
+  revision, sleep, debounce, LOD, motion sync, button mapping, RGB, macros,
+  profile import/export and actual firmware version (not USB bcdDevice).
+- [ ] L99: RTC, CPU/GPU utilization and temperatures, selected GPU, weather,
+  display brightness, media/GIF, RGB, sleep, Fn layer, key remap, macros and
+  profiles. Verify wireless/wired transport separately.
+- [ ] Windows Dynamic Lighting compatibility investigation; modular per-model
+  drivers with capability declarations. macOS feature parity is a separate
+  acceptance track, not inferred from Windows.
+- [ ] Update notification, signed/checksummed distribution, settings backup,
+  connection event log, optional local read-only REST API and Home Assistant.
+- [ ] Recovery: maintain RESUME.md with verified baseline, current branch,
+  completed code checkpoints, test/release evidence, blocking dependencies
+  and next actionable stage. Never repeat completed work after interruption.
+
+### Acceptance gates
+
+Read-only features may proceed independently of unverified writes.
+For configuration/display changes, first identify the model and transport,
+document the exact approved packet from real evidence, test the encoder
+and allowlist, capture original settings and recovery path when applicable,
+serialize I/O, require explicit apply and physical owner readback. No
+speculative writes, generic raw command UI, firmware flashing or bootloader
+operations. Shared receiver IDs are not sufficient proof of model identity.
+Missing metrics stay unknown, not invented values. Release checks and
+hardware acceptance remain separate.
+
 ## AULA L99 keyboard support (Windows, experimental)
 
 - [x] Add separate opt-in 2.4 GHz battery monitor, manual check and status.
@@ -51,7 +121,9 @@
   100% with separate icons enabled; AULA returned 98% on preceding poll.
 - [ ] Visual acceptance with all three icons, sleep/replug and persistence.
 - [x] beta.30 implement bounded AULA retry and labelled last-good cache.
-- [ ] beta.30 CI/release and hardware recovery check.
+- [x] beta.30 PR #41 Windows and macOS CI PASS; merged.
+- [x] beta.30 six-asset Latest publication verified (release workflow 45042853053).
+- [ ] beta.30 hardware recovery check.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.

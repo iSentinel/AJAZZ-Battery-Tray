@@ -211,6 +211,36 @@ aulaCache.Observe(true, true, 96, aulaTime.AddSeconds(70));
 aulaCache.Reset();
 Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
 
+// Device Manager displays observations rather than performing additional reads.
+var dashboardAt = DateTimeOffset.Parse("2026-11-22T15:18:19Z");
+DeviceDashboardState Dashboard(bool checkedOnce = true, bool known = true,
+    bool present = true, int? fresh = null, int? cached = null)
+    => DeviceDashboardState.FromPoll("L99", "2.4 GHz", checkedOnce, known,
+        present, fresh, dashboardAt, cached, dashboardAt.AddSeconds(-31));
+Check("Dashboard initial device not checked",
+    Dashboard(checkedOnce: false).Status == DeviceDashboardStatus.NotChecked);
+Check("Dashboard unknown presence never reports stale battery",
+    Dashboard(known: false, fresh: 98, cached: 98) is
+        { Status: DeviceDashboardStatus.PresenceUnknown, Percent: null });
+Check("Dashboard disconnected device never reports battery",
+    Dashboard(present: false, fresh: 98, cached: 98) is
+        { Status: DeviceDashboardStatus.Disconnected, Percent: null });
+Check("Dashboard fresh battery takes priority",
+    Dashboard(fresh: 97, cached: 98) is
+        { Status: DeviceDashboardStatus.Fresh, Percent: 97 });
+var cachedDashboard = Dashboard(cached: 98);
+Check("Dashboard labels cached percentage and original measurement time",
+    cachedDashboard.Status == DeviceDashboardStatus.Cached &&
+    cachedDashboard.Percent == 98 &&
+    cachedDashboard.MeasuredAt == dashboardAt.AddSeconds(-31));
+Check("Dashboard present without reply remains unknown",
+    Dashboard() is { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("Dashboard preserves valid zero percentage",
+    Dashboard(fresh: 0) is { Status: DeviceDashboardStatus.Fresh, Percent: 0 });
+Check("Dashboard rejects invalid out-of-range values",
+    Dashboard(fresh: 101, cached: -1) is
+        { Status: DeviceDashboardStatus.NoReply, Percent: null });
+
 // AULA's shared dongle must never be probed unless manually requested/opted in.
 Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);
 Check("AULA separate history CSV",

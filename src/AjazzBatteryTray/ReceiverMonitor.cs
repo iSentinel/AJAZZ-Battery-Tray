@@ -140,7 +140,7 @@ internal sealed class ReceiverMonitor : IDisposable
             menu.DropDownItems.Add(new ToolStripMenuItem(UiText.Get("unavailable")) { Enabled = false });
     }
 
-    private static void ShowHistory(State state)
+    internal static void ShowHistory(State state)
     {
         if (state.Window is null || state.Window.IsDisposed)
             state.Window = new BatteryHistoryForm(state.History, state.Label);

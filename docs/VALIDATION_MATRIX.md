@@ -34,6 +34,15 @@ No new receiver write commands have been enabled.
 - beta.30 bounded retry and cached display implemented; physical validation
   remains pending. No new HID command.
   
+## Device Manager expansion — beta.31 candidate
+
+- beta.30 PR and release CI PASS (workflow 45042853053), published six
+  assets; actual recovery and visual tray acceptance pending.
+- Windows read-only dashboard implemented: distinct receiver observations,
+  AULA cached/manual state, selected Bluetooth fallback and history shortcuts.
+  CI and real desktop acceptance pending. No new HID writes or polling
+  triggered merely by opening the window.
+
 ## AULA system telemetry preview — beta.29
 - Host-only native CPU load and optional loopback LibreHardwareMonitor
   CPU/GPU data.json parsing implemented; CI PASS, physical sensor test pending.

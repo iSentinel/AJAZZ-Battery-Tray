@@ -8,6 +8,19 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.31 (2026-11-22)
+- Add unified Windows Device Manager dashboard displaying independent
+  AJAZZ/AULA observations and the selected Bluetooth fallback.
+- Mark fresh, cached, manual, unavailable, disconnected, unknown,
+  disabled and standby states; show the original measurement timestamp.
+- Add per-device history shortcuts, existing refresh, diagnostic and
+  host-telemetry commands, English/Russian/Ukrainian localization.
+- Preserve tray polling and HID command allowlists: no extra automatic
+  hardware requests for an open dashboard.
+- Save the approved expansion roadmap through v1.0.0. Advance independent
+  dashboard work while L99 wireless screen synchronization awaits evidence.
+- Physical desktop acceptance remains pending.
+
 ## 0.3.0-beta.30 (2026-11-22)
 - Retry the approved AULA battery request once after a missed response.
 - Mark a recent last-good percentage as cached (grey icon, asterisk and
