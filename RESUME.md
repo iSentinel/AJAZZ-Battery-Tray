@@ -14,3 +14,12 @@
 - Next: validate beta.41 CI and publish, collect all three captures,
   compare actual receiver and protocol differences. Official application
   wire capture is separate; do not claim compatibility fixed.
+
+## GearHub investigation checkpoint
+- beta.41 PR #55 merged de5079f9eba04958cbc7ce468eb9dc1564d487f7;
+  Windows/macOS CI 45073232452/45073232505 PASS; release confirmation pending.
+- Static inspection of qmk.top/v4 JS confirms F7 status fields, multiple
+  APEX registry variants, alternate report ID selection and 10 ms timing.
+- Offline comparison tool and six synthetic tests; no live parser changes.
+- See docs/APEX_GEARHUB.md. Collect three beta.41 reports and reference
+  battery levels from GearHub or original utility; compare before changing HID.
