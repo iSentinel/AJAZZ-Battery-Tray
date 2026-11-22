@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.38 (2026-11-22)
+- Configure independent low-battery 50/25/10 threshold preferences for
+  each AJAZZ receiver and the AULA profile in Windows tray and dashboard.
+- Inherit global settings or use a custom set, including explicit mute.
+  Preserve the master switch, low-battery hysteresis and Bluetooth policy.
+- Validate persisted preferences, roll back failed saves, and localize
+  the editor. Nine pure settings checks cover the new preferences.
+- No new HID requests or changes to polling intervals.
+
 ## 0.3.0-beta.37 (2026-11-22)
 - Add explicitly consented Windows APEX battery protocol capture, including
   full F7/05 feature buffers, timings and parser rejection explanations.
