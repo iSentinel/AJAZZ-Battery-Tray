@@ -1374,5 +1374,65 @@ Check("Snapshot previously returned value remains immutable", retainedSnapshot?.
 snapshotStore.Clear();
 Check("Snapshot clear hides prior data", snapshotStore.Read(snapshotNow) is null);
 
+// Strict HTTP parser and real loopback tests, no external traffic.
+string localToken = LocalApiRequest.NewToken();
+Check("API token contains 256 random bits in hex", localToken.Length == 64 &&
+    localToken.All(char.IsAsciiHexDigit) && LocalApiRequest.NewToken() != localToken);
+string ApiHeader(string method = "GET", string route = "/v1/batteries",
+    string host = "127.0.0.1:18789", string? auth = null, string extra = "") =>
+    $"{method} {route} HTTP/1.1\r\nHost: {host}\r\n" +
+    (auth is null ? "" : $"Authorization: Bearer {auth}\r\n") + extra + "\r\n";
+int CheckHeader(string header) => LocalApiRequest.Check(header, 18789, localToken);
+Check("API GET authenticates", CheckHeader(ApiHeader(auth: localToken)) == 200);
+Check("API missing credential rejected", CheckHeader(ApiHeader()) == 401);
+Check("API wrong credential rejected", CheckHeader(ApiHeader(auth: new string('0', 64))) == 401);
+Check("API rejects non-loopback host", CheckHeader(ApiHeader(host: "example.invalid", auth: localToken)) == 400);
+Check("API rejects browser origin", CheckHeader(ApiHeader(auth: localToken, extra: "Origin: https://example.invalid\r\n")) == 403);
+Check("API rejects write method", CheckHeader(ApiHeader(method: "POST", auth: localToken)) == 405);
+Check("API rejects other route or query", CheckHeader(ApiHeader(route: "/v1/batteries?token=x", auth: localToken)) == 404);
+Check("API rejects duplicate headers", CheckHeader(ApiHeader(auth: localToken, extra: "Host: 127.0.0.1:18789\r\n")) == 400);
+Check("API rejects framing for a body", CheckHeader(ApiHeader(auth: localToken, extra: "Content-Length: 1\r\n")) == 400 &&
+    CheckHeader(ApiHeader(auth: localToken, extra: "Transfer-Encoding: chunked\r\n")) == 400);
+Check("API rejects malformed or oversized header", CheckHeader("GET") == 400 &&
+    CheckHeader(ApiHeader(auth: localToken, extra: "X-Test: " + new string('x', 8192) + "\r\n")) == 400);
+Check("API rejects stray header line break", CheckHeader(ApiHeader(auth: localToken, extra: "X-Test: a\nb\r\n")) == 400);
+
+async Task TestLoopbackApi()
+{
+    var liveStore = new LocalSnapshotStore();
+    await using var localServer = new LocalApiServer(liveStore, 0);
+    using var client = new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler { UseProxy = false, AllowAutoRedirect = false });
+    client.Timeout = TimeSpan.FromSeconds(8);
+    using var unauthorized = await client.GetAsync(localServer.Endpoint);
+    Check("HTTP loopback rejects unauthenticated request", (int)unauthorized.StatusCode == 401);
+    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", localServer.Token);
+    using var empty = await client.GetAsync(localServer.Endpoint);
+    Check("HTTP loopback reports unavailable snapshot", (int)empty.StatusCode == 503);
+    var measured = DateTimeOffset.UtcNow.AddSeconds(-1);
+    liveStore.Publish(measured, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 76, measured) });
+    using var valid = await client.GetAsync(localServer.Endpoint);
+    string body = await valid.Content.ReadAsStringAsync();
+    Check("HTTP loopback returns sanitized snapshot", (int)valid.StatusCode == 200 &&
+        body.Contains("\"batteryPercent\":76") && !body.Contains("private-name"));
+    using var unknown = await client.GetAsync(localServer.Endpoint + "/unknown");
+    Check("HTTP loopback rejects unknown route", (int)unknown.StatusCode == 404);
+    using var postRequest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, localServer.Endpoint);
+    using var rejected = await client.SendAsync(postRequest);
+    Check("HTTP loopback rejects POST", (int)rejected.StatusCode == 405);
+    bool portBusy = false;
+    try { await using var duplicate = new LocalApiServer(liveStore, localServer.Port); }
+    catch (System.Net.Sockets.SocketException) { portBusy = true; }
+    Check("HTTP loopback rejects occupied port", portBusy);
+    using var stalled = new System.Net.Sockets.TcpClient();
+    await stalled.ConnectAsync(System.Net.IPAddress.Loopback, localServer.Port);
+    await localServer.DisposeAsync();
+    bool stopped = false;
+    using var probe = new System.Net.Sockets.TcpClient();
+    try { await probe.ConnectAsync(System.Net.IPAddress.Loopback, localServer.Port); }
+    catch (System.Net.Sockets.SocketException) { stopped = true; }
+    Check("HTTP loopback releases listener on stop", stopped);
+}
+TestLoopbackApi().GetAwaiter().GetResult();
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
