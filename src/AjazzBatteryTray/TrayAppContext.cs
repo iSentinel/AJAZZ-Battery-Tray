@@ -114,6 +114,12 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(BuildSettingsMenu());
         menu.Items.Add(BuildDiagnosticsMenu());
+        menu.Items.Add(UiText.Get("Check for updates..."), null, (_, _) =>
+        {
+            if (_closing) return;
+            using var dialog = new UpdateCheckForm();
+            dialog.ShowDialog();
+        });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(UiText.Get("Exit"), null, (_, _) => ExitThread());
         return menu;
