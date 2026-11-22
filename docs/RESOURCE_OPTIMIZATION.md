@@ -33,3 +33,15 @@ those. Also verify transitions: fresh, cached, disconnected, neutral,
 per-device colors, language change, secondary icons and Explorer restart.
 No threshold for resource use has yet been owner-approved. No measured
 improvement is claimed until the Windows comparison is completed.
+
+## History startup and idle allocation
+- Constructor no longer reads or sorts CSV data. First actual Record loads
+  only the newest retained valid row using one streaming pass. Explicit
+  graph reads still use full retention and chronological ordering.
+- Unchanged readings use the existing timestamp/percent/state comparison
+  without allocating a BatterySample. Keep five-minute samples, changes,
+  disconnect events, 30-day retention and 20,000-row limit unchanged.
+- Eight additional assertions cover streaming equivalence, ties, bounds,
+  lazy load and actual temporary-file append suppression.
+- Windows CI now smoke-tests the PowerShell sampler against its own process
+  and verifies CSV shape and no overwrite. This is not a tray CPU benchmark.
