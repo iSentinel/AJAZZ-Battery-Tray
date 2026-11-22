@@ -87,6 +87,9 @@ public static class UiText
         ["Start with Windows"] = ("Запускать вместе с Windows", "Запускати разом із Windows"),
         ["Language"] = ("Язык", "Мова"),
         ["Diagnostics"] = ("Диагностика", "Діагностика"),
+        ["Device battery alerts..."] = ("Уведомления батареи устройства...", "Сповіщення батареї пристрою..."),
+        ["Use global alert thresholds"] = ("Использовать общие пороги", "Використовувати загальні пороги"),
+        ["Global notification switch still applies."] = ("Общий переключатель уведомлений продолжает действовать.", "Загальний перемикач сповіщень продовжує діяти."),
         ["Capture AJAZZ battery protocol..."] = ("Записать протокол батареи AJAZZ...", "Записати протокол батареї AJAZZ..."),
         ["A poll or diagnostic is running. Try again."] = ("Выполняется опрос или диагностика. Повторите попытку.", "Триває опитування або діагностика. Повторіть спробу."),
         ["Capture full vendor battery buffers locally? Close the official utility first. Review raw data before sharing."] =
