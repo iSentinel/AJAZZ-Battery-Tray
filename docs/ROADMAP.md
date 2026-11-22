@@ -35,11 +35,11 @@ available beta number is assigned at release preparation.
 
 | Proposed milestone | Scope | Dependency / status |
 | --- | --- | --- |
-| beta.30 | AULA battery stability | PR 41 CI PASS and merged; publication and owner acceptance tracked separately |
+| beta.30 | AULA battery stability | PR 41 CI PASS, merged and six-asset release verified; owner recovery check pending |
 | beta.31 | L99 RTC clock synchronization | BLOCKED: actual 2.4 GHz vendor RTC capture |
 | beta.32 | L99 CPU/GPU load, temperatures, GPU selection | BLOCKED on verified RTC/telemetry layout and owner screen test |
 | beta.33 | L99 weather | Verified field semantics, explicit location/provider consent |
-| beta.34 | Unified Device Manager dashboard | STARTED early: read-only UI can proceed while radio evidence is pending |
+| beta.34 | Unified Device Manager dashboard | IMPLEMENTED early as beta.31 candidate: read-only UI proceeds while radio evidence is pending |
 | beta.35 | Per-device names, tray visibility/color, alert and poll settings | Stable local identity, duplicate/unknown revision handling |
 | beta.36 | Battery analytics | Local fresh history, estimated runtime and charge cycles with uncertainty |
 | beta.37 | Multi-device Bluetooth | Paired-only selection, transport identity, independent backoff |
@@ -60,9 +60,11 @@ available beta number is assigned at release preparation.
 - [ ] Battery analytics: charge/discharge sessions, estimated remaining
   runtime, equivalent cycle estimates, CSV export, timestamps and confidence.
   Never claim battery health or remaining capacity from percentage alone.
-- [ ] Dashboard: device states, battery freshness/source, history shortcuts,
-  diagnostics, refresh, localization, keyboard accessibility, light/dark
-  design; keep background tray fast and independent of the open window.
+- [x] Initial Windows dashboard implementation: device states, battery freshness,
+  source, measurement timestamps, history shortcuts, diagnostics, refresh,
+  English/Russian/Ukrainian labels; reuse existing polling.
+- [ ] Dashboard CI, real desktop acceptance, keyboard accessibility review,
+  theme options and future macOS parity.
 - [ ] AJ159/AJ179: verified current DPI and stages, polling rates supported by
   revision, sleep, debounce, LOD, motion sync, button mapping, RGB, macros,
   profile import/export and actual firmware version (not USB bcdDevice).
@@ -120,7 +122,8 @@ hardware acceptance remain separate.
 - [ ] Visual acceptance with all three icons, sleep/replug and persistence.
 - [x] beta.30 implement bounded AULA retry and labelled last-good cache.
 - [x] beta.30 PR #41 Windows and macOS CI PASS; merged.
-- [ ] beta.30 publication verification and hardware recovery check.
+- [x] beta.30 six-asset Latest publication verified (release workflow 45042853053).
+- [ ] beta.30 hardware recovery check.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.
