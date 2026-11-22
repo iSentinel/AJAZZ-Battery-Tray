@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.37 (2026-11-22)
+- Add explicitly consented Windows APEX battery protocol capture, including
+  full F7/05 feature buffers, timings and parser rejection explanations.
+- Test diagnostic-only 30/100/250 ms waits; stop at the first valid reply.
+- Preserve ordinary polling, battery parsing, privacy-safe normal reports
+  and the existing HID command allowlist. Do not claim incident resolution.
+- Add six diagnostic classification checks and official utility comparison
+  instructions. Physical target validation remains pending.
+
 ## 0.3.0-beta.36 (2026-11-22)
 - Add six selectable normal-charge tray colors, independently persisted
   per AJAZZ receiver and AULA monitoring profile.
