@@ -168,3 +168,15 @@ battery or clock problem.
   main and extra icon refresh, local settings persistence and eleven pure
   tests implemented. Windows/macOS CI and owner visual acceptance pending.
 - No change to hardware writes, polling, history or alert policy.
+
+## APEX protocol compatibility — beta.37 candidate
+
+- Initial PR #49 head 9dfcfef: Windows CI 45062122792 and macOS CI
+  45062122761 completed successfully. Final release metadata CI pending.
+- Capture is explicit, local and Windows-only, with existing F7/05 requests
+  and diagnostic-only timing sweep; ordinary monitoring is unchanged.
+- Owner reports an additional APEX mouse whose original software reads
+  battery correctly. Exact physical model and reference traffic pending.
+- Hardware acceptance: collect redacted target transactions and compare
+  official app against our capture; regress prior APEX receivers and sleep/wake.
+- No claim that the battery compatibility defect is fixed.
