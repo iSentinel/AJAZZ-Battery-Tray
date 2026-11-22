@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.36 (2026-11-22)
+- Add six selectable normal-charge tray colors, independently persisted
+  per AJAZZ receiver and AULA monitoring profile.
+- Preserve red/amber low-charge and gray cached/unavailable states;
+  update primary and additional icons as soon as preferences are saved.
+- Add localized palette editor with icon previews, reset via default
+  selection, settings validation and eleven pure tests.
+- No new HID commands, Windows property writes or threshold changes.
+
 ## 0.3.0-beta.35 (2026-11-22)
 - Add persistent per-device tray visibility controls in the dashboard and
   receiver/AULA submenus without changing sampling, history or notifications.

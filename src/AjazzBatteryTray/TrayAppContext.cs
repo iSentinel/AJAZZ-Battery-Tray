@@ -80,8 +80,10 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(UiText.Get("Device Manager"), null, (_, _) => ShowDashboard());
         menu.Items.Add(UiText.Get("Refresh now"), null, (_, _) => PollSoon());
         _devicesMenu = new ToolStripMenuItem(UiText.Get("AJAZZ receivers"));
-        _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible, ToggleTrayVisibility);
-        _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible, ToggleTrayVisibility);
+        _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
+            ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel));
+        _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
+            ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel));
         menu.Items.Add(_devicesMenu);
         menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
@@ -156,6 +158,27 @@ public sealed class TrayAppContext : ApplicationContext
         RefreshDeviceDisplay();
     }
 
+    private string DeviceColor(string key)
+        => TrayColorRules.Normalize(_settings.DeviceTrayColors.GetValueOrDefault(key));
+
+    private void EditTrayColor(string key, string name)
+    {
+        if (_closing || !DeviceAliasRules.ValidKey(key)) return;
+        string? original = _settings.DeviceTrayColors.GetValueOrDefault(key);
+        using var dialog = new TrayColorForm(name, DeviceColor(key));
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
+        if (dialog.Choice == TrayColorRules.Default) _settings.DeviceTrayColors.Remove(key);
+        else _settings.DeviceTrayColors[key] = dialog.Choice;
+        if (!_settings.Save())
+        {
+            if (original is null) _settings.DeviceTrayColors.Remove(key);
+            else _settings.DeviceTrayColors[key] = original;
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        RefreshDeviceDisplay();
+    }
+
     private void ShowDashboard()
     {
         if (_closing) return;
@@ -180,7 +203,8 @@ public sealed class TrayAppContext : ApplicationContext
                 _latestUsbReadAt);
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
-                () => ToggleTrayVisibility(receiver.Key)));
+                () => ToggleTrayVisibility(receiver.Key),
+                () => EditTrayColor(receiver.Key, receiver.DisplayLabel)));
         }
         if (entries.Count == 0)
         {
@@ -191,7 +215,8 @@ public sealed class TrayAppContext : ApplicationContext
         }
         entries.Add(new(AulaDashboardState(), ShowAulaHistory, DeviceAliasRules.AulaSlot,
             EditAulaName, IsTrayVisible(DeviceAliasRules.AulaSlot),
-            () => ToggleTrayVisibility(DeviceAliasRules.AulaSlot)));
+            () => ToggleTrayVisibility(DeviceAliasRules.AulaSlot),
+            () => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName)));
         if (_bluetoothPolicy.Enabled) entries.Add(new(BluetoothDashboardState()));
         _dashboard.SetEntries(entries);
     }
@@ -282,6 +307,8 @@ public sealed class TrayAppContext : ApplicationContext
             visibility.Checked = IsTrayVisible(DeviceAliasRules.AulaSlot);
         };
         menu.DropDownItems.Add(visibility);
+        menu.DropDownItems.Add(UiText.Get("Tray icon color..."), null,
+            (_, _) => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName));
         menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
             (_, _) => ShowAulaHistory());
         menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
@@ -1177,18 +1204,21 @@ public sealed class TrayAppContext : ApplicationContext
         _statusItem.Text = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
         string tooltip = neutral ? UiText.Get("Device Manager") : $"{value} — {displayName} ({source})";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
-        UpdateIcon(displayPercent, displayConnected, stale, neutral);
+        string color = aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
+            receiver is not null ? DeviceColor(receiver.Key) : TrayColorRules.Default;
+        UpdateIcon(displayPercent, displayConnected, stale, neutral, color);
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
-                receiver?.Key, _settings.HiddenTrayDevices);
+                receiver?.Key, _settings.HiddenTrayDevices, DeviceColor);
         UpdateBluetoothStatus();
         RefreshDashboard();
     }
 
-    private void UpdateIcon(int? percent, bool connected, bool stale = false, bool neutral = false)
+    private void UpdateIcon(int? percent, bool connected, bool stale = false,
+        bool neutral = false, string? color = null)
     {
-        Icon next = TrayIconFactory.Create(percent, connected, stale, neutral);
+        Icon next = TrayIconFactory.Create(percent, connected, stale, neutral, color);
         Icon? previous = _icon;
         _icon = next;
         _tray.Icon = next;

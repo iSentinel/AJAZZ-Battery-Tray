@@ -10,7 +10,7 @@ public static class TrayIconFactory
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr icon);
 
-    public static Icon Create(int? level, bool connected, bool stale = false, bool neutral = false)
+    public static Icon Create(int? level, bool connected, bool stale = false, bool neutral = false, string? color = null)
     {
         if (neutral) return (Icon)SystemIcons.Application.Clone();
         using Bitmap image = new(64, 64);
@@ -18,10 +18,8 @@ public static class TrayIconFactory
         {
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            Color background = !connected || stale ? Color.FromArgb(110, 118, 130) :
-                level <= 10 ? Color.FromArgb(220, 53, 69) :
-                level <= 20 ? Color.FromArgb(225, 145, 18) :
-                Color.FromArgb(27, 151, 103);
+            Color background = Color.FromArgb(unchecked((int)0xFF000000) |
+                TrayColorRules.Resolve(level, connected, stale, color));
             using Brush fill = new SolidBrush(background);
             graphics.FillEllipse(fill, 2, 2, 60, 60);
             string text = connected && level is not null ? level.ToString()! + (stale ? "*" : "") : "?";

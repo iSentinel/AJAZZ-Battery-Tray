@@ -40,7 +40,7 @@ available beta number is assigned at release preparation.
 | beta.32 | L99 CPU/GPU load, temperatures, GPU selection | BLOCKED on verified RTC/telemetry layout and owner screen test |
 | beta.33 | L99 weather | Verified field semantics, explicit location/provider consent |
 | beta.34 | Unified Device Manager dashboard | beta.31 released; owner accepted three live dashboard rows in beta.32 |
-| beta.35 | Per-device names, Windows PnP friendly names, tray visibility/color, alert and poll settings | beta.32 preview and beta.33 aliases released; beta.35 independent icon visibility implemented; PnP apply remains gated |
+| beta.35 | Per-device names, Windows PnP friendly names, tray visibility/color, alert and poll settings | beta.32 preview and beta.33 aliases released; beta.35 icon visibility released; beta.36 color selection implemented; PnP apply remains gated |
 | beta.36 | Battery analytics | Local fresh history, estimated runtime and charge cycles with uncertainty |
 | beta.37 | Multi-device Bluetooth | Paired-only selection, transport identity, independent backoff |
 | beta.38 | Update checker | GitHub releases, stable/experimental channel, checksum verification, opt-in |
@@ -159,11 +159,15 @@ hardware acceptance remain separate.
 - [x] Owner beta.32 report: fresh L99 battery 93%; prolonged sleep can still hide battery.
 - [x] beta.34 implement 24-hour session-only stale display and receiver continuity.
 - [x] beta.34 PR #45 Windows/macOS CI PASS; merged.
-- [ ] Verify beta.34 release publication and physical prolonged-sleep recovery.
+- [x] beta.34 six-asset release publication verified.
+- [ ] Physical prolonged-sleep recovery.
 - [x] beta.35 implement independent showing/hiding of AJAZZ/AULA icons,
   persistent preferences and neutral menu access without disabling monitoring.
-- [ ] beta.35 CI/release and owner acceptance of hide/show and persistence.
-- [ ] Per-device alert settings, icon color and poll intervals.
+- [x] beta.35 Windows/macOS CI and six-asset release verified.
+- [ ] Owner acceptance of hide/show and persistence.
+- [x] beta.36 implement individual normal-charge palette with fixed warning/cached colors.
+- [ ] beta.36 CI, release and real tray visual acceptance.
+- [ ] Per-device alert settings and poll intervals.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.

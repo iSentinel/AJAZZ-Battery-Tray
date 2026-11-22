@@ -217,6 +217,30 @@ aulaCache.Observe(false, false, null, aulaTime.AddSeconds(30));
 Check("AULA uncertain receiver identity invalidates cache",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null);
 
+// Setting a palette changes appearance, not battery status.
+string colorKeyA = new string('A', 64);
+string colorKeyB = new string('B', 64);
+Check("Tray palette default unchanged", TrayColorRules.Resolve(80, true, false, null) == 0x1B9767);
+Check("Tray palette blue at normal charge", TrayColorRules.Resolve(80, true, false, "blue") == 0x2464C7);
+Check("Tray palette low battery overrides color", TrayColorRules.Resolve(10, true, false, "blue") == TrayColorRules.Red);
+Check("Tray palette warning overrides color", TrayColorRules.Resolve(20, true, false, "purple") == TrayColorRules.Amber);
+Check("Tray palette cached overrides warning", TrayColorRules.Resolve(8, true, true, "blue") == TrayColorRules.Gray);
+Check("Tray palette disconnected overrides color", TrayColorRules.Resolve(90, false, false, "pink") == TrayColorRules.Gray);
+Check("Tray palette invalid level unavailable", TrayColorRules.Resolve(101, true, false, "pink") == TrayColorRules.Gray);
+Check("Tray palette invalid selection uses default", TrayColorRules.Normalize("unknown") == TrayColorRules.Default);
+var colors = TrayColorRules.Clean(new Dictionary<string, string>
+{
+    [colorKeyA] = "blue", [colorKeyB] = "purple",
+    [DeviceAliasRules.AulaSlot] = "green", ["path"] = "pink"
+});
+Check("Tray palettes preserve independent valid preferences",
+    colors.Count == 2 && colors[colorKeyA] == "blue" && colors[colorKeyB] == "purple");
+Check("Tray palette null settings safe", TrayColorRules.Clean(null).Count == 0);
+Check("Tray colors survive settings round trip",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(new AppSettings { DeviceTrayColors = colors }))
+        ?.DeviceTrayColors[colorKeyB] == "purple");
+
 // Tray visibility must not alter receiver measurement identity.
 string trayKeyA = new string('A', 64);
 string trayKeyB = new string('B', 64);
