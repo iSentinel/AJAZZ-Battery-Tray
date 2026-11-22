@@ -17,6 +17,7 @@ public sealed class TrayAppContext : ApplicationContext
     private AulaL99Reading? _aulaLatest;
     private DateTimeOffset? _aulaLastReadAt;
     private bool _aulaBusy;
+    private bool _hostMetricsBusy;
     private ToolStripMenuItem _aulaStatus = new();
     private readonly AlertPolicy _alerts = new();
     private readonly ReceiverMonitor _receivers = new();
@@ -140,8 +141,43 @@ public sealed class TrayAppContext : ApplicationContext
             (_, _) => ShowAulaHistory());
         menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
             (_, _) => CopyAulaSummary());
+        menu.DropDownItems.Add(UiText.Get("System telemetry preview..."), null,
+            (_, _) => _ = ShowHostMetricsAsync());
         UpdateAulaStatus();
         return menu;
+    }
+
+    /// <summary>Preview host readings without sending anything to the keyboard.</summary>
+    private async Task ShowHostMetricsAsync()
+    {
+        if (_closing || _hostMetricsBusy) return;
+        _hostMetricsBusy = true;
+        try
+        {
+            var snapshot = await Task.Run(HostMetricsReader.ReadAsync);
+            if (_closing) return;
+            string Value(double? number, string unit) => number is double value
+                ? $"{value:0.#}{unit}" : UiText.Get("unavailable");
+            List<string> lines = new()
+            {
+                UiText.Get("Preview only — no keyboard data sent."),
+                UiText.Format("Windows CPU load: {0}", Value(snapshot.WindowsCpuLoad, "%")),
+                ""
+            };
+            foreach (var hardware in snapshot.Hardware)
+            {
+                lines.Add((hardware.IsGpu ? "GPU: " : "CPU: ") + hardware.Name);
+                lines.Add(UiText.Format("Load: {0}; temperature: {1}",
+                    Value(hardware.LoadPercent, "%"), Value(hardware.TemperatureC, " °C")));
+                lines.Add("");
+            }
+            if (!snapshot.ProviderAvailable || snapshot.Hardware.Count == 0)
+                lines.Add(UiText.Get("For GPU and temperature sensors, use a running LibreHardwareMonitor local web server at 127.0.0.1:8085."));
+            MessageBox.Show(string.Join(Environment.NewLine, lines),
+                UiText.Get("System telemetry preview..."), MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        finally { _hostMetricsBusy = false; }
     }
 
     private void CopyAulaSummary()

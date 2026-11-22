@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.28 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.29 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
 
 ## Windows multiple devices
 
@@ -44,6 +44,17 @@ proof of L99 identity. The owner's connected L99 returned a fresh 100% battery r
 sleep/wake and other hardware behavior remain unverified. A sleeping keyboard, mismatched dongle revision or missing response
 will show unavailable rather than an invented percentage. No keyboard
 settings/firmware/RGB command is implemented. **macOS L99 is not supported**.
+
+## AULA system telemetry preview (Windows)
+
+Open **AULA L99 → System telemetry preview...** to sample Windows CPU load.
+GPU utilization and CPU/GPU temperatures are read from a user-started
+LibreHardwareMonitor local web server at 127.0.0.1:8085 if available.
+Keep that server restricted to loopback, never expose it to the network.
+Each GPU/package is shown separately; missing sensors remain unavailable.
+No driver is installed or bundled; the preview does not send keyboard
+data, start a remote service or enable automatic screen synchronization.
+See [the screen synchronization evidence and gates](docs/AULA_L99_SCREEN_SYNC.md).
 
 ## Extended Windows diagnostics
 

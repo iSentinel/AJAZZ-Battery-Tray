@@ -74,6 +74,43 @@ Check("AJ179 revision label", ReceiverIdentity.Label(0x0002).Contains("AJ179"));
 Check("Unknown revision remains generic", ReceiverIdentity.Label(0x4321) == "AJAZZ (rev. 4321)");
 Check("Missing revision remains generic", ReceiverIdentity.Label(null) == "AJAZZ (unknown revision)");
 
+Check("CPU load computes busy fraction", HostMetricsRules.CpuLoad(40, 60, 40) == 60);
+Check("CPU idle is legitimate zero", HostMetricsRules.CpuLoad(100, 100, 0) == 0);
+Check("CPU counter unavailable", HostMetricsRules.CpuLoad(0, 0, 0) is null);
+Check("Reject contradictory CPU counters", HostMetricsRules.CpuLoad(40, 30, 10) is null);
+Check("Localized metric decimal", HostMetricsRules.ParseValue("42,5 °C", true) == 42.5);
+Check("Reject bad load", HostMetricsRules.ParseValue("101 %", false) is null);
+Check("Reject non-temperature unit", HostMetricsRules.ParseValue("44 W", true) is null);
+Check("Missing metric stays null", HostMetricsRules.ParseValue("-", false) is null);
+Check("Valid zero load", HostMetricsRules.ParseValue("0 %", false) == 0);
+const string previewJson = """
+{
+  "Children": [
+    {"HardwareId":"/intelcpu/0","Text":"CPU A","Children":[
+      {"Children":[{"SensorId":"/intelcpu/0/load/0","Type":"Load","Text":"CPU Total","RawValue":"27.5 %"}]},
+      {"Children":[{"SensorId":"/intelcpu/0/temperature/0","Type":"Temperature","Text":"CPU Package","RawValue":"51 °C"}]}
+    ]},
+    {"HardwareId":"/gpu-nvidia/0","Text":"GPU A","Children":[
+      {"SensorId":"/gpu-nvidia/0/load/0","Type":"Load","Text":"GPU Core","RawValue":"68 %"},
+      {"SensorId":"/gpu-nvidia/0/temperature/0","Type":"Temperature","Text":"GPU Core","RawValue":"64 °C"},
+      {"SensorId":"/gpu-nvidia/0/temperature/1","Type":"Temperature","Text":"GPU Memory","RawValue":"82 °C"}
+    ]},
+    {"HardwareId":"/gpu-intel/1","Text":"GPU B","Children":[
+      {"SensorId":"/gpu-intel/1/load/0","Type":"Load","Text":"GPU Core","RawValue":"0 %"}
+    ]}
+  ]
+}
+""";
+var hostMetrics = HostMetricsRules.ParseProvider(System.Text.Encoding.UTF8.GetBytes(previewJson));
+Check("Host preview separates all CPUs and GPUs", hostMetrics.Count == 3 &&
+    !hostMetrics[0].IsGpu && hostMetrics[1].IsGpu && hostMetrics[2].IsGpu);
+Check("CPU package and load parsed", hostMetrics[0].LoadPercent == 27.5 &&
+    hostMetrics[0].TemperatureC == 51);
+Check("GPU core temperature does not use memory sensor", hostMetrics[1].LoadPercent == 68 &&
+    hostMetrics[1].TemperatureC == 64);
+Check("Missing GPU temperature is unknown, not zero", hostMetrics[2].LoadPercent == 0 &&
+    hostMetrics[2].TemperatureC is null);
+
 AlertPolicy policy = new();
 Check("normal battery no alert", policy.Evaluate(75) is null);
 Check("at 50 is not below 50", policy.Evaluate(50) is null);

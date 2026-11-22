@@ -46,11 +46,15 @@
   version returned only one valid response; AJ179 inferred as bcdDevice 0002.
 - [x] Independent per-receiver sampling, history, notification state,
   diagnostic trace and optional extra tray icons (Windows beta.28 code).
-- [ ] Run beta.28 CI and hardware acceptance with both mice + AULA;
-  test sleep/replug, unavailable data and icon setting persistence.
+- [x] beta.28 PR CI, release workflow and six-asset Latest verified.
+- [ ] Hardware acceptance with both mice + AULA; test sleep/replug,
+  unavailable data and icon setting persistence.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
-- [ ] Investigate AULA host CPU/GPU telemetry preview and exact radio RTC
-  packet layout before enabling any additional approved write command.
+- [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
+- [ ] beta.29 CI and real Windows sensor preview acceptance.
+- [ ] Resolve radio RTC packet layout from actual L99 2.4 GHz vendor traffic
+  before enabling any additional approved write command.
+  See [AULA screen sync evidence and gates](AULA_L99_SCREEN_SYNC.md).
 - [ ] Confirm manual L99 time/telemetry transfer on hardware before automatic
   sync; weather is a later, separately validated stage.
 

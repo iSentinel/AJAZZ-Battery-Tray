@@ -68,6 +68,12 @@ public static class UiText
         ["Records: {0}  |  Local CSV: {1} (last 30 days)"] =
             ("Записей: {0}  |  Локальный CSV: {1} (30 дней)",
              "Записів: {0}  |  Локальний CSV: {1} (30 днів)"),
+        ["System telemetry preview..."] = ("Предпросмотр системной телеметрии...", "Попередній перегляд системної телеметрії..."),
+        ["Preview only — no keyboard data sent."] = ("Только предпросмотр — данные клавиатуре не отправлены.", "Лише попередній перегляд — дані клавіатурі не надіслані."),
+        ["Windows CPU load: {0}"] = ("Нагрузка CPU (Windows): {0}", "Навантаження CPU (Windows): {0}"),
+        ["Load: {0}; temperature: {1}"] = ("Нагрузка: {0}; температура: {1}", "Навантаження: {0}; температура: {1}"),
+        ["For GPU and temperature sensors, use a running LibreHardwareMonitor local web server at 127.0.0.1:8085."] =
+            ("Для GPU и температур запусти локальный веб-сервер LibreHardwareMonitor на 127.0.0.1:8085.", "Для GPU і температур запусти локальний вебсервер LibreHardwareMonitor на 127.0.0.1:8085."),
         ["AULA L99 (experimental)"] =
             ("AULA L99 (экспериментально)", "AULA L99 (експериментально)"),
         ["AULA L99: not checked"] =

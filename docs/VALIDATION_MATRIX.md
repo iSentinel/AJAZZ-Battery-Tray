@@ -20,9 +20,16 @@ Owner returned two local Save As reports. AJ159 alone: revision 0300,
 Both receivers: revisions 0300 and 0002, one 100% response (model not
 distinguished by beta.27). AJ179 revision inferred by receiver removal.
 These observations do not establish universal revision-to-model mappings.
-Windows beta.28 independent sampling and optional multiple tray icons
-are implemented; simultaneous hardware acceptance and CI remain pending.
+Windows beta.28 independent sampling and optional multiple tray icons:
+PR Windows/macOS CI and release installer smoke test PASS; simultaneous
+hardware acceptance pending.
 No new receiver write commands have been enabled.
+
+## AULA system telemetry preview — beta.29
+- Host-only native CPU load and optional loopback LibreHardwareMonitor
+  CPU/GPU data.json parsing implemented; CI and physical sensor test pending.
+- Actual radio monitor/RTC wire format remains unconfirmed; no write has
+  been implemented. See AULA_L99_SCREEN_SYNC.md.
 
 ## Evidence snapshot — 2026-11-06
 

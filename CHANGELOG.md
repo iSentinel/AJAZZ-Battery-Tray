@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.29 (2026-11-22)
+- Add manual, host-only AULA system telemetry preview: native Windows CPU
+  load and optional local LibreHardwareMonitor CPU/GPU load/temperature.
+- Parse hardware sensor trees without mixing adapters; preserve missing
+  values, bound local HTTP and reject invalid sensor types/units/ranges.
+- Document contradictory wireless RTC layouts and the capture gate before
+  enabling any screen command. No driver install or new HID write.
+- Keep existing multi-device monitoring and macOS behavior.
+
 ## 0.3.0-beta.28 (2026-11-22)
 - Poll each supported Windows AJAZZ receiver independently instead of
   returning after the first successful response.
