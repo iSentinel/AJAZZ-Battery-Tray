@@ -141,7 +141,9 @@ hardware acceptance remain separate.
 ## P0 — APEX battery protocol compatibility (2026-11-22)
 
 - Owner reports an additional APEX mouse whose battery is unavailable in our
-  app but available in the original utility; exact model number pending.
+  app but available in the original utility; owner confirmed AJ159 APEX.
+- [x] Physical model confirmed; tracked in P0 issue #53.
+- [ ] Obtain actual receiver/protocol captures; do not infer revision mapping.
 - [x] Implement explicit local full-buffer battery capture and parser reasons
   without changing normal sampling, allowlist or model mappings.
 - [x] Add diagnostic-only bounded timing sweep and instructions for official
