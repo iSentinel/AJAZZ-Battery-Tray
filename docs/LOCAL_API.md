@@ -27,7 +27,7 @@ when monitoring is disabled. Diagnostics > Copy local battery snapshot
 explicitly copies the current projection without polling hardware.
 The store re-ages values at read time without changing measurement or
 generation timestamps. Initial snapshot Windows 45082634886 / macOS 45082634877 PASS.
-Combined HTTP regression and physical UI acceptance pending.
+Combined HTTP Windows 45083205204 / macOS 45083205268 PASS. Physical UI acceptance pending.
 
 ## Experimental loopback endpoint
 
@@ -52,7 +52,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:18789/v1/batteries' -Headers $headers
 
 The 12 request-policy and 7 actual loopback assertions cover authorization,
 route/method, unsafe Host, browser Origin, malformed headers, unavailable
-snapshot, port conflicts and listener shutdown. Combined CI pending.
+snapshot, port conflicts and listener shutdown. Initial combined CI PASS.
 
 ## Next
 Complete CI and owner Windows acceptance. Test token rotation, stalled

@@ -8,6 +8,12 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.47 (2026-11-23)
+- Privacy-filtered immutable battery snapshots with read-time expiration.
+- Explicit session-only loopback HTTP API, random bearer token, bounded GET requests.
+- 44 snapshot and HTTP assertions; initial Windows and macOS CI PASS.
+- No LAN binding, automatic listener, hardware controls or remote HA integration.
+
 ## 0.3.0-beta.46 (2026-11-23)
 - Portable global preference export, localized preview and explicit restore.
 - Strict 8 KiB versioned schema; transactional rollback on settings save failure.

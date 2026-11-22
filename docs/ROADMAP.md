@@ -402,3 +402,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add confirmed restore, rollback, and live preference UI refresh.
 - [ ] Final beta.46 CI, release and physical Windows UI acceptance.
 - [ ] Read-only local API snapshot foundation; no listener enabled by default.
+
+## beta.47 local battery API checkpoint
+- [x] beta.46 release 45082464200 PASS; all six assets verified.
+- [x] Integrated immutable snapshot and authenticated loopback endpoint;
+  Windows 45083205204 / macOS 45083205268 PASS.
+- [ ] Final beta.47 CI, publication and actual Windows/HID acceptance.
+- [ ] Independent secure Home Assistant bridge design and explicit device mapping.
+  No LAN binding or unauthenticated HTTP.
