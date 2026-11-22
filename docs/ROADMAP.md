@@ -146,7 +146,8 @@ hardware acceptance remain separate.
   without changing normal sampling, allowlist or model mappings.
 - [x] Add diagnostic-only bounded timing sweep and instructions for official
   utility comparison: [APEX protocol diagnostics](APEX_PROTOCOL_DIAGNOSTICS.md).
-- [ ] Windows/macOS CI and capture dialog smoke test.
+- [x] Initial PR #49 Windows/macOS CI passed (45062122792 / 45062122761).
+- [ ] Final beta.37 metadata CI, six-asset publication and capture dialog smoke test.
 - [ ] Obtain reference captures and physically confirm model.
 - [ ] Compare actual interface, report IDs, sequence, lengths, data and delays.
 - [ ] Evidence-backed protocol correction and regression on previous APEX models.
