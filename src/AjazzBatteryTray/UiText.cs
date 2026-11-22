@@ -87,6 +87,11 @@ public static class UiText
         ["Start with Windows"] = ("Запускать вместе с Windows", "Запускати разом із Windows"),
         ["Language"] = ("Язык", "Мова"),
         ["Diagnostics"] = ("Диагностика", "Діагностика"),
+        ["Capture AJAZZ battery protocol..."] = ("Записать протокол батареи AJAZZ...", "Записати протокол батареї AJAZZ..."),
+        ["A poll or diagnostic is running. Try again."] = ("Выполняется опрос или диагностика. Повторите попытку.", "Триває опитування або діагностика. Повторіть спробу."),
+        ["Capture full vendor battery buffers locally? Close the official utility first. Review raw data before sharing."] =
+            ("Записать полные буферы батареи локально? Сначала закройте оригинальную утилиту. Проверьте сырые данные перед отправкой.",
+             "Записати повні буфери батареї локально? Спочатку закрийте оригінальну утиліту. Перевірте сирі дані перед надсиланням."),
         ["Extended device diagnostics..."] = ("Расширенная диагностика...", "Розширена діагностика..."),
         ["Extended device diagnostics"] = ("Расширенная диагностика", "Розширена діагностика"),
         ["Copy report"] = ("Копировать отчёт", "Копіювати звіт"),
