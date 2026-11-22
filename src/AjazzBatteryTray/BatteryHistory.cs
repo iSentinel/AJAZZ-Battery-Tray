@@ -11,10 +11,25 @@ public static class BatteryHistoryRules
            receiverPresent ? "unavailable" : "disconnected";
 
     public static bool ShouldRecord(BatterySample? previous, BatterySample sample)
-        => previous is null || previous.State != sample.State ||
-           previous.Percent != sample.Percent ||
-           sample.Timestamp < previous.Timestamp ||
-           sample.Timestamp - previous.Timestamp >= TimeSpan.FromMinutes(5);
+        => ShouldRecord(previous, sample.Timestamp, sample.Percent, sample.State);
+
+    public static bool ShouldRecord(BatterySample? previous, DateTimeOffset timestamp,
+        int? percent, string state)
+        => previous is null || previous.State != state || previous.Percent != percent ||
+           timestamp < previous.Timestamp ||
+           timestamp - previous.Timestamp >= TimeSpan.FromMinutes(5);
+
+    /// <summary>Same final observation as Retain, without sorting or retaining every row.</summary>
+    public static BatterySample? Latest(IEnumerable<BatterySample> samples, DateTimeOffset now)
+    {
+        BatterySample? latest = null;
+        DateTimeOffset cutoff = now.AddDays(-30);
+        foreach (var sample in samples)
+            if (sample.Timestamp >= cutoff && sample.Timestamp <= now &&
+                (latest is null || sample.Timestamp >= latest.Timestamp))
+                latest = sample;
+        return latest;
+    }
 
     /// <summary>Keep a maximum of 30 days and 20,000 observations.</summary>
     public static IReadOnlyList<BatterySample> Retain(
@@ -33,23 +48,38 @@ public sealed class BatteryHistory
     private readonly string _filePath;
     public string FileName { get; }
     private BatterySample? _last;
+    private bool _lastLoaded;
     private DateTime _lastPrune = DateTime.MinValue;
 
     public BatteryHistory(string fileName = "battery-history.csv")
+        : this(fileName, AppSettings.DirectoryPath)
+    {
+    }
+
+    internal BatteryHistory(string fileName, string directory)
     {
         FileName = Path.GetFileName(fileName);
-        _filePath = Path.Combine(AppSettings.DirectoryPath, FileName);
-        _last = ReadRecent().LastOrDefault();
+        _filePath = Path.Combine(directory, FileName);
+    }
+
+    private void EnsureLastLoaded()
+    {
+        if (_lastLoaded) return;
+        if (File.Exists(_filePath))
+            _last = BatteryHistoryRules.Latest(ReadFile(), DateTimeOffset.UtcNow);
+        _lastLoaded = true;
     }
 
     public void Record(DateTimeOffset now, int? percent, bool receiverPresent)
     {
-        BatterySample sample = new(now.ToUniversalTime(), percent,
-            BatteryHistoryRules.State(receiverPresent, percent));
-        if (!BatteryHistoryRules.ShouldRecord(_last, sample)) return;
         try
         {
-            Directory.CreateDirectory(AppSettings.DirectoryPath);
+            EnsureLastLoaded();
+            DateTimeOffset timestamp = now.ToUniversalTime();
+            string state = BatteryHistoryRules.State(receiverPresent, percent);
+            if (!BatteryHistoryRules.ShouldRecord(_last, timestamp, percent, state)) return;
+            BatterySample sample = new(timestamp, percent, state);
+            Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
             bool needsHeader = !File.Exists(_filePath);
             using (StreamWriter writer = new(_filePath, append: true))
             {

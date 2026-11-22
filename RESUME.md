@@ -1,19 +1,18 @@
-# Resume — beta.47 experimental local API candidate
+# Resume — lightweight tray and history candidate
 
-- beta.46 release 45082464200 PASS, all six assets verified.
-- PR #61 initial full API Windows 45083205204 / macOS 45083205268 PASS.
-  44 snapshot and HTTP assertions; loopback only, ephemeral bearer,
-  request limits, explicit start/stop, no additional HID polls.
-- beta.47 metadata prepared; final CI and publication pending.
-- Next: verify final PR #61 CI and beta.47 assets. Design a secure HA
-  bridge separately; do not bind the tray API to LAN or imply durable
-  entity identity from session slots.
-- Physical acceptance: both AJ159 reports/HAR, multi-BLE, prolonged
-  AULA sleep, backup restore and actual Windows HTTP UI pending.
-
-- Owner explicitly requires opt-in HA and minimal resource usage. Reopened
-  beta.47 before merge to eliminate inactive snapshot projection/storage and
-  inactive update timer. Copy is one-off; start/stop owns API state.
-  Previous final CI 45083360011 / 45083360053 PASS; changed head needs CI.
-  HA development remains isolated; no MQTT dependencies or auto-start.
-  Actual resource measurements on Windows remain pending.
+- beta.47 PR #61 final Windows 45083807213 / macOS 45083807201 PASS;
+  merged 7c67549ac4a9022901d566677fc9b43022662eee.
+  Release workflow 45084000358 PASS; all six assets verified.
+- PR #62: primary/secondary icon visual keys and redundant shell updates.
+  Eleven icon assertions. Lazy history loading, streaming newest retained
+  sample and unchanged-record allocation suppression, eight additional
+  assertions. Existing history format/retention unchanged.
+- Windows resource sampler plus new CI smoke step with temporary CSV and
+  no-overwrite check. Actual tray CPU, RAM, GDI and wakeup measurements
+  remain pending; no measured resource improvement claimed.
+  Initial combined Windows 45084378739 / macOS 45084378734 PASS.
+- Next: beta.48 metadata prepared; check final CI and publish only after
+  success. Compare actual Windows builds. Further idle audit in separate branch.
+- HA remains optional and isolated; no MQTT dependency or auto-start.
+- Hardware gates: both AJ159 reports/HAR, multi-BLE, AULA long sleep,
+  backup restore and actual Windows API. No HID reader/parser changes.

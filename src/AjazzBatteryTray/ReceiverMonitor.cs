@@ -251,29 +251,28 @@ internal sealed class ReceiverMonitor : IDisposable
     {
         private readonly NotifyIcon _tray = new();
         private Icon? _icon;
-        private int? _last;
-        private bool _stale;
-        private string? _color;
+        private TrayIconRenderKey? _renderKey;
 
         internal ExtraIcon(Action refresh) => _tray.DoubleClick += (_, _) => refresh();
 
         internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color)
         {
-            _tray.ContextMenuStrip = menu;
+            if (!ReferenceEquals(_tray.ContextMenuStrip, menu)) _tray.ContextMenuStrip = menu;
             string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} — {name}";
             if (stale) label = UiText.Get("cached") + ": " + label;
-            _tray.Text = label[..Math.Min(63, label.Length)];
-            if (_icon is null || _last != level || _stale != stale || _color != color)
+            label = label[..Math.Min(63, label.Length)];
+            if (_tray.Text != label) _tray.Text = label;
+            var key = TrayIconRenderKey.Create(level, level.HasValue, stale, color: color);
+            if (_icon is null || _renderKey != key)
             {
                 Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color);
-                _tray.Icon = next;
+                try { _tray.Icon = next; }
+                catch { next.Dispose(); throw; }
                 _icon?.Dispose();
                 _icon = next;
-                _last = level;
-                _stale = stale;
-                _color = color;
+                _renderKey = key;
             }
-            _tray.Visible = true;
+            if (!_tray.Visible) _tray.Visible = true;
         }
 
         public void Dispose()

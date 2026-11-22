@@ -8,6 +8,13 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.48 (2026-11-23)
+- Reuse visually equivalent primary and secondary tray icons.
+- Defer history reads and avoid sorting until a graph is requested.
+- Eliminate unchanged history sample allocations; unchanged retention policy.
+- Nineteen regression assertions and resource sampler smoke test: initial CI PASS.
+- Physical Windows resource comparison remains outstanding.
+
 ## 0.3.0-beta.47 (2026-11-23)
 - Privacy-filtered immutable battery snapshots with read-time expiration.
 - Explicit session-only loopback HTTP API, random bearer token, bounded GET requests.
