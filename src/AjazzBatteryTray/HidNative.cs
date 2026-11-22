@@ -145,6 +145,10 @@ internal static class HidNative
     internal static IReadOnlyList<string> FindAulaL99Paths()
         => FindPaths(AulaL99Protocol.MatchesPath);
 
+    /// <summary>Enumerate candidate AJAZZ/AULA HID interfaces for diagnostics only.</summary>
+    internal static IReadOnlyList<string> FindDiagnosticPaths()
+        => FindPaths(path => DiagnosticHidIdentity.FromPath(path) is not null);
+
     private static IReadOnlyList<string> FindPaths(Func<string, bool> matches)
     {
         HidD_GetHidGuid(out Guid guid);
@@ -234,6 +238,11 @@ internal static class HidNative
         return CreateFile(path, 0, ShareReadWrite,
             IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
     }
+
+    /// <summary>Descriptor access without requesting input/output access.</summary>
+    internal static SafeFileHandle OpenMetadata(string path)
+        => CreateFile(path, 0, ShareReadWrite, IntPtr.Zero,
+            OpenExisting, 0, IntPtr.Zero);
 
     /// <summary>Async HID I/O allows cancellation on a sleeping dongle.</summary>
     internal static SafeFileHandle OpenOverlapped(string path)

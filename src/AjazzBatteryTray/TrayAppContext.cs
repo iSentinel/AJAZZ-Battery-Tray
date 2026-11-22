@@ -27,6 +27,8 @@ public sealed class TrayAppContext : ApplicationContext
     private BluetoothCandidate? _bluetoothSelection;
     private bool _bluetoothReadInFlight;
     private AjazzHidReader.Reading? _latestUsbReading;
+    private DateTimeOffset? _latestUsbReadAt;
+    private bool _diagnosticsBusy;
     private ToolStripMenuItem _bluetoothStatus = new();
     private ToolStripMenuItem _disableBluetooth = new();
     private ToolStripMenuItem _refreshBluetooth = new();
@@ -305,6 +307,8 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem BuildDiagnosticsMenu()
     {
         ToolStripMenuItem menu = new(UiText.Get("Diagnostics"));
+        menu.DropDownItems.Add(UiText.Get("Extended device diagnostics..."), null,
+            (_, _) => _ = ShowExtendedDiagnosticsAsync());
         menu.DropDownItems.Add(UiText.Get("Device diagnostics..."), null,
             (_, _) => ShowDiagnostics());
         menu.DropDownItems.Add(UiText.Get("Copy diagnostic report"), null,
@@ -501,6 +505,58 @@ public sealed class TrayAppContext : ApplicationContext
         }
     }
 
+    private async Task ShowExtendedDiagnosticsAsync()
+    {
+        if (_closing || _diagnosticsBusy) return;
+        _diagnosticsBusy = true;
+        try
+        {
+            string inventory = await Task.Run(ExtendedDeviceDiagnostics.ReadInventory);
+            if (_closing) return;
+            string report = BuildExtendedReport(inventory);
+            if (!DiagnosticReportForm.PromptSave(report) && !_closing)
+            {
+                using DiagnosticReportForm review = new(report);
+                review.ShowDialog();
+            }
+        }
+        catch (Exception error)
+        {
+            if (!_closing)
+                MessageBox.Show(UiText.Get("Unable to collect diagnostic report.") +
+                    " (" + error.GetType().Name + ")", "AJAZZ Battery Tray",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally { _diagnosticsBusy = false; }
+    }
+
+    private string BuildExtendedReport(string inventory)
+    {
+        var usb = _latestUsbReading;
+        var aula = _aulaLatest;
+        string attempts = usb?.Attempts is { Count: > 0 } trace
+            ? string.Join(Environment.NewLine, trace) : "No completed poll trace.";
+        return "AJAZZ Battery Tray extended diagnostic report" + Environment.NewLine +
+            $"App version: {Application.ProductVersion}\n" +
+            $"Windows: {Environment.OSVersion.VersionString}; OS architecture: {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}\n" +
+            $"Report UTC: {DateTimeOffset.UtcNow:O}\n" +
+            $"Refresh interval: {_settings.PollSeconds}s; auto dock clock: {_settings.AutomaticDockClockSync}\n\n" +
+            inventory + "\n[AJAZZ last ordinary poll — not a fresh request]\n" +
+            $"Completed UTC: {_latestUsbReadAt?.ToString("O") ?? "never"}\n" +
+            $"Receiver present: {usb?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {usb?.PresenceKnown.ToString() ?? "unknown"}\n" +
+            $"Battery: {usb?.Percent?.ToString() ?? "unavailable"}; status: {usb?.Details ?? "not checked"}\n" +
+            attempts + "\n\n[AULA L99 last measurement]\n" +
+            $"Auto monitoring: {_settings.MonitorAulaL99}; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
+            $"Receiver present: {aula?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {aula?.PresenceKnown.ToString() ?? "unknown"}\n" +
+            $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n\n" +
+            "[Bluetooth fallback state]\n" +
+            $"Enabled: {_bluetoothPolicy.Enabled}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
+            $"GATT failures: {_bluetoothPolicy.ConsecutiveFailures}; last success UTC: {_bluetoothPolicy.LastSuccessfulRead?.ToString("O") ?? "never"}\n" +
+            "\nNo device paths, serial numbers, Bluetooth addresses, usernames, or raw report payloads are included.\n" +
+            "Collection does not issue additional HID commands or scan Bluetooth devices.";
+    }
+
+
     private static void CopyDeviceReport()
     {
         string report = "AJAZZ Battery Tray diagnostic report\n" +
@@ -594,6 +650,7 @@ public sealed class TrayAppContext : ApplicationContext
             if (!_closing)
             {
                 _latestUsbReading = result.Reading;
+                _latestUsbReadAt = DateTimeOffset.UtcNow;
                 ApplyReading(result.Reading);
                 ApplyClockResult(result.Attempted, result.Succeeded);
                 StartBluetoothPoll(result.Reading.ReceiverPresent);
@@ -607,6 +664,7 @@ public sealed class TrayAppContext : ApplicationContext
             {
                 _latestUsbReading = new AjazzHidReader.Reading(
                     false, null, "Unexpected error", PresenceKnown: false);
+                _latestUsbReadAt = DateTimeOffset.UtcNow;
                 ApplyReading(_latestUsbReading);
             }
         }

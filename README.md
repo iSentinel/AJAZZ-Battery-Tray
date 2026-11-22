@@ -3,9 +3,45 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.26 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.27 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
 
-## Experimental AULA L99 2.4 GHz battery monitor (Windows only)\n\nAULA L99 monitoring is **disabled by default**. In the Windows tray open\n**AULA L99 (experimental) → Read AULA battery once** to query the connected\n2.4 GHz dongle manually, or explicitly enable **Monitor AULA automatically**\nto poll it with the normal refresh interval. The keyboard has its own status,\nlocal history file (`aula-l99-history.csv`) and independent low-battery\nnotification debounce. Global notification thresholds (below 50, 25, 10%)\nand the Record battery history toggle apply to both devices. Use\n**Copy AULA diagnostic summary** to share a privacy-safe result.\n\nThe reader accepts only the documented battery query (`0x20`) on the\n`05AC:024F / MI_03` vendor interface and validates 1–100% responses.\nThe receiver identifier is shared with AULA S75 Pro: a response is **not**\nproof of L99 identity. Actual AULA L99 hardware behavior is **unverified**,\nand a sleeping keyboard, mismatched dongle revision or missing response\nwill show unavailable rather than an invented percentage. No keyboard\nsettings/firmware/RGB command is implemented. **macOS L99 is not supported**.\n\n## Platforms and hardware status
+## Experimental AULA L99 2.4 GHz battery monitor (Windows only)
+
+AULA L99 monitoring is **disabled by default**. In the Windows tray open
+**AULA L99 (experimental) → Read AULA battery once** to query the connected
+2.4 GHz dongle manually, or explicitly enable **Monitor AULA automatically**
+to poll it with the normal refresh interval. The keyboard has its own status,
+local history file (`aula-l99-history.csv`) and independent low-battery
+notification debounce. Global notification thresholds (below 50, 25, 10%)
+and the Record battery history toggle apply to both devices. Use
+**Copy AULA diagnostic summary** to share a privacy-safe result.
+
+The reader accepts only the documented battery query (`0x20`) on the
+`05AC:024F / MI_03` vendor interface and validates 1–100% responses.
+The receiver identifier is shared with AULA S75 Pro: a response is **not**
+proof of L99 identity. Actual AULA L99 hardware behavior is **unverified**,
+and a sleeping keyboard, mismatched dongle revision or missing response
+will show unavailable rather than an invented percentage. No keyboard
+settings/firmware/RGB command is implemented. **macOS L99 is not supported**.
+
+## Extended Windows diagnostics
+
+Open **Diagnostics → Extended device diagnostics...**. After collecting the
+report, the application automatically opens a Save As dialog for a dated
+TXT file. Canceling the dialog opens a selectable report with Copy and Save
+buttons. Reports stay local unless you choose to share them.
+
+The inventory covers all present HID collections for AJAZZ VID 3151
+(including 4026/4027 and 5007), plus known AULA candidate USB IDs. It
+reports VID/PID, MI/collection, bcdDevice, usage and report lengths, descriptor
+errors, the last ordinary AJAZZ battery polling trace and timestamp, and
+cached AULA/Bluetooth status. It does not send new HID commands, collect
+serial numbers or private device paths, scan Bluetooth, or upload files.
+For current poll results, wake the target device, select Refresh now and
+allow an ordinary polling cycle to finish before collecting the report.
+Unknown receivers are inventoried but not automatically polled.
+
+## Platforms and hardware status
 
 | Platform | AJ179 APEX | AJ159 APEX |
 |---|---|---|

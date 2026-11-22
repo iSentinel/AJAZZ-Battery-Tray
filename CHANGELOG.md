@@ -8,7 +8,28 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
-## 0.3.0-beta.26 (2026-11-18)\n- Add experimental Windows-only AULA L99 2.4 GHz battery monitor, off by\n  default; manual one-shot read and explicit automatic-monitoring toggle.\n- Validate dongle identity and report caps before the sole battery command;\n  reject malformed, stale, invalid, or absent battery reports.\n- Add separate AULA battery history/graph and independent threshold state,\n  using the existing user-configured 50/25/10% alert preferences.\n- Add privacy-safe copyable AULA status for physical acceptance.\n- Track unresolved shared AULA S75 Pro/L99 receiver ID and hardware test\n  requirement. macOS remains unchanged for keyboard monitoring.\n\n## 0.3.0-beta.25 (2026-11-16)
+## 0.3.0-beta.27 (2026-11-22)
+- Add extended Windows HID diagnostics with automatic local TXT Save As dialog
+  and a copy/save fallback after cancellation.
+- Inventory all AJAZZ vendor PIDs and known AULA HID identifiers without
+  opening them for input or output; include report lengths and usage.
+- Record the last ordinary supported AJAZZ battery poll stages and errors,
+  bounded status header, timestamps and cached AULA/Bluetooth status.
+- Do not add commands for alternate AJ159 receiver revisions; real-device
+  diagnostics are required before extending monitoring. macOS unchanged.
+
+## 0.3.0-beta.26 (2026-11-18)
+- Add experimental Windows-only AULA L99 2.4 GHz battery monitor, off by
+  default; manual one-shot read and explicit automatic-monitoring toggle.
+- Validate dongle identity and report caps before the sole battery command;
+  reject malformed, stale, invalid, or absent battery reports.
+- Add separate AULA battery history/graph and independent threshold state,
+  using the existing user-configured 50/25/10% alert preferences.
+- Add privacy-safe copyable AULA status for physical acceptance.
+- Track unresolved shared AULA S75 Pro/L99 receiver ID and hardware test
+  requirement. macOS remains unchanged for keyboard monitoring.
+
+## 0.3.0-beta.25 (2026-11-16)
 - Group Windows and macOS tray/menu-bar settings into a dedicated Settings
   submenu; keep status, refresh and dock clock sync easily accessible.
 - Move diagnostic tools into Diagnostics and group Bluetooth controls.

@@ -33,6 +33,28 @@ Check("reject wrong report id", BatteryReportParser.ParseWindowsFeature(
 Check("reject short report", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0 }) is null);
 
+// Diagnostic paths expose descriptors only, never the private instance suffix.
+Check("AJ159 alternate receiver metadata", DiagnosticHidIdentity.FromPath(
+    "hid#vid_3151&pid_4026&mi_03&col01#private-instance") ==
+    "3151:4026 MI_03 COL01");
+Check("AJ159 second alternate receiver", DiagnosticHidIdentity.FromPath(
+    "hid#VID_3151&PID_4027#private-instance") == "3151:4027 MI_-- COL--");
+Check("AJ179 diagnostic identity", DiagnosticHidIdentity.FromPath(
+    "hid#vid_3151&pid_5007&mi_02#secret") == "3151:5007 MI_02 COL--");
+Check("AULA candidate metadata", DiagnosticHidIdentity.FromPath(
+    "hid#vid_05ac&pid_024f&mi_03#secret") == "05AC:024F MI_03 COL--");
+Check("Unrelated USB ignored", DiagnosticHidIdentity.FromPath(
+    "hid#vid_1234&pid_9876#secret") is null);
+Check("Other Apple product ignored", DiagnosticHidIdentity.FromPath(
+    "hid#vid_05ac&pid_9999#secret") is null);
+Check("Malformed identifier ignored", DiagnosticHidIdentity.FromPath(
+    "hid#vid_3151&pid_50070#secret") is null);
+Check("Diagnostic header excludes remaining payload",
+    DiagnosticHidIdentity.BatteryHeader(new byte[] { 5, 0, 0, 83, 0xff }) ==
+    "05000053");
+Check("Diagnostic short header", DiagnosticHidIdentity.BatteryHeader(
+    new byte[] { 5, 0 }) == "0500");
+
 AlertPolicy policy = new();
 Check("normal battery no alert", policy.Evaluate(75) is null);
 Check("at 50 is not below 50", policy.Evaluate(50) is null);
