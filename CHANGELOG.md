@@ -8,6 +8,16 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.32 (2026-11-22)
+- Add a read-only Windows PnP names preview from Settings.
+- Group exact supported USB receiver families and candidate primary HID
+  nodes by live parent ancestry; read the original Windows friendly name
+  or description and suggest a provisional revision-based model label.
+- Add strict candidate/revision tests and localized preview. No instance
+  paths exported, administrator elevation, property changes or HID writes.
+- Add the approved Windows naming milestone and restore/acceptance gates.
+  Physical mapping validation remains pending.
+
 ## 0.3.0-beta.31 (2026-11-22)
 - Add unified Windows Device Manager dashboard displaying independent
   AJAZZ/AULA observations and the selected Bluetooth fallback.
