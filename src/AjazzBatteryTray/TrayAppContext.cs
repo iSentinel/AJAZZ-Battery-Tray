@@ -11,7 +11,10 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _timer;
     private readonly System.Windows.Forms.Timer _aulaTimer;
     private readonly DevicePollSchedule _usbSchedule = new();
-    private readonly System.Windows.Forms.Timer _updateTimer = new() { Interval = 10000 };
+    private LocalSnapshotStore? _localSnapshot;
+    private LocalApiForm? _localApiWindow;
+    private Dictionary<string, int>? _snapshotReceiverSlots;
+    private System.Windows.Forms.Timer? _updateTimer;
     private readonly AutomaticUpdatePolicy _updatePolicy = new();
     private CancellationTokenSource? _updateRequestCancellation;
     private bool _manualUpdateDialog;
@@ -86,9 +89,7 @@ public sealed class TrayAppContext : ApplicationContext
         _aulaTimer.Tick += (_, _) => _ = PollAulaAsync();
         _timer.Start();
         if (_settings.MonitorAulaL99) _aulaTimer.Start();
-        _updateTimer.Tick += (_, _) => _ = PollUpdatesAsync();
         ApplyUpdatePreferences();
-        _updateTimer.Start();
     }
 
     private ContextMenuStrip BuildMenu()
@@ -273,6 +274,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void RefreshDashboard()
     {
+        PublishLocalSnapshot();
         if (_dashboard is not { IsDisposed: false }) return;
         List<DeviceDashboardForm.Entry> entries = new();
         foreach (var receiver in _receivers.Devices)
@@ -304,6 +306,100 @@ public sealed class TrayAppContext : ApplicationContext
         foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
             entries.Add(new(BluetoothDashboardState(pair.Key, pair.Value), Key: $"BLE:{pair.Value.Number}"));
         _dashboard.SetEntries(entries);
+    }
+
+    private void PublishLocalSnapshot()
+    {
+        if (_closing || _localSnapshot is not { } store || _snapshotReceiverSlots is not { } slots)
+            return;
+        try
+        {
+            var inputs = CollectSnapshotInputs(slots);
+            store.Publish(DateTimeOffset.UtcNow, inputs);
+        }
+        catch (Exception) { store.Clear(); }
+    }
+
+    private List<LocalBatterySnapshot.Input> CollectSnapshotInputs(Dictionary<string, int> slots)
+    {
+        var inputs = new List<LocalBatterySnapshot.Input>();
+        foreach (var receiver in _receivers.Devices)
+        {
+            if (!slots.TryGetValue(receiver.Key, out int slot))
+            {
+                if (slots.Count >= LocalBatterySnapshot.MaximumDevices)
+                    throw new InvalidDataException("Snapshot slot limit exceeded.");
+                slot = slots.Count + 1;
+                slots.Add(receiver.Key, slot);
+            }
+            var reading = receiver.Reading;
+            var state = DeviceDashboardState.FromPoll("", "", true,
+                reading.PresenceKnown, receiver.Present, reading.Percent,
+                receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
+            inputs.Add(new(LocalBatterySource.ApexReceiver, slot, state));
+        }
+        var aula = !_settings.MonitorAulaL99
+            ? new DeviceDashboardState("", "", DeviceDashboardStatus.Disabled, null, null)
+            : DeviceDashboardState.FromPoll("", "", _aulaLatest is not null,
+                _aulaLatest?.PresenceKnown == true, _aulaLatest?.ReceiverPresent == true,
+                _aulaLatest?.Percent, _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
+        inputs.Add(new(LocalBatterySource.AulaReceiver, 1, aula));
+        foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
+            inputs.Add(new(LocalBatterySource.Bluetooth, pair.Value.Number,
+                BluetoothDashboardState(pair.Key, pair.Value)));
+        return inputs;
+    }
+
+    private void ActivateLocalSnapshot(LocalSnapshotStore store)
+    {
+        _snapshotReceiverSlots = new(StringComparer.Ordinal);
+        _localSnapshot = store;
+        PublishLocalSnapshot();
+    }
+
+    private void DeactivateLocalSnapshot(LocalSnapshotStore store)
+    {
+        store.Clear();
+        if (!ReferenceEquals(_localSnapshot, store)) return;
+        _localSnapshot = null;
+        _snapshotReceiverSlots = null;
+    }
+
+    private void ShowLocalApi()
+    {
+        if (_closing) return;
+        if (_localApiWindow is not { IsDisposed: false })
+            _localApiWindow = new LocalApiForm(ActivateLocalSnapshot, DeactivateLocalSnapshot);
+        _localApiWindow.Show();
+        _localApiWindow.Activate();
+    }
+
+    private void CopyLocalSnapshot()
+    {
+        if (_closing) return;
+        try
+        {
+            LocalBatterySnapshot? snapshot;
+            if (_localSnapshot is { } store)
+            {
+                PublishLocalSnapshot();
+                snapshot = store.Read(DateTimeOffset.UtcNow);
+            }
+            else
+            {
+                var inputs = CollectSnapshotInputs(new(StringComparer.Ordinal));
+                snapshot = LocalBatterySnapshot.Create(DateTimeOffset.UtcNow, inputs);
+            }
+            if (snapshot is null) throw new InvalidOperationException();
+            Clipboard.SetText(System.Text.Encoding.UTF8.GetString(snapshot.Export()));
+            MessageBox.Show(UiText.Get("Local battery snapshot copied."),
+                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception)
+        {
+            MessageBox.Show(UiText.Get("Unable to copy local battery snapshot."),
+                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private DeviceDashboardState AulaDashboardState()
@@ -682,6 +778,23 @@ public sealed class TrayAppContext : ApplicationContext
         _updatePolicy.Configure(active,
             _settings.ExperimentalUpdateChannel, Environment.TickCount64);
         if (changed) _updateRequestCancellation?.Cancel();
+        if (active && !_closing)
+        {
+            if (_updateTimer is null)
+            {
+                _updateTimer = new System.Windows.Forms.Timer { Interval = 10000 };
+                _updateTimer.Tick += (_, _) => _ = PollUpdatesAsync();
+                _updateTimer.Start();
+            }
+        }
+        else StopUpdateTimer();
+    }
+
+    private void StopUpdateTimer()
+    {
+        _updateTimer?.Stop();
+        _updateTimer?.Dispose();
+        _updateTimer = null;
     }
 
     private void ShowManualUpdateCheck()
@@ -883,6 +996,8 @@ public sealed class TrayAppContext : ApplicationContext
             (_, _) => CopyDeviceReport());
         menu.DropDownItems.Add(UiText.Get("Copy Bluetooth monitor status"), null,
             (_, _) => CopyBluetoothStatus());
+        menu.DropDownItems.Add(UiText.Get("Copy local battery snapshot"), null, (_, _) => CopyLocalSnapshot());
+        menu.DropDownItems.Add(UiText.Get("Local battery API..."), null, (_, _) => ShowLocalApi());
         menu.DropDownItems.Add(UiText.Get("Open log folder"), null,
             (_, _) => OpenLogFolder());
         return menu;
@@ -1581,8 +1696,11 @@ public sealed class TrayAppContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         _closing = true;
-        _updateTimer.Stop();
-        _updateTimer.Dispose();
+        _localApiWindow?.Close();
+        _localSnapshot?.Clear();
+        _localSnapshot = null;
+        _snapshotReceiverSlots = null;
+        StopUpdateTimer();
         _updatePolicy.Configure(false, _settings.ExperimentalUpdateChannel, Environment.TickCount64);
         _updateRequestCancellation?.Cancel();
         _timer.Stop();

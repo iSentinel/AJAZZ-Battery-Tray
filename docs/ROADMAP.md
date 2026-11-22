@@ -402,3 +402,22 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add confirmed restore, rollback, and live preference UI refresh.
 - [ ] Final beta.46 CI, release and physical Windows UI acceptance.
 - [ ] Read-only local API snapshot foundation; no listener enabled by default.
+
+## beta.47 local battery API checkpoint
+- [x] beta.46 release 45082464200 PASS; all six assets verified.
+- [x] Integrated immutable snapshot and authenticated loopback endpoint;
+  Windows 45083205204 / macOS 45083205268 PASS.
+- [ ] Final beta.47 CI, publication and actual Windows/HID acceptance.
+- [ ] Independent secure Home Assistant bridge design and explicit device mapping.
+  No LAN binding or unauthenticated HTTP.
+
+## Owner requirement — lightweight default
+- [x] Make API snapshot projection lazy; allocate only on explicit API start
+  or one-off copy, release on stop. No separate API polling.
+- [x] Allocate/run automatic update timer only with existing explicit consent
+  and notifications enabled; stop/dispose on disable.
+- [ ] Verify revised beta.47 CI and Windows idle resource baseline.
+- [ ] Keep Home Assistant / MQTT as a separately installed optional bridge;
+  never start by default or add broker dependencies to the tray distribution.
+- [ ] Measure idle CPU, memory, handles, thread count and wakeups before
+  and after changes with comparable devices, settings and poll interval.

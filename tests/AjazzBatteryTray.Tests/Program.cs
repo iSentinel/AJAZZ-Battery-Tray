@@ -1313,5 +1313,126 @@ catch (InvalidDataException) { invalidRestore = true; }
 Check("Restore invalid object rejected before save or changes", invalidRestore && persistCalls == 1 &&
     PreferencesBackup.Capture(restoreTarget) == portableBackup);
 
+// API projection contains no device identifiers and never promotes old readings.
+var snapshotNow = new DateTimeOffset(2026, 11, 23, 0, 0, 0, TimeSpan.Zero);
+LocalBatterySnapshot.Input SnapshotInput(DeviceDashboardStatus status, int? percent,
+    DateTimeOffset? measured, int slot = 1) => new(LocalBatterySource.ApexReceiver, slot,
+        new DeviceDashboardState("private-name", "private-transport", status, percent, measured));
+LocalBatterySnapshot.Entry SnapshotRow(DeviceDashboardStatus status, int? percent, DateTimeOffset? measured) =>
+    LocalBatterySnapshot.Create(snapshotNow, new[] { SnapshotInput(status, percent, measured) }).Devices[0];
+var apiFresh = SnapshotRow(DeviceDashboardStatus.Fresh, 83, snapshotNow.AddMinutes(-1));
+Check("API fresh measurement is numeric", apiFresh.BatteryPercent == 83 && apiFresh.LastKnownPercent is null);
+var apiOld = SnapshotRow(DeviceDashboardStatus.Fresh, 83, snapshotNow.AddMinutes(-6));
+Check("API old fresh measurement demoted to stale", apiOld.Status == "stale" && apiOld.BatteryPercent is null && apiOld.LastKnownPercent == 83);
+var apiCache = SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-2));
+Check("API cached data never current", apiCache.Status == "cached" && apiCache.BatteryPercent is null && apiCache.LastKnownPercent == 70);
+Check("API scheduled data never current", SnapshotRow(DeviceDashboardStatus.Scheduled, 70, snapshotNow).BatteryPercent is null);
+Check("API expired data unavailable", SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-25)).LastKnownPercent is null);
+Check("API future measurement unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, snapshotNow.AddSeconds(1)).BatteryPercent is null);
+Check("API missing timestamp unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, null).BatteryPercent is null);
+Check("API invalid percentage unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 101, snapshotNow).Status == "unavailable");
+Check("API manual reading not promoted", SnapshotRow(DeviceDashboardStatus.ManualReading, 50, snapshotNow).BatteryPercent is null);
+Check("API unknown presence hides all numeric data", SnapshotRow(DeviceDashboardStatus.PresenceUnknown, 50, snapshotNow).LastKnownPercent is null);
+Check("API zero is valid fresh battery", SnapshotRow(DeviceDashboardStatus.Fresh, 0, snapshotNow).BatteryPercent == 0);
+var apiSnapshot = LocalBatterySnapshot.Create(snapshotNow, new[] {
+    SnapshotInput(DeviceDashboardStatus.Fresh, 1, snapshotNow, 2),
+    SnapshotInput(DeviceDashboardStatus.Fresh, 2, snapshotNow, 1) });
+string apiJson = System.Text.Encoding.UTF8.GetString(apiSnapshot.Export());
+Check("API snapshot canonical order and schema", apiSnapshot.SchemaVersion == 1 && apiSnapshot.Devices[0].SessionSlot == 1);
+Check("API projection excludes all original labels", !apiJson.Contains("private-name") && !apiJson.Contains("private-transport"));
+bool RejectSnapshot(IEnumerable<LocalBatterySnapshot.Input> rows)
+{
+    try { LocalBatterySnapshot.Create(snapshotNow, rows); return false; }
+    catch (InvalidDataException) { return true; }
+}
+Check("API duplicate session slot rejected", RejectSnapshot(new[] {
+    SnapshotInput(DeviceDashboardStatus.Disabled, null, null), SnapshotInput(DeviceDashboardStatus.Disabled, null, null) }));
+Check("API oversized set rejected", RejectSnapshot(Enumerable.Range(1, 65)
+    .Select(i => SnapshotInput(DeviceDashboardStatus.Disabled, null, null, i))));
+Check("API invalid session slot rejected", RejectSnapshot(new[] { SnapshotInput(DeviceDashboardStatus.Disabled, null, null, 0) }));
+
+var snapshotStore = new LocalSnapshotStore();
+Check("Snapshot store initially unavailable", snapshotStore.Read(snapshotNow) is null);
+snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 83, snapshotNow) });
+Check("Snapshot store publishes current reading", snapshotStore.Read(snapshotNow)?.Devices[0].BatteryPercent == 83);
+var agedSnapshot = snapshotStore.Read(snapshotNow.AddMinutes(6));
+Check("Snapshot read automatically ages fresh value", agedSnapshot?.Devices[0].LastKnownPercent == 83 &&
+    agedSnapshot.Devices[0].BatteryPercent is null && agedSnapshot.Devices[0].Status == "stale");
+Check("Snapshot read does not rewrite generation or measurement time",
+    agedSnapshot?.GeneratedAt == snapshotNow && agedSnapshot.Devices[0].MeasuredAt == snapshotNow);
+Check("Snapshot read expires old values", snapshotStore.Read(snapshotNow.AddHours(25))?.Devices[0].LastKnownPercent is null);
+Check("Snapshot clock rollback unavailable", snapshotStore.Read(snapshotNow.AddSeconds(-1)) is null);
+bool invalidSnapshotPublish = false;
+try { snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 1, snapshotNow, 0) }); }
+catch (InvalidDataException) { invalidSnapshotPublish = true; }
+Check("Snapshot projection failure invalidates previous value", invalidSnapshotPublish && snapshotStore.Read(snapshotNow) is null);
+snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 44, snapshotNow) });
+var retainedSnapshot = snapshotStore.Read(snapshotNow);
+snapshotStore.Publish(snapshotNow.AddSeconds(1), new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 45, snapshotNow.AddSeconds(1)) });
+Check("Snapshot previously returned value remains immutable", retainedSnapshot?.Devices[0].BatteryPercent == 44 &&
+    snapshotStore.Read(snapshotNow.AddSeconds(1))?.Devices[0].BatteryPercent == 45);
+snapshotStore.Clear();
+Check("Snapshot clear hides prior data", snapshotStore.Read(snapshotNow) is null);
+
+// Strict HTTP parser and real loopback tests, no external traffic.
+string localToken = LocalApiRequest.NewToken();
+Check("API token contains 256 random bits in hex", localToken.Length == 64 &&
+    localToken.All(char.IsAsciiHexDigit) && LocalApiRequest.NewToken() != localToken);
+string ApiHeader(string method = "GET", string route = "/v1/batteries",
+    string host = "127.0.0.1:18789", string? auth = null, string extra = "") =>
+    $"{method} {route} HTTP/1.1\r\nHost: {host}\r\n" +
+    (auth is null ? "" : $"Authorization: Bearer {auth}\r\n") + extra + "\r\n";
+int CheckHeader(string header) => LocalApiRequest.Check(header, 18789, localToken);
+Check("API GET authenticates", CheckHeader(ApiHeader(auth: localToken)) == 200);
+Check("API missing credential rejected", CheckHeader(ApiHeader()) == 401);
+Check("API wrong credential rejected", CheckHeader(ApiHeader(auth: new string('0', 64))) == 401);
+Check("API rejects non-loopback host", CheckHeader(ApiHeader(host: "example.invalid", auth: localToken)) == 400);
+Check("API rejects browser origin", CheckHeader(ApiHeader(auth: localToken, extra: "Origin: https://example.invalid\r\n")) == 403);
+Check("API rejects write method", CheckHeader(ApiHeader(method: "POST", auth: localToken)) == 405);
+Check("API rejects other route or query", CheckHeader(ApiHeader(route: "/v1/batteries?token=x", auth: localToken)) == 404);
+Check("API rejects duplicate headers", CheckHeader(ApiHeader(auth: localToken, extra: "Host: 127.0.0.1:18789\r\n")) == 400);
+Check("API rejects framing for a body", CheckHeader(ApiHeader(auth: localToken, extra: "Content-Length: 1\r\n")) == 400 &&
+    CheckHeader(ApiHeader(auth: localToken, extra: "Transfer-Encoding: chunked\r\n")) == 400);
+Check("API rejects malformed or oversized header", CheckHeader("GET") == 400 &&
+    CheckHeader(ApiHeader(auth: localToken, extra: "X-Test: " + new string('x', 8192) + "\r\n")) == 400);
+Check("API rejects stray header line break", CheckHeader(ApiHeader(auth: localToken, extra: "X-Test: a\nb\r\n")) == 400);
+
+async Task TestLoopbackApi()
+{
+    var liveStore = new LocalSnapshotStore();
+    await using var localServer = new LocalApiServer(liveStore, 0);
+    using var client = new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler { UseProxy = false, AllowAutoRedirect = false });
+    client.Timeout = TimeSpan.FromSeconds(8);
+    using var unauthorized = await client.GetAsync(localServer.Endpoint);
+    Check("HTTP loopback rejects unauthenticated request", (int)unauthorized.StatusCode == 401);
+    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", localServer.Token);
+    using var empty = await client.GetAsync(localServer.Endpoint);
+    Check("HTTP loopback reports unavailable snapshot", (int)empty.StatusCode == 503);
+    var measured = DateTimeOffset.UtcNow.AddSeconds(-1);
+    liveStore.Publish(measured, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 76, measured) });
+    using var valid = await client.GetAsync(localServer.Endpoint);
+    string body = await valid.Content.ReadAsStringAsync();
+    Check("HTTP loopback returns sanitized snapshot", (int)valid.StatusCode == 200 &&
+        body.Contains("\"batteryPercent\":76") && !body.Contains("private-name"));
+    using var unknown = await client.GetAsync(localServer.Endpoint + "/unknown");
+    Check("HTTP loopback rejects unknown route", (int)unknown.StatusCode == 404);
+    using var postRequest = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, localServer.Endpoint);
+    using var rejected = await client.SendAsync(postRequest);
+    Check("HTTP loopback rejects POST", (int)rejected.StatusCode == 405);
+    bool portBusy = false;
+    try { await using var duplicate = new LocalApiServer(liveStore, localServer.Port); }
+    catch (System.Net.Sockets.SocketException) { portBusy = true; }
+    Check("HTTP loopback rejects occupied port", portBusy);
+    using var stalled = new System.Net.Sockets.TcpClient();
+    await stalled.ConnectAsync(System.Net.IPAddress.Loopback, localServer.Port);
+    await localServer.DisposeAsync();
+    bool stopped = false;
+    using var probe = new System.Net.Sockets.TcpClient();
+    try { await probe.ConnectAsync(System.Net.IPAddress.Loopback, localServer.Port); }
+    catch (System.Net.Sockets.SocketException) { stopped = true; }
+    Check("HTTP loopback releases listener on stop", stopped);
+}
+TestLoopbackApi().GetAwaiter().GetResult();
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
