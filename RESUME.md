@@ -1,15 +1,17 @@
-# Resume — lightweight tray refresh candidate
+# Resume — lightweight tray and history candidate
 
 - beta.47 PR #61 final Windows 45083807213 / macOS 45083807201 PASS;
-  merged 7c67549ac4a9022901d566677fc9b43022662eee. Publication pending.
-  Local API and update timer are inactive without explicit opt-in.
-- Main idle optimization branch: primary/secondary icon visual keys,
-  avoid identical tooltip/status updates, no additional polling or timers.
-  Eleven pure tests added. Resource measurement PowerShell script and
-  controlled Windows comparison documented. CI and actual measurement pending.
-- HA session mapping remains isolated in feat/ha-snapshot-adapter; no
-  integration dependency, startup, network jobs or MQTT in default tray.
-- Next: verify beta.47 publication, draft PR CI and compare Windows idle
-  metrics. Review other idle overhead only with regression protection.
-- Hardware gates: two AJ159 reports/HAR, multi-BLE, AULA long sleep,
+  merged 7c67549ac4a9022901d566677fc9b43022662eee.
+  Release workflow 45084000358 PASS; all six assets verified.
+- PR #62: primary/secondary icon visual keys and redundant shell updates.
+  Eleven icon assertions. Lazy history loading, streaming newest retained
+  sample and unchanged-record allocation suppression, eight additional
+  assertions. Existing history format/retention unchanged.
+- Windows resource sampler plus new CI smoke step with temporary CSV and
+  no-overwrite check. Actual tray CPU, RAM, GDI and wakeup measurements
+  remain pending; no measured resource improvement claimed.
+- Next: check latest PR #62 Windows/macOS CI, prepare beta.48 metadata
+  only after success, final CI and publish. Compare actual Windows builds.
+- HA remains optional and isolated; no MQTT dependency or auto-start.
+- Hardware gates: both AJ159 reports/HAR, multi-BLE, AULA long sleep,
   backup restore and actual Windows API. No HID reader/parser changes.
