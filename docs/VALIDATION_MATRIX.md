@@ -180,3 +180,13 @@ battery or clock problem.
 - Hardware acceptance: collect redacted target transactions and compare
   official app against our capture; regress prior APEX receivers and sleep/wake.
 - No claim that the battery compatibility defect is fixed.
+
+## Individual device alerts — beta.38 candidate
+
+- beta.37 merged as aaf165abab7addf3a537641f126fde1b6eff9d4c; release
+  workflow 45064435127 PASS, Latest and six release assets confirmed.
+- PR #50 initial Windows CI 45064447976 and macOS CI 45064448135 PASS.
+- Final beta.38 metadata CI and actual UI/notification acceptance pending.
+- Test global inheritance, distinct receiver overrides, AULA mute/reset,
+  global master switch, persistence, charging hysteresis and unchanged
+  Bluetooth/disconnect behavior. Diagnostic APEX hardware work remains open.
