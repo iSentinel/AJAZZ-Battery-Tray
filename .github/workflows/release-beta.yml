@@ -152,9 +152,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.26"
+          TAG="v0.3.0-beta.27"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.26 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.27 — Windows and macOS
+
+          **Extended Windows diagnostics:** Run Diagnostics > Extended device
+          diagnostics to inventory AJAZZ receiver variants and known AULA HID
+          collections, inspect the last ordinary battery poll stages and Win32
+          errors, and automatically open a Save As dialog for a local TXT report.
+          Unsupported receiver IDs are listed without probing them.
 
           **Experimental AULA L99 2.4 GHz:** Windows-only, opt-in battery
           query through the exact vendor HID dongle interface; separate
@@ -325,7 +331,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.26" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.27" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
