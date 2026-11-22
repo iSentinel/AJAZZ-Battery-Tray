@@ -395,3 +395,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Initial PR #59 Windows 45079657693 / macOS 45079657689 PASS.
 - [ ] Final beta.45 CI, release and Windows network/UI acceptance.
 - [ ] Local application preferences backup and validated restore preview.
+
+## beta.46 portable preferences checkpoint
+- [x] beta.45 published; workflow 45081549658 PASS, six assets.
+- [x] Local export/preview; initial Windows 45081604762 / macOS 45081604695 PASS.
+- [x] Add confirmed restore, rollback, and live preference UI refresh.
+- [ ] Final beta.46 CI, release and physical Windows UI acceptance.
+- [ ] Read-only local API snapshot foundation; no listener enabled by default.

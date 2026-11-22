@@ -11,7 +11,7 @@
 - Does not transfer device keys, history, network consent/channel,
   dock RTC preferences, AULA or BLE opt-ins or hardware settings.
   Existing export files are not overwritten.
-- Next: prepare beta.46 metadata and final CI; publish only after CI passes.
+- Next: beta.46 metadata prepared; final CI pending; publish only after CI passes.
   Windows UI/restore acceptance remains pending. Continue local API design
   using a privacy-safe read-only snapshot and no network listener by default.
 - Hardware gates: working and affected AJ159 reports/HAR, multi-BLE,
