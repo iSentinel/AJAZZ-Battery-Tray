@@ -186,7 +186,10 @@ hardware acceptance remain separate.
 - [x] beta.38 final CI, PR #50 merged and six-asset release verified (45066102066).
 - [ ] Physical notification acceptance.
 - [x] Per-device polling intervals implemented; initial PR #51 Windows/macOS CI PASS.
-- [ ] Final beta.39 release and mixed-device physical acceptance.
+- [x] beta.39 final CI, PR #51 merged, six-asset Latest release verified (45067421661).
+- [ ] Mixed-device physical timing acceptance.
+- [x] Local per-device analytics and observed runtime/discharge equivalents implemented; initial PR #52 CI PASS.
+- [ ] Final beta.40 CI, publication and real-history UI acceptance.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.
