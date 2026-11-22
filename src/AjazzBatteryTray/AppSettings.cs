@@ -16,6 +16,7 @@ public sealed class AppSettings
     public bool AutomaticDockClockSync { get; set; } = true;
     public bool MonitorAulaL99 { get; set; } = false;
     public bool MultipleTrayIcons { get; set; } = true;
+    public Dictionary<string, string> DeviceAliases { get; set; } = new(StringComparer.Ordinal);
 
     public static string DirectoryPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -33,6 +34,7 @@ public sealed class AppSettings
                     File.ReadAllText(FilePath));
                 if (result is not null)
                 {
+                    result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
                     result.Language = UiText.Normalize(result.Language);
                     result.PollSeconds = result.PollSeconds is 15 or 30 or 60 or 120
                         ? result.PollSeconds : 30;
@@ -48,7 +50,7 @@ public sealed class AppSettings
         return new AppSettings();
     }
 
-    public void Save()
+    public bool Save()
     {
         try
         {
@@ -57,10 +59,12 @@ public sealed class AppSettings
             File.WriteAllText(temporary, JsonSerializer.Serialize(this,
                 new JsonSerializerOptions { WriteIndented = true }));
             File.Move(temporary, FilePath, true);
+            return true;
         }
         catch (Exception error)
         {
             FileLog.Write("ERROR", "Could not save preferences", error);
+            return false;
         }
     }
 }
