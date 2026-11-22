@@ -10,6 +10,7 @@ public enum DeviceDashboardStatus
     Disconnected,
     NoReply,
     Fresh,
+    ManualReading,
     Cached
 }
 
