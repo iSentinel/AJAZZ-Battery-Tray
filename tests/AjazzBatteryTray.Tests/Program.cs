@@ -56,6 +56,12 @@ Check("Diagnostic short header", DiagnosticHidIdentity.BatteryHeader(
     new byte[] { 5, 0 }) == "0500");
 
 Check("Separate tray icons default on", new AppSettings().MultipleTrayIcons);
+Check("Primary stable despite enumeration order",
+    ReceiverIdentity.SelectPrimary("b", new[] { "c", "b", "a" }) == "b");
+Check("Primary replaced after unplug",
+    ReceiverIdentity.SelectPrimary("b", new[] { "c", "a", "a" }) == "a");
+Check("No primary when every receiver unplugged",
+    ReceiverIdentity.SelectPrimary("a", Array.Empty<string>()) is null);
 Check("Receiver identity stable regardless of path case",
     ReceiverIdentity.LocalKey("HID#ReceiverA") == ReceiverIdentity.LocalKey("hid#receivera"));
 Check("Distinct receivers keep distinct local histories",
