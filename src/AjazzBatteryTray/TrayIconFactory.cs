@@ -10,21 +10,21 @@ public static class TrayIconFactory
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr icon);
 
-    public static Icon Create(int? level, bool connected)
+    public static Icon Create(int? level, bool connected, bool stale = false)
     {
         using Bitmap image = new(64, 64);
         using (Graphics graphics = Graphics.FromImage(image))
         {
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            Color background = !connected ? Color.FromArgb(110, 118, 130) :
+            Color background = !connected || stale ? Color.FromArgb(110, 118, 130) :
                 level <= 10 ? Color.FromArgb(220, 53, 69) :
                 level <= 20 ? Color.FromArgb(225, 145, 18) :
                 Color.FromArgb(27, 151, 103);
             using Brush fill = new SolidBrush(background);
             graphics.FillEllipse(fill, 2, 2, 60, 60);
-            string text = connected && level is not null ? level.ToString()! : "?";
-            float size = text.Length >= 3 ? 25 : 33;
+            string text = connected && level is not null ? level.ToString()! + (stale ? "*" : "") : "?";
+            float size = text.Length >= 4 ? 20 : text.Length >= 3 ? 25 : 33;
             using Font font = new("Segoe UI", size, FontStyle.Bold, GraphicsUnit.Pixel);
             using StringFormat alignment = new()
             {

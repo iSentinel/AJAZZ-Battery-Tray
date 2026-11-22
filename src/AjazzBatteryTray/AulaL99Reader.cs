@@ -23,6 +23,12 @@ public sealed class AulaL99Reader
                 int? level = await QueryPathAsync(path);
                 if (level.HasValue)
                     return new(true, level, "Fresh 2.4 GHz battery reply");
+
+                // One bounded retry using only the same approved battery query.
+                await Task.Delay(150);
+                level = await QueryPathAsync(path);
+                if (level.HasValue)
+                    return new(true, level, "Fresh 2.4 GHz battery reply after retry");
             }
 
             return new(true, null, "Receiver present; keyboard asleep or no valid reply");

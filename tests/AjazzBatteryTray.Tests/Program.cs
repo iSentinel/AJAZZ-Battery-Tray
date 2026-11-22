@@ -186,6 +186,31 @@ Check("language choice survives serialization",
         serializedLanguage)?.Language == "uk");
 Check("legacy settings default to English", olderSettings?.Language == "en");
 
+// Cache never replaces fresh observations in history or alerts.
+var aulaCache = new AulaBatteryState();
+var aulaTime = DateTimeOffset.Parse("2026-11-22T15:17:48Z");
+aulaCache.Observe(true, true, 98, aulaTime);
+aulaCache.Observe(true, true, null, aulaTime.AddSeconds(31));
+Check("AULA retains last good percentage on transient no reply",
+    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(31)) == 98 &&
+    aulaCache.ConsecutiveFailures == 1 && aulaCache.LastGoodAt == aulaTime);
+Check("AULA cached percentage expires after two minutes",
+    aulaCache.DisplayPercent(true, true, null, aulaTime.AddMinutes(2)) is null);
+Check("AULA unknown presence hides cache",
+    aulaCache.DisplayPercent(true, false, null, aulaTime.AddSeconds(32)) is null);
+Check("AULA clock rollback hides old cache",
+    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(-1)) is null);
+aulaCache.Observe(true, true, 97, aulaTime.AddSeconds(60));
+Check("AULA successful recovery clears failure count",
+    aulaCache.LastGoodPercent == 97 && aulaCache.ConsecutiveFailures == 0);
+aulaCache.Observe(false, true, null, aulaTime.AddSeconds(61));
+Check("AULA unplug invalidates cache",
+    aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null &&
+    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(62)) is null);
+aulaCache.Observe(true, true, 96, aulaTime.AddSeconds(70));
+aulaCache.Reset();
+Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
+
 // AULA's shared dongle must never be probed unless manually requested/opted in.
 Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);
 Check("AULA separate history CSV",

@@ -47,11 +47,15 @@
 - [x] Independent per-receiver sampling, history, notification state,
   diagnostic trace and optional extra tray icons (Windows beta.28 code).
 - [x] beta.28 PR CI, release workflow and six-asset Latest verified.
-- [ ] Hardware acceptance with both mice + AULA; test sleep/replug,
-  unavailable data and icon setting persistence.
+- [x] beta.29 owner diagnostics: both AJ159 and AJ179 independently returned
+  100% with separate icons enabled; AULA returned 98% on preceding poll.
+- [ ] Visual acceptance with all three icons, sleep/replug and persistence.
+- [x] beta.30 implement bounded AULA retry and labelled last-good cache.
+- [ ] beta.30 CI/release and hardware recovery check.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
-- [ ] beta.29 CI and real Windows sensor preview acceptance.
+- [x] beta.29 CI and six-asset Latest release verified.
+- [ ] Real Windows sensor preview acceptance.
 - [ ] Resolve radio RTC packet layout from actual L99 2.4 GHz vendor traffic
   before enabling any additional approved write command.
   See [AULA screen sync evidence and gates](AULA_L99_SCREEN_SYNC.md).

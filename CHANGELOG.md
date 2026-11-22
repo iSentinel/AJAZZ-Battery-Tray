@@ -8,6 +8,17 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.30 (2026-11-22)
+- Retry the approved AULA battery request once after a missed response.
+- Mark a recent last-good percentage as cached (grey icon, asterisk and
+  timestamp), expire it at the next refresh after two minutes and clear it
+  on confirmed removal or opt-out. Preserve fresh-only warnings and history.
+- Add cache/recovery tests and last-good diagnostic fields; discard obsolete
+  results after monitoring changes.
+- Record beta.29 owner evidence: independent simultaneous AJ159/AJ179 reads
+  both returned 100%; AULA returned 98% then no valid reply 31 seconds later.
+- No additional keyboard opcode or screen write; physical recovery pending.
+
 ## 0.3.0-beta.29 (2026-11-22)
 - Add manual, host-only AULA system telemetry preview: native Windows CPU
   load and optional local LibreHardwareMonitor CPU/GPU load/temperature.

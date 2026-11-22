@@ -25,9 +25,18 @@ PR Windows/macOS CI and release installer smoke test PASS; simultaneous
 hardware acceptance pending.
 No new receiver write commands have been enabled.
 
+## Owner evidence — beta.29, 2026-11-22
+- At 15:18:18Z, both AJAZZ receivers independently returned F7/05 100%:
+  AJ179 rev 0002 and AJ159 rev 0300. Separate tray icons setting true.
+  Actual visible icon count, history, disconnect and reconnect remain untested.
+- AULA L99 returned 98% at 15:17:48Z; at 15:18:19Z the receiver remained
+  present but battery was unavailable. Sleep versus transport failure unknown.
+- beta.30 bounded retry and cached display implemented; physical validation
+  remains pending. No new HID command.
+  
 ## AULA system telemetry preview — beta.29
 - Host-only native CPU load and optional loopback LibreHardwareMonitor
-  CPU/GPU data.json parsing implemented; CI and physical sensor test pending.
+  CPU/GPU data.json parsing implemented; CI PASS, physical sensor test pending.
 - Actual radio monitor/RTC wire format remains unconfirmed; no write has
   been implemented. See AULA_L99_SCREEN_SYNC.md.
 
