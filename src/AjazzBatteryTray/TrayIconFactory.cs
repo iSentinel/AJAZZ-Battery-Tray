@@ -10,8 +10,9 @@ public static class TrayIconFactory
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr icon);
 
-    public static Icon Create(int? level, bool connected, bool stale = false)
+    public static Icon Create(int? level, bool connected, bool stale = false, bool neutral = false)
     {
+        if (neutral) return (Icon)SystemIcons.Application.Clone();
         using Bitmap image = new(64, 64);
         using (Graphics graphics = Graphics.FromImage(image))
         {
