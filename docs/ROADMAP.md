@@ -374,3 +374,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Collect both AJ159 full reports and GearHub HAR before deciding
   whether to alter the live parser.
 - [ ] Continue opt-in update checker in its own branch.
+
+## beta.43 update checker checkpoint
+- [x] beta.42 published; workflow 45078486972 PASS, six assets.
+- [x] Implement manual Windows release lookup and channel selector.
+- [ ] Verify final beta.43 CI, release and real Windows dialog.
+- [ ] Add explicit local artifact checksum verification and optional
+  auto-check policy with consent; never auto-execute installers.

@@ -1,16 +1,19 @@
-# Resume — beta.42 combined candidate
+# Resume — manual update checker candidate
 
-- Latest verified beta.41 (de5079f9), release workflow 45074067608 PASS,
-  six assets. Owner AJ179 full diagnostic 6/6 PASS at 100%.
-- P0 #53 affected AJ159 remains open. AJ179 GearHub local bridge HAR
-  has 266 matching F7 pairs, all 100%; six have nonzero read-ready.
-  This is a transport-normalized offline hypothesis, not a live parser fix.
-  See docs/APEX_GEARHUB.md. No private raw captures stored.
-- PR #54 multi-BLE post-beta.41 Windows 45074388934, macOS 45074388910 PASS.
-  Combine PR #56 offline research and eight Python checks in beta.42.
-- Session-only BLE, independent retry/alerts/dashboard/icons; pause all BLE
-  if any USB receiver present or presence unknown. Underlying WinRT read
-  gate held until completion; hung OS operation may require restart.
-- Next: final CI and release verification; continue update checker branch.
-  Test two paired devices in hardware, collect working and affected AJ159
-  full comparison and HAR; retain beta.41 USB protocol until validated.
+- beta.42 PR #54 merged at fe279aa69fe2298f719ac8da3dca24e32528f5ad;
+  final Windows 45077859703 and macOS 45077859680 PASS.
+  Release workflow 45078486972 PASS; beta.42 published with six assets.
+- PR #56 research included in beta.42; eight Python APEX tests PASS.
+  P0 #53 remains open; working/affected AJ159 capture + HAR outstanding.
+- PR #57: manual Windows update checker; fixed public GitHub API,
+  strict numeric channels (beta tag overrides GitHub Latest), bounded
+  response and deadline, no redirects/cookies, locally constructed link.
+  26 pure tests cover version selection, checksum and metadata; C# CI
+  pending (no .NET SDK on scratch server).
+- No automatic polling, binary download, verification UI or installer
+  execution. Checksum primitive exists but is not connected to a download.
+- Next: beta.43 metadata prepared; verify final PR #57 CI,
+  publish and validate actual Windows dialog. Then
+  explicit local artifact checksum verification and opt-in update policy.
+- Hardware acceptance outstanding: two BLE devices, mixed USB/BLE,
+  prolonged AULA L99 sleep and both AJ159 units. No speculative HID writes.
