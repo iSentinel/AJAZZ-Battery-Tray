@@ -16,8 +16,9 @@ public sealed class AppSettings
     public bool AutomaticDockClockSync { get; set; } = true;
     public bool MonitorAulaL99 { get; set; } = false;
     public bool MultipleTrayIcons { get; set; } = true;
-    // Absent key inherits global thresholds; zero explicitly mutes this device.
+    // Absent key inherits the global sampling interval.
     public Dictionary<string, int> DevicePollIntervals { get; set; } = new(StringComparer.Ordinal);
+    // Absent key inherits global thresholds; zero explicitly mutes this device.
     public Dictionary<string, int> DeviceAlertMasks { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceTrayColors { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> HiddenTrayDevices { get; set; } = new(StringComparer.Ordinal);
