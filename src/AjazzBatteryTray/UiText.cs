@@ -137,6 +137,9 @@ public static class UiText
         ["Based on {0} observations over {1:N0} minutes; last measurement {2}."] =
             ("По {0} наблюдениям за {1:N0} мин; последнее измерение {2}.",
              "За {0} спостереженнями протягом {1:N0} хв; останнє вимірювання {2}."),
+        ["Observed discharge equivalents: {0:N2} (selected range; not battery health)."] =
+            ("Наблюдаемый эквивалент разряда: {0:N2} (выбранный период; не износ батареи).",
+             "Спостережуваний еквівалент розряду: {0:N2} (вибраний період; не знос батареї)."),
         ["Linear estimate at the observed rate; usage and charging may change it."] =
             ("Линейная оценка; нагрузка и зарядка могут изменить прогноз.",
              "Лінійна оцінка; навантаження та заряджання можуть змінити прогноз."),
