@@ -3,7 +3,21 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.30 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.31 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+
+## Device Manager dashboard (Windows)
+
+Open **Device Manager** from any tray icon to view all known AJAZZ
+receivers, AULA L99, and the explicitly enabled Bluetooth fallback.
+The table distinguishes fresh, cached, manual, unavailable, unknown,
+disabled, standby and disconnected states, with battery percentages
+and local measurement timestamps. Select a supported device to open
+its independent battery history. Refresh, extended diagnostics and
+host telemetry preview reuse the existing application commands.
+Opening or closing the dashboard does not start new HID polling.
+The window refreshes when the normal monitor updates; closing it
+leaves tray operation unchanged. No device configuration writes are
+implemented by this dashboard. macOS dashboard parity remains planned.
 
 ## Windows multiple devices
 
