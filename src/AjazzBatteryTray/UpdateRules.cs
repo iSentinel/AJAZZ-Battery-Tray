@@ -40,8 +40,9 @@ public static class UpdateRules
         IEnumerable<(string Tag, bool Draft, bool Prerelease)> entries, bool experimental)
         => entries.Where(x => !x.Draft)
             .Select(x => (Version: ReleaseVersion.Parse(x.Tag), x.Prerelease))
-            .Where(x => x.Version is not null && x.Prerelease == x.Version.Beta.HasValue &&
-                (experimental || !x.Prerelease) && x.Version.CompareTo(current) > 0)
+            .Where(x => x.Version is not null &&
+                (x.Version.Beta.HasValue ? experimental : !x.Prerelease) &&
+                x.Version.CompareTo(current) > 0)
             .Select(x => x.Version).OrderByDescending(x => x).FirstOrDefault();
 
     /// <summary>Accept exactly one checksum entry for the expected artifact.</summary>
