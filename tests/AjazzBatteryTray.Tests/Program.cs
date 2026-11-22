@@ -1313,5 +1313,43 @@ catch (InvalidDataException) { invalidRestore = true; }
 Check("Restore invalid object rejected before save or changes", invalidRestore && persistCalls == 1 &&
     PreferencesBackup.Capture(restoreTarget) == portableBackup);
 
+// API projection contains no device identifiers and never promotes old readings.
+var snapshotNow = new DateTimeOffset(2026, 11, 23, 0, 0, 0, TimeSpan.Zero);
+LocalBatterySnapshot.Input SnapshotInput(DeviceDashboardStatus status, int? percent,
+    DateTimeOffset? measured, int slot = 1) => new(LocalBatterySource.ApexReceiver, slot,
+        new DeviceDashboardState("private-name", "private-transport", status, percent, measured));
+LocalBatterySnapshot.Entry SnapshotRow(DeviceDashboardStatus status, int? percent, DateTimeOffset? measured) =>
+    LocalBatterySnapshot.Create(snapshotNow, new[] { SnapshotInput(status, percent, measured) }).Devices[0];
+var apiFresh = SnapshotRow(DeviceDashboardStatus.Fresh, 83, snapshotNow.AddMinutes(-1));
+Check("API fresh measurement is numeric", apiFresh.BatteryPercent == 83 && apiFresh.LastKnownPercent is null);
+var apiOld = SnapshotRow(DeviceDashboardStatus.Fresh, 83, snapshotNow.AddMinutes(-6));
+Check("API old fresh measurement demoted to stale", apiOld.Status == "stale" && apiOld.BatteryPercent is null && apiOld.LastKnownPercent == 83);
+var apiCache = SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-2));
+Check("API cached data never current", apiCache.Status == "cached" && apiCache.BatteryPercent is null && apiCache.LastKnownPercent == 70);
+Check("API scheduled data never current", SnapshotRow(DeviceDashboardStatus.Scheduled, 70, snapshotNow).BatteryPercent is null);
+Check("API expired data unavailable", SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-25)).LastKnownPercent is null);
+Check("API future measurement unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, snapshotNow.AddSeconds(1)).BatteryPercent is null);
+Check("API missing timestamp unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, null).BatteryPercent is null);
+Check("API invalid percentage unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 101, snapshotNow).Status == "unavailable");
+Check("API manual reading not promoted", SnapshotRow(DeviceDashboardStatus.ManualReading, 50, snapshotNow).BatteryPercent is null);
+Check("API unknown presence hides all numeric data", SnapshotRow(DeviceDashboardStatus.PresenceUnknown, 50, snapshotNow).LastKnownPercent is null);
+Check("API zero is valid fresh battery", SnapshotRow(DeviceDashboardStatus.Fresh, 0, snapshotNow).BatteryPercent == 0);
+var apiSnapshot = LocalBatterySnapshot.Create(snapshotNow, new[] {
+    SnapshotInput(DeviceDashboardStatus.Fresh, 1, snapshotNow, 2),
+    SnapshotInput(DeviceDashboardStatus.Fresh, 2, snapshotNow, 1) });
+string apiJson = System.Text.Encoding.UTF8.GetString(apiSnapshot.Export());
+Check("API snapshot canonical order and schema", apiSnapshot.SchemaVersion == 1 && apiSnapshot.Devices[0].SessionSlot == 1);
+Check("API projection excludes all original labels", !apiJson.Contains("private-name") && !apiJson.Contains("private-transport"));
+bool RejectSnapshot(IEnumerable<LocalBatterySnapshot.Input> rows)
+{
+    try { LocalBatterySnapshot.Create(snapshotNow, rows); return false; }
+    catch (InvalidDataException) { return true; }
+}
+Check("API duplicate session slot rejected", RejectSnapshot(new[] {
+    SnapshotInput(DeviceDashboardStatus.Disabled, null, null), SnapshotInput(DeviceDashboardStatus.Disabled, null, null) }));
+Check("API oversized set rejected", RejectSnapshot(Enumerable.Range(1, 65)
+    .Select(i => SnapshotInput(DeviceDashboardStatus.Disabled, null, null, i))));
+Check("API invalid session slot rejected", RejectSnapshot(new[] { SnapshotInput(DeviceDashboardStatus.Disabled, null, null, 0) }));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
