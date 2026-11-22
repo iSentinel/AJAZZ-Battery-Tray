@@ -3,7 +3,16 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.39 (individual polling candidate; additional APEX compatibility remains under investigation).
+**Version:** v0.3.0-beta.40 (battery analytics candidate; additional APEX compatibility remains under investigation).
+
+## Per-device battery analytics (Windows)
+
+Open the individual battery history for a receiver or the AULA profile.
+The window shows observed discharge rate, conditional estimated runtime,
+observation count and span, and observed discharge equivalents over the
+selected range. Insufficient recent observations are explicitly unavailable.
+This is a local estimate, not measured physical capacity, health or cycles.
+The aggregate legacy history is excluded. See [analytics limitations](docs/BATTERY_ANALYTICS.md).
 
 ## Individual polling intervals (Windows)
 
