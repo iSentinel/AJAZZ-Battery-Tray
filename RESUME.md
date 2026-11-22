@@ -15,11 +15,13 @@
   rules preserved. AULA presence is last-known between its own reads.
 - Localized interval editor in tray/dashboard, settings rollback, diagnostic
   interval/timestamp fields, 24 additional pure checks in total.
-- See docs/PER_DEVICE_POLLING.md. CI and physical acceptance pending.
+- Initial PR #51 Windows CI 45066661421 and macOS CI 45066661426 PASS.
+- beta.39 version, installer, macOS bundle 43 and release metadata prepared.
+- See docs/PER_DEVICE_POLLING.md. Final CI and physical acceptance pending.
 
 ## Next
-1. Open/verify polling PR, fix failures, review physical timing and
-   history/alert semantics. Prepare beta.39 only after validation gates.
+1. Verify final PR #51 CI, merge and six-asset beta.39 publication;
+   retain separate physical timing and history/alert acceptance gates.
 2. Battery history analytics: estimate observed drain with uncertainty.
 3. APEX official reference comparison and AULA physical acceptance when
    hardware becomes available; no speculative HID configuration writes.
