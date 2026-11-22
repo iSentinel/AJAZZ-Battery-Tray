@@ -1,19 +1,19 @@
-# Resume — manual update checker candidate
+# Resume — update verification and automatic policy
 
-- beta.42 PR #54 merged at fe279aa69fe2298f719ac8da3dca24e32528f5ad;
-  final Windows 45077859703 and macOS 45077859680 PASS.
-  Release workflow 45078486972 PASS; beta.42 published with six assets.
-- PR #56 research included in beta.42; eight Python APEX tests PASS.
-  P0 #53 remains open; working/affected AJ159 capture + HAR outstanding.
-- PR #57: manual Windows update checker; fixed public GitHub API,
-  strict numeric channels (beta tag overrides GitHub Latest), bounded
-  response and deadline, no redirects/cookies, locally constructed link.
-  26 pure tests cover version selection, checksum and metadata; C# CI
-  pending (no .NET SDK on scratch server).
-- No automatic polling, binary download, verification UI or installer
-  execution. Checksum primitive exists but is not connected to a download.
-- Next: beta.43 metadata prepared; verify final PR #57 CI,
-  publish and validate actual Windows dialog. Then
-  explicit local artifact checksum verification and opt-in update policy.
-- Hardware acceptance outstanding: two BLE devices, mixed USB/BLE,
-  prolonged AULA L99 sleep and both AJ159 units. No speculative HID writes.
+- beta.42 release workflow 45078486972 PASS, six assets verified.
+- beta.43 PR #57 merged 29af7347053cc629d62a57f01db0fabe364f7afe,
+  Windows 45078769289 and macOS 45078769317 PASS.
+  Release workflow 45078947181 still in progress at checkpoint; Latest beta.42.
+- PR #58 local artifact verifier head d3ceabb903e8d637eaac913e02be19d5f9b16777:
+  macOS 45079025042 PASS; Windows 45079025110 running.
+  Twelve new C# local tests; eight Python APEX tests PASS locally.
+  Strict matching setup/portable manifests, cancelable read-only hashing, no
+  installation. Checksum equality is not authentication.
+- This branch adds automatic schedule foundation, fifteen further pure tests:
+  disabled by default, 60s initial / 24h success / 1h failure, generation
+  invalidation, duplicate suppression. Not yet connected to UI or network.
+- Next: verify beta.43 release and PR #58 CI, prepare beta.44 metadata,
+  final CI and publish. Integrate automatic opt-in after sync with beta.44,
+  use monotonic clock and no unsolicited networking or automatic downloads.
+- Hardware gates still open: affected and working AJ159 full reports/HAR,
+  multiple BLE, prolonged AULA L99 sleep. No changes to live HID legacy parser.
