@@ -1280,5 +1280,38 @@ finally { Directory.Delete(backupDir, true); }
 Check("Backup preview leaves source settings unchanged", backupSource.AutomaticUpdateChecks &&
     backupSource.DeviceAliases.Count == 1 && backupSource.PollSeconds == 60);
 
+// Restore changes only the visible schema and rolls back on failed persistence.
+var restoreTarget = new AppSettings { Language = "en", PollSeconds = 120,
+    AutomaticUpdateChecks = true, ExperimentalUpdateChannel = true,
+    MonitorAulaL99 = true, AutomaticDockClockSync = false };
+string restoreKey = new string('B', 64);
+restoreTarget.DeviceAliases[restoreKey] = "keep-local";
+restoreTarget.DevicePollIntervals[restoreKey] = 15;
+restoreTarget.DeviceAlertMasks[restoreKey] = 0;
+restoreTarget.HiddenTrayDevices.Add(restoreKey);
+restoreTarget.DeviceTrayColors[restoreKey] = "blue";
+var oldBackup = PreferencesBackup.Capture(restoreTarget);
+int persistCalls = 0;
+Check("Restore failed save rolls back all allowed values",
+    !portableBackup.TryRestore(restoreTarget, () => { persistCalls++; return false; }) &&
+    PreferencesBackup.Capture(restoreTarget) == oldBackup && persistCalls == 1);
+Check("Restore thrown persistence error rolls back",
+    !portableBackup.TryRestore(restoreTarget, () => throw new IOException("synthetic")) &&
+    PreferencesBackup.Capture(restoreTarget) == oldBackup);
+Check("Restore persistence sees proposed settings",
+    portableBackup.TryRestore(restoreTarget, () => PreferencesBackup.Capture(restoreTarget) == portableBackup));
+Check("Restore updates all allowed values", PreferencesBackup.Capture(restoreTarget) == portableBackup);
+Check("Restore preserves device overrides and names", restoreTarget.DeviceAliases[restoreKey] == "keep-local" &&
+    restoreTarget.DevicePollIntervals[restoreKey] == 15 && restoreTarget.DeviceAlertMasks[restoreKey] == 0 &&
+    restoreTarget.HiddenTrayDevices.Contains(restoreKey) && restoreTarget.DeviceTrayColors[restoreKey] == "blue");
+Check("Restore preserves hardware flags and explicit network consent",
+    restoreTarget.AutomaticUpdateChecks && restoreTarget.ExperimentalUpdateChannel &&
+    restoreTarget.MonitorAulaL99 && !restoreTarget.AutomaticDockClockSync);
+bool invalidRestore = false;
+try { (portableBackup with { PollSeconds = -1 }).TryRestore(restoreTarget, () => { persistCalls++; return true; }); }
+catch (InvalidDataException) { invalidRestore = true; }
+Check("Restore invalid object rejected before save or changes", invalidRestore && persistCalls == 1 &&
+    PreferencesBackup.Capture(restoreTarget) == portableBackup);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
