@@ -220,7 +220,7 @@ internal sealed class ReceiverMonitor : IDisposable
         {
             _tray.ContextMenuStrip = menu;
             string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} — {name}";
-            if (stale) label += " (" + UiText.Get("cached") + ")";
+            if (stale) label = UiText.Get("cached") + ": " + label;
             _tray.Text = label[..Math.Min(63, label.Length)];
             if (_icon is null || _last != level || _stale != stale)
             {
