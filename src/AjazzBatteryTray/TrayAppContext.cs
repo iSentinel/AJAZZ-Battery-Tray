@@ -12,6 +12,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _aulaTimer;
     private readonly DevicePollSchedule _usbSchedule = new();
     private readonly LocalSnapshotStore _localSnapshot = new();
+    private readonly Dictionary<string, int> _snapshotReceiverSlots = new(StringComparer.Ordinal);
     private readonly System.Windows.Forms.Timer _updateTimer = new() { Interval = 10000 };
     private readonly AutomaticUpdatePolicy _updatePolicy = new();
     private CancellationTokenSource? _updateRequestCancellation;
@@ -315,15 +316,20 @@ public sealed class TrayAppContext : ApplicationContext
         try
         {
             var inputs = new List<LocalBatterySnapshot.Input>();
-            int slot = 0;
             foreach (var receiver in _receivers.Devices)
             {
-                // ReceiverMonitor retains insertion order and disconnected rows for this session.
+                if (!_snapshotReceiverSlots.TryGetValue(receiver.Key, out int slot))
+                {
+                    if (_snapshotReceiverSlots.Count >= LocalBatterySnapshot.MaximumDevices)
+                        throw new InvalidDataException("Snapshot slot limit exceeded.");
+                    slot = _snapshotReceiverSlots.Count + 1;
+                    _snapshotReceiverSlots.Add(receiver.Key, slot);
+                }
                 var reading = receiver.Reading;
                 var state = DeviceDashboardState.FromPoll("", "", true,
                     reading.PresenceKnown, receiver.Present, reading.Percent,
                     receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
-                inputs.Add(new(LocalBatterySource.ApexReceiver, ++slot, state));
+                inputs.Add(new(LocalBatterySource.ApexReceiver, slot, state));
             }
             var aula = !_settings.MonitorAulaL99
                 ? new DeviceDashboardState("", "", DeviceDashboardStatus.Disabled, null, null)
@@ -1638,6 +1644,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         _closing = true;
         _localSnapshot.Clear();
+        _snapshotReceiverSlots.Clear();
         _updateTimer.Stop();
         _updateTimer.Dispose();
         _updatePolicy.Configure(false, _settings.ExperimentalUpdateChannel, Environment.TickCount64);
