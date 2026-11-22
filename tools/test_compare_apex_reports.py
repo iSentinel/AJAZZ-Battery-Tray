@@ -32,6 +32,15 @@ class ApexComparisonTests(unittest.TestCase):
         self.assertEqual(list(read_attempts(report)), [
             ("1", 30, 4, None), ("1", 30, 4, bytes.fromhex("05000053"))])
 
+    def test_aj179_reference_prefix(self):
+        """Reconstruct the observed status prefix; do not store raw captures."""
+        prefix = bytes([5, 0, 0, 100, 1, 0, 1, 2, 0, 0])
+        for size in (65, 67):
+            with self.subTest(size=size):
+                data = prefix.ljust(size, b"\x00")
+                self.assertEqual(legacy_percent(data), 100)
+                self.assertEqual(vendor_candidate(data), ("candidate-only", 100))
+
     def test_malformed(self):
         with self.assertRaises(ValueError):
             list(read_attempts("no capture"))
