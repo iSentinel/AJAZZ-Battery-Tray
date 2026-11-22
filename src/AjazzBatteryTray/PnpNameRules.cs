@@ -18,7 +18,8 @@ public static class PnpNameRules
         if (instance.Length > 512 ||
             (!RootPattern.IsMatch(instance) && !ChildPattern.IsMatch(instance)))
             return null;
-        return instance.Contains("VID_3151&PID_5007", StringComparison.OrdinalIgnoreCase)
+        return instance.StartsWith(@"USB\VID_3151&PID_5007", StringComparison.OrdinalIgnoreCase) ||
+               instance.StartsWith(@"HID\VID_3151&PID_5007", StringComparison.OrdinalIgnoreCase)
             ? "3151:5007" : "05AC:024F";
     }
 
