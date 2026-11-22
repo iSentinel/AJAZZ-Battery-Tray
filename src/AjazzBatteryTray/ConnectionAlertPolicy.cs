@@ -23,7 +23,7 @@ public sealed class ConnectionAlertPolicy
             return false;
         }
 
-        _missingPolls++;
+        if (_missingPolls < 2) _missingPolls++;
         if (!_seenOnline || _alerted || _missingPolls < 2) return false;
         _alerted = true;
         return true;

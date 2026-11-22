@@ -1507,5 +1507,53 @@ Check("Discovery interval normalizes invalid override",
 Check("Discovery interval retains shorter global",
     DevicePollSchedule.DiscoverySeconds(15, new Dictionary<string, int> { ["one"] = 120 }) == 15);
 
+// Compare the allocation-free threshold policy to its former set-based behavior.
+int? ReferenceAlert(HashSet<int> notified, int percent, int mask)
+{
+    if (percent is < 0 or > 100) return null;
+    int[] levels = { 50, 25, 10 };
+    foreach (int level in levels)
+        if (percent >= level + 5) notified.Remove(level);
+    int? reached = null;
+    foreach (int level in levels.Reverse())
+    {
+        int bit = level == 50 ? 1 : level == 25 ? 2 : 4;
+        if ((mask & bit) != 0 && percent < level && !notified.Contains(level))
+        {
+            reached = level;
+            break;
+        }
+    }
+    if (reached.HasValue)
+        foreach (int level in levels)
+            if (percent < level) notified.Add(level);
+    return reached;
+}
+bool equivalentAlerts = true;
+var alertRandom = new Random(48049);
+for (int scenario = 0; scenario < 32; scenario++)
+{
+    var optimized = new AlertPolicy();
+    var reference = new HashSet<int>();
+    for (int sample = 0; sample < 256; sample++)
+    {
+        int percent = alertRandom.Next(-1, 102);
+        int mask = alertRandom.Next(8);
+        int? expected = ReferenceAlert(reference, percent, mask);
+        int? actual = optimized.Evaluate(percent, (mask & 1) != 0,
+            (mask & 2) != 0, (mask & 4) != 0);
+        if (expected != actual) equivalentAlerts = false;
+    }
+}
+Check("Alert bitmask matches old policy across 8192 deterministic samples", equivalentAlerts);
+var longAbsent = new ConnectionAlertPolicy();
+longAbsent.Evaluate(true, true);
+bool longAbsentOnce = !longAbsent.Evaluate(false, false) && longAbsent.Evaluate(false, false);
+for (int i = 0; i < 10000; i++)
+    longAbsentOnce &= !longAbsent.Evaluate(false, false);
+longAbsent.Evaluate(true, true);
+Check("Long disconnection saturates and re-arms after reconnect",
+    longAbsentOnce && !longAbsent.Evaluate(false, false) && longAbsent.Evaluate(false, false));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

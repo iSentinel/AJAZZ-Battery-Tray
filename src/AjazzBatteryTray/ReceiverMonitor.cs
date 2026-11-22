@@ -34,6 +34,10 @@ internal sealed class ReceiverMonitor : IDisposable
         public void Dispose() => Window?.Dispose();
     }
 
+    private static readonly AjazzHidReader.Reading AbsentReading =
+        new(false, null, "Receiver absent");
+    private static readonly AjazzHidReader.Reading UnknownReading =
+        new(false, null, "HID enumeration unavailable", PresenceKnown: false);
     private readonly Dictionary<string, State> _states = new();
     private readonly Dictionary<string, ExtraIcon> _icons = new();
     internal IEnumerable<State> Devices => _states.Values;
@@ -64,8 +68,7 @@ internal sealed class ReceiverMonitor : IDisposable
         if (!batch.Summary.PresenceKnown)
         {
             foreach (State state in _states.Values.Where(s => s.Present))
-                state.Reading = new(false, null, "HID enumeration unavailable",
-                    PresenceKnown: false);
+                state.Reading = UnknownReading;
             return;
         }
 
@@ -86,7 +89,7 @@ internal sealed class ReceiverMonitor : IDisposable
         foreach (var pair in _states.Where(x => !seen.Contains(x.Key)))
         {
             pair.Value.Present = false;
-            pair.Value.Reading = new(false, null, "Receiver absent");
+            pair.Value.Reading = AbsentReading;
             pair.Value.ScheduledSkip = false;
             pair.Value.MeasuredAt = null;
             Record(pair.Value, settings, notifier,
