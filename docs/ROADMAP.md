@@ -39,8 +39,8 @@ available beta number is assigned at release preparation.
 | beta.31 | L99 RTC clock synchronization | BLOCKED: actual 2.4 GHz vendor RTC capture |
 | beta.32 | L99 CPU/GPU load, temperatures, GPU selection | BLOCKED on verified RTC/telemetry layout and owner screen test |
 | beta.33 | L99 weather | Verified field semantics, explicit location/provider consent |
-| beta.34 | Unified Device Manager dashboard | beta.31 PR #42 CI PASS, merged and six-asset release verified; visual acceptance pending |
-| beta.35 | Per-device names, Windows PnP friendly names, tray visibility/color, alert and poll settings | beta.32 preview released; beta.33 local aliases implemented; verified mapping and rollback required before PnP writes |
+| beta.34 | Unified Device Manager dashboard | beta.31 released; owner accepted three live dashboard rows in beta.32 |
+| beta.35 | Per-device names, Windows PnP friendly names, tray visibility/color, alert and poll settings | beta.32 preview and beta.33 aliases released; beta.35 independent icon visibility implemented; PnP apply remains gated |
 | beta.36 | Battery analytics | Local fresh history, estimated runtime and charge cycles with uncertainty |
 | beta.37 | Multi-device Bluetooth | Paired-only selection, transport identity, independent backoff |
 | beta.38 | Update checker | GitHub releases, stable/experimental channel, checksum verification, opt-in |
@@ -92,7 +92,7 @@ available beta number is assigned at release preparation.
 - [ ] Validate actual root/child mapping in owner preview and require
   explicit model confirmation before any property change.
 - [x] Implement local manual aliases independent of Windows PnP metadata
-  (beta.33 candidate); per-AJAZZ receiver and single AULA monitoring profile.
+  (beta.33 released); per-AJAZZ receiver and single AULA monitoring profile.
 - [ ] Confirm alias persistence, reset and independent histories in real UI.
 - [ ] Add an explicit local mapping confirmation workflow and a narrowly
   scoped elevated helper only after owner preview validation.
@@ -158,7 +158,12 @@ hardware acceptance remain separate.
 - [x] beta.30 six-asset Latest publication verified (release workflow 45042853053).
 - [x] Owner beta.32 report: fresh L99 battery 93%; prolonged sleep can still hide battery.
 - [x] beta.34 implement 24-hour session-only stale display and receiver continuity.
-- [ ] Verify beta.34 recovery after prolonged sleep and receiver removal.
+- [x] beta.34 PR #45 Windows/macOS CI PASS; merged.
+- [ ] Verify beta.34 release publication and physical prolonged-sleep recovery.
+- [x] beta.35 implement independent showing/hiding of AJAZZ/AULA icons,
+  persistent preferences and neutral menu access without disabling monitoring.
+- [ ] beta.35 CI/release and owner acceptance of hide/show and persistence.
+- [ ] Per-device alert settings, icon color and poll intervals.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.
