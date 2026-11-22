@@ -29,3 +29,13 @@
    PnP mapping and L99 screen writes remain hardware-gated.
 
 Never claim hardware acceptance from CI alone. No automatic raw-data upload.
+
+## Polling follow-up checkpoint: feat/per-device-polling
+- Based on beta.38 candidate 6a8068dc78bf8b407ced120688aa8887eedf2be7.
+- Implemented pure DevicePollSchedule, validated per-device overrides and
+  JSON persistence; twenty deterministic checks added, CI pending.
+- No runtime scheduling or interval editor connected yet. See
+  docs/PER_DEVICE_POLLING.md for ordered integration and validation gates.
+- Next implement discovery/sample result distinction and per-receiver
+  timestamps, then connect scheduler, AULA and UI; do not release this
+  foundational branch until all integration gates pass.
