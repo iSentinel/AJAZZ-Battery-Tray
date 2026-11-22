@@ -1244,7 +1244,8 @@ public sealed class TrayAppContext : ApplicationContext
             ShowLowBatteryAlert(slot, percent);
         RefreshDeviceDisplay();
         // Continue with another due device, not another read of the same slot.
-        if (known && !present) StartBluetoothPoll(false);
+        await Task.Yield();
+        if (!_closing && known && !present) StartBluetoothPoll(false);
     }
 
     private void ApplyClockResult(bool attempted, bool succeeded)
@@ -1373,9 +1374,21 @@ public sealed class TrayAppContext : ApplicationContext
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
-                receiver?.Key, _settings.HiddenTrayDevices, DeviceColor);
+                receiver?.Key, _settings.HiddenTrayDevices, DeviceColor,
+                BluetoothExtraIcons(reading, primaryBle));
         UpdateBluetoothStatus();
         RefreshDashboard();
+    }
+
+    private IReadOnlyList<(string Key, string Name, int? Percent)> BluetoothExtraIcons(
+        AjazzHidReader.Reading reading, string? primary)
+    {
+        if (!reading.PresenceKnown || reading.ReceiverPresent)
+            return Array.Empty<(string, string, int?)>();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        return _bleSlots.Where(x => x.Key != primary).OrderBy(x => x.Value.Number)
+            .Select(x => ($"BLE:{x.Value.Number}", BleDisplayLabel(x.Value),
+                _ble.VisiblePercent(x.Key, true, false, now))).ToArray();
     }
 
     private void UpdateIcon(int? percent, bool connected, bool stale = false,
