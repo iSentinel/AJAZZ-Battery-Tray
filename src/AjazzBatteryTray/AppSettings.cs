@@ -16,6 +16,7 @@ public sealed class AppSettings
     public bool AutomaticDockClockSync { get; set; } = true;
     public bool MonitorAulaL99 { get; set; } = false;
     public bool MultipleTrayIcons { get; set; } = true;
+    public Dictionary<string, DeviceAlertPreferences> DeviceAlerts { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceTrayColors { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> HiddenTrayDevices { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceAliases { get; set; } = new(StringComparer.Ordinal);
@@ -36,6 +37,7 @@ public sealed class AppSettings
                     File.ReadAllText(FilePath));
                 if (result is not null)
                 {
+                    result.DeviceAlerts = DeviceAlertPreferences.Clean(result.DeviceAlerts);
                     result.DeviceTrayColors = TrayColorRules.Clean(result.DeviceTrayColors);
                     result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
                     result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
