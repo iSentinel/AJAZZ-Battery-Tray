@@ -933,5 +933,58 @@ backoff.Disable();
 Check("BLE manual refresh disabled after opting out",
     !backoff.CanRefreshNow(false));
 
+// Estimate only a recent contiguous discharge trend.
+var analyticsStart = DateTimeOffset.Parse("2026-01-01T10:00:00Z");
+BatterySample[] analyticsSamples = {
+    new(analyticsStart, 80, "online"),
+    new(analyticsStart.AddMinutes(15), 77, "online"),
+    new(analyticsStart.AddMinutes(30), 74, "online")
+};
+var analyticsNow = analyticsStart.AddMinutes(30);
+var drainEstimate = BatteryAnalytics.EstimateDrain(analyticsSamples, analyticsNow);
+Check("Drain estimate observed rate", drainEstimate?.PercentPerHour == 12);
+Check("Drain estimate projected time", drainEstimate is not null &&
+    Math.Abs(drainEstimate.HoursRemaining - 74.0 / 12) < 0.0001);
+Check("Drain estimate measured span", drainEstimate?.ObservationSpan == TimeSpan.FromMinutes(30) &&
+    drainEstimate.Observations == 3);
+Check("Insufficient observations", BatteryAnalytics.EstimateDrain(analyticsSamples.Take(2).ToArray(), analyticsNow) is null);
+Check("Stale final sample", BatteryAnalytics.EstimateDrain(analyticsSamples, analyticsNow.AddMinutes(16)) is null);
+Check("Future final sample", BatteryAnalytics.EstimateDrain(analyticsSamples, analyticsNow.AddSeconds(-1)) is null);
+Check("Charge increase breaks trend", BatteryAnalytics.EstimateDrain(new[] {
+    analyticsSamples[0], analyticsSamples[1], new BatterySample(analyticsNow, 90, "online")
+}, analyticsNow) is null);
+Check("Missing battery breaks trend", BatteryAnalytics.EstimateDrain(new[] {
+    analyticsSamples[0], new BatterySample(analyticsStart.AddMinutes(15), null, "unavailable"), analyticsSamples[2]
+}, analyticsNow) is null);
+Check("Gap breaks trend", BatteryAnalytics.EstimateDrain(new[] {
+    analyticsSamples[0] with { Timestamp = analyticsStart.AddMinutes(-1) },
+    analyticsSamples[1], analyticsSamples[2]
+}, analyticsNow) is null);
+Check("Flat trend has no runtime estimate", BatteryAnalytics.EstimateDrain(analyticsSamples.Select(x =>
+    x with { Percent = 80 }).ToArray(), analyticsNow) is null);
+Check("Duplicate timestamps break trend", BatteryAnalytics.EstimateDrain(new[] {
+    analyticsSamples[0], analyticsSamples[1] with { Timestamp = analyticsStart }, analyticsSamples[2]
+}, analyticsNow) is null);
+
+Check("Observed discharge sums percentage drops",
+    BatteryAnalytics.ObservedDischargeEquivalent(analyticsSamples, analyticsNow) is double observedEquivalent &&
+    Math.Abs(observedEquivalent - 0.06) < 0.0001);
+Check("Observed discharge ignores charge increases",
+    BatteryAnalytics.ObservedDischargeEquivalent(new[] {
+        analyticsSamples[0], analyticsSamples[1], analyticsSamples[2] with { Percent = 90 }
+    }, analyticsNow) is double mixedEquivalent && Math.Abs(mixedEquivalent - 0.03) < 0.0001);
+Check("No valid pairs means unavailable",
+    BatteryAnalytics.ObservedDischargeEquivalent(analyticsSamples.Take(1).ToArray(), analyticsNow) is null);
+Check("Flat valid observations mean zero observed drain",
+    BatteryAnalytics.ObservedDischargeEquivalent(analyticsSamples.Select(x => x with { Percent = 80 }).ToArray(), analyticsNow) == 0);
+Check("Unavailable rows do not bridge gaps",
+    BatteryAnalytics.ObservedDischargeEquivalent(new[] {
+        analyticsSamples[0], analyticsSamples[1] with { Percent = null, State = "unavailable" }, analyticsSamples[2]
+    }, analyticsNow) is null);
+Check("Excessive gaps do not count toward equivalent",
+    BatteryAnalytics.ObservedDischargeEquivalent(new[] { analyticsSamples[0], analyticsSamples[2] }, analyticsNow) is null);
+Check("Future pairs do not count",
+    BatteryAnalytics.ObservedDischargeEquivalent(analyticsSamples, analyticsStart) is null);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

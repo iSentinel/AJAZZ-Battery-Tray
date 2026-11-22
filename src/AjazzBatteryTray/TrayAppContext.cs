@@ -449,7 +449,7 @@ public sealed class TrayAppContext : ApplicationContext
     private void ShowAulaHistory()
     {
         if (_aulaHistoryWindow is null || _aulaHistoryWindow.IsDisposed)
-            _aulaHistoryWindow = new BatteryHistoryForm(_aulaHistory, AulaName);
+            _aulaHistoryWindow = new BatteryHistoryForm(_aulaHistory, AulaName, estimateEnabled: true);
         _aulaHistoryWindow.RefreshData();
         _aulaHistoryWindow.Show();
         _aulaHistoryWindow.BringToFront();

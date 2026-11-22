@@ -9,6 +9,8 @@ public sealed class BatteryHistoryForm : Form
 {
     private readonly BatteryHistory _history;
     private readonly string _deviceTitle;
+    private readonly bool _estimateEnabled;
+    private readonly Label _analytics = new();
     private readonly BatteryGraphPanel _graph = new();
     private readonly Label _summary = new();
     private readonly ComboBox _range = new();
@@ -17,10 +19,11 @@ public sealed class BatteryHistoryForm : Form
     private IReadOnlyList<BatterySample> _visible = Array.Empty<BatterySample>();
 
     public BatteryHistoryForm(BatteryHistory history,
-        string deviceTitle = "AJAZZ APEX")
+        string deviceTitle = "AJAZZ APEX", bool estimateEnabled = false)
     {
         _history = history;
         _deviceTitle = deviceTitle;
+        _estimateEnabled = estimateEnabled;
         Text = _deviceTitle + " — " + UiText.Get("Battery history");
         MinimumSize = new Size(650, 390);
         Size = new Size(900, 510);
@@ -53,8 +56,13 @@ public sealed class BatteryHistoryForm : Form
         _summary.Height = 52;
         _summary.Padding = new Padding(14, 6, 14, 6);
         _summary.Font = new Font("Segoe UI", 9);
+        _analytics.Dock = DockStyle.Bottom;
+        _analytics.Height = 98;
+        _analytics.Padding = new Padding(14, 6, 14, 6);
+        _analytics.Visible = _estimateEnabled;
         _graph.Dock = DockStyle.Fill;
         Controls.Add(_graph);
+        Controls.Add(_analytics);
         Controls.Add(_summary);
         Controls.Add(buttons);
         ApplyLanguage();
@@ -89,6 +97,7 @@ public sealed class BatteryHistoryForm : Form
 
     private void UpdateSummary()
     {
+        UpdateAnalytics();
         BatterySample? latest = _visible.LastOrDefault();
         if (latest is null)
         {
@@ -107,6 +116,28 @@ public sealed class BatteryHistoryForm : Form
             value, minimum, missing, unavailable) + "\n" +
             UiText.Format("Records: {0}  |  Local CSV: {1} (last 30 days)",
                 _visible.Count, _history.FileName);
+    }
+
+    private void UpdateAnalytics()
+    {
+        if (!_estimateEnabled) return;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var estimate = BatteryAnalytics.EstimateDrain(_visible, now);
+        double? observed = BatteryAnalytics.ObservedDischargeEquivalent(_visible, now);
+        string equivalent = observed is double value
+            ? UiText.Format("Observed discharge equivalents: {0:N2} (selected range; not battery health).", value)
+            : UiText.Get("Observed discharge: insufficient observations.");
+        if (estimate is null)
+        {
+            _analytics.Text = UiText.Get("Runtime estimate unavailable: insufficient recent discharge observations.") + "\n" + equivalent;
+            return;
+        }
+        _analytics.Text = UiText.Format("Observed drain: {0:N1} pp/hour | Estimated runtime: {1:N1} hours",
+            estimate.PercentPerHour, estimate.HoursRemaining) + "\n" +
+            UiText.Format("Based on {0} observations over {1:N0} minutes; last measurement {2}.",
+                estimate.Observations, estimate.ObservationSpan.TotalMinutes,
+                estimate.LastMeasurement.ToLocalTime().ToString("g")) + "\n" +
+            UiText.Get("Linear estimate at the observed rate; usage and charging may change it.") + "\n" + equivalent;
     }
 
     private static void OpenHistoryFolder()
