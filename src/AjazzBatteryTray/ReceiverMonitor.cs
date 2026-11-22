@@ -8,7 +8,8 @@ internal sealed class ReceiverMonitor : IDisposable
 {
     internal sealed class State : IDisposable
     {
-        internal string Label { get; }
+        internal string Label { get; set; }
+        internal ushort? Revision { get; set; }
         internal BatteryHistory History { get; }
         internal AlertPolicy Alerts { get; } = new();
         internal ConnectionAlertPolicy Connection { get; } = new();
@@ -19,6 +20,7 @@ internal sealed class ReceiverMonitor : IDisposable
         internal State(AjazzHidReader.ReceiverReading item, string label)
         {
             Label = label;
+            Revision = item.Revision;
             Reading = item.Reading;
             History = new BatteryHistory("ajazz-" + item.Key + "-history.csv");
         }
@@ -63,23 +65,37 @@ internal sealed class ReceiverMonitor : IDisposable
                 bluetoothEnabled && batch.Receivers.Count == 0, now);
         }
 
-        if (PrimaryKey is null || !seen.Contains(PrimaryKey))
-            PrimaryKey = seen.OrderBy(x => x, StringComparer.Ordinal).FirstOrDefault();
+        PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen);
         var summary = AjazzHidReader.Primary(batch.Receivers);
         SummaryState = summary is not null ? _states[summary.Key] : null;
     }
 
     private State FindOrCreate(AjazzHidReader.ReceiverReading item)
     {
-        if (_states.TryGetValue(item.Key, out State? state)) return state;
-        string label = ReceiverIdentity.Label(item.Revision);
+        if (_states.TryGetValue(item.Key, out State? state))
+        {
+            if (!state.Revision.HasValue && item.Revision.HasValue)
+            {
+                state.Revision = item.Revision;
+                state.Label = UniqueLabel(item.Revision);
+                state.Window?.Dispose();
+                state.Window = null;
+            }
+            return state;
+        }
+        state = new State(item, UniqueLabel(item.Revision));
+        _states.Add(item.Key, state);
+        return state;
+    }
+
+    private string UniqueLabel(ushort? revision)
+    {
+        string label = ReceiverIdentity.Label(revision);
         string unique = label;
         int index = 2;
         while (_states.Values.Any(x => x.Label == unique))
             unique = $"{label} #{index++}";
-        state = new State(item, unique);
-        _states.Add(item.Key, state);
-        return state;
+        return unique;
     }
 
     private static void Record(State state, AppSettings settings, NotifyIcon notifier,
