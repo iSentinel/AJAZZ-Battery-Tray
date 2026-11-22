@@ -255,9 +255,7 @@ public sealed class TrayAppContext : ApplicationContext
             var reading = receiver.Reading;
             var item = DeviceDashboardState.FromPoll(receiver.DisplayLabel, "2.4 GHz",
                 true, reading.PresenceKnown, receiver.Present, reading.Percent,
-                receiver.MeasuredAt);
-            if (receiver.ScheduledSkip && item.Status == DeviceDashboardStatus.Fresh)
-                item = item with { Status = DeviceDashboardStatus.Scheduled };
+                receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
                 () => ToggleTrayVisibility(receiver.Key),
@@ -289,7 +287,8 @@ public sealed class TrayAppContext : ApplicationContext
         var state = DeviceDashboardState.FromPoll(AulaName, "2.4 GHz",
             _aulaLatest is not null, _aulaLatest?.PresenceKnown == true,
             _aulaLatest?.ReceiverPresent == true, _aulaLatest?.Percent,
-            _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
+            _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt,
+            scheduled: _settings.MonitorAulaL99);
         return !_settings.MonitorAulaL99 && state.Status == DeviceDashboardStatus.Fresh
             ? state with { Status = DeviceDashboardStatus.ManualReading } : state;
     }
@@ -1071,19 +1070,20 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void ChangeInterval(int seconds, ToolStripMenuItem menu)
     {
+        int previous = _settings.PollSeconds;
         _settings.PollSeconds = seconds;
-        _settings.Save();
+        if (!_settings.Save())
+        {
+            _settings.PollSeconds = previous;
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
         foreach (ToolStripMenuItem item in menu.DropDownItems)
         {
             item.Checked = item.Tag is int value && value == seconds;
         }
 
-        if (_settings.MonitorAulaL99 && !_aulaBusy)
-        {
-            _aulaTimer.Stop();
-            _aulaTimer.Interval = 100;
-            _aulaTimer.Start();
-        }
         PollSoon();
     }
 
@@ -1352,6 +1352,8 @@ public sealed class TrayAppContext : ApplicationContext
         string displayName = aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device;
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
+        else if (displayConnected && !aulaIsPrimary && receiver?.ScheduledSkip == true)
+            value += " (" + UiText.Get("Last scheduled reading") + ")";
         _statusItem.Text = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
         string tooltip = neutral ? UiText.Get("Device Manager") : $"{value} — {displayName} ({source})";
         _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
