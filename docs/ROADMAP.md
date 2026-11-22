@@ -39,7 +39,7 @@ available beta number is assigned at release preparation.
 | beta.31 | L99 RTC clock synchronization | BLOCKED: actual 2.4 GHz vendor RTC capture |
 | beta.32 | L99 CPU/GPU load, temperatures, GPU selection | BLOCKED on verified RTC/telemetry layout and owner screen test |
 | beta.33 | L99 weather | Verified field semantics, explicit location/provider consent |
-| beta.34 | Unified Device Manager dashboard | IMPLEMENTED early as beta.31 candidate: read-only UI proceeds while radio evidence is pending |
+| beta.34 | Unified Device Manager dashboard | beta.31 PR #42 CI PASS and merged; release verification pending |
 | beta.35 | Per-device names, tray visibility/color, alert and poll settings | Stable local identity, duplicate/unknown revision handling |
 | beta.36 | Battery analytics | Local fresh history, estimated runtime and charge cycles with uncertainty |
 | beta.37 | Multi-device Bluetooth | Paired-only selection, transport identity, independent backoff |
@@ -79,6 +79,30 @@ available beta number is assigned at release preparation.
 - [ ] Recovery: maintain RESUME.md with verified baseline, current branch,
   completed code checkpoints, test/release evidence, blocking dependencies
   and next actionable stage. Never repeat completed work after interruption.
+
+### Windows Device Manager friendly names (owner approved)
+
+- [ ] Enumerate present PnP nodes, read current FriendlyName/DeviceDesc and
+  hardware IDs, correlate HID children to their actual USB receiver ancestor.
+- [ ] Preview proposed names for AJ159, AJ179 and AULA L99, including
+  receiver and mouse/keyboard nodes. Keep shared VID/PID and revision
+  mappings provisional; require explicit model confirmation before writes.
+- [ ] Add local manual aliases independent of Windows PnP metadata.
+- [ ] Implement explicit per-node administrative apply using only
+  DEVPKEY_Device_FriendlyName (documented Configuration Manager/SetupAPI).
+  No driver installation, device restart, registry permission changes,
+  class-wide rename or HID writes.
+- [ ] Save original property presence/value before applying; read back
+  changes; exact-instance restore including deleting an originally absent
+  property. Refuse unexpected changes and stale/ambiguous target mappings.
+- [ ] Verify display in standard Windows Device Manager, independent
+  receivers with identical IDs, unplug/replug and restore on owner hardware.
+  No automatic rename on connection or reinstall until separately approved.
+- [ ] Keep actual instance IDs strictly local; do not include them in
+  diagnostics, release evidence or logs. Keep the tray unelevated.
+
+Implementation target: beta.32 initial preview and identity validation,
+followed by explicitly confirmed, reversible changes once validated.
 
 ### Acceptance gates
 
