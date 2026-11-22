@@ -40,3 +40,18 @@ Use two AJAZZ receivers and AULA, with different configured intervals. Compare
 actual query timestamps, verify fresh history only on attempted samples and
 disconnects only after confirmed absence. Verify manual refresh, sleep/wake,
 restart persistence, and diagnostics. CI is not a hardware acceptance result.
+
+## Integration checkpoint
+
+- AJAZZ enumeration now returns a scheduled-skip result for deferred known
+  receivers; actual attempts retain completion tick and UTC. UI-thread
+  snapshots determine deferred keys; new/unknown receivers are sampled.
+- Receiver state preserves its last measurement on skips and avoids replaying
+  history or alerts. Confirmed absence still reaches disconnect policy.
+- AULA has a separate completion-based WinForms timer; its presence remains
+  last-known until its next actual read. Disabled automatic monitoring stays
+  disabled. Manual global refresh requests immediate sampling when available.
+- Local interval editor available from tray and Device Manager; effective
+  interval and receiver timestamps appear in extended diagnostics.
+- Four additional pure presentation tests added. CI and actual mixed-device
+  acceptance remain pending. No claim of timing accuracy on physical hardware.
