@@ -33,6 +33,14 @@ Check("reject wrong report id", BatteryReportParser.ParseWindowsFeature(
 Check("reject short report", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0 }) is null);
 
+// Diagnostic classification must not broaden the valid battery format.
+Check("Protocol reason: empty", BatteryReportParser.DescribeWindowsFeature(Array.Empty<byte>()) == "short buffer");
+Check("Protocol reason: wrong ID", BatteryReportParser.DescribeWindowsFeature(new byte[] { 4, 0, 0, 50 }) == "unexpected report ID");
+Check("Protocol reason: prefix", BatteryReportParser.DescribeWindowsFeature(new byte[] { 5, 1, 0, 50 }) == "unexpected status prefix");
+Check("Protocol reason: zero", BatteryReportParser.DescribeWindowsFeature(new byte[] { 5, 0, 0, 0 }).StartsWith("zero battery field"));
+Check("Protocol reason: out of range", BatteryReportParser.DescribeWindowsFeature(new byte[] { 5, 0, 0, 101 }) == "battery field out of range");
+Check("Protocol reason: accepted", BatteryReportParser.DescribeWindowsFeature(new byte[] { 5, 0, 0, 100 }) == "accepted by existing parser");
+
 // Diagnostic paths expose descriptors only, never the private instance suffix.
 Check("AJ159 alternate receiver metadata", DiagnosticHidIdentity.FromPath(
     "hid#vid_3151&pid_4026&mi_03&col01#private-instance") ==
