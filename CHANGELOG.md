@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.39 (2026-11-22)
+- Add local per-receiver and AULA profile polling interval overrides
+  (15/30/60/120 seconds or inherited global interval).
+- Separate AJAZZ discovery from sampling; preserve timestamps on
+  scheduled skips and do not replay battery history or alerts.
+- Add independent AULA timer, tray and dashboard editor, EN/RU/UK strings,
+  settings validation, rollback and diagnostic interval fields.
+- Add 24 pure checks. No new HID commands; physical timing validation pending.
+
 ## 0.3.0-beta.38 (2026-11-22)
 - Configure independent low-battery 50/25/10 threshold preferences for
   each AJAZZ receiver and the AULA profile in Windows tray and dashboard.

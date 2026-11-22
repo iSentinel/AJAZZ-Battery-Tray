@@ -190,3 +190,12 @@ battery or clock problem.
 - Test global inheritance, distinct receiver overrides, AULA mute/reset,
   global master switch, persistence, charging hysteresis and unchanged
   Bluetooth/disconnect behavior. Diagnostic APEX hardware work remains open.
+
+## Individual polling intervals — beta.39 candidate
+
+- beta.38 release workflow 45066102066 PASS, Latest and six assets verified.
+- Initial PR #51 Windows 45066661421 and macOS 45066661426 CI PASS.
+- 24 pure checks cover deadline rules, settings and presentation; actual
+  Windows mixed-device timing, sleep and disconnect handling remain unverified.
+- Verify 15/30/60/120-second profiles, manual refresh, original timestamps,
+  no duplicated history/alerts, AULA last-known presence and Bluetooth priority.
