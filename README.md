@@ -3,7 +3,14 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.40 (battery analytics candidate; additional APEX compatibility remains under investigation).
+**Version:** v0.3.0-beta.41 (one-click APEX diagnostics candidate).
+
+For APEX comparison use **Diagnostics → Full APEX comparison report...**.
+One local report contains HID descriptor inventory, last ordinary state and
+the complete existing query timing/length sweep, even after a valid reply.
+Capture working AJ179, working AJ159 and affected AJ159 separately with
+the official app closed. Review raw bytes before sharing. The official
+utility's USB exchange is not captured by this function.
 
 ## Per-device battery analytics (Windows)
 

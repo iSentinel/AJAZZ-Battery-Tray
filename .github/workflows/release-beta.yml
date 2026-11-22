@@ -152,9 +152,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.40"
+          TAG="v0.3.0-beta.41"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.40 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.41 — Windows and macOS
+
+          **Full APEX comparison report (Windows):** one diagnostic action
+          combines HID inventory, ordinary monitor state and every existing
+          battery query timing/length combination. Review raw data locally
+          before sharing. AJ159 APEX compatibility remains under investigation.
 
           **Battery history analytics (Windows):** inspect observed discharge
           rate, conditional remaining runtime and observed discharge equivalents
@@ -394,7 +399,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.40" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.41" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

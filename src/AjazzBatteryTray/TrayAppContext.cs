@@ -720,7 +720,7 @@ public sealed class TrayAppContext : ApplicationContext
         ToolStripMenuItem menu = new(UiText.Get("Diagnostics"));
         menu.DropDownItems.Add(UiText.Get("Extended device diagnostics..."), null,
             (_, _) => _ = ShowExtendedDiagnosticsAsync());
-        menu.DropDownItems.Add(UiText.Get("Capture AJAZZ battery protocol..."), null,
+        menu.DropDownItems.Add(UiText.Get("Full APEX comparison report..."), null,
             (_, _) => _ = ShowProtocolDiagnosticsAsync());
         menu.DropDownItems.Add(UiText.Get("Device diagnostics..."), null,
             (_, _) => ShowDiagnostics());
@@ -952,13 +952,24 @@ public sealed class TrayAppContext : ApplicationContext
         _timer.Stop();
         try
         {
-            var batch = await Task.Run(() => _reader.ReadAll(captureProtocol: true));
+            var capture = await Task.Run(() =>
+            {
+                string inventory = ExtendedDeviceDiagnostics.ReadInventory();
+                var batch = _reader.ReadAll(captureProtocol: true);
+                return (Inventory: inventory, Batch: batch);
+            });
             if (_closing) return;
-            string report = "AJAZZ APEX explicit battery protocol capture\n" +
+            var batch = capture.Batch;
+            string report = "AJAZZ APEX full comparison report (one capture)\n" +
                 $"Version: {Application.ProductVersion}\nUTC: {DateTimeOffset.UtcNow:O}\n" +
                 "Model labels are provisional. USB feature buffers are not USB wire captures.\n" +
                 "Only the existing F7/05 query; no RTC or configuration writes.\n" +
-                "Raw vendor bytes may contain undocumented data. Review before sharing.\n\n" +
+                "Raw vendor bytes may contain undocumented data. Review before sharing.\n" +
+                "Official application traffic is NOT acquired by this report.\n" +
+                "All existing valid length/delay combinations attempted, including after success.\n" +
+                $"Fresh enumeration known={batch.Summary.PresenceKnown}; receiver count={batch.Receivers.Count}; first valid battery={batch.Summary.Percent?.ToString() ?? "unavailable"}\n\n" +
+                BuildExtendedReport(capture.Inventory) +
+                "\n\n[Fresh APEX protocol matrix — full vendor buffers]\n" +
                 (batch.Summary.Attempts is { } trace ? string.Join("\n", trace) : "No trace");
             using DiagnosticReportForm review = new(report);
             review.ShowDialog();

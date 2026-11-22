@@ -93,6 +93,8 @@ public static class UiText
         ["Bluetooth monitor enabled for this session; USB keeps priority."] = ("Мониторинг Bluetooth включён на сеанс; USB имеет приоритет.", "Моніторинг Bluetooth увімкнено на сеанс; USB має пріоритет."),
         ["Opted-in BLE devices"] = ("Выбранные BLE-устройства", "Вибрані BLE-пристрої"),
         ["Bluetooth monitors: {0}"] = ("Устройств Bluetooth: {0}", "Пристроїв Bluetooth: {0}"),
+
+        ["Full APEX comparison report..."] = ("Полная диагностика APEX...", "Повна діагностика APEX..."),
         ["Device polling interval..."] = ("Интервал опроса устройства...", "Інтервал опитування пристрою..."),
         ["Use global interval ({0} seconds)"] = ("Общий интервал ({0} сек.)", "Загальний інтервал ({0} с)"),
         ["Last scheduled reading"] = ("Последнее плановое измерение", "Останнє планове вимірювання"),

@@ -3,8 +3,8 @@
 ## Scope
 
 Owner reports an APEX-series mouse with no battery reading in our app while
-the official utility reads it correctly. The owner confirmed AJ159 APEX
-on 2026-11-22 (issue #53); actual receiver revision remains to be verified. The shared USB receiver ID and revision are not a
+the official utility reads it correctly. Owner confirmed AJ159 APEX
+(issue #53); receiver revision remains unverified. The shared USB receiver ID and revision are not a
 universal identity or firmware version. Treat the previously working AJ159
 and AJ179 as independent regression cases.
 
@@ -14,17 +14,22 @@ and AJ179 as independent regression cases.
    2.4 GHz/8K dock connected. Note printed model and official utility version.
 2. Close the official utility, including its tray/background instance.
 3. Wake the mouse by moving it. In AJAZZ Battery Tray choose
-   **Diagnostics → Capture AJAZZ battery protocol...**, confirm consent,
+   **Diagnostics → Full APEX comparison report...**, confirm consent,
    and save the displayed report locally. If polling is in progress, retry.
 4. Repeat once after ordinary sleep and again immediately after waking.
    Note whether the mouse is charging and the displayed battery percentage.
-5. The ordinary Extended device diagnostics report remains payload-free;
-   collect it alongside the explicit capture for descriptor inventory.
+5. The full report already includes descriptor inventory and the previous
+   ordinary monitor state; a second diagnostic action is unnecessary.
+6. Compare three separate captures: working AJ179 APEX, working AJ159 APEX,
+   affected AJ159 APEX. Use only the intended receiver, awake and not charging
+   if practical. Name files AJ179-working, AJ159-working, AJ159-affected;
+   separately note the official app's displayed level and version, if known.
 
 The capture pauses ordinary AJAZZ polling and RTC sync; it performs only the
 existing allowlisted SET F7 / GET 05 battery query, at 30, 100 and 250 ms
 requested waits and the existing distinct buffer lengths (65–256 bytes).
-It stops each receiver's sweep at the first currently valid reply. It records
+It completes every allowed length/delay combination, even after success.
+Up to nine requests per eligible collection (usually six). It records
 the sanitized interface, USB revision, HID capacities, full TX and initialized
 GET buffers, full returned buffer on successful GET, Win32 failures, UTC and
 elapsed timings, and the existing parser's acceptance/rejection reason.
@@ -71,8 +76,8 @@ review before sharing. Nothing is uploaded automatically. Normal diagnostic
 reports and logs must continue to exclude raw payloads and private paths.
 
 - [ ] Windows/macOS CI passes with unchanged existing parser and polling.
-- [x] Owner confirmed AJ159 APEX physical model.
-- [ ] Verify official utility version and receiver revision.
+- [x] Owner confirmed affected AJ159 APEX model.
+- [ ] Verify official utility version and actual receiver revision.
 - [ ] Matching ordinary and official reference captures.
 - [ ] Identify the first meaningful difference; validate the candidate parser
   or query against actual samples, including a known valid battery level.
