@@ -11,7 +11,8 @@ public enum DeviceDashboardStatus
     NoReply,
     Fresh,
     ManualReading,
-    Cached
+    Cached,
+    Scheduled
 }
 
 public sealed record DeviceDashboardState(string Name, string Transport,
