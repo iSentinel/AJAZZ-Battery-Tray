@@ -152,9 +152,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.35"
+          TAG="v0.3.0-beta.36"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.35 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.36 — Windows and macOS
+
+          **Individual tray palettes:** choose green, blue, purple, teal,
+          pink or slate independently for each AJAZZ receiver and the AULA
+          profile. Low-battery and unavailable/cached colors remain unchanged.
 
           **Individual tray visibility:** hide or show each AJAZZ receiver
           and the AULA monitoring profile without stopping monitoring,
@@ -365,7 +369,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.35" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.36" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
