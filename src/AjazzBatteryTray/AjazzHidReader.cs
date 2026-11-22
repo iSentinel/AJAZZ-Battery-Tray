@@ -16,6 +16,10 @@ public sealed class AjazzHidReader
 
     public sealed record Batch(Reading Summary, IReadOnlyList<ReceiverReading> Receivers);
 
+    public static ReceiverReading? Primary(IReadOnlyList<ReceiverReading> receivers)
+        => receivers.FirstOrDefault(x => x.Reading.Percent.HasValue)
+            ?? receivers.FirstOrDefault();
+
     public Batch ReadAll()
     {
         List<string> attempts = new();
@@ -28,15 +32,13 @@ public sealed class AjazzHidReader
             {
                 List<string> trace = new();
                 Reading? reading = QueryPath(path, trace, out ushort? revision);
-                if (reading is not null)
-                {
-                    receivers.Add(new ReceiverReading(ReceiverIdentity.LocalKey(path),
-                        revision, reading with { Attempts = trace.ToArray() }));
-                }
+                reading ??= new Reading(true, null, "HID collection unavailable");
+                receivers.Add(new ReceiverReading(ReceiverIdentity.LocalKey(path),
+                    revision, reading with { Attempts = trace.ToArray() }));
                 attempts.AddRange(trace);
             }
 
-            Reading summary = receivers.FirstOrDefault(x => x.Reading.Percent.HasValue)?.Reading
+            Reading summary = Primary(receivers)?.Reading
                 ?? new Reading(paths.Count > 0, null, paths.Count > 0
                     ? "Receiver found; mouse may be asleep" : "Receiver not found");
             return new Batch(summary with { Attempts = attempts.ToArray() }, receivers);
