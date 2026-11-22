@@ -89,7 +89,7 @@ internal sealed class DeviceDashboardForm : Form
         _grid.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
         _grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
         _grid.BorderStyle = BorderStyle.FixedSingle;
-        foreach (string name in new[] { "Device", "Transport", "Status", "Battery", "Tray", "Last measurement" })
+        foreach (string name in new[] { "Device", "Transport", "Status", "Battery", "Tray preference", "Last measurement" })
         {
             int index = _grid.Columns.Add(name, name);
             _grid.Columns[index].SortMode = DataGridViewColumnSortMode.NotSortable;
@@ -126,7 +126,7 @@ internal sealed class DeviceDashboardForm : Form
                 var state = entry.State;
                 int row = _grid.Rows.Add(state.Name, state.Transport,
                     StatusText(state.Status), FormatBattery(state),
-                    entry.TrayVisible is bool visible ? UiText.Get(visible ? "Shown" : "Hidden") : "—",
+                    entry.TrayVisible is bool visible ? UiText.Get(visible ? "Allowed" : "Hidden") : "—",
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
                 if (previous is not null && (previous.Key is not null
