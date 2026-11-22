@@ -34,6 +34,7 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem _disableBluetooth = new();
     private ToolStripMenuItem _refreshBluetooth = new();
     private string _lastSource = "";
+    private string _lastDevice = "AJAZZ APEX";
     private readonly DockClockSchedule _clockSchedule = new();
     private ToolStripMenuItem _clockStatus = new();
     private bool _manualClockSync;
@@ -518,6 +519,7 @@ public sealed class TrayAppContext : ApplicationContext
             $"App version: {Application.ProductVersion}\n" +
             $"Auto fallback: {_bluetoothPolicy.Enabled}\n" +
             $"USB receiver: {usb}\n" +
+            $"Displayed device: {_lastDevice}\n" +
             $"Displayed source: {_lastSource}\n" +
             $"Displayed percent: {_lastPercent?.ToString() ?? "unknown"}\n" +
             $"GATT request pending: {_bluetoothReadInFlight}\n" +
@@ -587,7 +589,7 @@ public sealed class TrayAppContext : ApplicationContext
             $"Receiver present: {aula?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {aula?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n\n" +
             "[Bluetooth fallback state]\n" +
-            $"Enabled: {_bluetoothPolicy.Enabled}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
+            $"Enabled: {_bluetoothPolicy.Enabled}; displayed device: {_lastDevice}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
             $"GATT failures: {_bluetoothPolicy.ConsecutiveFailures}; last success UTC: {_bluetoothPolicy.LastSuccessfulRead?.ToString("O") ?? "never"}\n" +
             "\nNo device paths, serial numbers, Bluetooth addresses, usernames, or raw report payloads are included.\n" +
             "Collection does not issue additional HID commands or scan Bluetooth devices.";
@@ -874,7 +876,7 @@ public sealed class TrayAppContext : ApplicationContext
         bool displayConnected = displayPercent.HasValue;
         int? previousPercent = _lastPercent;
         if (displayConnected != _lastConnected ||
-            previousPercent != displayPercent || source != _lastSource)
+            previousPercent != displayPercent || source != _lastSource || device != _lastDevice)
         {
             FileLog.Write("INFO", $"{device} {source} battery: " +
                 (displayConnected ? $"{displayPercent}%" : "unavailable"));
@@ -883,6 +885,7 @@ public sealed class TrayAppContext : ApplicationContext
         _lastPercent = displayPercent;
         _lastConnected = displayConnected;
         _lastSource = source;
+        _lastDevice = device;
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         _statusItem.Text = $"{device} — {source}: {value}";
         string tooltip = $"{device}: {source} {value}";
