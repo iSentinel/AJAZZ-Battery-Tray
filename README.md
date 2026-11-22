@@ -3,7 +3,28 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.27 (AJ179 APEX confirmed on Windows; AJ159 APEX and macOS experimental).
+**Version:** v0.3.0-beta.28 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+
+## Windows multiple devices
+
+Each supported AJAZZ receiver is polled independently, even if another
+receiver already returned a valid battery level. **Settings → Separate tray
+icons** (enabled by default) displays an icon for each present receiver and
+the opted-in AULA battery monitor. Windows may place extra icons in the
+notification-area overflow; pin them using Windows taskbar settings.
+All icons share the application menu; the **AJAZZ receivers** submenu shows
+individual battery levels and charts, including unavailable receivers.
+Double-click an icon to request a refresh.
+
+The owner's AJ159 reported USB revision 0300 and AJ179 is inferred as 0002
+from removal comparison; these are provisional model labels, not universal
+model identifiers. Repeated or unknown revisions get distinct labels.
+Receiver histories are stored locally using a hash of the Windows HID path;
+moving a receiver to a different USB port may create a new history. The
+previous combined CSV remains available under Legacy battery history and
+is no longer modified. Bluetooth fallback remains a single manually selected
+device, only active when no matching USB receiver is present. Existing dock
+clock synchronization still targets the first accepting collection.
 
 ## Experimental AULA L99 2.4 GHz battery monitor (Windows only)
 
@@ -19,8 +40,8 @@ and the Record battery history toggle apply to both devices. Use
 The reader accepts only the documented battery query (`0x20`) on the
 `05AC:024F / MI_03` vendor interface and validates 1–100% responses.
 The receiver identifier is shared with AULA S75 Pro: a response is **not**
-proof of L99 identity. Actual AULA L99 hardware behavior is **unverified**,
-and a sleeping keyboard, mismatched dongle revision or missing response
+proof of L99 identity. The owner's connected L99 returned a fresh 100% battery reply twice;
+sleep/wake and other hardware behavior remain unverified. A sleeping keyboard, mismatched dongle revision or missing response
 will show unavailable rather than an invented percentage. No keyboard
 settings/firmware/RGB command is implemented. **macOS L99 is not supported**.
 
@@ -45,7 +66,7 @@ Unknown receivers are inventoried but not automatically polled.
 
 | Platform | AJ179 APEX | AJ159 APEX |
 |---|---|---|
-| Windows 10/11 x64 | Battery read confirmed on user's dock | Experimental; shared HID protocol not yet hardware-tested here |
+| Windows 10/11 x64 | Battery read confirmed on user's dock | Battery read confirmed at 95% on owner's receiver |
 | macOS 13+ (Intel/Apple Silicon) | Experimental; native AppKit + IOKit HID | Experimental; native AppKit + IOKit HID |
 
 **Mac:** see [macOS build and limitations](macos/README.md). AJ159 APEX has
@@ -53,9 +74,8 @@ multiple USB identities; only the 8K dock `3151:5007` is targeted here,
 not alternate `3151:4026` or `3151:4027` receivers. This is not a
 WinForms port: macOS uses its own Swift menu-bar application. Bluetooth
 has experimental manual battery inspectors on both platforms; automatic
-Bluetooth monitoring is not yet enabled. Only one matching receiver is
-reported at a time; if two receivers are attached, the device shown can
-be ambiguous.
+Bluetooth monitoring is not yet enabled. On macOS only one matching receiver is reported at a time;
+Windows now exposes independent receiver readings.
 
 ## Features
 
