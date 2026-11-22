@@ -1,8 +1,7 @@
 # Local battery API — snapshot foundation
 
 The initial scope is read-only Windows battery monitoring and an eventual
-Home Assistant integration. No listener, HTTP endpoint, token, or network
-request is implemented or enabled by this foundation.
+Home Assistant integration. The optional HTTP listener is session-only and never starts automatically.
 
 ## Snapshot schema 1
 - UTC generation time; bounded list of up to 64 rows.
@@ -27,14 +26,37 @@ than returning partial data. The AULA row excludes manual-only readings
 when monitoring is disabled. Diagnostics > Copy local battery snapshot
 explicitly copies the current projection without polling hardware.
 The store re-ages values at read time without changing measurement or
-generation timestamps. CI and hardware/UI acceptance pending.
+generation timestamps. Initial snapshot Windows 45082634886 / macOS 45082634877 PASS.
+Combined HTTP regression and physical UI acceptance pending.
+
+## Experimental loopback endpoint
+
+- Diagnostics > Local battery API... > Start local API. Keep the window
+  open (minimizing is allowed); Stop or closing the window stops the
+  listener. App exit also closes it. No automatic startup or saved token.
+- IPv4 127.0.0.1:18789 only, exact Host header, GET /v1/batteries, no
+  query string, request body, device controls, external requests or CORS.
+- Copy API token explicitly; the 32 random bytes are represented in hex.
+  Token is regenerated on each start; don't paste it into public reports.
+- Use Authorization: Bearer <token>. HTTP 401 without a valid token,
+  503 if no snapshot, 200 with JSON only for authorized valid requests.
+- Single-request connections and sequential processing; backlog 8,
+  8 KiB headers, three-second total processing deadline per connection.
+  A stalled local client may delay other clients. No TLS: loopback only.
+- Example (PowerShell, replace placeholder locally):
+
+```powershell
+$headers = @{ Authorization = 'Bearer <token>' }
+Invoke-RestMethod -Uri 'http://127.0.0.1:18789/v1/batteries' -Headers $headers
+```
+
+The 12 request-policy and 7 actual loopback assertions cover authorization,
+route/method, unsafe Host, browser Origin, malformed headers, unavailable
+snapshot, port conflicts and listener shutdown. Combined CI pending.
 
 ## Next
-The immutable snapshot uses existing monitoring only; API reads must never
-trigger a HID request. Next, consider a disabled-by-default,
-explicitly enabled loopback-only listener with a random per-user bearer
-credential, route/method/size/time limits and safe shutdown. Test unauthorized
-requests, malformed requests, concurrent reads, port conflicts and revocation.
+Complete CI and owner Windows acceptance. Test token rotation, stalled
+client cancellation and actual interactions while HID monitoring runs.
 LAN binding, TLS/proxy configuration, stable entity identities and Home
 Assistant connectivity require separate explicit choices and acceptance.
-Do not expose device-control endpoints.
+Never expose device-control endpoints.
