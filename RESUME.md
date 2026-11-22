@@ -37,3 +37,13 @@ Never treat CI as device acceptance. No automatic upload of raw buffers.
 - Added observed discharge equivalents (not physical cycles), distinguish missing evidence from zero, explain uncertainty in docs/BATTERY_ANALYTICS.md.
 - Next: sync beta.39 main, verify CI and prepare a separate release; physical acceptance pending.
 - Branch depends on polling PR #51; do not merge ahead of its validation.
+
+## Next feature foundation: feat/multi-bluetooth
+- BluetoothMultiSession adds independent in-memory policy per explicitly
+  enabled paired LE device, one global in-flight request, oldest-due
+  selection, individual failure/backoff, reselect/disable reply rejection.
+- 16 pure tests added. No auto-discovery, pairing, persistence or actual
+  GATT integration yet. USB unknown or present blocks all BLE requests
+  until physical USB/BLE association can be verified.
+- Next integrate existing paired inspector, selection and safe async polling,
+  dashboard/tray identities and timeout handling after analytics release.
