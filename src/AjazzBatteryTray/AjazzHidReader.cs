@@ -31,7 +31,17 @@ public sealed class AjazzHidReader
             foreach (string path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 List<string> trace = new();
-                Reading? reading = QueryPath(path, trace, out ushort? revision);
+                Reading? reading;
+                ushort? revision = null;
+                try
+                {
+                    reading = QueryPath(path, trace, out revision);
+                }
+                catch (Exception error)
+                {
+                    trace.Add("  Receiver poll exception: " + error.GetType().Name);
+                    reading = null;
+                }
                 reading ??= new Reading(true, null, "HID collection unavailable");
                 receivers.Add(new ReceiverReading(ReceiverIdentity.LocalKey(path),
                     revision, reading with { Attempts = trace.ToArray() }));
@@ -111,6 +121,12 @@ public sealed class AjazzHidReader
 
         var attributes = HidNative.GetAttributes(handle);
         revision = attributes?.VersionNumber;
+        if (attributes is { } identity &&
+            (identity.VendorID != 0x3151 || identity.ProductID != 0x5007))
+        {
+            attempts.Add("  Descriptor VID/PID mismatch; skipped");
+            return null;
+        }
         attempts.Add($"  USB revision: {(revision.HasValue ? $"0x{revision:X4}" : "unknown")}");
         attempts.Add($"  Feature report size: {caps.FeatureReportByteLength}");
         int[] lengths = { caps.FeatureReportByteLength, 65, 67 };
