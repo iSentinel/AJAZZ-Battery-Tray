@@ -64,6 +64,33 @@ Check("Diagnostic short header", DiagnosticHidIdentity.BatteryHeader(
     new byte[] { 5, 0 }) == "0500");
 
 Check("Separate tray icons default on", new AppSettings().MultipleTrayIcons);
+
+var alertSettings = new AppSettings { AlertBelow25 = false };
+string alertDevice = new string('A', 64);
+string otherAlertDevice = new string('B', 64);
+Check("Device alert default inherits global", alertSettings.EffectiveAlertMask(alertDevice) == 5);
+alertSettings.DeviceAlertMasks[alertDevice] = 2;
+alertSettings.DeviceAlertMasks[otherAlertDevice] = 0;
+Check("Device alert independent override", alertSettings.EffectiveAlertMask(alertDevice) == 2);
+Check("Device alert explicit mute", alertSettings.EffectiveAlertMask(otherAlertDevice) == 0);
+Check("AULA inherits global by default", alertSettings.EffectiveAlertMask(DeviceAliasRules.AulaSlot) == 5);
+alertSettings.DeviceAlertMasks[DeviceAliasRules.AulaSlot] = 7;
+Check("AULA independent settings", alertSettings.EffectiveAlertMask(DeviceAliasRules.AulaSlot) == 7);
+alertSettings.NotificationsEnabled = false;
+Check("Global master still mutes overrides", alertSettings.EffectiveAlertMask(alertDevice) == 0);
+alertSettings.NotificationsEnabled = true;
+alertSettings.DeviceAlertMasks.Remove(alertDevice);
+Check("Reset inherits global thresholds", alertSettings.EffectiveAlertMask(alertDevice) == 5);
+alertSettings.DeviceAlertMasks["invalid"] = 3;
+alertSettings.DeviceAlertMasks[alertDevice] = 8;
+var cleanedAlerts = AppSettings.CleanDeviceAlertMasks(alertSettings.DeviceAlertMasks);
+Check("Invalid override keys and values rejected", cleanedAlerts.Count == 2 &&
+    cleanedAlerts[otherAlertDevice] == 0 && cleanedAlerts[DeviceAliasRules.AulaSlot] == 7);
+var alertRoundtrip = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(alertSettings));
+Check("Device alert settings round trip", alertRoundtrip?.EffectiveAlertMask(otherAlertDevice) == 0 &&
+    alertRoundtrip.EffectiveAlertMask(DeviceAliasRules.AulaSlot) == 7);
+
 Check("Primary stable despite enumeration order",
     ReceiverIdentity.SelectPrimary("b", new[] { "c", "b", "a" }) == "b");
 Check("Primary replaced after unplug",
