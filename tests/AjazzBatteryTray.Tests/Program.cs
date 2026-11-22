@@ -1234,5 +1234,84 @@ Check("Notification off/on invalidates old reply", mutedRequest is not null &&
 Check("Notification re-enable requires fresh delay",
     mutedUpdatePolicy.TryBegin(120001) is null && mutedUpdatePolicy.TryBegin(120002) is not null);
 
+// Backup schema never serializes AppSettings or any device-specific identifier.
+var backupSource = new AppSettings { Language = "uk", PollSeconds = 60,
+    AlertBelow25 = false, AutomaticUpdateChecks = true, ExperimentalUpdateChannel = true,
+    AutomaticDockClockSync = true, MonitorAulaL99 = true };
+backupSource.DeviceAliases[new string('A', 64)] = "private-alias";
+var portableBackup = PreferencesBackup.Capture(backupSource);
+byte[] backupBytes = portableBackup.Export();
+string backupJson = System.Text.Encoding.UTF8.GetString(backupBytes);
+Check("Backup global preferences roundtrip", PreferencesBackup.Parse(backupBytes) == portableBackup);
+Check("Backup excludes device identifiers and aliases", !backupJson.Contains("private-alias") &&
+    !backupJson.Contains("DeviceAliases") && !backupJson.Contains(new string('A', 64)));
+Check("Backup excludes network consent and hardware settings", !backupJson.Contains("AutomaticUpdate") &&
+    !backupJson.Contains("ExperimentalUpdateChannel") && !backupJson.Contains("DockClock") &&
+    !backupJson.Contains("MonitorAula"));
+bool RejectBackup(string json)
+{
+    try { PreferencesBackup.Parse(System.Text.Encoding.UTF8.GetBytes(json)); return false; }
+    catch (System.Text.Json.JsonException) { return true; }
+    catch (InvalidDataException) { return true; }
+}
+Check("Backup rejects unsupported schema", RejectBackup(backupJson.Replace("\"SchemaVersion\": 1", "\"SchemaVersion\": 2")));
+Check("Backup rejects invalid poll interval", RejectBackup(backupJson.Replace("\"PollSeconds\": 60", "\"PollSeconds\": 2")));
+Check("Backup rejects invalid language", RejectBackup(backupJson.Replace("\"Language\": \"uk\"", "\"Language\": \"xx\"")));
+Check("Backup rejects unexpected fields", RejectBackup(backupJson.Insert(1, "\"DeviceAliases\": {}, ")));
+Check("Backup rejects duplicate fields", RejectBackup(backupJson.Insert(1, "\"SchemaVersion\": 1, ")));
+Check("Backup rejects missing fields", RejectBackup("{}"));
+Check("Backup rejects wrong field type", RejectBackup(backupJson.Replace("\"PollSeconds\": 60", "\"PollSeconds\": \"60\"")));
+Check("Backup rejects oversized input", RejectBackup(new string(' ', PreferencesBackup.MaximumBytes + 1)));
+Check("Backup rejects array or malformed JSON", RejectBackup("[]") && RejectBackup("{"));
+string backupDir = Path.Combine(Path.GetTempPath(), "ajazz-preferences-" + Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(backupDir);
+try
+{
+    string backupPath = Path.Combine(backupDir, "backup.json");
+    portableBackup.WriteNewFile(backupPath);
+    Check("Backup file export and local preview", PreferencesBackup.ReadFile(backupPath) == portableBackup);
+    bool existed = false;
+    try { portableBackup.WriteNewFile(backupPath); }
+    catch (IOException) { existed = true; }
+    Check("Backup does not overwrite existing file", existed &&
+        PreferencesBackup.ReadFile(backupPath) == portableBackup);
+}
+finally { Directory.Delete(backupDir, true); }
+Check("Backup preview leaves source settings unchanged", backupSource.AutomaticUpdateChecks &&
+    backupSource.DeviceAliases.Count == 1 && backupSource.PollSeconds == 60);
+
+// Restore changes only the visible schema and rolls back on failed persistence.
+var restoreTarget = new AppSettings { Language = "en", PollSeconds = 120,
+    AutomaticUpdateChecks = true, ExperimentalUpdateChannel = true,
+    MonitorAulaL99 = true, AutomaticDockClockSync = false };
+string restoreKey = new string('B', 64);
+restoreTarget.DeviceAliases[restoreKey] = "keep-local";
+restoreTarget.DevicePollIntervals[restoreKey] = 15;
+restoreTarget.DeviceAlertMasks[restoreKey] = 0;
+restoreTarget.HiddenTrayDevices.Add(restoreKey);
+restoreTarget.DeviceTrayColors[restoreKey] = "blue";
+var oldBackup = PreferencesBackup.Capture(restoreTarget);
+int persistCalls = 0;
+Check("Restore failed save rolls back all allowed values",
+    !portableBackup.TryRestore(restoreTarget, () => { persistCalls++; return false; }) &&
+    PreferencesBackup.Capture(restoreTarget) == oldBackup && persistCalls == 1);
+Check("Restore thrown persistence error rolls back",
+    !portableBackup.TryRestore(restoreTarget, () => throw new IOException("synthetic")) &&
+    PreferencesBackup.Capture(restoreTarget) == oldBackup);
+Check("Restore persistence sees proposed settings",
+    portableBackup.TryRestore(restoreTarget, () => PreferencesBackup.Capture(restoreTarget) == portableBackup));
+Check("Restore updates all allowed values", PreferencesBackup.Capture(restoreTarget) == portableBackup);
+Check("Restore preserves device overrides and names", restoreTarget.DeviceAliases[restoreKey] == "keep-local" &&
+    restoreTarget.DevicePollIntervals[restoreKey] == 15 && restoreTarget.DeviceAlertMasks[restoreKey] == 0 &&
+    restoreTarget.HiddenTrayDevices.Contains(restoreKey) && restoreTarget.DeviceTrayColors[restoreKey] == "blue");
+Check("Restore preserves hardware flags and explicit network consent",
+    restoreTarget.AutomaticUpdateChecks && restoreTarget.ExperimentalUpdateChannel &&
+    restoreTarget.MonitorAulaL99 && !restoreTarget.AutomaticDockClockSync);
+bool invalidRestore = false;
+try { (portableBackup with { PollSeconds = -1 }).TryRestore(restoreTarget, () => { persistCalls++; return true; }); }
+catch (InvalidDataException) { invalidRestore = true; }
+Check("Restore invalid object rejected before save or changes", invalidRestore && persistCalls == 1 &&
+    PreferencesBackup.Capture(restoreTarget) == portableBackup);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

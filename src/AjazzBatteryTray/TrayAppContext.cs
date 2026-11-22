@@ -589,6 +589,11 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
         menu.DropDownItems.Add(BuildUpdateSettingsMenu());
+        menu.DropDownItems.Add(UiText.Get("Preferences backup..."), null, (_, _) =>
+        {
+            if (_closing) return;
+            ShowPreferencesBackup();
+        });
         menu.DropDownItems.Add(UiText.Get("Windows device names preview..."), null,
             (_, _) => _ = ShowPnpNamesAsync());
         ToolStripMenuItem multiple = new(UiText.Get("Separate tray icons"))
@@ -822,10 +827,33 @@ public sealed class TrayAppContext : ApplicationContext
         return menu;
     }
 
+    private void ShowPreferencesBackup()
+    {
+        if (_closing) return;
+        using var dialog = new PreferencesBackupForm(_settings);
+        if (dialog.ShowDialog() != DialogResult.OK || _closing || dialog.SelectedBackup is null)
+            return;
+        if (!dialog.SelectedBackup.TryRestore(_settings, _settings.Save))
+        {
+            MessageBox.Show(UiText.Get("Restore failed; previous preferences retained."),
+                UiText.Get("Preferences backup..."), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        ApplyUpdatePreferences();
+        RefreshPreferenceUi();
+        MessageBox.Show(UiText.Get("Global preferences restored."),
+            UiText.Get("Preferences backup..."), MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
     private void ChangeLanguage(string code)
     {
         _settings.Language = UiText.Normalize(code);
         _settings.Save();
+        RefreshPreferenceUi();
+    }
+
+    private void RefreshPreferenceUi()
+    {
         UiText.SetLanguage(_settings.Language);
         ContextMenuStrip? previous = _tray.ContextMenuStrip;
         _tray.ContextMenuStrip = BuildMenu();

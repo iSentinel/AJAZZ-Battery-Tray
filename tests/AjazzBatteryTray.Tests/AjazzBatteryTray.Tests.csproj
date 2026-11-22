@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="../../src/AjazzBatteryTray/UpdateRules.cs" Link="UpdateRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AutomaticUpdatePolicy.cs" Link="AutomaticUpdatePolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/PreferencesBackup.cs" Link="PreferencesBackup.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalArtifactVerifier.cs" Link="LocalArtifactVerifier.cs" />
     <Compile Include="../../src/AjazzBatteryTray/UpdateClient.cs" Link="UpdateClient.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ApexProtocolMatrix.cs" Link="ApexProtocolMatrix.cs" />

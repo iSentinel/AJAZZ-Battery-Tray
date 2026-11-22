@@ -8,6 +8,12 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.46 (2026-11-23)
+- Portable global preference export, localized preview and explicit restore.
+- Strict 8 KiB versioned schema; transactional rollback on settings save failure.
+- Exclude device IDs, aliases, history, hardware flags and network consent.
+- 22 backup/restore regression assertions; final CI and UI acceptance pending.
+
 ## 0.3.0-beta.45 (2026-11-23)
 - Explicit opt-in automatic release checks with persisted consent and channel.
 - Independent monotonic scheduling, cancellation, session duplicate suppression,
