@@ -41,3 +41,14 @@
 - Twelve local synthetic-file regression cases; Windows CI and physical
   dialog acceptance pending. Automatic release notifications remain a
   separate opt-in feature.
+
+## Automatic update policy foundation
+- Disabled until explicit consent. Monotonic elapsed ticks, first delay
+  60 seconds, 24 hours after success and one hour after failure.
+- Only one pending automatic request; channel change or opt-out invalidates
+  its result without prematurely releasing the request gate.
+- Deduplicate available versions for the current process session; stable
+  channel never notifies for beta tags. No binary download or execution.
+- Fifteen pure scheduling checks added; no settings, timer, network or tray
+  integration yet. Next: integrate explicit locally persisted opt-in and
+  channel, respect notification settings, cancel on app exit, test CI/UI.
