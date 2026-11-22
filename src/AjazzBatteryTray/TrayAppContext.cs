@@ -68,6 +68,7 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem _devicesMenu = new();
     private ToolStripMenuItem _startupItem = new();
     private Icon? _icon;
+    private TrayIconRenderKey? _iconRenderKey;
     private int? _lastPercent;
     private bool _lastConnected;
     private bool _lastStale;
@@ -1647,9 +1648,11 @@ public sealed class TrayAppContext : ApplicationContext
         if (stale) value += " (" + UiText.Get("cached") + ")";
         else if (displayConnected && !aulaIsPrimary && receiver?.ScheduledSkip == true)
             value += " (" + UiText.Get("Last scheduled reading") + ")";
-        _statusItem.Text = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
+        string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
+        if (_statusItem.Text != status) _statusItem.Text = status;
         string tooltip = neutral ? UiText.Get("Device Manager") : $"{value} — {displayName} ({source})";
-        _tray.Text = tooltip[..Math.Min(63, tooltip.Length)];
+        tooltip = tooltip[..Math.Min(63, tooltip.Length)];
+        if (_tray.Text != tooltip) _tray.Text = tooltip;
         string color = aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
             receiver is not null ? DeviceColor(receiver.Key) : TrayColorRules.Default;
         UpdateIcon(displayPercent, displayConnected, stale, neutral, color);
@@ -1676,10 +1679,14 @@ public sealed class TrayAppContext : ApplicationContext
     private void UpdateIcon(int? percent, bool connected, bool stale = false,
         bool neutral = false, string? color = null)
     {
+        var key = TrayIconRenderKey.Create(percent, connected, stale, neutral, color);
+        if (_icon is not null && _iconRenderKey == key) return;
         Icon next = TrayIconFactory.Create(percent, connected, stale, neutral, color);
+        try { _tray.Icon = next; }
+        catch { next.Dispose(); throw; }
         Icon? previous = _icon;
         _icon = next;
-        _tray.Icon = next;
+        _iconRenderKey = key;
         previous?.Dispose();
     }
 
