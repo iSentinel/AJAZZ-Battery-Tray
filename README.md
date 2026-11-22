@@ -3,7 +3,16 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.37 (diagnostic candidate; earlier AJ179/AJ159 reads confirmed on owner hardware; additional APEX compatibility remains under investigation).
+**Version:** v0.3.0-beta.38 (per-device alerts candidate; additional APEX compatibility remains under investigation).
+
+## Individual low-battery alerts (Windows)
+
+Select an AJAZZ receiver or AULA L99 in Device Manager and choose
+**Device battery alerts...**, or open the same editor from its tray submenu.
+Inherit the global 50/25/10 thresholds or choose an independent set.
+An empty custom set mutes low-battery alerts for that device only.
+The global notification switch remains authoritative. Bluetooth fallback
+and receiver-disconnect settings are unchanged. Preferences persist locally.
 
 ## APEX battery protocol capture (Windows)
 

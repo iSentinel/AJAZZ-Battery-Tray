@@ -16,6 +16,8 @@ public sealed class AppSettings
     public bool AutomaticDockClockSync { get; set; } = true;
     public bool MonitorAulaL99 { get; set; } = false;
     public bool MultipleTrayIcons { get; set; } = true;
+    // Absent key inherits global thresholds; zero explicitly mutes this device.
+    public Dictionary<string, int> DeviceAlertMasks { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceTrayColors { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> HiddenTrayDevices { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceAliases { get; set; } = new(StringComparer.Ordinal);
@@ -36,6 +38,7 @@ public sealed class AppSettings
                     File.ReadAllText(FilePath));
                 if (result is not null)
                 {
+                    result.DeviceAlertMasks = CleanDeviceAlertMasks(result.DeviceAlertMasks);
                     result.DeviceTrayColors = TrayColorRules.Clean(result.DeviceTrayColors);
                     result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
                     result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
@@ -52,6 +55,28 @@ public sealed class AppSettings
         }
 
         return new AppSettings();
+    }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int GlobalAlertMask => (AlertBelow50 ? 1 : 0) |
+        (AlertBelow25 ? 2 : 0) | (AlertBelow10 ? 4 : 0);
+
+    public int EffectiveAlertMask(string key)
+    {
+        if (!NotificationsEnabled) return 0;
+        return DeviceAliasRules.ValidKey(key) &&
+            DeviceAlertMasks.TryGetValue(key, out int mask) && mask is >= 0 and <= 7
+            ? mask : GlobalAlertMask;
+    }
+
+    public static Dictionary<string, int> CleanDeviceAlertMasks(Dictionary<string, int>? values)
+    {
+        Dictionary<string, int> clean = new(StringComparer.Ordinal);
+        if (values is null) return clean;
+        foreach (var pair in values)
+            if (DeviceAliasRules.ValidKey(pair.Key) && pair.Value is >= 0 and <= 7)
+                clean[pair.Key] = pair.Value;
+        return clean;
     }
 
     public bool Save()

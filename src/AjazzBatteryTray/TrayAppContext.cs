@@ -81,9 +81,11 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(UiText.Get("Refresh now"), null, (_, _) => PollSoon());
         _devicesMenu = new ToolStripMenuItem(UiText.Get("AJAZZ receivers"));
         _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
-            ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel));
+            ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
+            state => EditDeviceAlerts(state.Key, state.DisplayLabel));
         _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
-            ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel));
+            ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
+            state => EditDeviceAlerts(state.Key, state.DisplayLabel));
         menu.Items.Add(_devicesMenu);
         menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
@@ -179,6 +181,23 @@ public sealed class TrayAppContext : ApplicationContext
         RefreshDeviceDisplay();
     }
 
+    private void EditDeviceAlerts(string key, string name)
+    {
+        if (_closing || !DeviceAliasRules.ValidKey(key)) return;
+        int? original = _settings.DeviceAlertMasks.TryGetValue(key, out int value) ? value : null;
+        using var dialog = new DeviceAlertForm(name, original, _settings.GlobalAlertMask);
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
+        if (dialog.Mask is int mask) _settings.DeviceAlertMasks[key] = mask;
+        else _settings.DeviceAlertMasks.Remove(key);
+        if (!_settings.Save())
+        {
+            if (original is int old) _settings.DeviceAlertMasks[key] = old;
+            else _settings.DeviceAlertMasks.Remove(key);
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
     private void ShowDashboard()
     {
         if (_closing) return;
@@ -204,7 +223,8 @@ public sealed class TrayAppContext : ApplicationContext
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
                 () => ToggleTrayVisibility(receiver.Key),
-                () => EditTrayColor(receiver.Key, receiver.DisplayLabel)));
+                () => EditTrayColor(receiver.Key, receiver.DisplayLabel),
+                () => EditDeviceAlerts(receiver.Key, receiver.DisplayLabel)));
         }
         if (entries.Count == 0)
         {
@@ -216,7 +236,8 @@ public sealed class TrayAppContext : ApplicationContext
         entries.Add(new(AulaDashboardState(), ShowAulaHistory, DeviceAliasRules.AulaSlot,
             EditAulaName, IsTrayVisible(DeviceAliasRules.AulaSlot),
             () => ToggleTrayVisibility(DeviceAliasRules.AulaSlot),
-            () => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName)));
+            () => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName),
+            () => EditDeviceAlerts(DeviceAliasRules.AulaSlot, AulaName)));
         if (_bluetoothPolicy.Enabled) entries.Add(new(BluetoothDashboardState()));
         _dashboard.SetEntries(entries);
     }
@@ -309,6 +330,8 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(visibility);
         menu.DropDownItems.Add(UiText.Get("Tray icon color..."), null,
             (_, _) => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName));
+        menu.DropDownItems.Add(UiText.Get("Device battery alerts..."), null,
+            (_, _) => EditDeviceAlerts(DeviceAliasRules.AulaSlot, AulaName));
         menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
             (_, _) => ShowAulaHistory());
         menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
@@ -473,10 +496,9 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void NotifyAulaBattery(int percent)
     {
+        int mask = _settings.EffectiveAlertMask(DeviceAliasRules.AulaSlot);
         int? threshold = _aulaAlerts.Evaluate(percent,
-            _settings.NotificationsEnabled && _settings.AlertBelow50,
-            _settings.NotificationsEnabled && _settings.AlertBelow25,
-            _settings.NotificationsEnabled && _settings.AlertBelow10);
+            (mask & 1) != 0, (mask & 2) != 0, (mask & 4) != 0);
         if (!threshold.HasValue) return;
         _tray.ShowBalloonTip(5000, AulaName + " — " + UiText.Get("Low battery notifications"),
             UiText.Format("Keyboard battery is {0}%; below {1}%.",
