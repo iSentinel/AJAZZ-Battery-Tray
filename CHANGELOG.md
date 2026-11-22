@@ -8,6 +8,13 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.45 (2026-11-23)
+- Explicit opt-in automatic release checks with persisted consent and channel.
+- Independent monotonic scheduling, cancellation, session duplicate suppression,
+  and exclusion of simultaneous manual and automatic lookups.
+- Twenty scheduling and preference assertions; initial Windows/macOS CI PASS.
+- No unattended download or installation; real Windows UI acceptance pending.
+
 ## 0.3.0-beta.44 (2026-11-23)
 - Offline Windows release file verification for the original setup and portable EXE.
 - Bounded, cancellable SHA-256 comparison with strict companion manifest handling.
