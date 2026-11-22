@@ -3,7 +3,20 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.36 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.37 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+
+## Individual device notifications (Windows)
+
+Select a device in Device Manager or open its tray submenu and choose
+**Device notifications...**. By default the device follows the global
+thresholds and receiver-disconnect preference. Uncheck inheritance to set
+its own 50/25/10% thresholds and disconnect option. Clear all three
+thresholds to disable low-charge alerts for that device. The global
+low-battery master switch still disables low-charge alerts everywhere;
+disconnect notifications are a separate preference. Bluetooth fallback
+continues using global settings. Existing strictly-below semantics,
+per-device hysteresis and fresh-only observations are retained; edits
+do not replay or reset already delivered alerts. Settings persist locally.
 
 ## Individual tray colors (Windows)
 
