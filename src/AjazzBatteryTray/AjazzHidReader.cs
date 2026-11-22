@@ -41,6 +41,7 @@ public sealed class AjazzHidReader
                     continue;
                 }
                 List<string> trace = new();
+                if (captureProtocol) trace.Add($"[Receiver #{receivers.Count + 1}]");
                 Reading? reading;
                 ushort? revision = null;
                 try
@@ -56,6 +57,8 @@ public sealed class AjazzHidReader
                 receivers.Add(new ReceiverReading(key,
                     revision, reading with { Attempts = trace.ToArray() },
                     MeasuredAt: DateTimeOffset.UtcNow, CompletedTick: Environment.TickCount64));
+                if (captureProtocol)
+                    trace.Add($"  Receiver result: {reading.Percent?.ToString() ?? "unavailable"}; {reading.Details}");
                 attempts.AddRange(trace);
             }
 
@@ -146,17 +149,28 @@ public sealed class AjazzHidReader
         int[] lengths = { caps.FeatureReportByteLength, 65, 67 };
         // Normal polling retains the original order and timing.
         int[] delays = captureProtocol ? new[] { 30, 100, 250 } : new[] { 30 };
+        int? firstValid = null;
+        int validAttempts = 0, totalAttempts = 0;
         foreach (int delay in delays)
         {
             foreach (int length in lengths.Distinct())
             {
                 if (length is < 65 or > 256) continue;
                 int? percent = PollBattery(handle, length, attempts, delay, captureProtocol);
+                totalAttempts++;
                 if (percent.HasValue)
-                    return new Reading(true, percent, "2.4 GHz / 8K");
+                {
+                    if (!captureProtocol)
+                        return new Reading(true, percent, "2.4 GHz / 8K");
+                    firstValid ??= percent;
+                    validAttempts++;
+                }
             }
         }
-        return new Reading(true, null, "No valid battery status report");
+        if (captureProtocol)
+            attempts.Add($"  Matrix result: {validAttempts}/{totalAttempts} valid replies; first valid={firstValid?.ToString() ?? "unavailable"}");
+        return firstValid.HasValue ? new Reading(true, firstValid, "2.4 GHz / 8K") :
+            new Reading(true, null, "No valid battery status report");
     }
 
     private static int? PollBattery(SafeFileHandle handle, int length,
