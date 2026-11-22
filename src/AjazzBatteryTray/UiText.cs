@@ -101,6 +101,7 @@ public static class UiText
         ["SHA-256 matches."] = ("SHA-256 совпадает.", "SHA-256 збігається."),
         ["SHA-256 mismatch. Do not run this file."] = ("SHA-256 не совпадает. Не запускайте файл.", "SHA-256 не збігається. Не запускайте файл."),
         ["Verification failed; check the selected files."] = ("Ошибка проверки; проверьте выбранные файлы.", "Помилка перевірки; перевірте вибрані файли."),
+        ["Automatic checks stopped for this session; disabling could not be saved."] = ("Автопроверка остановлена на текущий сеанс; сохранить отключение не удалось.", "Автоперевірку зупинено на поточний сеанс; зберегти вимкнення не вдалося."),
         ["Update preferences"] = ("Настройки обновлений", "Налаштування оновлень"),
         ["Automatically check GitHub releases"] = ("Автоматически проверять релизы GitHub", "Автоматично перевіряти релізи GitHub"),
         ["Allow daily GitHub release checks? No files will be downloaded."] = ("Разрешить ежедневную проверку релизов GitHub? Файлы скачиваться не будут.", "Дозволити щоденну перевірку релізів GitHub? Файли не завантажуватимуться."),
