@@ -26,6 +26,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly ConnectionAlertPolicy _aulaConnection = new();
     private readonly BatteryHistory _history = new();
     private BatteryHistoryForm? _historyWindow;
+    private DeviceDashboardForm? _dashboard;
     private BluetoothBatteryForm? _bluetoothWindow;
     private readonly BluetoothAutoPolicy _bluetoothPolicy = new();
     private BluetoothCandidate? _bluetoothSelection;
@@ -75,6 +76,7 @@ public sealed class TrayAppContext : ApplicationContext
             UiText.Get("Connecting...")) { Enabled = false };
         menu.Items.Add(_statusItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(UiText.Get("Device Manager"), null, (_, _) => ShowDashboard());
         menu.Items.Add(UiText.Get("Refresh now"), null, (_, _) => PollSoon());
         _devicesMenu = new ToolStripMenuItem(UiText.Get("AJAZZ receivers"));
         _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu);
@@ -95,6 +97,66 @@ public sealed class TrayAppContext : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(UiText.Get("Exit"), null, (_, _) => ExitThread());
         return menu;
+    }
+
+    private void ShowDashboard()
+    {
+        if (_closing) return;
+        if (_dashboard is null || _dashboard.IsDisposed)
+            _dashboard = new DeviceDashboardForm(PollSoon,
+                () => _ = ShowExtendedDiagnosticsAsync(),
+                () => _ = ShowHostMetricsAsync());
+        RefreshDashboard();
+        _dashboard.Show();
+        _dashboard.BringToFront();
+    }
+
+    private void RefreshDashboard()
+    {
+        if (_dashboard is not { IsDisposed: false }) return;
+        List<DeviceDashboardForm.Entry> entries = new();
+        foreach (var receiver in _receivers.Devices)
+        {
+            var reading = receiver.Reading;
+            var item = DeviceDashboardState.FromPoll(receiver.Label, "2.4 GHz",
+                true, reading.PresenceKnown, receiver.Present, reading.Percent,
+                _latestUsbReadAt);
+            entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver)));
+        }
+        if (entries.Count == 0)
+        {
+            var reading = _latestUsbReading;
+            entries.Add(new(DeviceDashboardState.FromPoll("AJAZZ APEX", "2.4 GHz",
+                reading is not null, reading?.PresenceKnown == true,
+                reading?.ReceiverPresent == true, reading?.Percent, _latestUsbReadAt)));
+        }
+        entries.Add(new(AulaDashboardState(), ShowAulaHistory));
+        if (_bluetoothPolicy.Enabled) entries.Add(new(BluetoothDashboardState()));
+        _dashboard.SetEntries(entries);
+    }
+
+    private DeviceDashboardState AulaDashboardState()
+    {
+        if (!_settings.MonitorAulaL99 && _aulaLatest is null)
+            return new("AULA L99", "2.4 GHz", DeviceDashboardStatus.Disabled, null, null);
+        return DeviceDashboardState.FromPoll("AULA L99", "2.4 GHz",
+            _aulaLatest is not null, _aulaLatest?.PresenceKnown == true,
+            _aulaLatest?.ReceiverPresent == true, _aulaLatest?.Percent,
+            _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
+    }
+
+    private DeviceDashboardState BluetoothDashboardState()
+    {
+        const string name = "AJAZZ — Bluetooth";
+        const string transport = "Bluetooth";
+        if (_latestUsbReading is null || !_latestUsbReading.PresenceKnown)
+            return new(name, transport, DeviceDashboardStatus.PresenceUnknown, null, null);
+        if (_latestUsbReading.ReceiverPresent)
+            return new(name, transport, DeviceDashboardStatus.Standby, null, null);
+        int? percent = _bluetoothPolicy.VisiblePercent(false, DateTimeOffset.UtcNow);
+        return new(name, transport, percent.HasValue
+            ? DeviceDashboardStatus.Fresh : DeviceDashboardStatus.NoReply,
+            percent, percent.HasValue ? _bluetoothPolicy.LastSuccessfulRead : null);
     }
 
     private ToolStripMenuItem BuildBluetoothMenu()
@@ -400,6 +462,11 @@ public sealed class TrayAppContext : ApplicationContext
         RefreshDeviceDisplay();
         previous?.Dispose();
         _receivers.ApplyLanguage();
+        if (_dashboard is { IsDisposed: false })
+        {
+            _dashboard.ApplyLanguage();
+            RefreshDashboard();
+        }
         _historyWindow?.ApplyLanguage();
         _aulaHistoryWindow?.ApplyLanguage();
         _bluetoothWindow?.ApplyLanguage();
@@ -968,6 +1035,7 @@ public sealed class TrayAppContext : ApplicationContext
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon);
         UpdateBluetoothStatus();
+        RefreshDashboard();
     }
 
     private void UpdateIcon(int? percent, bool connected, bool stale = false)
@@ -996,6 +1064,7 @@ public sealed class TrayAppContext : ApplicationContext
         _timer.Dispose();
         _bluetoothSelection = null;
         _bluetoothPolicy.Disable();
+        _dashboard?.Close();
         _historyWindow?.Close();
         _aulaHistoryWindow?.Close();
         _bluetoothWindow?.Close();
