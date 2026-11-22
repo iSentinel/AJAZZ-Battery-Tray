@@ -63,6 +63,67 @@ Check("Diagnostic header excludes remaining payload",
 Check("Diagnostic short header", DiagnosticHidIdentity.BatteryHeader(
     new byte[] { 5, 0 }) == "0500");
 
+// Independent completion-based polling deadlines; no HID I/O.
+var deviceSchedule = new DevicePollSchedule();
+string fastPollKey = new string('C', 64);
+string slowPollKey = new string('D', 64);
+Check("New receivers immediately due", deviceSchedule.IsDue(fastPollKey, 0, 15));
+deviceSchedule.Complete(fastPollKey, 1000);
+deviceSchedule.Complete(slowPollKey, 1000);
+Check("Fast receiver not early", !deviceSchedule.IsDue(fastPollKey, 15999, 15));
+Check("Fast receiver due at boundary", deviceSchedule.IsDue(fastPollKey, 16000, 15));
+Check("Slow receiver independently deferred", !deviceSchedule.IsDue(slowPollKey, 16000, 120));
+Check("Force bypasses delay", deviceSchedule.IsDue(slowPollKey, 2000, 120, force: true));
+Check("Slow receiver due at boundary", deviceSchedule.IsDue(slowPollKey, 121000, 120));
+deviceSchedule.Complete(fastPollKey, 200000);
+Check("Missed intervals do not cause catch-up burst", !deviceSchedule.IsDue(fastPollKey, 200001, 15));
+Check("Clock discontinuity permits fresh sample", deviceSchedule.IsDue(fastPollKey, 0, 15));
+deviceSchedule.Reconcile(Array.Empty<string>(), presenceKnown: false);
+Check("Unknown enumeration does not forget schedule", !deviceSchedule.IsDue(fastPollKey, 200001, 15));
+deviceSchedule.Reconcile(new[] { slowPollKey }, presenceKnown: true);
+Check("Confirmed unplug resets removed receiver", deviceSchedule.IsDue(fastPollKey, 200001, 15));
+Check("Invalid key never due even when forced", !deviceSchedule.IsDue("invalid", 0, 15, force: true));
+Check("Inherited interval", DevicePollSchedule.ResolveInterval(60, null) == 60);
+Check("Custom interval overrides default", DevicePollSchedule.ResolveInterval(60, 15) == 15);
+Check("Invalid overrides inherit", DevicePollSchedule.ResolveInterval(60, 0) == 60);
+Check("Invalid global normalizes", DevicePollSchedule.ResolveInterval(5, null) == 30);
+Check("Clean poll override map", DevicePollSchedule.CleanOverrides(new Dictionary<string, int>
+{
+    [fastPollKey] = 15, [slowPollKey] = 999, ["invalid"] = 30,
+    [DeviceAliasRules.AulaSlot] = 120
+}).Count == 2);
+deviceSchedule.Reset(slowPollKey);
+Check("Explicit reset forces next reading", deviceSchedule.IsDue(slowPollKey, 2000, 120));
+var pollSettings = new AppSettings { PollSeconds = 60 };
+pollSettings.DevicePollIntervals[fastPollKey] = 15;
+pollSettings.DevicePollIntervals[DeviceAliasRules.AulaSlot] = 120;
+Check("Settings independent intervals", pollSettings.EffectivePollInterval(fastPollKey) == 15 &&
+    pollSettings.EffectivePollInterval(slowPollKey) == 60 &&
+    pollSettings.EffectivePollInterval(DeviceAliasRules.AulaSlot) == 120);
+var pollRoundtrip = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(pollSettings));
+Check("Poll settings persist", pollRoundtrip?.EffectivePollInterval(fastPollKey) == 15 &&
+    pollRoundtrip.EffectivePollInterval(DeviceAliasRules.AulaSlot) == 120);
+pollSettings.DevicePollIntervals.Remove(fastPollKey);
+Check("Interval reset inherits", pollSettings.EffectivePollInterval(fastPollKey) == 60);
+var scheduleMeasurement = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
+var scheduledDashboard = DeviceDashboardState.FromPoll("Mouse", "2.4 GHz",
+    true, true, true, 83, scheduleMeasurement, scheduled: true);
+Check("Scheduled display preserves measurement time and percent",
+    scheduledDashboard.Status == DeviceDashboardStatus.Scheduled &&
+    scheduledDashboard.MeasuredAt == scheduleMeasurement && scheduledDashboard.Percent == 83);
+Check("Scheduled flag cannot hide confirmed disconnect",
+    DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, true, false,
+        83, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.Disconnected);
+Check("Scheduled flag cannot hide unknown presence",
+    DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, false, true,
+        83, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.PresenceUnknown);
+Check("Scheduled flag cannot invent a valid reply",
+    DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, true, true,
+        null, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.NoReply);
+
+
+
 Check("Separate tray icons default on", new AppSettings().MultipleTrayIcons);
 
 var alertSettings = new AppSettings { AlertBelow25 = false };

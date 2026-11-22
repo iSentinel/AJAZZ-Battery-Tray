@@ -18,6 +18,8 @@ internal sealed class ReceiverMonitor : IDisposable
         internal ConnectionAlertPolicy Connection { get; } = new();
         internal AjazzHidReader.Reading Reading { get; set; }
         internal bool Present { get; set; } = true;
+        internal DateTimeOffset? MeasuredAt { get; set; }
+        internal bool ScheduledSkip { get; set; }
         internal BatteryHistoryForm? Window { get; set; }
 
         internal State(AjazzHidReader.ReceiverReading item, string label)
@@ -66,21 +68,27 @@ internal sealed class ReceiverMonitor : IDisposable
             State state = FindOrCreate(item);
             state.Alias = settings.DeviceAliases.GetValueOrDefault(item.Key);
             state.Present = true;
+            state.ScheduledSkip = !item.Sampled;
+            if (!item.Sampled) continue;
             state.Reading = item.Reading;
-            Record(state, settings, notifier, bluetoothEnabled, now);
+            state.MeasuredAt = item.MeasuredAt ?? now;
+            Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
         }
 
         foreach (var pair in _states.Where(x => !seen.Contains(x.Key)))
         {
             pair.Value.Present = false;
             pair.Value.Reading = new(false, null, "Receiver absent");
+            pair.Value.ScheduledSkip = false;
+            pair.Value.MeasuredAt = null;
             Record(pair.Value, settings, notifier,
                 bluetoothEnabled && batch.Receivers.Count == 0, now);
         }
 
         PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen);
-        var summary = AjazzHidReader.Primary(batch.Receivers);
-        SummaryState = summary is not null ? _states[summary.Key] : null;
+        var present = batch.Receivers.Select(x => _states[x.Key]).ToArray();
+        SummaryState = present.FirstOrDefault(x => x.Reading.Percent.HasValue)
+            ?? present.FirstOrDefault();
     }
 
     private State FindOrCreate(AjazzHidReader.ReceiverReading item)
@@ -138,7 +146,7 @@ internal sealed class ReceiverMonitor : IDisposable
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
         Func<string, bool> visible, Action<string> toggle,
-        Action<State> editColor, Action<State> editAlerts)
+        Action<State> editColor, Action<State> editAlerts, Action<State> editInterval)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
@@ -161,6 +169,7 @@ internal sealed class ReceiverMonitor : IDisposable
             item.DropDownItems.Add(visibility);
             item.DropDownItems.Add(UiText.Get("Tray icon color..."), null, (_, _) => editColor(state));
             item.DropDownItems.Add(UiText.Get("Device battery alerts..."), null, (_, _) => editAlerts(state));
+            item.DropDownItems.Add(UiText.Get("Device polling interval..."), null, (_, _) => editInterval(state));
             menu.DropDownItems.Add(item);
         }
         if (menu.DropDownItems.Count == 0)

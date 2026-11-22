@@ -183,8 +183,10 @@ hardware acceptance remain separate.
 - [x] beta.36 implement individual normal-charge palette with fixed warning/cached colors.
 - [ ] beta.36 CI, release and real tray visual acceptance.
 - [x] Per-device low-battery alert preferences implemented in beta.38 candidate; initial PR #50 CI PASS.
-- [ ] Final beta.38 CI/release and physical notification acceptance.
-- [ ] Per-device polling intervals.
+- [x] beta.38 final CI, PR #50 merged and six-asset release verified (45066102066).
+- [ ] Physical notification acceptance.
+- [x] Per-device polling intervals implemented; initial PR #51 Windows/macOS CI PASS.
+- [ ] Final beta.39 release and mixed-device physical acceptance.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.

@@ -11,7 +11,8 @@ public enum DeviceDashboardStatus
     NoReply,
     Fresh,
     ManualReading,
-    Cached
+    Cached,
+    Scheduled
 }
 
 public sealed record DeviceDashboardState(string Name, string Transport,
@@ -20,7 +21,7 @@ public sealed record DeviceDashboardState(string Name, string Transport,
     public static DeviceDashboardState FromPoll(string name, string transport,
         bool checkedOnce, bool presenceKnown, bool present, int? fresh,
         DateTimeOffset? measuredAt, int? cached = null,
-        DateTimeOffset? cachedAt = null)
+        DateTimeOffset? cachedAt = null, bool scheduled = false)
     {
         if (!checkedOnce)
             return new(name, transport, DeviceDashboardStatus.NotChecked, null, null);
@@ -29,7 +30,8 @@ public sealed record DeviceDashboardState(string Name, string Transport,
         if (!present)
             return new(name, transport, DeviceDashboardStatus.Disconnected, null, null);
         if (fresh is >= 0 and <= 100)
-            return new(name, transport, DeviceDashboardStatus.Fresh, fresh, measuredAt);
+            return new(name, transport, scheduled ? DeviceDashboardStatus.Scheduled :
+                DeviceDashboardStatus.Fresh, fresh, measuredAt);
         if (cached is >= 0 and <= 100 && cachedAt.HasValue)
             return new(name, transport, DeviceDashboardStatus.Cached, cached, cachedAt);
         return new(name, transport, DeviceDashboardStatus.NoReply, null, null);
