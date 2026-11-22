@@ -57,7 +57,7 @@ public sealed class BatteryHistoryForm : Form
         _summary.Padding = new Padding(14, 6, 14, 6);
         _summary.Font = new Font("Segoe UI", 9);
         _analytics.Dock = DockStyle.Bottom;
-        _analytics.Height = 76;
+        _analytics.Height = 98;
         _analytics.Padding = new Padding(14, 6, 14, 6);
         _analytics.Visible = _estimateEnabled;
         _graph.Dock = DockStyle.Fill;
@@ -121,10 +121,13 @@ public sealed class BatteryHistoryForm : Form
     private void UpdateAnalytics()
     {
         if (!_estimateEnabled) return;
-        var estimate = BatteryAnalytics.EstimateDrain(_visible, DateTimeOffset.UtcNow);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var estimate = BatteryAnalytics.EstimateDrain(_visible, now);
+        string equivalent = UiText.Format("Observed discharge equivalents: {0:N2} (selected range; not battery health).",
+            BatteryAnalytics.ObservedDischargeEquivalent(_visible, now));
         if (estimate is null)
         {
-            _analytics.Text = UiText.Get("Runtime estimate unavailable: insufficient recent discharge observations.");
+            _analytics.Text = UiText.Get("Runtime estimate unavailable: insufficient recent discharge observations.") + "\n" + equivalent;
             return;
         }
         _analytics.Text = UiText.Format("Observed drain: {0:N1} pp/hour | Estimated runtime: {1:N1} hours",
@@ -132,7 +135,7 @@ public sealed class BatteryHistoryForm : Form
             UiText.Format("Based on {0} observations over {1:N0} minutes; last measurement {2}.",
                 estimate.Observations, estimate.ObservationSpan.TotalMinutes,
                 estimate.LastMeasurement.ToLocalTime().ToString("g")) + "\n" +
-            UiText.Get("Linear estimate at the observed rate; usage and charging may change it.");
+            UiText.Get("Linear estimate at the observed rate; usage and charging may change it.") + "\n" + equivalent;
     }
 
     private static void OpenHistoryFolder()
