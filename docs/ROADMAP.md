@@ -143,6 +143,8 @@ hardware acceptance remain separate.
 - Owner reports an additional APEX mouse whose battery is unavailable in our
   app but available in the original utility; owner confirmed AJ159 APEX (#53).
 - [x] Implement one-action inventory + full existing HID timing/length matrix.
+- [x] Study public GearHub WebHID F7 decoder and prepare tested offline report comparator.
+- [ ] Validate candidate Windows alignment, status prefix, report IDs and timing against three physical captures. See [GearHub investigation](APEX_GEARHUB.md).
 - [ ] CI and comparison captures from working AJ179, working AJ159 and affected AJ159.
 - [x] Implement explicit local full-buffer battery capture and parser reasons
   without changing normal sampling, allowlist or model mappings.
@@ -362,3 +364,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - https://github.com/Aiacos/ajazz-control-center
 - https://github.com/Aiacos/ajazz-control-center/blob/develop/docs/protocols/mouse/aj_series_opcode_table.md
 - https://github.com/Aiacos/ajazz-control-center/blob/develop/docs/protocols/mouse/aj_series_vendor.md
+
+## beta.42 integration checkpoint
+- [x] Implement independent session-only paired BLE monitors, UI, retry and
+  USB transition invalidation. Initial and post-beta.41 CI PASS.
+- [x] Record AJ179 GearHub bridge comparison, 266 matched pairs; offline
+  synthetic flag regression. No raw owner HAR committed.
+- [ ] Final combined beta.42 CI/release; physical multi-BLE acceptance.
+- [ ] Collect both AJ159 full reports and GearHub HAR before deciding
+  whether to alter the live parser.
+- [ ] Continue opt-in update checker in its own branch.

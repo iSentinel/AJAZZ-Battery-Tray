@@ -208,3 +208,13 @@ battery or clock problem.
   endpoint rates and valid observed discharge pairs.
 - Physical history review and localized layout acceptance remain pending;
   estimates are conditional and not battery health or physical cycles.
+
+## beta.42 — multiple BLE and APEX research
+
+- beta.41 release workflow 45074067608 PASS, six assets verified.
+- AJ179 owner beta.41 report: 6/6 F7/05 attempts, 100%; local GearHub HAR
+  independently reports 100% in all 266 matched F7 pairs.
+- PR #54 post-beta.41 CI Windows 45074388934 / macOS 45074388910 PASS.
+- Final combined candidate CI and physical two-device BLE acceptance pending.
+- Affected AJ159 and working AJ159 full captures and HAR remain outstanding.
+  No change to live AJAZZ HID parser.
