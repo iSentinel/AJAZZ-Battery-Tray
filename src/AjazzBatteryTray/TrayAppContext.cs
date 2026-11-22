@@ -139,10 +139,12 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (!_settings.MonitorAulaL99 && _aulaLatest is null)
             return new("AULA L99", "2.4 GHz", DeviceDashboardStatus.Disabled, null, null);
-        return DeviceDashboardState.FromPoll("AULA L99", "2.4 GHz",
+        var state = DeviceDashboardState.FromPoll("AULA L99", "2.4 GHz",
             _aulaLatest is not null, _aulaLatest?.PresenceKnown == true,
             _aulaLatest?.ReceiverPresent == true, _aulaLatest?.Percent,
             _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
+        return !_settings.MonitorAulaL99 && state.Status == DeviceDashboardStatus.Fresh
+            ? state with { Status = DeviceDashboardStatus.ManualReading } : state;
     }
 
     private DeviceDashboardState BluetoothDashboardState()
