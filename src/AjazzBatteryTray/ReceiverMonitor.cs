@@ -156,7 +156,7 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     /// <summary>One shared menu; primary icon is owned by TrayAppContext.</summary>
-    internal void RefreshIcons(bool enabled, bool showAula, AulaL99Reading? aula,
+    internal void RefreshIcons(bool enabled, bool showAula, int? aulaLevel, bool aulaStale,
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh)
     {
         HashSet<string> wanted = new();
@@ -171,7 +171,7 @@ internal sealed class ReceiverMonitor : IDisposable
             if (showAula && !aulaIsPrimary)
             {
                 wanted.Add("AULA");
-                SetIcon("AULA", "AULA L99", aula?.Percent, menu, refresh);
+                SetIcon("AULA", "AULA L99", aulaLevel, menu, refresh, aulaStale);
             }
         }
 
@@ -183,14 +183,14 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private void SetIcon(string key, string name, int? level, ContextMenuStrip menu,
-        Action refresh)
+        Action refresh, bool stale = false)
     {
         if (!_icons.TryGetValue(key, out ExtraIcon? icon))
         {
             icon = new ExtraIcon(refresh);
             _icons.Add(key, icon);
         }
-        icon.Update(name, level, menu);
+        icon.Update(name, level, menu, stale);
     }
 
     public void Dispose()
@@ -206,21 +206,24 @@ internal sealed class ReceiverMonitor : IDisposable
         private readonly NotifyIcon _tray = new();
         private Icon? _icon;
         private int? _last;
+        private bool _stale;
 
         internal ExtraIcon(Action refresh) => _tray.DoubleClick += (_, _) => refresh();
 
-        internal void Update(string name, int? level, ContextMenuStrip menu)
+        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale)
         {
             _tray.ContextMenuStrip = menu;
             string label = $"{name}: {(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))}";
+            if (stale) label += " (" + UiText.Get("cached") + ")";
             _tray.Text = label[..Math.Min(63, label.Length)];
-            if (_icon is null || _last != level)
+            if (_icon is null || _last != level || _stale != stale)
             {
-                Icon next = TrayIconFactory.Create(level, level.HasValue);
+                Icon next = TrayIconFactory.Create(level, level.HasValue, stale);
                 _tray.Icon = next;
                 _icon?.Dispose();
                 _icon = next;
                 _last = level;
+                _stale = stale;
             }
             _tray.Visible = true;
         }
