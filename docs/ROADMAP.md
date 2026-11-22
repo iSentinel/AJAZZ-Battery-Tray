@@ -147,7 +147,8 @@ hardware acceptance remain separate.
 - [x] Add diagnostic-only bounded timing sweep and instructions for official
   utility comparison: [APEX protocol diagnostics](APEX_PROTOCOL_DIAGNOSTICS.md).
 - [x] Initial PR #49 Windows/macOS CI passed (45062122792 / 45062122761).
-- [ ] Final beta.37 metadata CI, six-asset publication and capture dialog smoke test.
+- [x] Final beta.37 CI, PR #49 merged, six-asset Latest published (45064435127).
+- [ ] Capture dialog smoke test on target hardware.
 - [ ] Obtain reference captures and physically confirm model.
 - [ ] Compare actual interface, report IDs, sequence, lengths, data and delays.
 - [ ] Evidence-backed protocol correction and regression on previous APEX models.
@@ -181,7 +182,9 @@ hardware acceptance remain separate.
 - [ ] Owner acceptance of hide/show and persistence.
 - [x] beta.36 implement individual normal-charge palette with fixed warning/cached colors.
 - [ ] beta.36 CI, release and real tray visual acceptance.
-- [ ] Per-device alert settings and poll intervals.
+- [x] Per-device low-battery alert preferences implemented in beta.38 candidate; initial PR #50 CI PASS.
+- [ ] Final beta.38 CI/release and physical notification acceptance.
+- [ ] Per-device polling intervals.
 - [ ] Add manual model aliases if needed for identical/unknown revisions.
 - [x] beta.29 host-only CPU/GPU preview implementation and parser tests.
 - [x] beta.29 CI and six-asset Latest release verified.
