@@ -80,6 +80,8 @@ internal sealed class DeviceDashboardForm : Form
         _grid.RowHeadersVisible = false;
         _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         _grid.BackgroundColor = SystemColors.Window;
+        _grid.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+        _grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
         _grid.BorderStyle = BorderStyle.FixedSingle;
         foreach (string name in new[] { "Device", "Transport", "Status", "Battery", "Last measurement" })
         {
@@ -117,7 +119,7 @@ internal sealed class DeviceDashboardForm : Form
                 var state = entry.State;
                 int row = _grid.Rows.Add(state.Name, state.Transport,
                     StatusText(state.Status), FormatBattery(state),
-                    state.MeasuredAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
+                    state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
                 if (previous is not null && previous.State.Name == state.Name &&
                     previous.State.Transport == state.Transport) selected = row;
@@ -142,6 +144,7 @@ internal sealed class DeviceDashboardForm : Form
         DeviceDashboardStatus.Disconnected => "Disconnected",
         DeviceDashboardStatus.NoReply => "No valid reply",
         DeviceDashboardStatus.Fresh => "Fresh reading",
+        DeviceDashboardStatus.ManualReading => "Manual reading",
         DeviceDashboardStatus.Cached => "Cached reading",
         _ => "unavailable"
     });
