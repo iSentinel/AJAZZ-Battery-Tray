@@ -211,6 +211,24 @@ aulaCache.Observe(true, true, 96, aulaTime.AddSeconds(70));
 aulaCache.Reset();
 Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
 
+// Windows friendly-name preview is restricted to exact eligible families.
+Check("PnP AJAZZ root only", PnpNameRules.IsRoot(@"USB\VID_3151&PID_5007\local") &&
+    !PnpNameRules.IsRoot(@"USB\VID_3151&PID_5007&MI_00\local"));
+Check("PnP AULA root family", PnpNameRules.Family(@"usb\vid_05ac&pid_024f\local") == "05AC:024F");
+Check("PnP HID only primary interface", PnpNameRules.IsPrimaryHid(@"HID\VID_3151&PID_5007&MI_00\local") &&
+    !PnpNameRules.IsPrimaryHid(@"HID\VID_3151&PID_5007&MI_02\local"));
+Check("PnP unrelated HID rejected", PnpNameRules.Family(@"HID\VID_1234&PID_5678&MI_00\local") is null);
+Check("PnP similar PID rejected", PnpNameRules.Family(@"USB\VID_3151&PID_50070\local") is null);
+Check("PnP AJ159 revision from root hardware ID", PnpNameRules.Revision("3151:5007",
+    new[] { @"USB\VID_3151&PID_5007&REV_0300", @"USB\VID_3151&PID_5007" }) == 0x0300);
+Check("PnP ambiguous revision stays unknown", PnpNameRules.Revision("3151:5007",
+    new[] { @"USB\VID_3151&PID_5007&REV_0300", @"USB\VID_3151&PID_5007&REV_0002" }) is null);
+Check("PnP unrelated revision rejected", PnpNameRules.Revision("3151:5007",
+    new[] { @"USB\VID_05AC&PID_024F&REV_0136" }) is null);
+Check("PnP unrecognized revision generic", PnpNameRules.Model("3151:5007", 0x9999) == "AJAZZ receiver");
+Check("PnP observed L99 revision provisional suggestion",
+    PnpNameRules.Model("05AC:024F", 0x0136) == "AULA L99");
+
 // Device Manager displays observations rather than performing additional reads.
 var dashboardAt = DateTimeOffset.Parse("2026-11-22T15:18:19Z");
 DeviceDashboardState Dashboard(bool checkedOnce = true, bool known = true,
