@@ -1080,5 +1080,36 @@ Check("Update rejects wrong artifact or additional entries",
 Check("Update rejects unsafe artifact names", !VerifyUpdate($"{updateHash}  ../x.exe", "../x.exe"));
 Check("Update rejects malformed hash", !VerifyUpdate($"not-a-hash  {updateName}"));
 
+// No HTTP calls: exercise the exact GitHub response decoder.
+byte[] ReleaseJson(string value) => System.Text.Encoding.UTF8.GetBytes(value);
+var sampleListing = ReleaseJson("""
+    [{"tag_name":"v0.3.0-beta.42","draft":false,"prerelease":false,"html_url":"https://example.invalid"},
+     {"tag_name":"v0.3.0-beta.50","draft":true,"prerelease":false},
+     {"tag_name":"v0.3.0-beta.43","draft":false,"prerelease":true}]
+    """);
+var candidateRelease = UpdateClient.Parse(sampleListing, installedVersion, true);
+Check("Release decoder picks newest eligible tag", candidateRelease?.Tag == "v0.3.0-beta.43");
+Check("Release link is constructed on fixed repository",
+    candidateRelease?.Page == UpdateClient.ReleasesPage + "/tag/v0.3.0-beta.43");
+Check("Release decoder stable filter rejects beta Latest",
+    UpdateClient.Parse(sampleListing, installedVersion, false) is null);
+Check("Release decoder empty listing", UpdateClient.Parse(ReleaseJson("[]"), installedVersion, true) is null);
+Check("Release decoder ignores unsupported tag",
+    UpdateClient.Parse(ReleaseJson("""[{"tag_name":"../evil","draft":false,"prerelease":false}]"""),
+        installedVersion, true) is null);
+bool RejectReleaseJson(byte[] sample)
+{
+    try { UpdateClient.Parse(sample, installedVersion, true); return false; }
+    catch (System.Text.Json.JsonException) { return true; }
+    catch (InvalidDataException) { return true; }
+}
+Check("Release decoder rejects object not array", RejectReleaseJson(ReleaseJson("{}")));
+Check("Release decoder rejects corrupt JSON", RejectReleaseJson(ReleaseJson("[")));
+Check("Release decoder rejects absent flags",
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0"}]""")));
+Check("Release decoder rejects nonboolean flags",
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":"false","prerelease":false}]""")));
+Check("Release decoder rejects over-limit body", RejectReleaseJson(new byte[2 * 1024 * 1024 + 1]));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
