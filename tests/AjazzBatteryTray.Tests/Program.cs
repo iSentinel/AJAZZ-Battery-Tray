@@ -986,5 +986,40 @@ Check("Excessive gaps do not count toward equivalent",
 Check("Future pairs do not count",
     BatteryAnalytics.ObservedDischargeEquivalent(analyticsSamples, analyticsStart) is null);
 
+// Independent opted-in BLE slots; one in-flight operation globally.
+var multiBle = new BluetoothMultiSession();
+var multiAt = DateTimeOffset.Parse("2026-01-01T12:00:00Z");
+var bleDirect = new BluetoothBatteryResult(83, BluetoothBatterySource.DirectGatt, "direct");
+var bleCached = new BluetoothBatteryResult(83, BluetoothBatterySource.WindowsCached, "cached");
+var bleFailed = new BluetoothBatteryResult(null, BluetoothBatterySource.Unavailable, "failed");
+Check("Multi BLE rejects cached opt-in", !multiBle.Enable("a", bleCached, multiAt));
+Check("Multi BLE enables two independent slots", multiBle.Enable("a", bleDirect, multiAt) &&
+    multiBle.Enable("b", bleDirect with { Percent = 62 }, multiAt) && multiBle.Count == 2);
+Check("Multi BLE hides values when USB presence unknown", multiBle.VisiblePercent("a", false, false, multiAt) is null);
+Check("Multi BLE does not sample with USB present", multiBle.TryBegin(true, true, multiAt.AddMinutes(2)) is null);
+Check("Multi BLE does not sample with unknown USB", multiBle.TryBegin(false, false, multiAt.AddMinutes(2)) is null);
+Check("Multi BLE not due immediately", multiBle.TryBegin(true, false, multiAt) is null);
+var firstBleRequest = multiBle.TryBegin(true, false, multiAt.AddMinutes(1));
+Check("Multi BLE earliest opted-in first", firstBleRequest?.Key == "a");
+Check("Multi BLE enforces one in-flight request", multiBle.TryBegin(true, false, multiAt.AddMinutes(1), "b") is null);
+Check("Multi BLE failure recorded for one slot", firstBleRequest is not null &&
+    multiBle.Complete(firstBleRequest, bleFailed, multiAt.AddMinutes(1), true, false) &&
+    multiBle.Failures("a") == 1 && multiBle.Failures("b") == 0);
+var secondBleRequest = multiBle.TryBegin(true, false, multiAt.AddMinutes(1));
+Check("Multi BLE other slot progresses independently", secondBleRequest?.Key == "b");
+multiBle.Disable("b");
+Check("Multi BLE reselect replaces session", multiBle.Enable("b", bleDirect, multiAt.AddMinutes(1)));
+Check("Multi BLE disabled request stays isolated until completion", multiBle.IsBusy);
+Check("Multi BLE discards reply after reselect", secondBleRequest is not null &&
+    !multiBle.Complete(secondBleRequest, bleFailed, multiAt.AddMinutes(1), true, false) &&
+    multiBle.Failures("b") == 0 && !multiBle.IsBusy);
+var forcedBleRequest = multiBle.TryBegin(true, false, multiAt.AddMinutes(1), "b");
+Check("Multi BLE explicit refresh bypasses backoff", forcedBleRequest?.Key == "b");
+Check("Multi BLE discards reply if USB returns", forcedBleRequest is not null &&
+    !multiBle.Complete(forcedBleRequest, bleDirect, multiAt.AddMinutes(1), true, true));
+multiBle.DisableAll();
+Check("Multi BLE opt-out clears all visible state", multiBle.Count == 0 &&
+    multiBle.VisiblePercent("a", true, false, multiAt) is null);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
