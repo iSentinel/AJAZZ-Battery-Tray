@@ -179,7 +179,7 @@ internal sealed class ReceiverMonitor : IDisposable
     internal static void ShowHistory(State state)
     {
         if (state.Window is null || state.Window.IsDisposed)
-            state.Window = new BatteryHistoryForm(state.History, state.DisplayLabel);
+            state.Window = new BatteryHistoryForm(state.History, state.DisplayLabel, estimateEnabled: true);
         state.Window.RefreshData();
         state.Window.Show();
         state.Window.BringToFront();
