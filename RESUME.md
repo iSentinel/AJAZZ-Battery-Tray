@@ -38,12 +38,16 @@ Never treat CI as device acceptance. No automatic upload of raw buffers.
 - Next: sync beta.39 main, verify CI and prepare a separate release; physical acceptance pending.
 - Branch depends on polling PR #51; do not merge ahead of its validation.
 
-## Next feature foundation: feat/multi-bluetooth
-- BluetoothMultiSession adds independent in-memory policy per explicitly
-  enabled paired LE device, one global in-flight request, oldest-due
-  selection, individual failure/backoff, reselect/disable reply rejection.
-- 16 pure tests added. No auto-discovery, pairing, persistence or actual
-  GATT integration yet. USB unknown or present blocks all BLE requests
-  until physical USB/BLE association can be verified.
-- Next integrate existing paired inspector, selection and safe async polling,
-  dashboard/tray identities and timeout handling after analytics release.
+## Multi-Bluetooth integration: feat/multi-bluetooth
+- Independent paired LE opt-in/out per endpoint, session-only identifiers,
+  per-device backoff, alerts, dashboard rows and tray icons.
+- 22 pure policy tests added, including USB roundtrip invalidation.
+- Actual WinRT reads serialized across manual and automatic requests; a
+  client timeout does not release the underlying read gate. A hung WinRT
+  operation can temporarily block all BLE reads; restart may be needed.
+- Conservative global USB priority: all BLE monitors pause while any AJAZZ
+  receiver is present or USB presence is unknown; no physical mapping yet.
+- Owner confirmed affected mouse is AJ159 APEX; Issue #53 P0 remains open.
+  Require target and official utility captures before protocol changes.
+- Next: sync beta.40 main, open draft PR, verify CI and physical BLE behavior;
+  then update checker. No automatic pairing or device-ID persistence.
