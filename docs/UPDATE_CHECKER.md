@@ -26,3 +26,18 @@
 - Do not expose device telemetry, settings, hardware IDs or local paths.
 - Tests for rate limiting, HTTP failure, malformed metadata and invalid links;
   actual UI and network acceptance remain outstanding.
+
+## Local artifact verification (next beta)
+- Explicit tray command **Verify downloaded release...**; choose the original
+  Windows setup or portable EXE and its companion .sha256 file from the same
+  GitHub release. Renamed files are rejected; selecting another EXE clears
+  the chosen manifest. No automatic file lookup or downloaded code execution.
+- Read-only local streams, bounded 512 MiB artifact and 1024-byte ASCII
+  manifest, strict artifact/manifest names, single matching hash entry,
+  asynchronous cancellable SHA-256 computation. No network request.
+- A matching hash proves equality with the selected manifest only, not
+  release authenticity, a signature, or that both files came from GitHub.
+  The user must obtain the manifest from the intended release independently.
+- Twelve local synthetic-file regression cases; Windows CI and physical
+  dialog acceptance pending. Automatic release notifications remain a
+  separate opt-in feature.

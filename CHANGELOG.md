@@ -8,6 +8,12 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.44 (2026-11-23)
+- Offline Windows release file verification for the original setup and portable EXE.
+- Bounded, cancellable SHA-256 comparison with strict companion manifest handling.
+- Twelve local file tests; initial Windows and macOS CI PASS.
+- No download, execution, or publisher authentication claim.
+
 ## 0.3.0-beta.43 (2026-11-23)
 - Manual Windows update checker, stable/experimental channels and EN/RU/UK.
 - Fixed GitHub API, bounded response and timeout, locally constructed links.

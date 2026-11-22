@@ -1,19 +1,12 @@
-# Resume — manual update checker candidate
+# Resume — beta.44 local verification candidate
 
-- beta.42 PR #54 merged at fe279aa69fe2298f719ac8da3dca24e32528f5ad;
-  final Windows 45077859703 and macOS 45077859680 PASS.
-  Release workflow 45078486972 PASS; beta.42 published with six assets.
-- PR #56 research included in beta.42; eight Python APEX tests PASS.
-  P0 #53 remains open; working/affected AJ159 capture + HAR outstanding.
-- PR #57: manual Windows update checker; fixed public GitHub API,
-  strict numeric channels (beta tag overrides GitHub Latest), bounded
-  response and deadline, no redirects/cookies, locally constructed link.
-  26 pure tests cover version selection, checksum and metadata; C# CI
-  pending (no .NET SDK on scratch server).
-- No automatic polling, binary download, verification UI or installer
-  execution. Checksum primitive exists but is not connected to a download.
-- Next: beta.43 metadata prepared; verify final PR #57 CI,
-  publish and validate actual Windows dialog. Then
-  explicit local artifact checksum verification and opt-in update policy.
-- Hardware acceptance outstanding: two BLE devices, mixed USB/BLE,
-  prolonged AULA L99 sleep and both AJ159 units. No speculative HID writes.
+- beta.43 PR #57 merged 29af7347053cc629d62a57f01db0fabe364f7afe.
+  Release workflow 45078947181 PASS; six assets verified.
+- PR #58 initial Windows 45079025110 and macOS 45079025042 PASS.
+  Local setup/portable SHA-256 verifier with 12 new synthetic-file tests.
+  Explicit selection, no network or execution; checksum is not a signature.
+- beta.44 metadata prepared; final CI and release pending.
+- Next: automatic update policy branch, explicit consent/settings/channel,
+  monotonic timer, no auto-install; fifteen pure schedule tests already added.
+- P0 AJ159 capture + GearHub HAR outstanding; no changes to live HID parser.
+  Multi-BLE and AULA sleep physical acceptance also outstanding.

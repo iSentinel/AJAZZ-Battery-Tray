@@ -48,14 +48,21 @@ public static class UpdateRules
     /// <summary>Accept exactly one checksum entry for the expected artifact.</summary>
     public static bool VerifyChecksum(Stream artifact, string? manifest, string expectedName)
     {
+        byte[]? expected = ExpectedChecksum(manifest, expectedName);
+        if (expected is null) return false;
+        byte[] actual = SHA256.HashData(artifact);
+        return CryptographicOperations.FixedTimeEquals(actual, expected);
+    }
+
+    public static byte[]? ExpectedChecksum(string? manifest, string expectedName)
+    {
         if (manifest is null || manifest.Length > 1024 || string.IsNullOrEmpty(expectedName) ||
             expectedName.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '.' and not '-' and not '_'))
-            return false;
+            return null;
         string line = manifest.TrimEnd('\r', '\n');
         var match = Regex.Match(line, @"\A([a-fA-F0-9]{64}) [ *]([^\r\n]+)\z");
         if (!match.Success || !string.Equals(match.Groups[2].Value, expectedName, StringComparison.Ordinal))
-            return false;
-        byte[] actual = SHA256.HashData(artifact);
-        return CryptographicOperations.FixedTimeEquals(actual, Convert.FromHexString(match.Groups[1].Value));
+            return null;
+        return Convert.FromHexString(match.Groups[1].Value);
     }
 }
