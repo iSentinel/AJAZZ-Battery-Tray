@@ -7,12 +7,14 @@ namespace AjazzBatteryTray;
 internal sealed class DeviceDashboardForm : Form
 {
     internal sealed record Entry(DeviceDashboardState State, Action? ShowHistory = null,
-        string? Key = null, Action? EditName = null);
+        string? Key = null, Action? EditName = null, bool? TrayVisible = null,
+        Action? ToggleTray = null);
 
     private readonly DataGridView _grid = new();
     private readonly Button _refresh = new();
     private readonly Button _history = new();
     private readonly Button _rename = new();
+    private readonly Button _visibility = new();
     private readonly Button _diagnostics = new();
     private readonly Button _telemetry = new();
     private readonly Button _close = new();
@@ -30,6 +32,7 @@ internal sealed class DeviceDashboardForm : Form
         _telemetry.Click += (_, _) => telemetry();
         _history.Click += (_, _) => CurrentEntry()?.ShowHistory?.Invoke();
         _rename.Click += (_, _) => CurrentEntry()?.EditName?.Invoke();
+        _visibility.Click += (_, _) => CurrentEntry()?.ToggleTray?.Invoke();
         _close.Click += (_, _) => Close();
         _grid.SelectionChanged += (_, _) => UpdateSelection();
         _grid.CellDoubleClick += (_, e) =>
@@ -58,7 +61,7 @@ internal sealed class DeviceDashboardForm : Form
         {
             Dock = DockStyle.Fill, AutoSize = true, WrapContents = true
         };
-        foreach (Button button in new[] { _refresh, _history, _rename, _diagnostics, _telemetry, _close })
+        foreach (Button button in new[] { _refresh, _history, _rename, _visibility, _diagnostics, _telemetry, _close })
         {
             button.AutoSize = true;
             button.Padding = new Padding(6, 3, 6, 3);
@@ -86,7 +89,7 @@ internal sealed class DeviceDashboardForm : Form
         _grid.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
         _grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
         _grid.BorderStyle = BorderStyle.FixedSingle;
-        foreach (string name in new[] { "Device", "Transport", "Status", "Battery", "Last measurement" })
+        foreach (string name in new[] { "Device", "Transport", "Status", "Battery", "Tray", "Last measurement" })
         {
             int index = _grid.Columns.Add(name, name);
             _grid.Columns[index].SortMode = DataGridViewColumnSortMode.NotSortable;
@@ -123,6 +126,7 @@ internal sealed class DeviceDashboardForm : Form
                 var state = entry.State;
                 int row = _grid.Rows.Add(state.Name, state.Transport,
                     StatusText(state.Status), FormatBattery(state),
+                    entry.TrayVisible is bool visible ? UiText.Get(visible ? "Shown" : "Hidden") : "—",
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
                 if (previous is not null && (previous.Key is not null
@@ -162,6 +166,8 @@ internal sealed class DeviceDashboardForm : Form
         Entry? entry = CurrentEntry();
         _history.Enabled = entry?.ShowHistory is not null;
         _rename.Enabled = entry?.EditName is not null;
+        _visibility.Enabled = entry?.ToggleTray is not null;
+        _visibility.Text = UiText.Get(entry?.TrayVisible == true ? "Hide device in tray" : "Show device in tray");
         _detail.Text = entry is null ? UiText.Get("No device readings yet") :
             $"{entry.State.Name} — {StatusText(entry.State.Status)}";
     }
