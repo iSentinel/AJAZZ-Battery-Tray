@@ -1,39 +1,38 @@
-# Resume — Device Manager dashboard (beta.31 candidate)
+# Resume — Windows Device Manager naming (beta.32 candidate)
 
 ## Verified baseline
-- beta.30 PR #41 merged as bb001b0ed4236dd3ff07f26cc33d7f4d196f9f06.
-- Windows/macOS PR and main checks PASS; release workflow 45042853053
-  completed successfully and Latest verified v0.3.0-beta.30 with six assets.
-- Owner beta.29 confirmed simultaneous independent AJ159/AJ179 reads
-  (both 100%, distinct USB revisions), AULA 98% fresh followed by a
-  missed reply. Actual icon count, recovery, host sensor preview pending.
+- beta.31 PR #42 merged as 09bc290788ad632f6f4e5d45161f4d8dfa7da9fa.
+- Windows/macOS PR and main CI PASS; release workflow 45043535423
+  successful; Latest v0.3.0-beta.31 verified with six assets.
+- Dashboard visual acceptance and beta.30 AULA recovery remain pending.
+- Owner beta.29 independently confirmed AJ159/AJ179 F7/05 100% each;
+  L99 returned 98% before a missed reply. Actual screen telemetry
+  packet confirmation remains required; no speculative writes.
 
 ## Current work
-- Approved expansion roadmap through v1.0.0 saved in docs/ROADMAP.md;
-  proposed release milestones retained, but next available beta numbers
-  assigned to independently actionable work while hardware gates block.
-- Branch feat/device-manager-dashboard-beta31, based on beta.30.
-- Roadmap checkpoint 3289ae7132b0c0e89e194f6aa2af2d1eb9a98367.
-- Code checkpoint 58ad657436c243a8eeee14caae4a0b2269a4ef06:
-  Windows Device Manager read-only dashboard, independent device rows,
-  fresh/cached/manual and failure states, local measurement timestamp,
-  history/refresh/diagnostics/telemetry controls and EN/RU/UK translations.
-  Pure state tests added. No extra hardware polling, no protocol changes.
-- L99 wireless screen synchronization remains BLOCKED on exact official
-  packet capture, not on implementation of the wired protocol.
+- Branch feat/windows-device-names-beta32 from beta.31 main.
+- Roadmap checkpoint ccf8e774493c5f7d09c9ad1c4ed4899087f163a2 adds
+  owner-approved standard Windows Device Manager friendly-name work.
+- Code checkpoint ea4085917544b26910f42b708a9553db20ea83da adds read-only
+  present PnP inventory, exact known USB families and primary HID candidates,
+  parent ancestry, current and proposed names, localized scrollable preview,
+  and pure identity tests. No property changes, elevation or new HID I/O.
+- Revision-based names are provisional. Root/child mapping is not yet
+  physically validated; do not infer identity from shared VID/PID.
 
 ## Next
-1. [x] Save approved roadmap and verify beta.30 release.
-2. [x] Implement initial dashboard and add state tests.
-3. [ ] Run PR Windows/macOS CI; review, merge only green and verify six
-   release assets. Confirm visible dashboard and all tray icons with owner.
-4. [ ] Obtain radio RTC/telemetry frame evidence (docs/AULA_L99_SCREEN_SYNC.md),
-   verify framing, checksum, target and weather fields. No speculative writes.
-5. [ ] In parallel where evidence permits, implement per-device local aliases,
-   independent settings and tray visibility, then battery analytics.
-6. [ ] Continue dependency-gated milestones in ROADMAP.md.
+1. [ ] Run PR Windows/macOS CI; merge only green; verify beta.32 release.
+2. [ ] Owner tests Settings → Windows device names preview with both mice
+   and L99; confirm each root/child pair and provisional model.
+3. [ ] Implement per-device local aliases; explicit admin-only per-instance
+   FriendlyName apply, readback and restore. First back up exact original
+   property presence/value. Refuse ambiguous/stale targets or conflicts.
+4. [ ] Verify actual standard Windows Device Manager display, restore and
+   unplug/replug on physical hardware. Never change drivers or device classes.
+5. [ ] Continue individual settings, analytics and other independent
+   roadmap milestones while L99 radio screen capture is pending.
 
-Resume by checking actual main/head, open PR and latest CI/release results.
-Persist new checkpoints and keep hardware acceptance separate from green CI.
-Never export raw device identifiers or claim screen synchronization without
-physical confirmation.
+References: docs/ROADMAP.md, docs/WINDOWS_DEVICE_NAMES.md,
+docs/AULA_L99_SCREEN_SYNC.md.
+Resume from actual main/head and PR/CI/release state, not an assumed stage.
+Keep private PnP instance IDs local and out of diagnostics and repository.
