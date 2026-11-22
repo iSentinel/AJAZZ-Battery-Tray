@@ -1120,5 +1120,56 @@ Check("Distinct descriptor length first at each delay", ApexProtocolMatrix.Build
 Check("Invalid descriptor sizes filtered", ApexProtocolMatrix.Build(257, true).SequenceEqual(fullApexPlan) &&
     ApexProtocolMatrix.Build(0, true).SequenceEqual(fullApexPlan));
 
+// Local verification uses synthetic files only; no network or executable launch.
+string verifyDirectory = Path.Combine(Path.GetTempPath(), "ajazz-verify-" + Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(verifyDirectory);
+try
+{
+    string portable = Path.Combine(verifyDirectory, LocalArtifactVerifier.PortableName);
+    string checksum = Path.Combine(verifyDirectory, LocalArtifactVerifier.ManifestName(LocalArtifactVerifier.PortableName)!);
+    string setup = Path.Combine(verifyDirectory, LocalArtifactVerifier.SetupName);
+    string setupChecksum = Path.Combine(verifyDirectory, LocalArtifactVerifier.ManifestName(LocalArtifactVerifier.SetupName)!);
+    File.WriteAllBytes(portable, updateFixture);
+    File.WriteAllBytes(setup, updateFixture);
+    File.WriteAllText(checksum, $"{updateHash}  {LocalArtifactVerifier.PortableName}\n");
+    File.WriteAllText(setupChecksum, $"{updateHash}  {LocalArtifactVerifier.SetupName}\r\n");
+    bool VerifyLocal(string artifact, string manifest) =>
+        LocalArtifactVerifier.VerifyAsync(artifact, manifest).GetAwaiter().GetResult();
+    bool RejectLocal(string artifact, string manifest)
+    {
+        try { VerifyLocal(artifact, manifest); return false; }
+        catch (InvalidDataException) { return true; }
+        catch (IOException) { return true; }
+    }
+    Check("Local portable checksum matches", VerifyLocal(portable, checksum));
+    Check("Local setup checksum matches", VerifyLocal(setup, setupChecksum));
+    Check("Local wrong manifest filename rejected", RejectLocal(portable, setupChecksum));
+    Check("Local unsupported artifact filename rejected", RejectLocal(Path.Combine(verifyDirectory, "other.exe"), checksum));
+    File.AppendAllText(portable, "changed");
+    Check("Local modified artifact mismatch", !VerifyLocal(portable, checksum));
+    File.WriteAllBytes(portable, updateFixture);
+    File.WriteAllText(checksum, $"{updateHash}  {LocalArtifactVerifier.SetupName}");
+    Check("Local wrong manifest entry mismatch", !VerifyLocal(portable, checksum));
+    File.WriteAllBytes(checksum, new byte[LocalArtifactVerifier.MaximumManifestBytes + 1]);
+    Check("Local oversized manifest rejected", RejectLocal(portable, checksum));
+    File.WriteAllBytes(checksum, new byte[] { 255 });
+    Check("Local non-ASCII manifest rejected", RejectLocal(portable, checksum));
+    File.WriteAllBytes(checksum, Array.Empty<byte>());
+    Check("Local empty manifest rejected", RejectLocal(portable, checksum));
+    File.WriteAllText(checksum, $"{updateHash}  {LocalArtifactVerifier.PortableName}");
+    File.WriteAllBytes(portable, Array.Empty<byte>());
+    Check("Local empty executable rejected", RejectLocal(portable, checksum));
+    File.Delete(portable);
+    Check("Local missing executable rejected", RejectLocal(portable, checksum));
+    File.WriteAllBytes(portable, updateFixture);
+    using var verifyCancellation = new CancellationTokenSource();
+    verifyCancellation.Cancel();
+    bool cancelled = false;
+    try { LocalArtifactVerifier.VerifyAsync(portable, checksum, verifyCancellation.Token).GetAwaiter().GetResult(); }
+    catch (OperationCanceledException) { cancelled = true; }
+    Check("Local verification observes cancellation", cancelled);
+}
+finally { Directory.Delete(verifyDirectory, true); }
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
