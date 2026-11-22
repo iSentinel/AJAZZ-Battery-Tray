@@ -9,6 +9,9 @@ public sealed class TrayAppContext : ApplicationContext
 {
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _timer;
+    private readonly System.Windows.Forms.Timer _aulaTimer;
+    private readonly DevicePollSchedule _usbSchedule = new();
+    private bool _forcePoll;
     private readonly AjazzHidReader _reader = new();
     private readonly AulaL99Reader _aulaReader = new();
     private readonly AlertPolicy _aulaAlerts = new();
@@ -67,7 +70,10 @@ public sealed class TrayAppContext : ApplicationContext
 
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
         _timer.Tick += OnPollTimer;
+        _aulaTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+        _aulaTimer.Tick += (_, _) => _ = PollAulaAsync();
         _timer.Start();
+        if (_settings.MonitorAulaL99) _aulaTimer.Start();
     }
 
     private ContextMenuStrip BuildMenu()
@@ -219,7 +225,9 @@ public sealed class TrayAppContext : ApplicationContext
             var reading = receiver.Reading;
             var item = DeviceDashboardState.FromPoll(receiver.DisplayLabel, "2.4 GHz",
                 true, reading.PresenceKnown, receiver.Present, reading.Percent,
-                _latestUsbReadAt);
+                receiver.MeasuredAt);
+            if (receiver.ScheduledSkip && item.Status == DeviceDashboardStatus.Fresh)
+                item = item with { Status = DeviceDashboardStatus.Scheduled };
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
                 () => ToggleTrayVisibility(receiver.Key),
@@ -312,6 +320,7 @@ public sealed class TrayAppContext : ApplicationContext
             _aulaLastReadAt = null;
             _aulaBattery.Reset();
             _settings.Save();
+            _aulaTimer.Stop();
             if (auto.Checked) _ = PollAulaAsync(manual: true);
             UpdateAulaStatus();
             RefreshDeviceDisplay();
@@ -446,6 +455,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_closing || _aulaBusy ||
             (!manual && !_settings.MonitorAulaL99)) return;
+        _aulaTimer.Stop();
         _aulaBusy = true;
         int generation = _aulaGeneration;
         UpdateAulaStatus();
@@ -488,6 +498,11 @@ public sealed class TrayAppContext : ApplicationContext
             _aulaBusy = false;
             if (!_closing)
             {
+                if (_settings.MonitorAulaL99)
+                {
+                    _aulaTimer.Interval = _settings.EffectivePollInterval(DeviceAliasRules.AulaSlot) * 1000;
+                    _aulaTimer.Start();
+                }
                 UpdateAulaStatus();
                 RefreshDeviceDisplay();
             }
@@ -903,7 +918,7 @@ public sealed class TrayAppContext : ApplicationContext
             _diagnosticsBusy = false;
             if (!_closing)
             {
-                _timer.Interval = _settings.PollSeconds * 1000;
+                _timer.Interval = _forcePoll ? 100 : DiscoveryInterval();
                 _timer.Start();
             }
         }
@@ -1029,12 +1044,26 @@ public sealed class TrayAppContext : ApplicationContext
             item.Checked = item.Tag is int value && value == seconds;
         }
 
+        if (_settings.MonitorAulaL99 && !_aulaBusy)
+        {
+            _aulaTimer.Stop();
+            _aulaTimer.Interval = 100;
+            _aulaTimer.Start();
+        }
         PollSoon();
     }
 
+    private int DiscoveryInterval()
+        => Math.Min(_settings.PollSeconds, _settings.DevicePollIntervals
+            .Where(x => x.Key != DeviceAliasRules.AulaSlot)
+            .Select(x => DevicePollSchedule.NormalizeInterval(x.Value))
+            .DefaultIfEmpty(_settings.PollSeconds).Min()) * 1000;
+
     private void PollSoon()
     {
-        if (_busy || _closing)
+        if (_closing) return;
+        _forcePoll = true;
+        if (_busy)
         {
             return;
         }
@@ -1055,15 +1084,28 @@ public sealed class TrayAppContext : ApplicationContext
         _timer.Stop();
         try
         {
-            var result = await Task.Run(QueryAndSync);
+            bool force = _forcePoll;
+            _forcePoll = false;
+            long nowTick = Environment.TickCount64;
+            // Only immutable local keys cross to the background HID worker.
+            var deferred = _receivers.Devices.Where(x => x.Present && x.Reading.PresenceKnown &&
+                !_usbSchedule.IsDue(x.Key, nowTick, _settings.EffectivePollInterval(x.Key), force))
+                .Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
+            bool manualClock = _manualClockSync;
+            _manualClockSync = false;
+            bool autoClock = _settings.AutomaticDockClockSync;
+            var result = await Task.Run(() => QueryAndSync(deferred, manualClock, autoClock));
             if (!_closing)
             {
-                _latestUsbReading = result.Batch.Summary;
+                _usbSchedule.Reconcile(result.Batch.Receivers.Select(x => x.Key),
+                    result.Batch.Summary.PresenceKnown);
+                foreach (var item in result.Batch.Receivers.Where(x => x.Sampled))
+                    _usbSchedule.Complete(item.Key, item.CompletedTick);
                 _latestUsbReadAt = DateTimeOffset.UtcNow;
                 ApplyReading(result.Batch);
                 ApplyClockResult(result.Attempted, result.Succeeded);
                 StartBluetoothPoll(result.Batch.Summary.ReceiverPresent);
-                _ = PollAulaAsync();
+                if (force && _settings.MonitorAulaL99) _ = PollAulaAsync(manual: true);
             }
         }
         catch (Exception error)
@@ -1083,22 +1125,20 @@ public sealed class TrayAppContext : ApplicationContext
             _busy = false;
             if (!_closing)
             {
-                _timer.Interval = _settings.PollSeconds * 1000;
+                _timer.Interval = _forcePoll ? 100 : DiscoveryInterval();
                 _timer.Start();
             }
         }
     }
 
     private (AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded)
-        QueryAndSync()
+        QueryAndSync(IReadOnlySet<string> deferred, bool manual, bool autoClock)
     {
-        AjazzHidReader.Batch batch = _reader.ReadAll();
+        AjazzHidReader.Batch batch = _reader.ReadAll(shouldSample: key => !deferred.Contains(key));
         AjazzHidReader.Reading reading = batch.Summary;
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        bool manual = _manualClockSync;
-        _manualClockSync = false;
         bool automatic = _clockSchedule.ShouldAttempt(
-            now, _settings.AutomaticDockClockSync, reading.ReceiverPresent);
+            now, autoClock, reading.ReceiverPresent);
         if (!manual && !automatic)
         {
             return (batch, false, false);
@@ -1194,7 +1234,11 @@ public sealed class TrayAppContext : ApplicationContext
     {
         _receivers.Apply(batch, _settings, _tray, _bluetoothPolicy.Enabled,
             DateTimeOffset.UtcNow);
-        UpdateTrayDisplay(batch.Summary);
+        _latestUsbReading = batch.Summary.PresenceKnown && _receivers.SummaryState is { } primary
+            ? primary.Reading with { Attempts = batch.Summary.Attempts,
+                Details = primary.ScheduledSkip ? "Last scheduled battery reading" : primary.Reading.Details }
+            : batch.Summary;
+        UpdateTrayDisplay(_latestUsbReading);
     }
 
     /// <summary>Notify only for a fresh, currently selected battery source.</summary>
@@ -1313,6 +1357,8 @@ public sealed class TrayAppContext : ApplicationContext
         _closing = true;
         _timer.Stop();
         _timer.Dispose();
+        _aulaTimer.Stop();
+        _aulaTimer.Dispose();
         _bluetoothSelection = null;
         _bluetoothPolicy.Disable();
         _dashboard?.Close();
