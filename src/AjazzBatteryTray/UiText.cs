@@ -87,6 +87,13 @@ public static class UiText
         ["Start with Windows"] = ("Запускать вместе с Windows", "Запускати разом із Windows"),
         ["Language"] = ("Язык", "Мова"),
         ["Diagnostics"] = ("Диагностика", "Діагностика"),
+        ["Enable selected BLE monitor (this session)"] = ("Включить мониторинг выбранного BLE (на сеанс)", "Увімкнути моніторинг вибраного BLE (на сеанс)"),
+        ["Disable selected BLE monitor"] = ("Выключить мониторинг выбранного BLE", "Вимкнути моніторинг вибраного BLE"),
+        ["Read selected battery again before enabling monitoring."] = ("Повторите чтение заряда перед включением мониторинга.", "Повторіть читання заряду перед увімкненням моніторингу."),
+        ["Bluetooth monitor enabled for this session; USB keeps priority."] = ("Мониторинг Bluetooth включён на сеанс; USB имеет приоритет.", "Моніторинг Bluetooth увімкнено на сеанс; USB має пріоритет."),
+        ["Opted-in BLE devices"] = ("Выбранные BLE-устройства", "Вибрані BLE-пристрої"),
+        ["Bluetooth monitors: {0}"] = ("Устройств Bluetooth: {0}", "Пристроїв Bluetooth: {0}"),
+
         ["Full APEX comparison report..."] = ("Полная диагностика APEX...", "Повна діагностика APEX..."),
         ["Device polling interval..."] = ("Интервал опроса устройства...", "Інтервал опитування пристрою..."),
         ["Use global interval ({0} seconds)"] = ("Общий интервал ({0} сек.)", "Загальний інтервал ({0} с)"),

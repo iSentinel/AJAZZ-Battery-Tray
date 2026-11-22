@@ -18,18 +18,21 @@ public sealed class BluetoothBatteryForm : Form
     private readonly Button _copy = new() { Text = "Copy lookup summary" };
     private readonly Button _find = new() { Text = "Find paired Bluetooth devices" };
     private readonly Button _read = new() { Text = "Read selected battery" };
-    private readonly CheckBox _automatic = new()
-    {
-        Text = "Use this mouse in tray when 2.4 GHz receiver is absent (this session)",
-        AutoSize = true, Enabled = false
-    };
-    private readonly Action<BluetoothCandidate?, int?> _onAutoSelection;
+    private readonly Button _automatic = new() { AutoSize = true, Enabled = false };
+    private readonly Button _remove = new() { AutoSize = true, Enabled = false };
+    private readonly Action<BluetoothCandidate, BluetoothBatteryResult, DateTimeOffset> _enable;
+    private readonly Action<BluetoothCandidate> _disable;
+    private readonly Func<BluetoothCandidate, bool> _isEnabled;
     private BluetoothCandidate? _verified;
-    private int? _verifiedPercent;
+    private BluetoothBatteryResult? _verifiedResult;
+    private DateTimeOffset _verifiedAt;
 
-    public BluetoothBatteryForm(Action<BluetoothCandidate?, int?> onAutoSelection)
+    public BluetoothBatteryForm(Action<BluetoothCandidate, BluetoothBatteryResult, DateTimeOffset> enable,
+        Action<BluetoothCandidate> disable, Func<BluetoothCandidate, bool> isEnabled)
     {
-        _onAutoSelection = onAutoSelection;
+        _enable = enable;
+        _disable = disable;
+        _isEnabled = isEnabled;
         Text = UiText.Get("AJAZZ — Experimental Bluetooth battery check");
         Size = new Size(900, 490);
         MinimumSize = new Size(780, 410);
@@ -58,9 +61,15 @@ public sealed class BluetoothBatteryForm : Form
             ClearVerifiedSelection();
         };
 
-        _automatic.Dock = DockStyle.Bottom;
-        _automatic.Padding = new Padding(12, 3, 0, 4);
-        _automatic.CheckedChanged += (_, _) => ToggleAutomatic();
+        FlowLayoutPanel consent = new() { Dock = DockStyle.Bottom, AutoSize = true, WrapContents = true };
+        consent.Controls.Add(_automatic);
+        consent.Controls.Add(_remove);
+        _automatic.Click += (_, _) => EnableSelected();
+        _remove.Click += (_, _) =>
+        {
+            if (_devices.SelectedItem is BluetoothCandidate selected) _disable(selected);
+            ClearVerifiedSelection();
+        };
         _showAll.Dock = DockStyle.Top;
         _showAll.Padding = new Padding(12, 3, 0, 4);
         FlowLayoutPanel buttons = new() { Dock = DockStyle.Bottom, Height = 44 };
@@ -71,7 +80,7 @@ public sealed class BluetoothBatteryForm : Form
         _find.Click += async (_, _) => await FindDevicesAsync();
         _read.Click += async (_, _) => await ReadSelectedAsync();
         Controls.Add(_devices);
-        Controls.Add(_automatic);
+        Controls.Add(consent);
         Controls.Add(buttons);
         Controls.Add(_result);
         Controls.Add(_showAll);
@@ -92,8 +101,8 @@ public sealed class BluetoothBatteryForm : Form
         _find.Text = UiText.Get("Find paired Bluetooth devices");
         _read.Text = UiText.Get("Read selected battery");
         _copy.Text = UiText.Get("Copy lookup summary");
-        _automatic.Text = UiText.Get(
-            "Use this mouse in tray when 2.4 GHz receiver is absent (this session)");
+        _automatic.Text = UiText.Get("Enable selected BLE monitor (this session)");
+        _remove.Text = UiText.Get("Disable selected BLE monitor");
         if (_devices.Items.Count == 0 && _verified is null)
             _result.Text = UiText.Get("Choose Find to list already paired devices.");
     }
@@ -153,8 +162,8 @@ public sealed class BluetoothBatteryForm : Form
             if (result.IsFreshGatt && selected.IsLowEnergy)
             {
                 _verified = selected;
-                _verifiedPercent = result.Percent.Value;
-                _automatic.Enabled = true;
+                _verifiedResult = result;
+                _verifiedAt = DateTimeOffset.UtcNow;
             }
         }
         catch (TimeoutException)
@@ -175,35 +184,40 @@ public sealed class BluetoothBatteryForm : Form
 
     private void ClearVerifiedSelection()
     {
-        if (_automatic.Checked)
-        {
-            _automatic.Checked = false;
-        }
-        _automatic.Enabled = false;
         _verified = null;
-        _verifiedPercent = null;
+        _verifiedResult = null;
+        UpdateConsentControls();
     }
 
-    private void ToggleAutomatic()
+    private void UpdateConsentControls()
     {
-        if (_automatic.Checked && _verified is not null &&
-            _verifiedPercent.HasValue)
-        {
-            _onAutoSelection(_verified, _verifiedPercent);
-            _result.Text = UiText.Get("Bluetooth tray fallback is enabled for this session.") +
-                " " + UiText.Get("It is used only when the 2.4 GHz receiver is absent.");
-        }
-        else
-        {
-            _onAutoSelection(null, null);
-        }
+        var selected = _devices.SelectedItem as BluetoothCandidate;
+        bool enabled = selected is not null && _isEnabled(selected);
+        _automatic.Enabled = _find.Enabled && !enabled && _verified is not null &&
+            _verified == selected && _verifiedResult?.IsFreshGatt == true;
+        _remove.Enabled = _find.Enabled && enabled;
     }
 
-    /// <summary>Require a new fresh GATT read before enabling again.</summary>
-    public void DisableAutomatic()
+    private void EnableSelected()
     {
+        if (_verified is not { } candidate || _verifiedResult is not { IsFreshGatt: true } result ||
+            candidate != _devices.SelectedItem as BluetoothCandidate) return;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        if (now < _verifiedAt || now - _verifiedAt > TimeSpan.FromMinutes(1))
+        {
+            ClearVerifiedSelection();
+            _result.Text = UiText.Get("Read selected battery again before enabling monitoring.");
+            return;
+        }
+        _enable(candidate, result, _verifiedAt);
         ClearVerifiedSelection();
+        _result.Text = UiText.Get("Bluetooth monitor enabled for this session; USB keeps priority.");
     }
+
+    /// <summary>External opt-out invalidates prior consent evidence.</summary>
+    public void DisableAutomatic() => ClearVerifiedSelection();
+
+    public void RefreshConsent() => UpdateConsentControls();
 
     private void CopyLookupSummary()
     {
@@ -227,6 +241,7 @@ public sealed class BluetoothBatteryForm : Form
         _read.Enabled = !busy && _devices.SelectedItem is BluetoothCandidate;
         _devices.Enabled = !busy;
         _showAll.Enabled = !busy;
+        UpdateConsentControls();
         if (message is not null) _result.Text = message;
     }
 }

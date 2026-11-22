@@ -28,6 +28,8 @@ public sealed record BluetoothDiscovery(
 /// <summary>Manually inspects paired devices and standard battery metadata.</summary>
 public static class BluetoothBatteryReader
 {
+    private static readonly SemaphoreSlim ReadGate = new(1, 1);
+
     private static readonly string[] Properties =
     {
         "System.Devices.BatteryLife",
@@ -116,7 +118,20 @@ public static class BluetoothBatteryReader
         BluetoothCandidate selected)
     {
         if (!selected.IsLowEnergy) return ReadWindowsBattery(selected);
+        // WaitAsync at the caller does not cancel WinRT. Hold the gate until
+        // the underlying operation has actually finished, including on timeout.
+        if (!await ReadGate.WaitAsync(0))
+            return Missing("A previous Bluetooth read is still completing.");
+        try
+        {
+            return await ReadLowEnergyAsync(selected);
+        }
+        finally { ReadGate.Release(); }
+    }
 
+    private static async Task<BluetoothBatteryResult> ReadLowEnergyAsync(
+        BluetoothCandidate selected)
+    {
         BluetoothBatteryResult gatt;
         try
         {

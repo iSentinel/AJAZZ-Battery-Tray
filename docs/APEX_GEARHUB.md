@@ -1,0 +1,119 @@
+# GearHub F7 status investigation — 2026-11-22
+
+## Source snapshot
+
+- Public Web driver: https://qmk.top/v4/ (page title GearHub).
+- Client module inspected by static HTTP download, without running its code:
+  https://qmk.top/v4/js/index.58137dcb.js
+- Module size: 2,845,916 bytes; SHA-256:
+  7dfb0851189a6287c1a03b36dc785237adc905b1cf10ac136a751c12e6e2d0b1
+- Relevant methods: ___dongleCheck24GStatusByF7, ___commonFeature,
+  ___sendFeature, ___getFeature and WebHID sendFeature/getFeature.
+- Registry has multiple AJ159 and AJ179 APEX entries. The AJ159 APEX
+  dongle entry 3347 and generic AJAZZ APEX entry 3480 share 3151:5007.
+  Mouse registry entries 1755, 3346, 3806 (AJ159) and 1852, 3849
+  (AJ179) share 3151:4026. Do not equate these registry IDs with USB
+  revision or firmware version.
+
+## Wire-format hypothesis, not hardware-confirmed
+
+The web implementation selects the first feature report from its device
+metadata, uses its ID for both feature operations, pads the F7 payload to
+the report count, and uses a 10 ms interval before the write and read.
+Its WebHID wrapper removes one leading byte for a nonzero report ID before
+passing the resulting payload to the status decoder. It polls every 2 sec.
+
+| Field | GearHub payload offset | Hypothesized Windows buffer offset |
+|---|---:|---:|
+| Ready to read | 0 | 1 |
+| Keyboard battery | 1 | 2 |
+| Mouse battery | 2 | 3 |
+| Keyboard link | 3 | 4 |
+| Mouse link (0 online) | 4 | 5 |
+| Ready to send | 5 | 6 |
+| Device type mask (2 mouse, 3 both) | 6 | 7 |
+| RF boot flag | 8 | 9 |
+
+The existing Windows parser requires report ID 05 and zero offsets 1/2.
+The vendor logic does not require those two payload fields to be zero
+before reading mouse battery; therefore a flag or keyboard battery could
+explain a rejection. The different report-ID selection and 10 ms timing
+are also investigation leads, not confirmed causes. Do not change the
+live parser, command allowlist, or normal timing before hardware evidence.
+
+## Compare beta.41 captures without any new binary
+
+Run locally against reviewed plain-text full comparison reports:
+```sh
+python3 tools/compare_apex_reports.py AJ179-working.txt AJ159-working.txt AJ159-problem.txt
+python3 tools/test_compare_apex_reports.py
+```
+
+The analyzer reads the fresh protocol matrix only, counts returned buffers,
+and prints old parser results plus candidate values under conservative
+status checks. It does not read USB or send anything to the network.
+A matching candidate is not proof of alignment, freshness, or charge.
+Compare against the web driver's displayed charge and repeat at another
+known value before proposing a live parser change.
+
+## Owner data collection
+
+Use the same beta.41+ full report on all three devices. Close GearHub and
+the desktop vendor utility while the tray app records its report. Then exit
+the tray app and load qmk.top/v4 in a WebHID-capable browser. Select only
+the target receiver and record the displayed charge and model if available.
+Do not change settings or update firmware during the comparison. A browser
+screen showing charge is a reference observation, not a USB traffic capture.
+If the web driver also fails, record that outcome. No whole-bus capture or
+private identifiers are needed for the initial comparison.
+
+## AJ179 reference capture — owner hardware, beta.41
+
+The working AJ179 APEX 2.4 GHz/8K report identifies 3151:5007,
+bcdDevice 0002, MI_02, usage FFFF:0002 and 65-byte descriptor feature
+capacity. Six of six existing F7/05 queries returned 100% and shared
+the same ten-byte status prefix (both candidate and current decoders
+return 100). Requested waits 30/100/250 ms measured 30–45, 110–111
+and 252 ms respectively. Both 65- and 67-byte Windows buffers succeeded;
+the two extra bytes in the 67-byte buffer are not interpreted, and
+the buffer length is not evidence of wire length.
+
+A regression test reconstructs only the observed status prefix with
+synthetic padding. No owner raw report or device identifiers are stored.
+The web UI displays five bars rather than an exact percentage. The
+subsequently supplied local bridge HAR independently reports 100% (below).
+Repeat at a different actual battery level if possible. This is a positive
+reference for the working AJ179, not proof of AJ159 compatibility or a
+reason to loosen the live parser yet.
+
+
+## AJ179 local GearHub bridge HAR — owner hardware
+
+The owner supplied a Chrome Network HAR. GearHub used the local gRPC-Web
+HID service (loopback port 3838), not the browser WebHID methods; the
+passive WebHID console hook therefore recorded no transactions.
+The HAR analysis matched 266 F7 sends to subsequent feature reads on the
+same 3151:5007 MI_02 endpoint. All 266 returned 65-byte buffers with
+mouse battery 100, online link, mouse mask 2 and boot flag 0.
+Five other F7 sends were not matched; this does not establish failures.
+
+| Bridge response prefix (first 10 bytes) | Count |
+|---|---:|
+| 00 00 00 64 01 00 01 02 00 00 | 258 |
+| 00 01 00 64 01 00 01 02 00 00 | 6 |
+| 00 00 00 64 01 00 00 02 00 00 | 2 |
+
+The bridge leading byte 00 differs from the Windows capture's 05. Do not
+interpret it as a proven wire report ID. For analysis only, substituting
+05 yields 260/266 accepted by the legacy parser versus 266/266 by the
+candidate. Six replies show that the read-ready flag can be nonzero
+while battery is valid. This does not establish the failing AJ159 cause.
+No live normalization, relaxed parser, alternate request or bridge
+integration is authorized by this finding alone.
+
+For each AJ159 collect a separate beta.41 full report and a Chrome Network
+HAR with response content after 20–30 seconds of GearHub polling. Close
+one application before using the other. No console script is required
+when GearHub uses the local bridge. Review HAR for private identifiers
+and keep raw captures out of the repository. Only aggregate counts and
+synthetic test prefixes are retained here.
