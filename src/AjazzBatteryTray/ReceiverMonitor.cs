@@ -117,16 +117,14 @@ internal sealed class ReceiverMonitor : IDisposable
         int? percent = state.Reading.Percent;
         if (settings.RecordBatteryHistory)
             state.History.Record(now, percent, state.Present);
+        var preferences = DeviceAlertPreferences.Resolve(settings, state.Key);
         if (state.Connection.Evaluate(percent.HasValue, state.Present) &&
-            settings.NotifyOnDisconnect && !bluetoothEnabled)
+            preferences.NotifyOnDisconnect && !bluetoothEnabled)
             notifier.ShowBalloonTip(4000, state.DisplayLabel,
                 UiText.Get("The 2.4 GHz receiver is no longer detected."),
                 ToolTipIcon.Warning);
         if (percent is not int level) return;
-        int? threshold = state.Alerts.Evaluate(level,
-            settings.NotificationsEnabled && settings.AlertBelow50,
-            settings.NotificationsEnabled && settings.AlertBelow25,
-            settings.NotificationsEnabled && settings.AlertBelow10);
+        int? threshold = preferences.Evaluate(state.Alerts, level, settings.NotificationsEnabled);
         if (threshold.HasValue)
             notifier.ShowBalloonTip(5000, state.DisplayLabel,
                 UiText.Format("Mouse battery is {0}% ({1}); below {2}%.",
@@ -139,7 +137,7 @@ internal sealed class ReceiverMonitor : IDisposable
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
         Func<string, bool> visible, Action<string> toggle,
-        Action<State> editColor)
+        Action<State> editColor, Action<State> editAlerts)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
@@ -161,6 +159,7 @@ internal sealed class ReceiverMonitor : IDisposable
             };
             item.DropDownItems.Add(visibility);
             item.DropDownItems.Add(UiText.Get("Tray icon color..."), null, (_, _) => editColor(state));
+            item.DropDownItems.Add(UiText.Get("Device notifications..."), null, (_, _) => editAlerts(state));
             menu.DropDownItems.Add(item);
         }
         if (menu.DropDownItems.Count == 0)
