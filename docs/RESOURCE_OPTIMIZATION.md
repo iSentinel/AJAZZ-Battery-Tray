@@ -58,3 +58,12 @@ improvement is claimed until the Windows comparison is completed.
   LINQ; excludes AULA overrides. No changes to actual polling cadence.
 - Ten added pure selection and interval assertions. Initial CI pending.
   Actual Windows CPU/allocations and rendered behavior still need measurement.
+
+- Low-battery threshold state now uses three bits instead of a HashSet and
+  reversed LINQ enumeration on each evaluation. Deterministic reference
+  comparison covers 8192 samples with changing thresholds and invalid
+  percentages. Preserve urgency, hysteresis and crossed-muted behavior.
+- Reuse immutable absent/unknown receiver readings; still run disconnect
+  notification and history policies for every known absence. Missing-poll
+  counter saturates at two, avoiding overflow after long uptime.
+- Two additional regression assertions; combined CI pending.
