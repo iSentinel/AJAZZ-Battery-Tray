@@ -152,9 +152,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.27"
+          TAG="v0.3.0-beta.28"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.27 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.28 — Windows and macOS
+
+          **Windows multi-device monitoring:** poll every supported AJAZZ
+          receiver independently, with separate optional tray icons, histories,
+          notification state and per-receiver diagnostic results. Revision labels
+          are provisional, based on the owner's AJ159/AJ179 samples; macOS unchanged.
 
           **Extended Windows diagnostics:** Run Diagnostics > Extended device
           diagnostics to inventory AJAZZ receiver variants and known AULA HID
@@ -331,7 +336,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.27" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.28" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
