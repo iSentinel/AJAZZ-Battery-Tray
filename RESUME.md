@@ -1,34 +1,29 @@
-# Resume — local device names (beta.33 candidate)
+# Resume — AULA prolonged sleep (beta.34 candidate)
 
-## Verified baseline
-- beta.32 PR #43 merged as eda33f5125a3ef86c08e91a2cb5a673baf0d36a6.
-- Windows/macOS CI and release workflow 45045249501 PASS; Latest
-  v0.3.0-beta.32 verified with six assets.
-- Physical PnP root/child mapping preview remains unvalidated by owner.
-- Owner beta.29 independently confirmed both AJAZZ batteries and L99
-  fresh battery reply; AULA recovery and dashboard visuals pending.
-
-## Current work
-- Branch feat/device-aliases-beta33 from beta.32 main.
-- Code checkpoint acf933efc547f062eb1fb81d53ab555ae467319c:
-  local per-receiver AJAZZ aliases and single AULA profile alias, dialog,
-  settings persistence, reset, stable dashboard selection and display labels.
-  Pure tests added. Original history identity and canonical diagnostic labels
-  retained; no PnP writes, administrative elevation or new HID commands.
-- Windows actual FriendlyName modification remains gated on physical
-  root/child mapping and explicit per-instance backup/readback/restore.
-- Wireless L99 screen telemetry remains gated on actual radio capture.
+- beta.32 release verified previously; owner confirms three live dashboard
+  rows: AJ179 100%, AJ159 100%, AULA L99 93% at 16:52:40Z, 2026-11-22.
+- Owner reports L99 sleep periodically hides charge. The submitted report
+  shows a fresh reading, not a sleeping-state capture.
+- beta.33 PR #44 Windows/macOS CI PASS; merged as
+  0fd224442fd3c28a9b08680997fe2812b4db76df.
+  Release workflow 45046455995 started; publication not yet verified.
+- Branch fix/aula-long-sleep-beta34, code checkpoint
+  934c6505c885875b3230e3345ecb6d3a7a081ce6:
+  24-hour session-only display cache, full cached measurement date/time,
+  local single receiver identity continuity and reset on ambiguity,
+  unknown presence or change. Fresh-only alerts/history preserved.
+  Existing approved battery-only query/retry unchanged.
+- Tests updated for eight-hour sleep, 24-hour expiration, unknown
+  presence, unplug, opt-out and recovery.
 
 ## Next
-1. [ ] Open PR, verify Windows/macOS CI; merge only green and verify release.
-2. [ ] Owner checks beta.32 Settings > Windows device names preview with
-   both mice and L99, and tests local aliases/persistence on beta.33.
-3. [ ] Implement confirmed per-instance Windows name apply and restore,
-   keeping tray unelevated. No guessing or automatic system changes.
-4. [ ] Continue per-device tray visibility, settings and battery analytics.
-5. [ ] Continue L99 screen/telemetry once actual vendor radio traffic is
-   available; follow docs/AULA_L99_SCREEN_SYNC.md.
+1. Verify beta.33 publication, beta.34 PR CI and release.
+2. Owner checks cached display after sleep beyond two minutes, recovery
+   after wake, unplug and restart; confirm visible tray icons and aliases.
+3. Validate actual PnP preview root/child mappings before reversible
+   administrator-only FriendlyName changes (docs/WINDOWS_DEVICE_NAMES.md).
+4. Continue per-device tray settings and battery analytics independently.
+5. L99 wireless screen sync gated on verified vendor radio capture.
 
-Follow docs/ROADMAP.md and docs/WINDOWS_DEVICE_NAMES.md. Resume from actual
-main, open PR and latest release/check results. Do not export local keys,
-device instance paths or user aliases in diagnostics.
+Resume using actual main, branches, PRs and release results. Do not export
+private receiver identifiers or interpret no reply as confirmed sleep.
