@@ -199,3 +199,12 @@ battery or clock problem.
   Windows mixed-device timing, sleep and disconnect handling remain unverified.
 - Verify 15/30/60/120-second profiles, manual refresh, original timestamps,
   no duplicated history/alerts, AULA last-known presence and Bluetooth priority.
+
+## Battery analytics — beta.40 candidate
+
+- beta.39 release workflow 45067421661 PASS; Latest and all six assets verified.
+- Initial PR #52 Windows 45067489196 and macOS 45067489222 CI PASS.
+- Eighteen pure checks exercise stale/insufficient data, charging, gaps,
+  endpoint rates and valid observed discharge pairs.
+- Physical history review and localized layout acceptance remain pending;
+  estimates are conditional and not battery health or physical cycles.

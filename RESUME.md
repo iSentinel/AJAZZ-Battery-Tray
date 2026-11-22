@@ -1,42 +1,29 @@
-# Resume — individual polling integration candidate
+# Resume — beta.40 analytics candidate
 
 ## Verified baseline
-- beta.38 PR #50 merged at 6ef83b8d4e9438aca293abf62201d655f0575dea.
-- Release workflow 45066102066 PASS; Latest beta.38 published
-  2026-11-22T20:24:37Z with six expected assets, verified via gh.
-- beta.37 APEX protocol capture published; problem mouse hardware and
-  official reference trace still pending. AULA sleep acceptance pending.
+- beta.39 PR #51 merged at 0d1d13cb99e3aae1726c603ef3cc4d026a3192f1.
+- Release workflow 45067421661 PASS; Latest beta.39 published
+  2026-11-22T20:38:53Z with six assets, verified via gh.
+- APEX problem mouse, AULA sleep and mixed-device timing require physical acceptance.
 
 ## Current work
-- Branch feat/per-device-polling: independent validated 15/30/60/120s
-  overrides, monotonic completion schedule, actual attempt vs deferred
-  discovery, per-receiver measurement timestamps, unchanged HID protocol.
-- AULA independent completion-based timer; opt-in and busy/generation
-  rules preserved. AULA presence is last-known between its own reads.
-- Localized interval editor in tray/dashboard, settings rollback, diagnostic
-  interval/timestamp fields, 24 additional pure checks in total.
-- Initial PR #51 Windows CI 45066661421 and macOS CI 45066661426 PASS.
-- beta.39 version, installer, macOS bundle 43 and release metadata prepared.
-- See docs/PER_DEVICE_POLLING.md. Final CI and physical acceptance pending.
+- PR #52 implements local Windows per-device observed discharge rate,
+  conditional runtime, sample evidence and observed discharge equivalents.
+- Eighteen pure analytics checks; initial Windows CI 45067489196 and macOS
+  CI 45067489222 PASS. No new HID traffic or uploaded observations.
+- beta.40 version, installer, macOS bundle 44 and release metadata prepared.
+- Final CI, publication and physical UI/history acceptance pending.
 
 ## Next
-1. Verify final PR #51 CI, merge and six-asset beta.39 publication;
-   retain separate physical timing and history/alert acceptance gates.
-2. Battery history analytics: estimate observed drain with uncertainty.
-3. APEX official reference comparison and AULA physical acceptance when
-   hardware becomes available; no speculative HID configuration writes.
+1. Verify final PR #52 CI and publish beta.40.
+2. Integrate session-only multi-BLE foundation from feat/multi-bluetooth.
+   Preserve explicit paired LE consent, fresh GATT trust and conservative
+   USB priority. No automatic pairing, persisted identifiers or speculative
+   USB/BLE association.
+3. Update checker and remaining hardware-gated protocol work.
 
-Never treat CI as device acceptance. No automatic upload of raw buffers.
-
-## Independent follow-up: feat/battery-analytics
-- Pure BatteryAnalytics.EstimateDrain implemented; consumes only recent
-  contiguous non-increasing online observations, with 15-minute maximum gap,
-  30-minute minimum duration, at least three points and three percentage
-  points of decline. Returns no estimate on insufficient/stale evidence.
-- Eighteen pure regression checks added; integrated into per-receiver and AULA profile history UI with EN/RU/UK labels.
-- Added observed discharge equivalents (not physical cycles), distinguish missing evidence from zero, explain uncertainty in docs/BATTERY_ANALYTICS.md.
-- Next: sync beta.39 main, verify CI and prepare a separate release; physical acceptance pending.
-- Branch depends on polling PR #51; do not merge ahead of its validation.
+See docs/BATTERY_ANALYTICS.md for estimate limitations.
+Never claim hardware acceptance from CI alone.
 
 ## Multi-Bluetooth integration: feat/multi-bluetooth
 - Independent paired LE opt-in/out per endpoint, session-only identifiers,

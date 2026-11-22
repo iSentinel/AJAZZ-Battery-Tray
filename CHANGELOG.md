@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.40 (2026-11-22)
+- Add observed discharge rate and conditional runtime projection to individual
+  Windows receiver and AULA profile history, with localized evidence labels.
+- Show observed discharge equivalents over the selected range; distinguish
+  insufficient evidence from zero observed discharge.
+- Exclude legacy aggregated history from estimates; no physical capacity,
+  battery health or cycle-count claims, no additional hardware traffic.
+- Add 18 pure analytic checks.
+
 ## 0.3.0-beta.39 (2026-11-22)
 - Add local per-receiver and AULA profile polling interval overrides
   (15/30/60/120 seconds or inherited global interval).
