@@ -74,8 +74,11 @@ internal static class PnpNamePreview
     }
 
     private static string CurrentName(uint node)
-        => ReadProperty(node, 14, StringType).FirstOrDefault()
-        ?? ReadProperty(node, 2, StringType).FirstOrDefault() ?? "unavailable";
+    {
+        string name = ReadProperty(node, 14, StringType).FirstOrDefault()
+            ?? ReadProperty(node, 2, StringType).FirstOrDefault() ?? "unavailable";
+        return new string(name.Where(ch => !char.IsControl(ch)).Take(160).ToArray());
+    }
 
     internal static IReadOnlyList<Entry> Read()
     {
@@ -100,7 +103,7 @@ internal static class PnpNamePreview
             foreach (Node child in children.Where(n => n.Family == root.Family &&
                          HasAncestor(n.Handle, root.Handle)))
                 entries.Add(new(i + 1, root.Family, revision,
-                    root.Family == "3151:5007" ? "Mouse HID" : "Keyboard HID",
+                    root.Family == "3151:5007" ? "Mouse HID candidate" : "Keyboard HID candidate",
                     CurrentName(child.Handle), model + " (2.4 GHz)"));
         }
         return entries;
