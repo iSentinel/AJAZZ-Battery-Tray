@@ -8,7 +8,7 @@ internal sealed class DeviceDashboardForm : Form
 {
     internal sealed record Entry(DeviceDashboardState State, Action? ShowHistory = null,
         string? Key = null, Action? EditName = null, bool? TrayVisible = null,
-        Action? ToggleTray = null, Action? EditColor = null);
+        Action? ToggleTray = null, Action? EditColor = null, Action? EditAlerts = null);
 
     private readonly DataGridView _grid = new();
     private readonly Button _refresh = new();
@@ -16,6 +16,7 @@ internal sealed class DeviceDashboardForm : Form
     private readonly Button _rename = new();
     private readonly Button _visibility = new();
     private readonly Button _color = new();
+    private readonly Button _alerts = new();
     private readonly Button _diagnostics = new();
     private readonly Button _telemetry = new();
     private readonly Button _close = new();
@@ -35,6 +36,7 @@ internal sealed class DeviceDashboardForm : Form
         _rename.Click += (_, _) => CurrentEntry()?.EditName?.Invoke();
         _visibility.Click += (_, _) => CurrentEntry()?.ToggleTray?.Invoke();
         _color.Click += (_, _) => CurrentEntry()?.EditColor?.Invoke();
+        _alerts.Click += (_, _) => CurrentEntry()?.EditAlerts?.Invoke();
         _close.Click += (_, _) => Close();
         _grid.SelectionChanged += (_, _) => UpdateSelection();
         _grid.CellDoubleClick += (_, e) =>
@@ -63,7 +65,7 @@ internal sealed class DeviceDashboardForm : Form
         {
             Dock = DockStyle.Fill, AutoSize = true, WrapContents = true
         };
-        foreach (Button button in new[] { _refresh, _history, _rename, _visibility, _color, _diagnostics, _telemetry, _close })
+        foreach (Button button in new[] { _refresh, _history, _rename, _visibility, _color, _alerts, _diagnostics, _telemetry, _close })
         {
             button.AutoSize = true;
             button.Padding = new Padding(6, 3, 6, 3);
@@ -108,6 +110,7 @@ internal sealed class DeviceDashboardForm : Form
         _history.Text = UiText.Get("Battery history...");
         _rename.Text = UiText.Get("Edit local name...");
         _color.Text = UiText.Get("Tray icon color...");
+        _alerts.Text = UiText.Get("Device battery alerts...");
         _diagnostics.Text = UiText.Get("Extended device diagnostics...");
         _telemetry.Text = UiText.Get("System telemetry preview...");
         _close.Text = UiText.Get("Close");
@@ -171,6 +174,7 @@ internal sealed class DeviceDashboardForm : Form
         _rename.Enabled = entry?.EditName is not null;
         _visibility.Enabled = entry?.ToggleTray is not null;
         _color.Enabled = entry?.EditColor is not null;
+        _alerts.Enabled = entry?.EditAlerts is not null;
         _visibility.Text = UiText.Get(entry?.TrayVisible == true ? "Hide device in tray" : "Show device in tray");
         _detail.Text = entry is null ? UiText.Get("No device readings yet") :
             $"{entry.State.Name} — {StatusText(entry.State.Status)}";
