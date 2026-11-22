@@ -1,4 +1,4 @@
-# Resume — APEX protocol diagnostics
+# Resume — beta.37 APEX protocol diagnostics candidate
 
 ## Verified baseline
 - Main at 0a2705a0f35a7d6890174b2587fa7f17f145a553 (beta.36 source).
@@ -17,9 +17,14 @@
 - Normal poll stays at 30 ms, same allowlist, parser, lengths and ordering;
   no model mapping change, no additional normal I/O, no RTC in capture.
 - Capture instructions: docs/APEX_PROTOCOL_DIAGNOSTICS.md.
+- Initial PR #49 Windows CI 45062122792 and macOS CI 45062122761 PASS.
+- Prepared beta.37 Windows/installer version, macOS build 41, release
+  tag/title and release notes. Final CI and release gates remain pending.
 
 ## Next
-1. [ ] Run PR Windows/macOS CI; verify branch diff and compile.
+1. [x] Initial PR Windows/macOS CI.
+   [ ] Verify final metadata CI, merge and six-asset publication for beta.37.
+   Diagnostic release may precede hardware acceptance; do not claim fix.
 2. [ ] Collect target device traces with official app closed, and passive
    reference traffic with our app closed. Physical model number pending.
 3. [ ] Compare exact battery transactions, implement evidence-backed fix
