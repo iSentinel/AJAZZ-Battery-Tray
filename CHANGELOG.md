@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.37 (2026-11-22)
+- Add per-device threshold and disconnect notification overrides, with
+  explicit inheritance/reset to global defaults.
+- Preserve the global low-battery master switch, strictly-below thresholds,
+  independent hysteresis, fresh observations and Bluetooth behavior.
+- Localized dashboard and tray editor, persistent validated settings,
+  save-failure rollback and eleven pure regression tests.
+- No new HID operations, polling changes or Windows device property writes.
+
 ## 0.3.0-beta.36 (2026-11-22)
 - Add six selectable normal-charge tray colors, independently persisted
   per AJAZZ receiver and AULA monitoring profile.
