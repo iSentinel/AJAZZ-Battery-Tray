@@ -38,6 +38,25 @@ public static class BatteryAnalytics
         return new(rate, end.Percent!.Value / rate, span, count, end.Timestamp);
     }
 
+    /// <summary>Sum observed percentage drops only across adjacent valid samples.
+    /// This is not a full charge-cycle count or a measure of capacity/health.</summary>
+    public static double ObservedDischargeEquivalent(IReadOnlyList<BatterySample> samples,
+        DateTimeOffset now)
+    {
+        long points = 0;
+        for (int i = 1; i < samples.Count; i++)
+        {
+            var previous = samples[i - 1];
+            var current = samples[i];
+            TimeSpan gap = current.Timestamp - previous.Timestamp;
+            if (!Valid(previous) || !Valid(current) || current.Timestamp > now ||
+                gap <= TimeSpan.Zero || gap > MaxGap)
+                continue;
+            points += Math.Max(0, previous.Percent!.Value - current.Percent!.Value);
+        }
+        return points / 100.0;
+    }
+
     private static bool Valid(BatterySample sample)
         => sample.State == "online" && sample.Percent is >= 0 and <= 100;
 }
