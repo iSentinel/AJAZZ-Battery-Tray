@@ -1434,5 +1434,24 @@ async Task TestLoopbackApi()
 }
 TestLoopbackApi().GetAwaiter().GetResult();
 
+// Equivalent pixel states reuse the existing GDI icon.
+var iconBase = TrayIconRenderKey.Create(83, true, false);
+Check("Icon same display state is reusable", iconBase == TrayIconRenderKey.Create(83, true, false));
+Check("Icon changed battery must redraw", iconBase != TrayIconRenderKey.Create(82, true, false));
+Check("Icon cached marker must redraw", iconBase != TrayIconRenderKey.Create(83, true, true));
+Check("Icon unavailable must redraw", iconBase != TrayIconRenderKey.Create(null, false, false));
+Check("Icon custom color must redraw", iconBase != TrayIconRenderKey.Create(83, true, false, color: "blue"));
+Check("Icon default and normalized color equivalent", iconBase == TrayIconRenderKey.Create(83, true, false, color: "green"));
+Check("Icon low battery overrides custom color", TrayIconRenderKey.Create(8, true, false, color: "blue") ==
+    TrayIconRenderKey.Create(8, true, false, color: "purple"));
+Check("Icon cached palette ignores custom color", TrayIconRenderKey.Create(83, true, true, color: "blue") ==
+    TrayIconRenderKey.Create(83, true, true, color: "pink"));
+Check("Icon unknown ignores stale flag and palette", TrayIconRenderKey.Create(null, false, false) ==
+    TrayIconRenderKey.Create(null, false, true, color: "blue"));
+Check("Icon neutral state ignores all other inputs", TrayIconRenderKey.Create(null, false, false, true) ==
+    TrayIconRenderKey.Create(83, true, true, true, "pink"));
+Check("Icon neutral differs from unknown", TrayIconRenderKey.Create(null, false, false, true) !=
+    TrayIconRenderKey.Create(null, false, false));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
