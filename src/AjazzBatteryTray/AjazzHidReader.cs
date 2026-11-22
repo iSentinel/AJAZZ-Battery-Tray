@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -20,7 +21,7 @@ public sealed class AjazzHidReader
         => receivers.FirstOrDefault(x => x.Reading.Percent.HasValue)
             ?? receivers.FirstOrDefault();
 
-    public Batch ReadAll()
+    public Batch ReadAll(bool captureProtocol = false)
     {
         List<string> attempts = new();
         List<ReceiverReading> receivers = new();
@@ -35,7 +36,7 @@ public sealed class AjazzHidReader
                 ushort? revision = null;
                 try
                 {
-                    reading = QueryPath(path, trace, out revision);
+                    reading = QueryPath(path, trace, out revision, captureProtocol);
                 }
                 catch (Exception error)
                 {
@@ -97,7 +98,8 @@ public sealed class AjazzHidReader
         return false;
     }
 
-    private static Reading? QueryPath(string path, List<string> attempts, out ushort? revision)
+    private static Reading? QueryPath(string path, List<string> attempts, out ushort? revision,
+        bool captureProtocol)
     {
         revision = null;
         attempts.Add($"Interface: {DiagnosticHidIdentity.FromPath(path)}");
@@ -129,35 +131,59 @@ public sealed class AjazzHidReader
         }
         attempts.Add($"  USB revision: {(revision.HasValue ? $"0x{revision:X4}" : "unknown")}");
         attempts.Add($"  Feature report size: {caps.FeatureReportByteLength}");
+        if (captureProtocol)
+            attempts.Add($"  Usage: {caps.UsagePage:X4}:{caps.Usage:X4}; input={caps.InputReportByteLength}; output={caps.OutputReportByteLength}");
         int[] lengths = { caps.FeatureReportByteLength, 65, 67 };
-        foreach (int length in lengths.Distinct())
+        // Normal polling retains the original order and timing.
+        int[] delays = captureProtocol ? new[] { 30, 100, 250 } : new[] { 30 };
+        foreach (int delay in delays)
         {
-            if (length is < 65 or > 256) continue;
-            int? percent = PollBattery(handle, length, attempts);
-            if (percent.HasValue)
-                return new Reading(true, percent, "2.4 GHz / 8K");
+            foreach (int length in lengths.Distinct())
+            {
+                if (length is < 65 or > 256) continue;
+                int? percent = PollBattery(handle, length, attempts, delay, captureProtocol);
+                if (percent.HasValue)
+                    return new Reading(true, percent, "2.4 GHz / 8K");
+            }
         }
         return new Reading(true, null, "No valid battery status report");
     }
 
     private static int? PollBattery(SafeFileHandle handle, int length,
-        List<string> attempts)
+        List<string> attempts, int delayMs, bool captureProtocol)
     {
-        // Existing zero-payload telemetry query only; diagnostics add no I/O.
+        // Only the existing allowlisted zero-payload telemetry request.
         byte[] poll = new byte[length];
         poll[1] = 0xF7;
-        if (!HidNative.SendApprovedFeature(handle, poll))
+        if (captureProtocol)
+            attempts.Add($"  Attempt UTC={DateTimeOffset.UtcNow:O}; delay={delayMs}ms; TX[{length}]={Convert.ToHexString(poll)}");
+        Stopwatch elapsed = Stopwatch.StartNew();
+        bool sent = HidNative.SendApprovedFeature(handle, poll);
+        int sendError = sent ? 0 : Marshal.GetLastWin32Error();
+        long setMs = elapsed.ElapsedMilliseconds;
+        if (!sent)
         {
-            attempts.Add($"  SET F7 ({length} bytes): failed, Win32 {Marshal.GetLastWin32Error()}");
+            attempts.Add($"  SET F7 ({length} bytes): failed, Win32 {sendError}");
+            if (captureProtocol) attempts.Add($"  SET elapsed={setMs}ms; GET skipped");
             return null;
         }
 
-        Thread.Sleep(30);
+        elapsed.Restart();
+        Thread.Sleep(delayMs);
+        long waitMs = elapsed.ElapsedMilliseconds;
         byte[] response = new byte[length];
         response[0] = 0x05;
-        if (!HidNative.HidD_GetFeature(handle, response, length))
+        if (captureProtocol)
+            attempts.Add($"  GET request buffer[{length}]={Convert.ToHexString(response)}");
+        elapsed.Restart();
+        bool received = HidNative.HidD_GetFeature(handle, response, length);
+        int getError = received ? 0 : Marshal.GetLastWin32Error();
+        long getMs = elapsed.ElapsedMilliseconds;
+        if (captureProtocol)
+            attempts.Add($"  SET elapsed={setMs}ms; actual wait={waitMs}ms; GET elapsed={getMs}ms");
+        if (!received)
         {
-            attempts.Add($"  SET F7 OK; GET 05 ({length} bytes): failed, Win32 {Marshal.GetLastWin32Error()}");
+            attempts.Add($"  SET F7 OK; GET 05 ({length} bytes): failed, Win32 {getError}");
             return null;
         }
 
@@ -165,6 +191,11 @@ public sealed class AjazzHidReader
         attempts.Add($"  SET F7 / GET 05 ({length} bytes): OK; " +
             $"header={DiagnosticHidIdentity.BatteryHeader(response)}; " +
             (percent.HasValue ? $"battery={percent}%" : "no valid battery"));
+        if (captureProtocol)
+        {
+            attempts.Add($"  RX buffer[{length}]={Convert.ToHexString(response)}");
+            attempts.Add("  Parser: " + BatteryReportParser.DescribeWindowsFeature(response));
+        }
         return percent;
     }
 }
