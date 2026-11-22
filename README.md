@@ -3,7 +3,20 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.34 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+**Version:** v0.3.0-beta.35 (AJ179 and AJ159 battery reads confirmed on owner's Windows hardware; multi-device UI awaits hardware acceptance).
+
+## Individual tray visibility (Windows)
+
+Use the device submenu or select its row in Device Manager and choose
+**Hide device in tray** / **Show device in tray**. The preference is local
+and persists across restarts. Hidden devices continue sampling battery,
+recording history and evaluating notification thresholds. The global
+Separate tray icons setting still controls whether extra icons appear;
+the dashboard indicates permission to display an icon, not whether Windows
+has placed it in the notification-area overflow. When every active device
+icon is hidden, retain a neutral application icon for access to menus.
+AJAZZ preferences use the existing local receiver identity; AULA uses its
+single monitoring profile. Bluetooth fallback remains unchanged.
 
 ## Local device names (Windows)
 
