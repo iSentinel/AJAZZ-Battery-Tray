@@ -1213,5 +1213,26 @@ Check("Automatic stable policy accepts stable candidate", autoStable2 is not nul
 updatePolicy.Configure(false, false, autoDue);
 Check("Automatic opt-out stops scheduling", updatePolicy.TryBegin(long.MaxValue - 1) is null);
 
+// Consent must not become enabled by an upgrade from older preferences.
+Check("Update preferences default to disabled stable",
+    !new AppSettings().AutomaticUpdateChecks && !new AppSettings().ExperimentalUpdateChannel);
+var legacyUpdateSettings = System.Text.Json.JsonSerializer.Deserialize<AppSettings>("""{"PollSeconds":30}""");
+Check("Legacy settings do not silently authorize networking", legacyUpdateSettings is not null &&
+    !legacyUpdateSettings.AutomaticUpdateChecks && !legacyUpdateSettings.ExperimentalUpdateChannel);
+var updatePreferenceRoundtrip = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(new AppSettings {
+        AutomaticUpdateChecks = true, ExperimentalUpdateChannel = true }));
+Check("Explicit update consent and channel roundtrip", updatePreferenceRoundtrip is not null &&
+    updatePreferenceRoundtrip.AutomaticUpdateChecks && updatePreferenceRoundtrip.ExperimentalUpdateChannel);
+var mutedUpdatePolicy = new AutomaticUpdatePolicy();
+mutedUpdatePolicy.Configure(true, true, 0);
+var mutedRequest = mutedUpdatePolicy.TryBegin(60000);
+mutedUpdatePolicy.Configure(false, true, 60001);
+mutedUpdatePolicy.Configure(true, true, 60002);
+Check("Notification off/on invalidates old reply", mutedRequest is not null &&
+    !mutedUpdatePolicy.Complete(mutedRequest, true, betaUpdate, 60003));
+Check("Notification re-enable requires fresh delay",
+    mutedUpdatePolicy.TryBegin(120001) is null && mutedUpdatePolicy.TryBegin(120002) is not null);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
