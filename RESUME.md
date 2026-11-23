@@ -8,8 +8,12 @@
 - fix/api-aula-slot-continuity synced with main. Slot 1 reserved for
   status, known AULA receiver gets non-reused ordinal, observed identity
   loss/change retires old slot. Ten C# assertions await CI.
-- Next: draft PR, verify Windows/macOS/preview CI and prepare beta.53
-  only after PASS. Document older beta.52 slot incompatibility.
+- PR #69 created; preview labels status-only AULA slot 1 and rejects
+  it before confirmation. API and preview docs describe the compatibility
+  restriction: do not bind AULA rows from beta.52 with older clients.
+- Next: verify exact PR #69 head Windows/macOS/preview CI and prepare
+  beta.53 only after PASS. No actual MQTT publication before continuity
+  and explicit mapping policy are validated.
 - MQTT remains unimplemented; no actual HA connection or persistent mapping.
   Physical AULA sleep/wake, AJ159 evidence, multi-BLE and real resource
   measurements remain open.
