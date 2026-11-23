@@ -1747,5 +1747,43 @@ Check("HA rejects invalid battery percentage",
     !haMapping.Read(haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with
         { BatteryPercent = 101 } } }, snapshotNow).Available);
 
+// Strict optional consumer checks against the actual producer serialization.
+var decodedHa = HaSnapshotDecoder.Decode(haSnapshot.Export());
+Check("HA wire round trip retains binding and fresh reading",
+    haMapping.Read(decodedHa, snapshotNow).BatteryPercent == 83);
+string haWire = System.Text.Encoding.UTF8.GetString(haSnapshot.Export());
+bool RejectHaWire(string value)
+{
+    try { HaSnapshotDecoder.Decode(System.Text.Encoding.UTF8.GetBytes(value)); return false; }
+    catch (InvalidDataException) { return true; }
+}
+Check("HA wire rejects duplicate schema property",
+    RejectHaWire(haWire.Replace("\"schemaVersion\":1", "\"schemaVersion\":1,\"schemaVersion\":1")));
+Check("HA wire rejects unsupported schema",
+    RejectHaWire(haWire.Replace("\"schemaVersion\":1", "\"schemaVersion\":2")));
+Check("HA wire rejects missing epoch",
+    RejectHaWire(System.Text.Encoding.UTF8.GetString((haSnapshot with { SessionEpoch = null }).Export())));
+Check("HA wire rejects duplicate rows",
+    RejectHaWire(System.Text.Encoding.UTF8.GetString((haSnapshot with
+        { Devices = new[] { haSnapshot.Devices[0], haSnapshot.Devices[0] } }).Export())));
+Check("HA wire rejects wrong percent type",
+    RejectHaWire(haWire.Replace("\"batteryPercent\":83", "\"batteryPercent\":\"83\"")));
+Check("HA wire rejects contradictory fresh and cached values",
+    RejectHaWire(haWire.Replace("\"lastKnownPercent\":null", "\"lastKnownPercent\":82")));
+Check("HA wire rejects oversized input", RejectHaWire(new string(' ', 65537)));
+Check("HA wire rejects malformed JSON", RejectHaWire("{"));
+Check("HA wire rejects future measurement",
+    RejectHaWire(System.Text.Encoding.UTF8.GetString((haSnapshot with
+        { Devices = new[] { haSnapshot.Devices[0] with
+            { MeasuredAt = snapshotNow.AddSeconds(1) } } }).Export())));
+var haCachedWire = HaSnapshotDecoder.Decode((haSnapshot with
+    { Devices = new[] { haSnapshot.Devices[0] with
+        { Status = "cached", BatteryPercent = null, LastKnownPercent = 83 } } }).Export());
+Check("HA wire cached state never becomes available",
+    !haMapping.Read(haCachedWire, snapshotNow).Available);
+var haOtherWire = HaSnapshotDecoder.Decode(haOther.Read(snapshotNow)!.Export());
+Check("HA wire new activation never inherits old binding",
+    haMapping.Read(haOtherWire, snapshotNow).Status == "mapping_required");
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
