@@ -138,5 +138,11 @@ versions must be consistent within each group. Fewer than three runs raises
 a warning. PASS means validated inputs, not a performance acceptance gate.
 The analyzer cannot independently verify identical hardware, workload or
 settings, and does not measure GDI objects or wakeups. No measured tray
-improvement is claimed. Ten fixture tests and eight APEX tests PASS on
+improvement is claimed. Fifteen fixture tests and eight APEX tests PASS on
 Gateway. Actual owner Windows CSVs remain outstanding.
+
+The analyzer now validates exact CSV row shape, bounded UTF-8 input, UTC
+measurement timestamps and finite calculated metrics. Duplicate paths and
+byte-identical CSVs (SHA-256) are rejected to avoid counting the same run
+twice. A dedicated offline developer-tools workflow runs on tool changes;
+no runtime dependency or additional tray process is introduced.
