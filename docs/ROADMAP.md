@@ -733,3 +733,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] iMac High Sierra 10.13.6 owner to run .5 trace with private
       --output and confirm actual IOKit status and device framing.
 - [ ] Validate reported hardware outcomes before protocol changes.
+
+
+## AULA L99 clipboard-only sleep acceptance analyzer
+- [x] Inspect the actual AULA diagnostic summary schema and A01-A14
+      acceptance matrix before designing the analysis tool.
+- [x] Implement offline parser for three exported summaries with
+      strict battery ranges and timezone-aware measurement timestamps.
+- [x] Distinguish PASS, FAIL, NOT OBSERVED; do not claim verified
+      receiver identity or capture USB/HID bytes from clipboard.
+- [x] Cover unknown receiver presence, hidden cache, stale/fresh
+      transitions, 24-hour expiry, malformed reports and wake failure.
+- [x] Integrate all Python tool regressions and --help into tool CI.
+- [ ] Verify Python GitHub Actions and merge implementation PR.
+- [ ] Owner: submit AULA L99 real awake/asleep/recovered text reports,
+      without paths/serials, before declaring sleep fix accepted.

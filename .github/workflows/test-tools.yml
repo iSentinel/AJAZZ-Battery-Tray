@@ -24,6 +24,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Run offline regressions
-        run: python -m unittest discover -s tools -p 'test_compare*.py' -v
+        run: python -m unittest discover -s tools -p 'test_*.py' -v
       - name: Validate help
-        run: python tools/compare_tray_resources.py --help
+        run: |
+          python tools/compare_tray_resources.py --help
+          python tools/analyze_aula_sleep.py --help
