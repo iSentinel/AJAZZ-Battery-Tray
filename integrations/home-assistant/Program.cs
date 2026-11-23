@@ -6,6 +6,7 @@ if (args.Length == 1 && args[0] is "-h" or "--help")
     Console.WriteLine("Explicit local API preview. Requires an interactive terminal.");
     Console.WriteLine("Start Local API in the tray and paste its current token when prompted.");
     Console.WriteLine("No auto-start, MQTT, persistence or background service.");
+    Console.WriteLine("Escape cancels token entry; Ctrl+C exits at any point.");
     return 0;
 }
 int port = 18789;
@@ -20,12 +21,12 @@ if (Console.IsInputRedirected)
     Console.Error.WriteLine("FAIL: interactive terminal required.");
     return 2;
 }
-using var cancel = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancel.Cancel(); };
+// Keep native Ctrl+C termination: blocking terminal reads cannot be reliably
+// interrupted by a cancellation token. The preview owns no persistent state.
 try
 {
     string token = ReadToken();
-    var first = await HaLocalClient.ReadAsync(port, token, cancel.Token);
+    var first = await HaLocalClient.ReadAsync(port, token);
     if (first is null)
     {
         Console.Error.WriteLine("FAIL: snapshot unavailable.");
@@ -49,7 +50,7 @@ try
     Console.Write($"Bind {selected.Source} slot {selected.SessionSlot} for this API session? [y/N] ");
     if (Console.ReadLine() != "y") return 0;
     var mapping = HaSessionMapping.Bind(first, selected.Source, selected.SessionSlot);
-    var next = await HaLocalClient.ReadAsync(port, token, cancel.Token);
+    var next = await HaLocalClient.ReadAsync(port, token);
     var reading = mapping.Read(next, DateTimeOffset.UtcNow);
     Console.WriteLine(reading.Available
         ? $"PASS: fresh battery {reading.BatteryPercent}%"
@@ -57,7 +58,7 @@ try
     return reading.Available ? 0 : 1;
 }
 catch (Exception error) when (error is ArgumentException or InvalidDataException or
-    HttpRequestException or IOException or OperationCanceledException)
+    HttpRequestException or IOException or OperationCanceledException or InvalidOperationException)
 {
     // Never print request headers, tokens, raw responses or exception messages.
     Console.Error.WriteLine("FAIL: local API preview failed or was cancelled.");
@@ -67,22 +68,30 @@ catch (Exception error) when (error is ArgumentException or InvalidDataException
 static string ReadToken()
 {
     Console.Write("API token (hidden): ");
-    var token = new System.Text.StringBuilder(64);
-    while (true)
+    char[] buffer = new char[64];
+    int length = 0;
+    try
     {
-        var key = Console.ReadKey(intercept: true);
-        if (key.Key == ConsoleKey.Enter) break;
-        if (key.Key == ConsoleKey.Escape) throw new OperationCanceledException();
-        if (key.Key == ConsoleKey.Backspace)
+        while (true)
         {
-            if (token.Length > 0) token.Length--;
+            var key = Console.ReadKey(intercept: true);
+            if (key.Key == ConsoleKey.Enter) break;
+            if (key.Key == ConsoleKey.Escape) throw new OperationCanceledException();
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (length > 0) buffer[--length] = '\0';
+            }
+            else if (char.IsAsciiHexDigit(key.KeyChar) && length < buffer.Length)
+                buffer[length++] = key.KeyChar;
+            else if (!char.IsControl(key.KeyChar))
+                throw new ArgumentException("Invalid token.");
         }
-        else if (char.IsAsciiHexDigit(key.KeyChar) && token.Length < 64)
-            token.Append(key.KeyChar);
-        else if (!char.IsControl(key.KeyChar))
-            throw new ArgumentException("Invalid token.");
+        if (length != buffer.Length) throw new ArgumentException("Invalid token.");
+        return new string(buffer);
     }
-    Console.WriteLine();
-    if (token.Length != 64) throw new ArgumentException("Invalid token.");
-    return token.ToString();
+    finally
+    {
+        Array.Clear(buffer);
+        Console.WriteLine();
+    }
 }

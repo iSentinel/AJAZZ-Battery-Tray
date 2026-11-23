@@ -21,7 +21,8 @@ dotnet run --project integrations/home-assistant/AjazzHaPreview.csproj -c Releas
    session row number and confirm with y. The program reads one more snapshot,
    validates that the API session still matches, prints fresh battery percent
    or an unavailable status, and exits. Use q at the row selection to exit.
-   The token and mapping are not saved. Clear the clipboard after pasting.
+   The token and mapping are not saved. Escape cancels token entry; native
+   Ctrl+C terminates the process. Clear the clipboard after pasting.
 5. Stop Local API from the tray when no longer needed.
 
 The optional --port argument accepts ports 1–65535 (default 18789);
@@ -34,7 +35,9 @@ previous bindings. No external network or hardware commands are used.
 ## Development stage
 
 The executable is built separately; its own CI checks help, invalid port,
-redirected input and the absence of a tray project reference. The shared
+redirected input and the absence of a tray project reference. It also builds
+a separate self-contained Windows x64 executable and SHA-256 manifest as an
+Actions artifact, not a tray release asset. No installation or auto-start. The shared
 consumer's loopback test covers actual authorized reads and API restart.
 Interactive entry and real-device selection still require Windows acceptance.
 A future optional bridge will need an explicit stable user mapping, protected
