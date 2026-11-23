@@ -1,3 +1,24 @@
+# Resume — beta.60 released; AJ159 physical battery acceptance open
+
+- PR #97 merged e9c1f21acee64e51b7b064a97492e434ad41b52f.
+  Windows 45247132617 and macOS 45247132614 CI PASS.
+- beta.60 release workflow 45247584544 PASS. Windows Setup
+  installation/uninstallation PASS; macOS universal bundle
+  build 64 (macOS 13+ minimum) PASS. Latest beta.60 has six
+  assets; all three binary SHA-256 manifest checks PASS.
+- Changed rev0002 shared receiver label from asserted AJ179 to
+  model unverified; owner can set AJ159 through Edit local name.
+- F7 mouse-slot parser uses read/online/canSend/RF boot gates and
+  1..100; no new HID commands. Synthetic 83% fixtures are not
+  real proof. Owner Windows 11 F7 0/6, GearHub HAR mouse field
+  still 0 despite some read-available flags.
+- GitHub issue #53 updated and remains OPEN: live beta.60
+  awake HID trace, official displayed percentage comparison,
+  read-only optional GET report ID00 vs ID05 differential.
+- Raw HAR stays private; only aggregate evidence committed.
+- High Sierra v0.3.0-highsierra.5 separate, real iMac trace pending.
+- Issue #93 full vendor GUI synchronous HID timeout unresolved.
+
 # Resume — AJ159 APEX shared-receiver F7 forensics / beta.60 candidate
 
 - Owner supplied 4 Windows 11 AJAZZ Tray logs and qmk.top1/2 HAR.
