@@ -759,7 +759,8 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Treat switched app versions or automatic monitoring changes
       as NOT OBSERVED instead of a misleading PASS.
 - [x] Add six synthetic regression tests, 46 offline tools tests PASS.
-- [ ] Complete GitHub Actions and merge offline timeline validation.
+- [x] PR #91 Windows CI 45231526043, macOS 45231525865 and
+      Python 45231525837 PASS; merged b4c5fd17c4700793d726f0c3c8aa330fd381a0b6.
 - [ ] Await physical AULA L99 awake/sleep/recovered summaries.
 
 
@@ -774,6 +775,23 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add synthetic safe-log and malformed/tampered-report tests.
 - [x] Fix corrupted PowerShell path escaping in previous docs.
 - [x] Include comparator --help and all tests in offline Python CI.
-- [ ] GitHub CI, review, merge the offline diagnostics PR.
+- [x] PR #92 Windows 45233453260, macOS 45233453653 and
+      Python 45233453582 PASS; merged d860f5bcf34f75898eabadbc742178fab71f40ea.
 - [ ] Physical Windows 11 affected mouse awake/after-sleep logs,
       to be evaluated without guessing battery from network HAR.
+
+
+## Explicit full-vendor GUI capture safety gate
+- [x] Verify full vendor GUI capture requires a separate Yes/No user
+      confirmation; report remains in review dialog, with optional
+      Copy/Save actions and no automatic file export.
+- [x] Confirm ordinary extended device report and beta.57+ safe
+      --hid-diagnose do not export full vendor HID payloads.
+- [x] Track unresolved synchronous full-GUI-capture hang risk:
+      GitHub issue #93, requiring an isolated bounded worker and
+      deterministic test without overlapping receiver polls.
+- [ ] Address issue #93 with new Windows CI and installer tests
+      before claiming bounded full raw GUI diagnostics.
+- [ ] AULA L99 physical owner A01-A14 sleep/wake on beta.58.
+- [ ] Affected mouse Windows 11 bounded awake/after-sleep F7/05 logs.
+- [ ] iMac High Sierra 10.13.6 owner --trace-hid .5 output.

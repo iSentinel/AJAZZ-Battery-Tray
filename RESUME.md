@@ -1,3 +1,29 @@
+# Resume — AJAZZ diagnostics roadmap checkpoint (2026-11-23)
+
+- GitHub main: d860f5bcf34f75898eabadbc742178fab71f40ea
+  before this documentation checkpoint. Latest stable-tagged beta
+  v0.3.0-beta.58, six assets previously downloaded/checksummed PASS.
+- Separate High Sierra Intel v0.3.0-highsierra.5; 10.13 deployment
+  target and bounded --trace-hid --timeout 25 --output PATH.
+  Real iMac Late 2013/10.13.6 battery compatibility still unverified.
+- PR #90 merged 65a5cb729a44ccf36aec2e8f3b1177de49937b58:
+  offline AULA awake/asleep/recovered clipboard analyzer, CI PASS.
+- PR #91 merged b4c5fd17c4700793d726f0c3c8aa330fd381a0b6:
+  stricter fresh timestamps, strictly increasing poll sequence,
+  same app version and automatic-monitoring requirement, CI PASS.
+- PR #92 merged d860f5bcf34f75898eabadbc742178fab71f40ea:
+  Windows safe F7/05 report comparator, 57 offline Python tests,
+  Windows/macOS/Python CIs PASS, no binary changes.
+- Windows beta.58: --hid-diagnose --timeout 40 --output PATH;
+  tools/Collect-AjazzHidDiagnostics.ps1 and
+  tools/compare_windows_hid_logs.py (offline, no extra HID).
+- Full-vendor GUI capture remains Yes/No gated but synchronous
+  HidD_GetFeature can block indefinitely. GitHub issue #93 tracks
+  bounded worker and acceptance tests. Do not call this fixed.
+- Outstanding physical evidence: AULA L99 A01-A14, Windows 11
+  affected mouse safe awake/sleep reports, iMac High Sierra .5
+  trace. Never change F7/05 framing based solely on network HAR.
+
 # Resume — Windows HID offline comparison candidate
 
 - Latest release is v0.3.0-beta.58. PR #91 merged
