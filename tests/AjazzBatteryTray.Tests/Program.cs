@@ -33,6 +33,53 @@ Check("reject wrong report id", BatteryReportParser.ParseWindowsFeature(
 Check("reject short report", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0 }) is null);
 
+// GearHub F7 shared receiver flags, based on a sanitized response prefix.
+/// Actual owner capture: report ID 05, readable=0, mouse battery=0,
+/// keyboard offline, mouse online, canSend=1, slot=2, RF boot=0.
+byte[] observedAj159F7 = { 5, 0, 0, 0, 1, 0, 1, 2, 0, 0 };
+Check("AJ159 observed F7 no false zero battery",
+    BatteryReportParser.ParseWindowsFeature(observedAj159F7) is null &&
+    BatteryReportParser.DescribeWindowsFeature(observedAj159F7)
+        .StartsWith("F7 mouse: reading unavailable"));
+byte[] aj159ReadableWithoutCharge = { 5, 1, 0, 0, 1, 0, 1, 2, 0, 0 };
+Check("AJ159 readable flag but zero field remains unknown",
+    BatteryReportParser.ParseWindowsFeature(aj159ReadableWithoutCharge) is null &&
+    BatteryReportParser.DescribeWindowsFeature(aj159ReadableWithoutCharge)
+        .Contains("zero battery"));
+byte[] syntheticGatedMouse = { 5, 1, 0, 83, 1, 0, 1, 2, 0, 0 };
+Check("Gated F7 can decode synthetic 83 percent",
+    BatteryReportParser.ParseWindowsFeature(syntheticGatedMouse) == 83 &&
+    BatteryReportParser.DescribeWindowsFeature(syntheticGatedMouse) ==
+        "accepted by gated F7 mouse parser");
+byte[] f7Unreadable = (byte[])syntheticGatedMouse.Clone();
+f7Unreadable[1] = 0;
+Check("F7 unreadable status rejects stale 83 percent",
+    BatteryReportParser.ParseWindowsFeature(f7Unreadable) is null);
+byte[] f7Offline = (byte[])syntheticGatedMouse.Clone();
+f7Offline[5] = 1;
+Check("F7 mouse offline rejects 83 percent",
+    BatteryReportParser.ParseWindowsFeature(f7Offline) is null);
+byte[] f7CannotSend = (byte[])syntheticGatedMouse.Clone();
+f7CannotSend[6] = 0;
+Check("F7 mouse cannot-send rejects percent",
+    BatteryReportParser.ParseWindowsFeature(f7CannotSend) is null);
+byte[] f7RfBoot = (byte[])syntheticGatedMouse.Clone();
+f7RfBoot[9] = 1;
+Check("F7 RF boot rejects percent",
+    BatteryReportParser.ParseWindowsFeature(f7RfBoot) is null);
+byte[] f7Above100 = (byte[])syntheticGatedMouse.Clone();
+f7Above100[3] = 101;
+Check("F7 rejects above-100 battery field",
+    BatteryReportParser.ParseWindowsFeature(f7Above100) is null);
+byte[] f7DualSlot = (byte[])syntheticGatedMouse.Clone();
+f7DualSlot[7] = 3;
+Check("F7 mouse in dual slot can parse verified percent",
+    BatteryReportParser.ParseWindowsFeature(f7DualSlot) == 83);
+byte[] f7KeyboardSlot = (byte[])syntheticGatedMouse.Clone();
+f7KeyboardSlot[7] = 1;
+Check("F7 keyboard-only reply cannot be mistaken for mouse battery",
+    BatteryReportParser.ParseWindowsFeature(f7KeyboardSlot) is null);
+
 // Diagnostic classification must not broaden the valid battery format.
 Check("Protocol reason: empty", BatteryReportParser.DescribeWindowsFeature(Array.Empty<byte>()) == "short buffer");
 Check("Protocol reason: wrong ID", BatteryReportParser.DescribeWindowsFeature(new byte[] { 4, 0, 0, 50 }) == "unexpected report ID");
@@ -210,7 +257,9 @@ Check("Local receiver key does not expose device path",
     ReceiverIdentity.LocalKey("private-receiver-path").Length == 64 &&
     !ReceiverIdentity.LocalKey("private-receiver-path").Contains("private"));
 Check("AJ159 revision label", ReceiverIdentity.Label(0x0300).Contains("AJ159"));
-Check("AJ179 revision label", ReceiverIdentity.Label(0x0002).Contains("AJ179"));
+Check("Shared rev0002 cannot prove AJ179 or AJ159 model",
+    ReceiverIdentity.Label(0x0002).Contains("model unverified") &&
+    !ReceiverIdentity.Label(0x0002).Contains("AJ179"));
 Check("Unknown revision remains generic", ReceiverIdentity.Label(0x4321) == "AJAZZ (rev. 4321)");
 Check("Missing revision remains generic", ReceiverIdentity.Label(null) == "AJAZZ (unknown revision)");
 
@@ -480,6 +529,8 @@ Check("PnP ambiguous revision stays unknown", PnpNameRules.Revision("3151:5007",
 Check("PnP unrelated revision rejected", PnpNameRules.Revision("3151:5007",
     new[] { @"USB\VID_05AC&PID_024F&REV_0136" }) is null);
 Check("PnP unrecognized revision generic", PnpNameRules.Model("3151:5007", 0x9999) == "AJAZZ receiver");
+Check("PnP rev0002 does not guess AJ179", PnpNameRules.Model("3151:5007", 0x0002) ==
+    "AJAZZ shared receiver (model unverified)");
 Check("PnP observed L99 revision provisional suggestion",
     PnpNameRules.Model("05AC:024F", 0x0136) == "AULA L99");
 

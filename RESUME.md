@@ -1,3 +1,25 @@
+# Resume — AJ159 APEX shared-receiver F7 forensics / beta.60 candidate
+
+- Owner supplied 4 Windows 11 AJAZZ Tray logs and qmk.top1/2 HAR.
+  beta.59 recognized 3151:5007 rev0002 as AJ179 while user has
+  AJ159; the revision is not a unique model identifier.
+- All six beta.59 SET F7 / GET 05 attempts succeeded, but 0/6
+  had valid charge; prefix 05 00 00 00 01 00 01 02.
+- New HAR captures include local GearHub gRPC-web-text HID traffic,
+  unlike earlier network-only captures. Official GearHub F7 code
+  parses read flag, mouse battery and mouse slot independently.
+  In immediately paired F7 GETs the battery field was still zero.
+- Source/docs/AJ159_APEX_F7_HAR_FORENSICS_20261123.md contains
+  sanitized evidence; raw HAR never copied into GitHub.
+- beta.60 candidate removes false AJ179 name for rev0002 and
+  adds conservative mouse-specific F7 parser (gated by readable,
+  online, canSend, RF boot and valid 1..100 percentage).
+- Synthetic nonzero fixtures are NOT hardware confirmation; real
+  AJ159 may remain Unknown until receiver yields a valid charge.
+- No new outgoing vendor HID commands, timers or firmware writes.
+  Windows/macOS CI, release verification and physical acceptance
+  pending. Experimental High Sierra release remains .5.
+
 # Resume — beta.59 released, hardware evidence and issue #93 open
 
 - PR #95 merged 00a92da2202d561303005a355cdca6a611d3dd7f.
