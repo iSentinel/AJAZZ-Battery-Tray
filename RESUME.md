@@ -1,19 +1,24 @@
-# Resume — optional MQTT availability policy candidate
+# Resume — optional MQTT delivery acknowledgment gate
 
-- beta.53 PR #69 final Windows 45139329299 / macOS 45139329460 /
-  preview 45139329257 PASS, merged
-  1a053ddd611dd50b058bd95d1d187bb5698932da.
-  Release publication not yet verified.
-- feat/ha-mqtt-availability synchronized with beta.53 main; conflicts
-  resolved by preserving complete main AULA tests and appending MQTT tests.
-  Optional pure message-intent policy only, no network/broker dependency.
-- Fresh session-bound reading: retained QoS1 battery followed by online;
-  both have proposed 300s MQTT5 message expiry. Missing/stale: offline
-  first, then empty retained battery message to clear a previous value.
-- Twenty pure policy assertions pending C# CI, including remaining
-  expiry floor and 5-minute boundary. Python tools 23/23 PASS.
-- Next: verify beta.53 release, open PR for policy and run Windows/macOS/
-  HA preview CI. Do not publish MQTT until authenticated TLS transport,
-  acknowledgments, HA discovery/expiry and explicit stable mapping tested.
-- Actual Windows resource baselines, AULA sleep/wake, AJ159 affected
-  captures and multi-BLE remain pending.
+- beta.53 released; workflow 45139628072 PASS; six assets.
+- PR #70 availability policy Windows 45140136771 / macOS 45140136699 /
+  optional HA preview 45140136710 PASS; merged
+  10be9fde200ffd0b7f775ff62763a768c10c7a63.
+- feat/ha-mqtt-delivery-gate now synchronized with main. All MQTT code
+  remains optional in integrations/home-assistant; no broker, credentials,
+  service or tray distribution changes.
+- Separate pure delivery gate validates the two-message retained QoS1
+  sequence, cannot advance after failed acknowledgment or cancellation.
+  Eight additional assertions pending CI; Python regressions 23/23 PASS.
+- Next: open draft PR and verify Windows/macOS/preview CI; avoid release
+  version increment for this isolated optional pure-policy change.
+- Actual TLS/MQTT broker, HA discovery, live delivery receipts, stable
+  entity mapping and operator-approved credentials still unimplemented.
+  AULA sleep, affected AJ159, mixed BLE and measured Windows resources
+  remain open.
+
+- Reconciled with official HA MQTT sensor expire_after guidance:
+  online battery is non-retained, availability online remains retained;
+  offline uses retained availability followed by clearing any retained
+  battery. Delivery gate rejects retained fresh state. Real HA expire_after,
+  last will, legacy retained cleanup and broker behavior not implemented.

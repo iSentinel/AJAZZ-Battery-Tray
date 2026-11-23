@@ -38,7 +38,7 @@ public static class HaMqttAvailabilityPolicy
                 // Publish the value before changing availability to online.
                 new HaMqttMessage("battery", percent.ToString(
                     System.Globalization.CultureInfo.InvariantCulture),
-                    true, 1, expiry),
+                    false, 1, expiry),
                 new HaMqttMessage("availability", "online", true, 1,
                     expiry)
             };

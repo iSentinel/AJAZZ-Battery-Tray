@@ -74,9 +74,10 @@ Ten added assertions pending C# CI; no HID requests or default overhead added.
 
 ## Offline MQTT 5 availability intent (candidate)
 
-A pure optional component plans exactly two retained QoS1 messages for each
+A pure optional component plans exactly two QoS1 messages for each
 explicitly mapped reading; it opens no connection and requires no broker.
-Fresh reads plan battery value followed by availability=online, with MQTT 5
+Fresh reads plan **non-retained** battery state followed by **retained**
+availability=online, with MQTT 5
 expiry equal to the remaining freshness lifetime of the measurement and
 snapshot (floor to seconds, maximum five minutes). A reading with less than
 one complete second remaining fails closed, rather than extending its age. Missing, cached, expired, wrong-epoch,
@@ -89,3 +90,29 @@ No stable entity ID or topic prefix is inferred from source/slot. MQTT 5
 expiry support, HA discovery expire_after, transport authentication, TLS,
 credential storage, topic permission scope and actual broker behavior remain
 unimplemented/unverified. Tests use synthetic snapshots only.
+
+## Offline QoS1 acknowledgment gate
+
+A separate pure component validates exact two-message sequence, topic suffixes,
+QoS1, non-retained fresh battery, retained availability and offline cleanup,
+numeric battery payload and finite MQTT5 expiry.
+The optional transport callback must positively acknowledge the first
+message before the second can be sent; any rejection, cancellation or thrown
+exception stops progression. Online cannot be advertised after a rejected
+battery publication; offline must be acknowledged before retained battery
+clearing. This does not itself connect to a broker, verify that the broker
+durably persisted data, or establish Home Assistant consumption. Session
+revalidation, reconnection semantics, TLS, MQTT5 support and credentials
+must be implemented and physically verified before deployment.
+
+### Home Assistant sensor stale-state warning
+
+Home Assistant MQTT sensor documentation cautions that a retained state
+payload combined with expire_after can replay old data after Home Assistant
+restarts. Use non-retained battery values and an explicitly configured sensor
+expire_after, alongside availability_topic with online/offline states.
+MQTT 5 message expiry alone is **not** a substitute for Home Assistant
+availability or state expiration. A future transport must clean any legacy
+retained battery state at opt-in startup, use an MQTT will for disconnect,
+and verify broker acknowledgments and reconnection behavior before deployment.
+Reference: https://www.home-assistant.io/integrations/sensor.mqtt/

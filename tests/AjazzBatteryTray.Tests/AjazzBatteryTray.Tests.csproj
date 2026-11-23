@@ -16,6 +16,7 @@
     <Compile Include="../../integrations/home-assistant/HaSnapshotDecoder.cs" Link="HaSnapshotDecoder.cs" />
     <Compile Include="../../integrations/home-assistant/HaLocalClient.cs" Link="HaLocalClient.cs" />
     <Compile Include="../../integrations/home-assistant/HaMqttAvailabilityPolicy.cs" Link="HaMqttAvailabilityPolicy.cs" />
+    <Compile Include="../../integrations/home-assistant/HaMqttDeliveryGate.cs" Link="HaMqttDeliveryGate.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalApiRequest.cs" Link="LocalApiRequest.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalApiServer.cs" Link="LocalApiServer.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalArtifactVerifier.cs" Link="LocalArtifactVerifier.cs" />
