@@ -8,6 +8,14 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.56 (2026-11-23)
+- Replace opt-in multi-Bluetooth due-device LINQ sorting with one-pass selection.
+- Preserve last-attempt priority, generation ties, USB priority, forced
+  refresh, single-flight behavior and existing retry intervals.
+- Ten new pure assertions; initial Windows/macOS CI PASS.
+- No automatic Bluetooth consent, additional reads, timers or HID changes.
+- Physical multi-device BLE and CPU/RAM acceptance remain pending.
+
 ## 0.3.0-beta.55 (2026-11-23)
 - Reuse lazily allocated receiver and optional tray-icon identity sets
   and missing-key lists, clearing temporary references after each pass.

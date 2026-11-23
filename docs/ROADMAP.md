@@ -546,3 +546,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Two more assertions cover exception cleanup and recovery.
 - [ ] Final beta.55 Windows/macOS CI and publication.
 - [ ] Final release and real idle resource comparison before claims.
+
+## Opt-in BLE one-pass scheduler candidate
+- [x] Replace LINQ sort with streaming due-device selection.
+- [x] Preserve nullable attempt ordering, generation ties, USB priority.
+- [x] Ten new assertions; initial Windows 45151372157 / macOS 45151372393 PASS.
+- [ ] Final beta.56 CI and release publication.
+- [ ] Actual two-device BLE/USB owner acceptance.

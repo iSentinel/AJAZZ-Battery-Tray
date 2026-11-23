@@ -53,12 +53,25 @@ public sealed class BluetoothMultiSession
         string? forceKey = null)
     {
         if (!presenceKnown || usbPresent || IsBusy) return null;
-        var eligible = _slots.Where(pair => forceKey is null
-            ? pair.Value.Policy.ShouldRead(false, now)
-            : pair.Key == forceKey && pair.Value.Policy.CanRefreshNow(false));
-        var next = eligible.OrderBy(pair => pair.Value.Policy.LastAttempt)
-            .ThenBy(pair => pair.Value.Generation).FirstOrDefault();
-        if (next.Value is null) return null;
+        KeyValuePair<string, Slot>? chosen = null;
+        foreach (var pair in _slots)
+        {
+            bool due = forceKey is null
+                ? pair.Value.Policy.ShouldRead(false, now)
+                : pair.Key == forceKey && pair.Value.Policy.CanRefreshNow(false);
+            if (!due) continue;
+            if (chosen is not { } current)
+            {
+                chosen = pair;
+                continue;
+            }
+            int ageOrder = Nullable.Compare(pair.Value.Policy.LastAttempt,
+                current.Value.Policy.LastAttempt);
+            if (ageOrder < 0 ||
+                (ageOrder == 0 && pair.Value.Generation < current.Value.Generation))
+                chosen = pair;
+        }
+        if (chosen is not { } next) return null;
         _requestInvalidated = false;
         _requestGeneration = next.Value.Generation;
         _inFlight = new Request(next.Key, ++_sequence);
