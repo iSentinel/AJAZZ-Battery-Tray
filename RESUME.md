@@ -1,15 +1,20 @@
-# Resume — beta.52 optional API session identity candidate
+# Resume — optional preview CI recovery and AULA API continuity
 
-- beta.51 published; workflow 45091032358 PASS, six assets verified.
-- PR #66 merged dca6bee7e2ef79e28e7e093e65e34dc4940660cc;
-  main Python 45092260378 PASS.
-- PR #67 initial Windows 45092378014 / macOS 45092378033 PASS.
-  Combined head d1c056a Windows 45092724526 / macOS 45092724453 PASS.
-  Thirty-five new HA mapping, JSON and loopback assertions.
-- Optional API epoch per activation; one-off inactive copies omit it.
-  HA consumer code is outside tray project. No MQTT or auto-start.
-- beta.52 release metadata prepared; verify final CI before merge.
-- Next: independently runnable optional consumer with explicit
-  interactive mapping, in-memory token, no broker yet, no tray dependency.
-- Actual Windows resources, AULA sleep/wake, AJ159 evidence and multi-BLE
-  acceptance remain open.
+- beta.52 published; workflow 45093197963 PASS, six assets verified.
+  main ec66c667433f818e6c440595250baf8e217f4f90.
+- PR #68 portable preview: original Windows 45093340888/macOS 45093340912
+  PASS, preview 45093340931 FAIL after successful EXE publish/help and
+  expected invalid-port rejection (PowerShell retained nonzero exit code).
+  Fixed explicit success only after assertion/checksum in 2afd3a7c3c9bb672312c8a3c62464f286abdcec5.
+  Windows 45094887420, macOS 45094887419, preview 45094887408 running.
+- Separate fix/api-aula-slot-continuity adds SnapshotSessionSlots to optional
+  API projection. AULA placeholder 1 cannot bind; known receiver gets
+  non-reused ordinal, observed loss/change retires previous slot.
+  Ten assertions pending CI; Python 23/23 PASS. HID reader unchanged.
+- Next: verify PR #68 final CI + portable artifact, merge independently if
+  PASS; sync continuity candidate to main and open/review PR. Verify
+  placeholder behavior, slot exhaustion and older API compatibility.
+  Beta.53 candidate only after full CI. No broker deployment.
+- Physical receiver identity limitations, hardware AULA sleep/wake,
+  paired AJ159 evidence, multi-BLE, and Windows resource measurements
+  remain open. No MQTT or HA dependency in tray by default.
