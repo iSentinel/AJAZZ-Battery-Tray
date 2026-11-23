@@ -7,7 +7,7 @@
   45140932525 PASS; merged 096778a40bc807d83643273a5a0527baea1d2001.
 - feat/ha-mqtt-tls-preflight adds optional offline config validation:
   explicitly enabled, MQTT5, TLS, certificate verification, manual topic
-  prefix and session credentials presence. Twelve pure checks await CI.
+  prefix and session credentials presence. Fifteen pure checks await CI, including null/whitespace rejection.
   No MQTT package, network calls, service, credentials on disk or tray code.
 - Next: open draft PR and verify Windows/macOS/preview CI. Real broker TLS
   identity validation, scoped credentials, HA discovery/expire_after and

@@ -2070,5 +2070,12 @@ Check("MQTT broker preflight rejects topic paths with empty segments",
 Check("MQTT broker preflight accepts a custom TLS port without opening it",
     !BrokerRejected(brokerGuard with { BrokerPort = 8884 }));
 
+Check("MQTT broker preflight rejects absent broker hostname",
+    BrokerRejected(brokerGuard with { BrokerHost = null! }));
+Check("MQTT broker preflight rejects absent topic prefix",
+    BrokerRejected(brokerGuard with { TopicPrefix = null! }));
+Check("MQTT broker preflight rejects whitespace in broker hostname",
+    BrokerRejected(brokerGuard with { BrokerHost = "broker example.invalid" }));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

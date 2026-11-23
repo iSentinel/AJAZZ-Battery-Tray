@@ -17,7 +17,8 @@ public sealed record HaMqttBrokerPreflight(
         if (!ExplicitlyEnabled || !UseTls || !VerifyServerCertificate || !UseMqtt5 ||
             !CredentialsSuppliedForSession)
             throw new InvalidDataException("Explicit secure MQTT session required.");
-        if (BrokerPort is < 1 or > 65535 || BrokerHost.Length is < 1 or > 253 ||
+        if (BrokerPort is < 1 or > 65535 || string.IsNullOrWhiteSpace(BrokerHost) ||
+            BrokerHost.Length > 253 || BrokerHost.Any(char.IsWhiteSpace) ||
             BrokerHost != BrokerHost.Trim() ||
             BrokerHost.Contains("://", StringComparison.Ordinal) ||
             Uri.CheckHostName(BrokerHost) == UriHostNameType.Unknown)
@@ -28,7 +29,8 @@ public sealed record HaMqttBrokerPreflight(
 
     private static bool ValidTopicPrefix(string value)
     {
-        if (value.Length is < 3 or > 96 || value[0] == '/' || value[^1] == '/' ||
+        if (string.IsNullOrWhiteSpace(value) || value.Length is < 3 or > 96 ||
+            value[0] == '/' || value[^1] == '/' ||
             value.Contains("//", StringComparison.Ordinal) ||
             value == "homeassistant" || value.StartsWith("homeassistant/", StringComparison.Ordinal))
             return false;
