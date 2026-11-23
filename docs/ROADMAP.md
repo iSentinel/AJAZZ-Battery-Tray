@@ -665,6 +665,8 @@ configuration commands. USB `VersionNumber` is a device revision,
       with Win32 error codes and elapsed time; no extra device commands.
 - [x] Add pure redaction tests and Windows CI deliberate timeout test.
 - [ ] Pass Windows, modern macOS and High Sierra Intel CI as applicable.
+- [x] Increment macOS universal bundle build number to 61;
+      runtime behavior unchanged.
 - [ ] Publish beta.57 Windows setup/portable and macOS universal
       six assets, verify SHA-256 and installer smoke tests.
 - [ ] Physical Windows 11 HID trace of affected mouse and owner review.
