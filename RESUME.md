@@ -1,18 +1,19 @@
-# Resume — separate HA preview candidate
+# Resume — isolated portable HA preview candidate
 
-- beta.51 published; release 45091032358 PASS, six assets verified.
-- PR #67 combined Windows 45092724526 / macOS 45092724453 PASS;
-  35 assertions. beta.52 metadata commit 0617547f587f6727a76a899734aef15bd99d078d;
-  final Windows 45092998151 / macOS 45092998102 PASS;
-  merged ec66c667433f818e6c440595250baf8e217f4f90; publication pending.
-- feat/optional-ha-cli adds separately runnable .NET 8 AjazzHaPreview,
-  hidden in-memory token, explicit session row confirmation and fresh-only
-  preview. No polling worker, MQTT, installation or tray reference.
-  Python regression 23/23 PASS; Gateway has no dotnet SDK.
-- Added dedicated optional preview CI for build, CLI help, invalid port,
-  redirected input and project isolation. Not yet run.
-- Next: verify beta.52 publication. Preview branch synced to main;
-  open draft PR and audit interactive token
-  cancellation and build/test results before any separate packaging.
-- Actual HA/MQTT transport, Windows hardware acceptance and measured
-  resource comparison remain outstanding.
+- beta.52 PR #67 final Windows 45092998151 / macOS 45092998102 PASS;
+  merged ec66c667433f818e6c440595250baf8e217f4f90. Release workflow
+  45093197963 started; confirm all six assets before claiming publication.
+- PR #68 feat/optional-ha-cli synced with beta.52 main without conflict.
+  No source/installer/macOS/release workflow differences.
+- Native Ctrl+C terminates blocking input; Escape cancels token entry.
+  Mutable 64-character token buffer cleared in finally; managed token
+  string remains in process memory until GC/exit, not persisted.
+- Dedicated CI builds, smoke-tests and publishes a separate self-contained
+  win-x64 preview EXE and SHA256 manifest as Actions artifacts only.
+  Latest C# preview CI pending. Gateway Python 23/23 PASS and diff checks PASS.
+- Next: verify beta.52 publication and exact PR #68 head Windows/macOS/
+  optional preview CI; verify portable artifact and merge if all PASS.
+  Then audit session-bound mapping identity and design explicit MQTT opt-in
+  with TLS/credentials/availability before transport implementation.
+- No Home Assistant connection, broker, service, auto-start or tray bundle.
+  Physical AULA, AJ159, multi-BLE and resource measurements remain open.
