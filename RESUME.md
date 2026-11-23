@@ -1,19 +1,16 @@
-# Resume — isolated portable HA preview candidate
+# Resume — optional offline MQTT availability intent
 
-- beta.52 PR #67 final Windows 45092998151 / macOS 45092998102 PASS;
-  merged ec66c667433f818e6c440595250baf8e217f4f90. Release workflow
-  45093197963 started; confirm all six assets before claiming publication.
-- PR #68 feat/optional-ha-cli synced with beta.52 main without conflict.
-  No source/installer/macOS/release workflow differences.
-- Native Ctrl+C terminates blocking input; Escape cancels token entry.
-  Mutable 64-character token buffer cleared in finally; managed token
-  string remains in process memory until GC/exit, not persisted.
-- Dedicated CI builds, smoke-tests and publishes a separate self-contained
-  win-x64 preview EXE and SHA256 manifest as Actions artifacts only.
-  Latest C# preview CI pending. Gateway Python 23/23 PASS and diff checks PASS.
-- Next: verify beta.52 publication and exact PR #68 head Windows/macOS/
-  optional preview CI; verify portable artifact and merge if all PASS.
-  Then audit session-bound mapping identity and design explicit MQTT opt-in
-  with TLS/credentials/availability before transport implementation.
-- No Home Assistant connection, broker, service, auto-start or tray bundle.
-  Physical AULA, AJ159, multi-BLE and resource measurements remain open.
+- beta.52 published, PR #68 optional preview merged
+  a1f280379e68504a1d39fc55daf5f3ff3f51e534.
+- PR #69 AULA continuity beta.53 metadata 5fb9051 pending full CI.
+- feat/ha-mqtt-availability based on beta.52 main, independent of PR #69:
+  pure message-intent policy only, no network code or MQTT dependency.
+  Fresh session-bound data: retained QoS1 battery then online with MQTT5
+  300s expiry. Otherwise offline then clear retained battery. Twelve pure
+  checks added; C# CI pending; Python tests PASS.
+- Next: verify CI for PR #69, publish beta.53 only on final PASS.
+  Sync optional policy branch to latest main after release and verify CI.
+  Broker, credentials, TLS, discovery and HA installation remain blocked
+  until explicit separate opt-in and physical acceptance.
+- AULA sleep/wake, AJ159 affected captures, multi-BLE, API UI and
+  resource measurements remain open.

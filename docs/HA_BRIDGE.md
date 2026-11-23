@@ -58,3 +58,19 @@ actual local server, including cancellation and restart mapping invalidation.
 Combined latest CI remains pending. This is not a deployed or installable
 Home Assistant bridge; MQTT, explicit mapping UI and availability policy
 still need independent implementation.
+
+## Offline MQTT 5 availability intent (candidate)
+
+A pure optional component plans exactly two retained QoS1 messages for each
+explicitly mapped reading; it opens no connection and requires no broker.
+Fresh reads plan battery value (5-minute MQTT 5 message expiry) followed by
+availability=online (also expiring). Missing, cached, expired, wrong-epoch,
+future or disconnected reads plan availability=offline first, then a retained
+empty battery message to clear stale state. Broker implementations MUST check
+publish acknowledgments and must not claim availability until both online
+messages complete. On reconnect they must first re-read authenticated Local
+API and validate the session mapping; never replay cached online plans.
+No stable entity ID or topic prefix is inferred from source/slot. MQTT 5
+expiry support, HA discovery expire_after, transport authentication, TLS,
+credential storage, topic permission scope and actual broker behavior remain
+unimplemented/unverified. Tests use synthetic snapshots only.

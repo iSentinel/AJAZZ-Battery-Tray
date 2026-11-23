@@ -489,3 +489,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] PR #68 CI and merge, interactive acceptance.
 - [ ] Protected broker credentials, verified TLS, availability/expiry policy and MQTT.
 - [ ] Separate user-controlled distribution; never bundle or auto-start with tray.
+
+## Optional MQTT 5 availability policy
+- [x] Draft bounded offline QoS1 retained message order and expiry intent.
+- [ ] Twelve pure assertions; Windows/macOS/preview CI and review.
+- [ ] Validate broker support for MQTT 5 expiry and HA offline handling.
+- [ ] Implement separate opt-in TLS transport only with confirmed credentials.
+- [ ] No default service, additional tray dependency or automatic network use.
