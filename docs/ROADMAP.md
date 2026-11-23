@@ -518,6 +518,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Eight pure C# tests and full Windows/macOS CI.
 - [ ] Broker reconnect and HA availability acceptance, no default daemon.
 
+## Optional MQTT broker preflight
+- [x] Explicit session-only config defaults disabled, TLS and certificate check required.
+- [x] Reject unapproved broker host, port, topic prefix and credentials-absent inputs.
+- [ ] Fifteen pure C# checks and Windows/macOS/preview CI.
+- [ ] No broker connection, secret persistence or tray startup integration.
+
 ## beta.54 USB reconcile allocation candidate
 - [x] Avoid per-known-inventory HashSet and ToArray by lazy reusable scratch.
 - [x] No new thread, timer or HID reads; polling intervals unchanged.

@@ -116,3 +116,17 @@ availability or state expiration. A future transport must clean any legacy
 retained battery state at opt-in startup, use an MQTT will for disconnect,
 and verify broker acknowledgments and reconnection behavior before deployment.
 Reference: https://www.home-assistant.io/integrations/sensor.mqtt/
+
+## Explicit TLS broker preflight (no connection)
+
+A separate optional in-memory parameter record defaults to disabled. Its
+validation requires operator opt-in, host and valid port, TLS enabled,
+certificate verification on, MQTT 5, a manually selected private topic root,
+and confirmation that credentials were supplied for this session. It refuses
+URL-style host input, wildcard/shared Home Assistant discovery roots, invalid
+ports and plaintext or verification bypasses. No password is accepted or
+persisted by the preflight; the credential-presence flag alone is NOT
+authentication. The future real connector must use OS trust/custom
+explicitly vetted CA, scoped permissions, and must not log secrets, skip
+certificate verification or connect automatically. Never treat preflight
+acceptance as a proof that a broker/HA installation is safe or working.
