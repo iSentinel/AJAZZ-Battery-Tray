@@ -477,6 +477,7 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add API-activation epoch; omit epoch on one-off snapshots.
 - [x] Seventeen mapping and lifecycle assertions; initial Windows 45092378014 / macOS 45092378033 PASS.
 - [x] Optional bounded JSON decoder and one-shot loopback consumer; 18 more assertions.
-- [ ] Combined wire-format and loopback CI, beta.52 release preparation.
+- [x] Combined wire-format and loopback CI: Windows 45092724526 / macOS 45092724453 PASS.
+- [ ] Final beta.52 CI and publication.
 - [ ] Explicit independently installed bridge transport, credential and availability policy.
 - [ ] Actual Home Assistant acceptance; no automatic service or MQTT startup.

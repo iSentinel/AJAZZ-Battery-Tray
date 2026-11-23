@@ -152,9 +152,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.51"
+          TAG="v0.3.0-beta.52"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.51 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.52 — Windows and macOS
+
+          **Optional local API (Windows):** a random identity per API activation
+          supports explicitly bound external consumers. No Home Assistant
+          bridge or MQTT dependency is bundled or started automatically.
 
           **AULA L99 monitoring (Windows):** lazy optional timer, single-flight
           reads, stale reply rejection and consistent fresh/cached states.
@@ -440,7 +444,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.51" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.52" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
