@@ -187,3 +187,15 @@ before icon dictionary removals, and primary receiver selection remains
 ordinal/sticky. No HID commands or poll intervals change. Ten pure checks
 and combined CI are required before release; no CPU/RAM improvement is
 claimed absent repeatable Windows measurements.
+
+## Opt-in multi-BLE selection (candidate)
+
+BluetoothMultiSession.TryBegin previously allocated/sorted an eligible LINQ
+sequence each time the optional BLE fallback scheduler checked for a due
+device. The candidate scans session slots once and compares LastAttempt
+(nullable, earliest first) followed by generation, retaining dictionary
+iteration order on exact ties. Forced-key reads still bypass the normal
+deadline but do not overlap; USB priority, stale-reply invalidation and
+retry backoff are unchanged. Ten pure regression checks added. No additional
+Bluetooth requests or automatic consent, and no measured CPU improvement
+is claimed without hardware acceptance.

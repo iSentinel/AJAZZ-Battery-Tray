@@ -2195,5 +2195,40 @@ Check("Scratch resumes after exception without stale identities",
     failingScratch.Contains("reconnected") && !failingScratch.Contains("present"));
 failingScratch.End();
 
+// Streaming BLE selection preserves stable ordering and explicit force reads.
+var bleSelection = new BluetoothMultiSession();
+bleSelection.Enable("alpha", bleDirect, multiAt);
+bleSelection.Enable("bravo", bleDirect, multiAt);
+bleSelection.Enable("charlie", bleDirect, multiAt);
+bleSelection.Enable("alpha", bleDirect, multiAt);
+var chosenBle = bleSelection.TryBegin(true, false, multiAt.AddMinutes(1));
+Check("BLE streaming selector respects earliest enable generation",
+    chosenBle?.Key == "bravo");
+Check("BLE selection remains single flight",
+    bleSelection.TryBegin(true, false, multiAt.AddMinutes(1), "alpha") is null);
+Check("BLE streaming selector records completed failed attempt",
+    chosenBle is not null &&
+    bleSelection.Complete(chosenBle, bleFailed, multiAt.AddMinutes(1), true, false));
+var secondBle = bleSelection.TryBegin(true, false, multiAt.AddMinutes(1));
+Check("BLE streaming selector skips backed-off failed slot",
+    secondBle?.Key == "charlie");
+bleSelection.Disable("charlie");
+Check("BLE selector preserves in-flight token until completion after opt-out",
+    secondBle is not null && bleSelection.IsBusy);
+Check("BLE streaming selector invalidates removed in-flight reply",
+    secondBle is not null &&
+    !bleSelection.Complete(secondBle, bleDirect, multiAt.AddMinutes(1), true, false));
+var forceBle = bleSelection.TryBegin(true, false, multiAt.AddMinutes(1), "alpha");
+Check("BLE forced selection bypasses deadline for exact key", forceBle?.Key == "alpha");
+Check("BLE forced selection cannot select a different key while busy",
+    bleSelection.TryBegin(true, false, multiAt.AddMinutes(1), "bravo") is null);
+Check("BLE forced selection completes without slot corruption",
+    forceBle is not null &&
+    bleSelection.Complete(forceBle, bleDirect, multiAt.AddMinutes(1), true, false));
+Check("BLE streaming selector honors conservative USB priority",
+    bleSelection.TryBegin(true, true, multiAt.AddMinutes(5)) is null &&
+    bleSelection.TryBegin(false, false, multiAt.AddMinutes(5)) is null);
+bleSelection.DisableAll();
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
