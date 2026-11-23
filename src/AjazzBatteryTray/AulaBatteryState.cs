@@ -40,6 +40,22 @@ public sealed class AulaBatteryState
         return LastGoodPercent;
     }
 
+    /// <summary>Project AULA observations consistently for the dashboard and local API.</summary>
+    public DeviceDashboardState Dashboard(string name, bool automatic, bool checkedOnce,
+        bool known, bool present, int? fresh, DateTimeOffset? measuredAt, DateTimeOffset now)
+    {
+        const string transport = "2.4 GHz";
+        if (!automatic && !checkedOnce)
+            return new(name, transport, DeviceDashboardStatus.Disabled, null, null);
+        if (fresh is not (>= 1 and <= 100) || measuredAt is null || measuredAt > now)
+            fresh = null;
+        int? cached = DisplayPercent(present, known, fresh, now);
+        var state = DeviceDashboardState.FromPoll(name, transport, checkedOnce,
+            known, present, fresh, measuredAt, cached, LastGoodAt);
+        return !automatic && state.Status == DeviceDashboardStatus.Fresh
+            ? state with { Status = DeviceDashboardStatus.ManualReading } : state;
+    }
+
     public void Reset()
     {
         LastGoodPercent = null;

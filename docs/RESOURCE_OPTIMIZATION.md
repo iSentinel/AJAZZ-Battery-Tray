@@ -87,3 +87,37 @@ the HID poll cadence or add HA dependencies.
 - Five more assertions cover deadline overflow, overlapping callers,
   queued cancellation and gate release on completion/failure. These use
   synthetic operations without a live network. Combined CI pending.
+
+## Optional AULA timer lifecycle
+The prior AULA timer already stopped during each poll and used the configured
+interval after completion. Do not claim a reduction in periodic wakeups from
+this change. Allocate the timer only when automatic AULA monitoring is enabled,
+dispose it on opt-out or shutdown, and ignore callbacks from replaced timers.
+Manual battery reads remain possible with monitoring off without allocating a
+timer. Preserve the first startup delay (1 second), 100 ms interval-change
+refresh, configured completion-based cadence, and existing generation guard.
+Acceptance: disabled startup; manual read while disabled; enable; change
+interval; disable during a pending read; re-enable before completion; exit
+with a pending read. Verify no stale result or automatic polling after opt-out,
+no duplicate workers, unchanged cached readings and normal sleep recovery.
+C# compilation, actual Windows timer lifecycle and hardware acceptance pending.
+
+### AULA single-flight lifecycle
+The UI uses a testable ticket-based lifecycle. A late reply from a disabled
+or replaced session cannot update readings. Re-enable during an existing
+read waits for that read to finish, then schedules a replacement after
+100 ms instead of waiting a complete configured interval. No parallel
+worker or new HID command is introduced. Fourteen assertions exercise
+manual/automatic reads, disabled/idle states, repeated completion, stale
+reply, fast re-enable and shutdown. C# CI and physical acceptance pending.
+
+### AULA sleep and recovery state consistency
+AULA dashboard and active API projection share one observation classifier.
+A successful automatic reading is fresh, never a scheduled-skip state.
+Explicit manual reads remain manual-only and are excluded from API output
+when automatic monitoring is disabled. Cached replies retain the original
+observation timestamp; unknown presence, unplug, invalid samples and
+expired cache never become fresh. Unexpected read failures clear the cache.
+Twelve new assertions include a simulated eight-hour sleep (960 no-reply
+observations), 24-hour expiration, and successful recovery. These are
+synthetic state tests, not real hardware or wall-clock endurance evidence.

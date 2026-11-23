@@ -445,6 +445,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] beta.49 published; all six assets verified.
 - [x] One-shot update deadlines, lifecycle guard and serialized request gate.
 - [x] Initial Windows 45087561973 / macOS 45087561984 PASS.
-- [ ] Final beta.50 CI and publication.
+- [x] Final beta.50 CI and publication: 45088588616 PASS; six assets.
 - [ ] Review AULA heartbeat timer and idle scheduling separately.
 - [ ] Actual Windows resource and timer lifecycle acceptance.
+
+## beta.51 optional AULA timer and single-flight lifecycle
+- [x] Final beta.50 Windows 45087837752 / macOS 45087838061 PASS; merged.
+- [x] beta.50 published; workflow 45088588616 PASS, six assets.
+- [x] Lazy timer, release on disable, manual reads without timer.
+- [x] Ticket-based stale reply and concurrent read guards, prompt resampling
+  after re-enable during an old read, fourteen lifecycle assertions.
+- [x] Unified AULA dashboard/API fresh/cached classification; twelve more\n  assertions including synthetic eight-hour sleep, expiration and recovery.\n- [x] Combined CI after callback compile fix: Windows 45089648620 / macOS 45089648574 PASS.
+- [ ] Final beta.51 CI, release and physical acceptance.
+- [ ] Observe prolonged AULA sleep and wake, confirm cached indication and
+  fresh reading recovery without extra hardware traffic.
