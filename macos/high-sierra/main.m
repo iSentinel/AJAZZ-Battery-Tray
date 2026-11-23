@@ -119,6 +119,106 @@ static BatteryReading ReadReceiver(void) {
     return reading;
 }
 
+
+/// Emit only the first eight bytes, never a complete vendor HID packet.
+static void PrintHIDPrefix(const uint8_t *reply, CFIndex length) {
+    CFIndex prefix = length < 8 ? length : 8;
+    fputs("05.reply.first_bytes=", stdout);
+    for (CFIndex i = 0; i < prefix; i++)
+        printf("%s%02x", i ? " " : "", (unsigned int)reply[i]);
+    putchar('\n');
+}
+
+/// Sends only the existing, approved battery telemetry F7/05 request.
+static NSInteger TraceFeature(IOHIDDeviceRef device) {
+    for (CFIndex count = 65; count <= 67; count += 2) {
+        uint8_t request[67] = {0};
+        request[1] = 0xf7;
+        IOReturn sent = IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature,
+                                             0, request, count);
+        printf("F7.set.length=%ld result=0x%08x\n",
+               (long)count, (unsigned int)sent);
+        if (sent != kIOReturnSuccess) continue;
+        [NSThread sleepForTimeInterval:0.03];
+        uint8_t reply[67] = {0};
+        reply[0] = 5;
+        CFIndex actual = count;
+        IOReturn got = IOHIDDeviceGetReport(device, kIOHIDReportTypeFeature,
+                                            5, reply, &actual);
+        printf("05.get.result=0x%08x length=%ld\n",
+               (unsigned int)got, (long)actual);
+        if (got != kIOReturnSuccess) continue;
+        if (actual < 0 || actual > count) {
+            puts("05.get.invalid_length");
+            continue;
+        }
+        PrintHIDPrefix(reply, actual);
+        NSInteger percent = ParseBattery(reply, actual);
+        if (percent >= 0) return percent;
+    }
+    return -1;
+}
+
+/// Test only the already matched vendor-defined HID collection.
+static NSInteger TraceCollections(const void **list, CFIndex count,
+                                  NSInteger *matches) {
+    for (CFIndex i = 0; i < count; i++) {
+        IOHIDDeviceRef device = (IOHIDDeviceRef)list[i];
+        if (!MatchesVendorCollection(device)) continue;
+        (*matches)++;
+        IOReturn opened = IOHIDDeviceOpen(device, 0);
+        printf("collection.%ld.open=0x%08x\n",
+               (long)*matches, (unsigned int)opened);
+        if (opened != kIOReturnSuccess) continue;
+        NSInteger percent = TraceFeature(device);
+        IOHIDDeviceClose(device, 0);
+        if (percent >= 0) return percent;
+    }
+    return -1;
+}
+
+/// Explicit diagnostic; outputs only operation status and bounded prefix.
+static int TraceReceiver(void) {
+    puts("AJAZZ High Sierra HID telemetry trace (no serial numbers)");
+    puts("VID:PID=3151:5007 expected usage=FFFF:0002");
+    IOHIDManagerRef manager = IOHIDManagerCreate(kCFAllocatorDefault, 0);
+    if (!manager) return 1;
+    NSDictionary *matching = @{
+        @kIOHIDVendorIDKey: @0x3151,
+        @kIOHIDProductIDKey: @0x5007
+    };
+    IOHIDManagerSetDeviceMatching(manager, (__bridge CFDictionaryRef)matching);
+    IOReturn opened = IOHIDManagerOpen(manager, 0);
+    printf("manager.open=0x%08x\n", (unsigned int)opened);
+    if (opened != kIOReturnSuccess) {
+        CFRelease(manager);
+        return 2;
+    }
+    CFSetRef devices = IOHIDManagerCopyDevices(manager);
+    CFIndex count = devices ? CFSetGetCount(devices) : 0;
+    printf("receiver.hid_count=%ld\n", (long)count);
+    const void **list = calloc((size_t)(count > 0 ? count : 1), sizeof(void *));
+    BOOL allocated = list != NULL;
+    NSInteger matches = 0;
+    NSInteger battery = -1;
+    if (list && devices && count > 0) {
+        CFSetGetValues(devices, list);
+        battery = TraceCollections(list, count, &matches);
+    }
+    printf("matched_vendor_collections=%ld\n", (long)matches);
+    free(list);
+    if (devices) CFRelease(devices);
+    IOHIDManagerClose(manager, 0);
+    CFRelease(manager);
+    if (!allocated) return 1;
+    if (battery < 0) {
+        puts("INCONCLUSIVE: no validated battery report");
+        return 2;
+    }
+    printf("PASS: battery=%ld%%\n", (long)battery);
+    return 0;
+}
+
 @interface LegacyTray : NSObject <NSApplicationDelegate, CBCentralManagerDelegate,
                                    CBPeripheralDelegate>
 @property(nonatomic, strong) NSStatusItem *tray;
@@ -581,8 +681,11 @@ int main(void) {
     @autoreleasepool {
         NSArray<NSString *> *arguments = [[NSProcessInfo processInfo] arguments];
         if ([arguments containsObject:@"--help"] || [arguments containsObject:@"-h"]) {
-            puts("Usage: AJAZZBatteryTrayHighSierra [--help|--self-test|--diagnose]");
+            puts("Usage: AJAZZBatteryTrayHighSierra [--help|--self-test|--diagnose|--trace-hid]");
             return 0;
+        }
+        if ([arguments containsObject:@"--trace-hid"]) {
+            return TraceReceiver();
         }
         if ([arguments containsObject:@"--self-test"]) {
             uint8_t first[] = {5, 0, 0, 1};

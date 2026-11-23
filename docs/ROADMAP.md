@@ -592,3 +592,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add non-hardware self-tests of error-state notification suppression.
 - [ ] Intel CI and High Sierra follow-up release, without changing Latest.
 - [ ] Confirm errors correspond to actual High Sierra receiver behavior.
+
+
+## iMac High Sierra owner hardware evidence and trace
+- [x] Real iMac report, macOS 10.13.6 (17G14042): 3151:5007,
+      FFFF:0002 and one HID collection discovered; battery unknown.
+- [x] Add explicit bounded F7/05 trace for HID open, SetFeature,
+      GetFeature and response-prefix parsing; no new device commands.
+- [ ] Run trace on actual iMac, then compare lengths/status to Windows
+      report framing before altering the parser or polling behavior.
+- [ ] Pass Intel CI; publish separate experimental High Sierra update.
+- [ ] Receiver sleep/wake and optional GATT hardware acceptance pending.
