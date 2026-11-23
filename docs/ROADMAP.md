@@ -812,10 +812,29 @@ configuration commands. USB `VersionNumber` is a device revision,
       settings persistence fails.
 - [x] Add standalone settings inheritance, round-trip, validation,
       AULA and translation regression assertions.
-- [ ] Windows CI and universal macOS CI must PASS before merging.
-- [ ] beta.59 release workflow, Windows install/uninstall, download
-      six assets and verify three SHA-256 checks.
+- [x] PR #95 Windows CI 45237176073 / macOS CI
+      45237175995 PASS; merged 00a92da2202d561303005a355cdca6a611d3dd7f.
+- [x] beta.59 release workflow 45237573145 PASS; Windows installer
+      install/uninstall PASS; six assets published and all three
+      binary SHA-256 checks PASS after redownloading from GitHub.
 - [ ] Owner Windows visual/notification test with at least two
       independent receivers and AULA if physically available.
-- [ ] Retire PR #48 only after remaining independent disconnect
-      functionality is verified in a newer integrated release.
+- [x] Closed obsolete PR #48 after beta.59 publication and verified
+      independent disconnect override; preserved old branch history.
+
+
+## beta.59 hardware and diagnostic next gates
+- [x] Latest beta.59 includes independently opted-in disconnect
+      warning per receiver and AULA profile, with legacy inheritance.
+- [x] High Sierra 10.13 remains a distinct .5 experimental package;
+      do not install modern macOS universal 13+ ZIP on that iMac.
+- [ ] Windows 11: owner to collect safe awake/after-sleep/reconnect
+      F7/05 logs, then run tools/compare_windows_hid_logs.py.
+- [ ] AULA L99: owner to observe A01-A14 sleep/wake, preserve
+      awake/asleep/recovered clipboard summaries for offline analysis.
+- [ ] Owner to verify independent connect/disconnect notifications
+      with two separate AJAZZ receivers and AULA if available.
+- [ ] iMac High Sierra 10.13.6: run .5 --trace-hid --timeout 25
+      --output PATH and inspect actual IOKit status.
+- [ ] Issue #93: bound explicitly consented full-vendor Windows GUI
+      capture using a killable isolated worker before closing risk.

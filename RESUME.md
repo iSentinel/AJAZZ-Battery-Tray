@@ -1,3 +1,27 @@
+# Resume — beta.59 released, hardware evidence and issue #93 open
+
+- PR #95 merged 00a92da2202d561303005a355cdca6a611d3dd7f.
+  Windows 45237176073 and macOS 45237175995 CI PASS.
+- v0.3.0-beta.59 release workflow 45237573145 PASS, Windows Setup
+  installation/uninstallation PASS, macOS universal build 63 PASS.
+- Six published assets, Windows portable, Windows Setup and macOS
+  universal ZIP redownloaded; all three SHA-256 files verify PASS.
+  GitHub Latest = v0.3.0-beta.59.
+- Individual receiver-disconnect override: AJAZZ receiver identity
+  and AULA L99 slot inherit global default unless explicitly set.
+  EN/RU/UA editor and persistence rollback, no new HID commands.
+- Superseded stale beta.37 PR #48 closed (branch preserved); no
+  outstanding current development PRs at this checkpoint.
+- macOS High Sierra 10.13.6 / iMac Late 2013 uses separate
+  experimental v0.3.0-highsierra.5, not macOS universal 13+.
+- Physical acceptance pending: Windows 11 problem-mouse safe HID
+  traces; AULA L99 sleep/wake and per-device disconnect alerts;
+  real iMac .5 F7/05 status. Do not infer protocol details from HAR.
+- Issue #93 remains open: full-vendor GUI capture uses an unbounded
+  synchronous HID operation, unlike bounded opt-in CLI diagnostics.
+- Offline tools ready in main: analyze_aula_sleep.py and
+  compare_windows_hid_logs.py, with total 57 synthetic regressions.
+
 # Resume — beta.59 per-device receiver disconnect candidate
 
 - Main before branch: 1a0e018986ea617047ed9e39238a4a14aad48538.
