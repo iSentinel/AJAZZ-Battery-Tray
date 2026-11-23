@@ -1,3 +1,17 @@
+# Resume — High Sierra bounded diagnostic audit candidate
+
+- Deep audit of macos/high-sierra completed. Details in
+  docs/HIGH_SIERRA_DIAGNOSTIC_AUDIT_20261123.md.
+- Supervised CLI workers, immediate stdout/0600 file, exit 124 on
+  timeout, 20s stalled tray status, release bundle version, watchdog
+  regression tests and strict CLI mode validation.
+- CLI: --trace-hid --timeout 25 --output PATH. Existing F7/05
+  telemetry and conservative 1..100 parser are unchanged.
+- Pending: Intel CI, modern macOS/Windows, separate prerelease and
+  owner iMac hardware acceptance.
+- HAR files from Windows 11 and macOS are network traffic only,
+  not USB HID feature-report captures; no raw HAR published.
+
 # Resume — iMac High Sierra owner trace pending
 
 - Owner supplied qmk.top/v4 HAR from the problem mouse. It contains

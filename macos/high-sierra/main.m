@@ -1,4 +1,10 @@
 #import <Cocoa/Cocoa.h>
+#import "diagnostic_runner.h"
+#include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #import <CoreBluetooth/CoreBluetooth.h>
 #import <IOKit/hid/IOHIDManager.h>
 #import <IOKit/hid/IOHIDKeys.h>
@@ -8,7 +14,8 @@ typedef NS_ENUM(NSInteger, BatteryState) {
     BatteryUnknown = 1,
     BatteryValid = 2,
     BatteryAccessError = 3,
-    BatteryUnexpectedUsage = 4
+    BatteryUnexpectedUsage = 4,
+    BatteryTimedOut = 5
 };
 
 typedef struct {
@@ -229,6 +236,7 @@ static int TraceReceiver(void) {
 @property(nonatomic, strong) NSArray<CBPeripheral *> *connectedMice;
 @property(nonatomic, assign) BatteryReading latest;
 @property(nonatomic, assign) BOOL polling;
+@property(nonatomic, assign) NSUInteger pollAttempt;
 @property(nonatomic, assign) BOOL everConnected;
 @property(nonatomic, assign) BOOL disconnectSent;
 @property(nonatomic, assign) NSInteger absentCount;
@@ -383,6 +391,11 @@ static int TraceReceiver(void) {
         self.detail.title = [self word:@"Cannot access receiver HID interface"
                                        ru:@"Нет доступа к HID-интерфейсу"
                                        uk:@"Немає доступу до HID-інтерфейсу"];
+    } else if (reading.state == BatteryTimedOut) {
+        self.tray.button.title = @"AJAZZ !";
+        self.detail.title = [self word:@"HID read stalled; restart app if persistent"
+                                       ru:@"Чтение HID зависло; перезапустите приложение"
+                                       uk:@"Читання HID зависло; перезапустіть застосунок"];
     } else if (reading.state == BatteryUnexpectedUsage) {
         self.tray.button.title = @"AJAZZ ?";
         self.detail.title = [self word:@"Receiver HID collection not supported"
@@ -449,15 +462,24 @@ static int TraceReceiver(void) {
 }
 
 - (void)refresh:(id)sender {
-    if (self.polling) return;
+    if (self.polling) return; // Never accumulate blocked HID threads.
     self.polling = YES;
+    NSUInteger attempt = ++self.pollAttempt;
     __weak LegacyTray *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 20 * NSEC_PER_SEC),
+                   dispatch_get_main_queue(), ^{
+        LegacyTray *owner = weakSelf;
+        if (!owner || !owner.polling || owner.pollAttempt != attempt) return;
+        owner.latest = (BatteryReading){BatteryTimedOut, -1, 0};
+        [owner display:owner.latest];
+        // Keep the single-flight guard until the original IOKit call returns.
+    });
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @autoreleasepool {
             BatteryReading reading = ReadReceiver();
             dispatch_async(dispatch_get_main_queue(), ^{
                 LegacyTray *owner = weakSelf;
-                if (!owner) return;
+                if (!owner || owner.pollAttempt != attempt) return;
                 owner.latest = reading;
                 owner.polling = NO;
                 [owner display:reading];
@@ -505,6 +527,7 @@ static int TraceReceiver(void) {
         (self.latest.state == BatteryAbsent ? @"not connected" :
          self.latest.state == BatteryAccessError ? @"access error" :
          self.latest.state == BatteryUnexpectedUsage ? @"HID usage mismatch" :
+         self.latest.state == BatteryTimedOut ? @"HID read stalled" :
          @"receiver present, no valid battery");
     return [NSString stringWithFormat:
         @"AJAZZ Battery Tray High Sierra Edition\n"
@@ -677,63 +700,149 @@ static int TraceReceiver(void) {
 - (void)quit:(id)sender { [NSApp terminate:nil]; }
 @end
 
-int main(void) {
+
+/// Distinguish no verified reply from a validated percentage.
+static int DiagnoseReceiver(void) {
+    puts("STEP: enumerate receiver and request F7/05 telemetry");
+    BatteryReading reading = ReadReceiver();
+    printf("VID:PID=3151:5007 matching_collections=%ld ",
+           (long)reading.collections);
+    if (reading.state == BatteryValid) {
+        printf("PASS: battery=%ld%%\n", (long)reading.percent);
+        return 0;
+    }
+    if (reading.state == BatteryAbsent)
+        puts("INCONCLUSIVE: receiver not found");
+    else if (reading.state == BatteryAccessError)
+        puts("INCONCLUSIVE: HID manager/device access failed");
+    else if (reading.state == BatteryUnexpectedUsage)
+        puts("INCONCLUSIVE: HID usage FFFF:0002 not found");
+    else
+        puts("INCONCLUSIVE: receiver present; battery unverified");
+    return 2;
+}
+
+static int SelfTest(void) {
+    uint8_t first[] = {5, 0, 0, 1};
+    uint8_t full[] = {5, 0, 0, 100};
+    uint8_t stripped[] = {0, 0, 25};
+    uint8_t zero[] = {5, 0, 0, 0};
+    uint8_t excess[] = {5, 0, 0, 101};
+    uint8_t wrongID[] = {6, 0, 0, 83};
+    uint8_t malformed[] = {5, 1, 0, 83};
+    uint8_t shortFrame[] = {5, 0};
+    LegacyTray *test = [[LegacyTray alloc] init];
+    [test evaluateAlerts:(BatteryReading){BatteryAccessError, -1, 0}];
+    [test evaluateAlerts:(BatteryReading){BatteryUnexpectedUsage, -1, 0}];
+    [test evaluateAlerts:(BatteryReading){BatteryUnknown, -1, 0}];
+    [test evaluateAlerts:(BatteryReading){BatteryTimedOut, -1, 0}];
+    BOOL safe = !test.everConnected && test.absentCount == 0 &&
+        test.alerted == 0;
+    BOOL pass = safe && ParseBattery(first, 4) == 1 &&
+        ParseBattery(full, 4) == 100 &&
+        ParseBattery(stripped, 3) == 25 &&
+        ParseBattery(zero, 4) == -1 &&
+        ParseBattery(excess, 4) == -1 &&
+        ParseBattery(wrongID, 4) == -1 &&
+        ParseBattery(malformed, 4) == -1 &&
+        ParseBattery(shortFrame, 2) == -1;
+    puts(pass ? "PASS: 8 parser and 4 unverified-state cases"
+              : "FAIL: HID parser/notification-state regression");
+    return pass ? 0 : 1;
+}
+
+static int ParseTimeout(const char *value) {
+    if (!value || !*value) return -1;
+    char *end = NULL;
+    errno = 0;
+    long parsed = strtol(value, &end, 10);
+    if (errno || *end != '\0' || parsed < 3 || parsed > 90) return -1;
+    return (int)parsed;
+}
+
+static void Help(void) {
+    puts("Usage: AJAZZBatteryTrayHighSierra "
+         "[--help|--self-test|--diagnose|--trace-hid] "
+         "[--timeout 3..90] [--output PATH]");
+    puts("Exit: 0 verified; 2 unknown; 124 HID timeout; 1 error.");
+    puts("--output creates a private 0600 log, writes every step immediately.");
+    puts("The F7/05 battery query is the only vendor feature report sent.");
+}
+
+static int RunMode(const char *mode, int timeout, NSString *output) {
+    if (output && LegacyPrepareOutput(output)) return 1;
+    if (!strcmp(mode, "--self-test-watchdog"))
+        return LegacyRunBoundedWorker("--internal-test-sleep", 1);
+    const char *worker = !strcmp(mode, "--trace-hid") ?
+        "--internal-trace-hid" : "--internal-diagnose";
+    int limit = timeout > 0 ? timeout :
+        (!strcmp(mode, "--trace-hid") ? 20 : 15);
+    return LegacyRunBoundedWorker(worker, limit);
+}
+
+int main(int argc, char *argv[]) {
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
     @autoreleasepool {
-        NSArray<NSString *> *arguments = [[NSProcessInfo processInfo] arguments];
-        if ([arguments containsObject:@"--help"] || [arguments containsObject:@"-h"]) {
-            puts("Usage: AJAZZBatteryTrayHighSierra [--help|--self-test|--diagnose|--trace-hid]");
+        const char *mode = NULL;
+        NSString *output = nil;
+        BOOL outputRequested = NO;
+        int timeout = 0;
+        for (int i = 1; i < argc; i++) {
+            if (!strcmp(argv[i], "--output") && i + 1 < argc &&
+                !outputRequested) {
+                outputRequested = YES;
+                output = [NSString stringWithUTF8String:argv[++i]];
+                if (!output.length) return 1;
+            } else if (!strcmp(argv[i], "--timeout") && i + 1 < argc &&
+                       !timeout) {
+                timeout = ParseTimeout(argv[++i]);
+                if (timeout < 0) break;
+            } else if (!mode && (!strcmp(argv[i], "--help") ||
+                       !strcmp(argv[i], "-h") ||
+                       !strcmp(argv[i], "--self-test") ||
+                       !strcmp(argv[i], "--diagnose") ||
+                       !strcmp(argv[i], "--trace-hid") ||
+                       !strcmp(argv[i], "--self-test-watchdog") ||
+                       !strcmp(argv[i], "--internal-trace-hid") ||
+                       !strcmp(argv[i], "--internal-diagnose") ||
+                       !strcmp(argv[i], "--internal-test-sleep"))) {
+                mode = argv[i];
+            } else {
+                fprintf(stderr, "FAIL: invalid arguments\n");
+                return 1;
+            }
+        }
+        if (timeout < 0 || (output && !output.length)) return 1;
+        if (!mode && (output || timeout)) return 1;
+        BOOL diagnostic = mode && (!strcmp(mode, "--diagnose") ||
+            !strcmp(mode, "--trace-hid"));
+        BOOL testWatchdog = mode && !strcmp(mode, "--self-test-watchdog");
+        if ((output && !diagnostic && !testWatchdog) ||
+            (timeout && !diagnostic)) {
+            fputs("FAIL: unsupported diagnostic options for this mode
+", stderr);
+            return 1;
+        }
+        if (!mode) {
+            NSApplication *app = [NSApplication sharedApplication];
+            LegacyTray *delegate = [[LegacyTray alloc] init];
+            app.delegate = delegate;
+            [app run];
             return 0;
         }
-        if ([arguments containsObject:@"--trace-hid"]) {
-            return TraceReceiver();
+        if (!strcmp(mode, "--help") || !strcmp(mode, "-h")) {
+            Help();
+            return 0;
         }
-        if ([arguments containsObject:@"--self-test"]) {
-            uint8_t first[] = {5, 0, 0, 1};
-            uint8_t full[] = {5, 0, 0, 100};
-            uint8_t stripped[] = {0, 0, 25};
-            uint8_t zero[] = {5, 0, 0, 0};
-            uint8_t excess[] = {5, 0, 0, 101};
-            uint8_t wrongID[] = {6, 0, 0, 83};
-            uint8_t malformed[] = {5, 1, 0, 83};
-            uint8_t shortFrame[] = {5, 0};
-            LegacyTray *test = [[LegacyTray alloc] init];
-            [test evaluateAlerts:(BatteryReading){BatteryAccessError, -1, 0}];
-            [test evaluateAlerts:(BatteryReading){BatteryUnexpectedUsage, -1, 0}];
-            [test evaluateAlerts:(BatteryReading){BatteryUnknown, -1, 0}];
-            BOOL safeState = !test.everConnected && test.absentCount == 0 &&
-                test.alerted == 0;
-            BOOL pass = safeState && ParseBattery(first, 4) == 1 &&
-                ParseBattery(full, 4) == 100 &&
-                ParseBattery(stripped, 3) == 25 &&
-                ParseBattery(zero, 4) == -1 &&
-                ParseBattery(excess, 4) == -1 &&
-                ParseBattery(wrongID, 4) == -1 &&
-                ParseBattery(malformed, 4) == -1 &&
-                ParseBattery(shortFrame, 2) == -1;
-            puts(pass ? "PASS: 8 HID parser and 3 unknown-state cases"
-                      : "FAIL: legacy battery state regression");
-            return pass ? 0 : 1;
+        if (!strcmp(mode, "--internal-test-sleep")) {
+            puts("TEST: worker started; verifying bounded watchdog");
+            sleep(6);
+            return 0;
         }
-        if ([arguments containsObject:@"--diagnose"]) {
-            BatteryReading reading = ReadReceiver();
-            printf("VID:PID 3151:5007 | matching collections %ld | ",
-                   (long)reading.collections);
-            if (reading.state == BatteryValid)
-                printf("PASS: battery %ld%%\n", (long)reading.percent);
-            else if (reading.state == BatteryAbsent)
-                puts("UNKNOWN: compatible receiver not found");
-            else if (reading.state == BatteryAccessError)
-                puts("UNKNOWN: HID manager or receiver access failed");
-            else if (reading.state == BatteryUnexpectedUsage)
-                puts("UNKNOWN: expected HID usage FFFF:0002 not exposed");
-            else
-                puts("UNKNOWN: receiver present, no verified battery response");
-            return reading.state == BatteryValid ? 0 : 2;
-        }
-        NSApplication *app = [NSApplication sharedApplication];
-        LegacyTray *delegate = [[LegacyTray alloc] init];
-        app.delegate = delegate;
-        [app run];
+        if (!strcmp(mode, "--internal-trace-hid")) return TraceReceiver();
+        if (!strcmp(mode, "--internal-diagnose")) return DiagnoseReceiver();
+        if (!strcmp(mode, "--self-test")) return SelfTest();
+        return RunMode(mode, timeout, output);
     }
-    return 0;
 }

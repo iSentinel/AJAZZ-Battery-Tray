@@ -13,8 +13,16 @@ EXE="$APP/Contents/MacOS/AJAZZBatteryTrayHighSierra"
 ZIP="$ROOT/dist/AJAZZBatteryTray-macOS-HighSierra-Intel.zip"
 mkdir -p "$APP/Contents/MacOS"
 cp "$ROOT/macos/high-sierra/Info.plist" "$APP/Contents/Info.plist"
+if [[ -n "${AJAZZ_HIGHSIERRA_BUILD_NUMBER:-}" ]]; then
+  [[ "$AJAZZ_HIGHSIERRA_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || {
+    echo "FAIL: expected a positive numeric High Sierra build number"
+    exit 1
+  }
+  /usr/libexec/PlistBuddy -c     "Set :CFBundleVersion $AJAZZ_HIGHSIERRA_BUILD_NUMBER" "$APP/Contents/Info.plist"
+fi
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
-xcrun clang -O2 -fobjc-arc -Wall -Wextra   -target x86_64-apple-macosx10.13 -isysroot "$SDK"   -framework AppKit -framework Foundation -framework CoreBluetooth   -framework IOKit "$ROOT/macos/high-sierra/main.m" -o "$EXE"
+xcrun clang -O2 -fobjc-arc -Wall -Wextra   -target x86_64-apple-macosx10.13 -isysroot "$SDK"   -framework AppKit -framework Foundation -framework CoreBluetooth   -framework IOKit "$ROOT/macos/high-sierra/main.m" \
+  "$ROOT/macos/high-sierra/diagnostic_runner.m" -o "$EXE"
 chmod 755 "$EXE"
 plutil -lint "$APP/Contents/Info.plist"
 file "$EXE" | grep -q 'x86_64'

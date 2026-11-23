@@ -629,3 +629,25 @@ configuration commands. USB `VersionNumber` is a device revision,
       model/receiver without guessing from downloaded image filenames.
 - [ ] Obtain owner macOS 10.13.6 --trace-hid F7/05 output before
       modifying the actual telemetry protocol or parser.
+
+
+## High Sierra diagnostic deep audit — bounded HID workers
+- [x] Audit legacy Intel Objective-C IOKit, AppKit, CLI and BLE code;
+      record evidence and open acceptance risks in
+      [diagnostic audit](HIGH_SIERRA_DIAGNOSTIC_AUDIT_20261123.md).
+- [x] Fix empty redirected trace logs: private --output file (0600,
+      no symlinks) and unbuffered child/parent stdout.
+- [x] Bound --diagnose and --trace-hid by supervised child execution,
+      default 15/20s, configurable 3..90s; exit 124 on timeout.
+- [x] Visible tray warning on stalled HID read after 20s without
+      creating extra blocked threads or sending new commands.
+- [x] Strict CLI modes; accept exit 124 as inconclusive in helper.
+- [x] Set CFBundleVersion from separate High Sierra release tag.
+- [x] Add CI watchdog regression, private output, symlink refusal
+      and invalid timeout checks.
+- [ ] Pass Intel build and modern Windows/macOS CIs.
+- [ ] Publish separate experimental prerelease and verify ZIP/SHA-256;
+      preserve existing Latest release.
+- [ ] Owner tests on 10.13.6 iMac: trace file, HID sleep/reconnect,
+      and explicitly requested Bluetooth GATT.
+- [ ] Analyze 05 report before any protocol modification.
