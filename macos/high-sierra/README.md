@@ -9,6 +9,8 @@ overwriting the existing macOS 13+ application.
 - Battery percentage, unknown state, or disconnected state in the menu bar.
 - 3151:5007 / HID vendor FFFF:0002 F7/05 receiver telemetry protocol.
 - Conservative 1–100% parser; invalid or zero values display as unknown.
+- Distinguishes absent receiver, unsupported HID usage and HID access errors;
+  failed reads and sleeping devices never become false 0% battery values.
 - Poll every 15, 30, 60, or 120 seconds (default 30).
 - Opt-in low battery notifications below 50%, 25%, 10%, and receiver removal.
 - Manual selection of already-connected AJAZZ Bluetooth mice exposing GATT
@@ -35,6 +37,11 @@ Verify ZIP in the download directory:
 Diagnostics:
     "/Applications/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --self-test
     "/Applications/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --diagnose
+
+On the CLI, an access failure is reported as a distinct UNKNOWN message.
+A receiver with VID:PID 3151:5007 but without the expected FFFF:0002 HID
+collection is reported as an unsupported interface, not a battery result.
+No hardware settings are changed.
 
 If the compatible USB receiver is absent or does not supply a verified
 response, --diagnose prints UNKNOWN and exits 2, not a zero-percent reading.

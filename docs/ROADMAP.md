@@ -578,6 +578,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Handle BLE discovery errors/disconnect; clear the peripheral
       delegate after finishing a read.
 - [x] Expand native HID parser smoke tests from 3 to 8 cases.
-- [ ] Pass legacy Intel, modern macOS and Windows CI for the changes.
-- [ ] Package follow-up separately as High Sierra experimental prerelease.
+- [x] BLE lifecycle PR #79 CI: Intel 45182624524, macOS 45182624492,
+      Windows 45182624479 PASS; merged 34c0b250.
+- [x] Published v0.3.0-highsierra.2: workflow 45183055223 PASS;
+      downloaded ZIP and SHA-256 verified.
 - [ ] Validate real 10.13 Bluetooth prompts and sleep/wake on owner iMac.
+
+
+## High Sierra receiver diagnostic precision
+- [x] Separate missing receiver, unexpected HID usage, HID access error,
+      sleeping/unresponsive receiver, and valid battery percentage.
+- [x] Suppress battery/disconnect alerts for unverified/error states.
+- [x] Add non-hardware self-tests of error-state notification suppression.
+- [ ] Intel CI and High Sierra follow-up release, without changing Latest.
+- [ ] Confirm errors correspond to actual High Sierra receiver behavior.

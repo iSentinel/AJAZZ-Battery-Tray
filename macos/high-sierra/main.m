@@ -4,7 +4,11 @@
 #import <IOKit/hid/IOHIDKeys.h>
 
 typedef NS_ENUM(NSInteger, BatteryState) {
-    BatteryAbsent = 0, BatteryUnknown = 1, BatteryValid = 2
+    BatteryAbsent = 0,
+    BatteryUnknown = 1,
+    BatteryValid = 2,
+    BatteryAccessError = 3,
+    BatteryUnexpectedUsage = 4
 };
 
 typedef struct {
@@ -38,9 +42,12 @@ static BOOL MatchesVendorCollection(IOHIDDeviceRef device) {
     return p == 0xffff && u == 2;
 }
 
-static NSInteger ReadFeature(IOHIDDeviceRef device) {
-    if (IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone) != kIOReturnSuccess)
+static NSInteger ReadFeature(IOHIDDeviceRef device, BOOL *accessFailed) {
+    *accessFailed = NO;
+    if (IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone) != kIOReturnSuccess) {
+        *accessFailed = YES;
         return -1;
+    }
     NSInteger percent = -1;
     for (int count = 65; count <= 67; count += 2) {
         uint8_t request[67] = {0};
@@ -65,7 +72,7 @@ static NSInteger ReadFeature(IOHIDDeviceRef device) {
 
 /// The only USB query is the original, read-only-in-purpose F7/05 protocol.
 static BatteryReading ReadReceiver(void) {
-    BatteryReading reading = {BatteryUnknown, -1, 0};
+    BatteryReading reading = {BatteryAccessError, -1, 0};
     IOHIDManagerRef manager = IOHIDManagerCreate(kCFAllocatorDefault, 0);
     if (!manager) return reading;
     NSDictionary *matching = @{
@@ -83,19 +90,24 @@ static BatteryReading ReadReceiver(void) {
         const void **list = calloc((size_t)(count > 0 ? count : 1), sizeof(void *));
         if (list) {
             CFSetGetValues(devices, list);
-            reading.state = BatteryAbsent;
+            reading.state = count ? BatteryUnexpectedUsage : BatteryAbsent;
+            BOOL anyOpened = NO;
             for (CFIndex i = 0; i < count; i++) {
                 IOHIDDeviceRef device = (IOHIDDeviceRef)list[i];
                 if (!MatchesVendorCollection(device)) continue;
                 reading.collections++;
                 reading.state = BatteryUnknown;
-                NSInteger percent = ReadFeature(device);
+                BOOL accessFailed = NO;
+                NSInteger percent = ReadFeature(device, &accessFailed);
+                if (!accessFailed) anyOpened = YES;
                 if (percent >= 0) {
                     reading.state = BatteryValid;
                     reading.percent = percent;
                     break;
                 }
             }
+            if (reading.state == BatteryUnknown && !anyOpened)
+                reading.state = BatteryAccessError;
             free(list);
         }
         CFRelease(devices);
@@ -266,6 +278,16 @@ static BatteryReading ReadReceiver(void) {
         self.detail.title = [self word:@"Compatible receiver not found"
                                        ru:@"Совместимый приёмник не найден"
                                        uk:@"Сумісний приймач не знайдено"];
+    } else if (reading.state == BatteryAccessError) {
+        self.tray.button.title = @"AJAZZ !";
+        self.detail.title = [self word:@"Cannot access receiver HID interface"
+                                       ru:@"Нет доступа к HID-интерфейсу"
+                                       uk:@"Немає доступу до HID-інтерфейсу"];
+    } else if (reading.state == BatteryUnexpectedUsage) {
+        self.tray.button.title = @"AJAZZ ?";
+        self.detail.title = [self word:@"Receiver HID collection not supported"
+                                       ru:@"HID-интерфейс приёмника не поддерживается"
+                                       uk:@"HID-інтерфейс приймача не підтримується"];
     } else {
         self.tray.button.title = @"AJAZZ ?";
         self.detail.title = [self word:@"Receiver present; battery unknown"
@@ -283,8 +305,9 @@ static BatteryReading ReadReceiver(void) {
 }
 
 - (void)evaluateAlerts:(BatteryReading)reading {
-    if (reading.state == BatteryUnknown) {
-        self.absentCount = 0; // Sleeping mouse is not a disconnected receiver.
+    if (reading.state != BatteryValid && reading.state != BatteryAbsent) {
+        // No valid battery report: never treat errors as 0% or disconnected.
+        self.absentCount = 0;
         return;
     }
     if (reading.state == BatteryAbsent) {
@@ -379,7 +402,10 @@ static BatteryReading ReadReceiver(void) {
 
 - (NSString *)diagnostics {
     NSString *state = self.latest.state == BatteryValid ? @"valid" :
-        (self.latest.state == BatteryAbsent ? @"not connected" : @"unknown");
+        (self.latest.state == BatteryAbsent ? @"not connected" :
+         self.latest.state == BatteryAccessError ? @"access error" :
+         self.latest.state == BatteryUnexpectedUsage ? @"HID usage mismatch" :
+         @"receiver present, no valid battery");
     return [NSString stringWithFormat:
         @"AJAZZ Battery Tray High Sierra Edition\n"
          @"OS: %@\nVID:PID: 3151:5007\nUsage: FFFF:0002\n"
@@ -567,7 +593,13 @@ int main(void) {
             uint8_t wrongID[] = {6, 0, 0, 83};
             uint8_t malformed[] = {5, 1, 0, 83};
             uint8_t shortFrame[] = {5, 0};
-            BOOL pass = ParseBattery(first, 4) == 1 &&
+            LegacyTray *test = [[LegacyTray alloc] init];
+            [test evaluateAlerts:(BatteryReading){BatteryAccessError, -1, 0}];
+            [test evaluateAlerts:(BatteryReading){BatteryUnexpectedUsage, -1, 0}];
+            [test evaluateAlerts:(BatteryReading){BatteryUnknown, -1, 0}];
+            BOOL safeState = !test.everConnected && test.absentCount == 0 &&
+                test.alerted == 0;
+            BOOL pass = safeState && ParseBattery(first, 4) == 1 &&
                 ParseBattery(full, 4) == 100 &&
                 ParseBattery(stripped, 3) == 25 &&
                 ParseBattery(zero, 4) == -1 &&
@@ -575,7 +607,8 @@ int main(void) {
                 ParseBattery(wrongID, 4) == -1 &&
                 ParseBattery(malformed, 4) == -1 &&
                 ParseBattery(shortFrame, 2) == -1;
-            puts(pass ? "PASS: 8 HID parser cases" : "FAIL: HID parser regression");
+            puts(pass ? "PASS: 8 HID parser and 3 unknown-state cases"
+                      : "FAIL: legacy battery state regression");
             return pass ? 0 : 1;
         }
         if ([arguments containsObject:@"--diagnose"]) {
@@ -586,8 +619,12 @@ int main(void) {
                 printf("PASS: battery %ld%%\n", (long)reading.percent);
             else if (reading.state == BatteryAbsent)
                 puts("UNKNOWN: compatible receiver not found");
+            else if (reading.state == BatteryAccessError)
+                puts("UNKNOWN: HID manager or receiver access failed");
+            else if (reading.state == BatteryUnexpectedUsage)
+                puts("UNKNOWN: expected HID usage FFFF:0002 not exposed");
             else
-                puts("UNKNOWN: no verified battery response");
+                puts("UNKNOWN: receiver present, no verified battery response");
             return reading.state == BatteryValid ? 0 : 2;
         }
         NSApplication *app = [NSApplication sharedApplication];
