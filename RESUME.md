@@ -1,16 +1,18 @@
-# Resume — optional offline MQTT availability intent
+# Resume — optional MQTT availability policy candidate
 
-- beta.52 published, PR #68 optional preview merged
-  a1f280379e68504a1d39fc55daf5f3ff3f51e534.
-- PR #69 AULA continuity beta.53 metadata 5fb9051 pending full CI.
-- feat/ha-mqtt-availability based on beta.52 main, independent of PR #69:
-  pure message-intent policy only, no network code or MQTT dependency.
-  Fresh session-bound data: retained QoS1 battery then online with MQTT5
-  300s expiry. Otherwise offline then clear retained battery. Twelve pure
-  checks added; C# CI pending; Python tests PASS.
-- Next: verify CI for PR #69, publish beta.53 only on final PASS.
-  Sync optional policy branch to latest main after release and verify CI.
-  Broker, credentials, TLS, discovery and HA installation remain blocked
-  until explicit separate opt-in and physical acceptance.
-- AULA sleep/wake, AJ159 affected captures, multi-BLE, API UI and
-  resource measurements remain open.
+- beta.53 PR #69 final Windows 45139329299 / macOS 45139329460 /
+  preview 45139329257 PASS, merged
+  1a053ddd611dd50b058bd95d1d187bb5698932da.
+  Release publication not yet verified.
+- feat/ha-mqtt-availability synchronized with beta.53 main; conflicts
+  resolved by preserving complete main AULA tests and appending MQTT tests.
+  Optional pure message-intent policy only, no network/broker dependency.
+- Fresh session-bound reading: retained QoS1 battery followed by online;
+  both have proposed 300s MQTT5 message expiry. Missing/stale: offline
+  first, then empty retained battery message to clear a previous value.
+- Sixteen pure policy assertions pending C# CI; Python tools 23/23 PASS.
+- Next: verify beta.53 release, open PR for policy and run Windows/macOS/
+  HA preview CI. Do not publish MQTT until authenticated TLS transport,
+  acknowledgments, HA discovery/expiry and explicit stable mapping tested.
+- Actual Windows resource baselines, AULA sleep/wake, AJ159 affected
+  captures and multi-BLE remain pending.

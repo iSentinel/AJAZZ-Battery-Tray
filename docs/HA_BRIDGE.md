@@ -59,6 +59,19 @@ Combined latest CI remains pending. This is not a deployed or installable
 Home Assistant bridge; MQTT, explicit mapping UI and availability policy
 still need independent implementation.
 
+## AULA receiver continuity gate
+In beta.52 the AULA slot was fixed at 1, which could silently bind a
+replacement receiver within the same active API. The next candidate reserves
+slot 1 for non-bindable status only, assigns a new ordinal on observed
+receiver changes or loss of identity, and never reuses a retired AULA slot.
+The same known receiver during no-reply sleep retains its slot. Exhaustion
+fails closed; restart the optional API and explicitly map again. Consumers
+must not bind AULA slot 1, including beta.52 AULA rows. Ordinals are not
+physical keyboard identities: the same receiver path or paired device
+replacement without an observed identity change cannot be distinguished.
+No persistent mapping or MQTT publication is approved on that basis.
+Ten added assertions pending C# CI; no HID requests or default overhead added.
+
 ## Offline MQTT 5 availability intent (candidate)
 
 A pure optional component plans exactly two retained QoS1 messages for each

@@ -1823,6 +1823,42 @@ async Task TestHaLoopback()
 }
 TestHaLoopback().GetAwaiter().GetResult();
 
+// AULA API session slots cannot be silently rebound after a receiver change.
+var sessionSlots = new SnapshotSessionSlots();
+Check("AULA no identity uses status placeholder", sessionSlots.Aula(null) == 1);
+int firstAulaSlot = sessionSlots.Aula("receiver-a");
+Check("AULA valid receiver gets a separate bindable slot", firstAulaSlot == 2);
+Check("AULA same known receiver preserves slot during no-reply sleep",
+    sessionSlots.Aula("receiver-a") == firstAulaSlot);
+int otherAulaSlot = sessionSlots.Aula("receiver-b");
+Check("AULA replacement gets a new slot", otherAulaSlot == 3);
+Check("AULA unknown or disconnected retires the active slot", sessionSlots.Aula(null) == 1);
+Check("AULA replug after observed interruption gets a new slot",
+    sessionSlots.Aula("receiver-b") == 4);
+Check("AULA and APEX slot namespaces remain independent",
+    sessionSlots.Apex("receiver-a") == 1 && sessionSlots.Apex("receiver-b") == 2 &&
+    sessionSlots.Apex("receiver-a") == 1);
+var exhaustedAulaSlots = new SnapshotSessionSlots();
+for (int n = 2; n <= LocalBatterySnapshot.MaximumDevices; n++)
+    exhaustedAulaSlots.Aula(n.ToString());
+bool rejectedExhaustedAula = false;
+try { exhaustedAulaSlots.Aula("new"); }
+catch (InvalidDataException) { rejectedExhaustedAula = true; }
+Check("AULA slot exhaustion fails closed", rejectedExhaustedAula);
+var placeholderAula = haSnapshot with { Devices = new[] {
+    new LocalBatterySnapshot.Entry("aula_receiver", 1, "disabled", null, null, null) } };
+bool rejectedPlaceholder = false;
+try { HaSessionMapping.Bind(placeholderAula, "aula_receiver", 1); }
+catch (InvalidDataException) { rejectedPlaceholder = true; }
+Check("HA cannot bind the AULA status placeholder", rejectedPlaceholder);
+var oldAulaSnapshot = haSnapshot with { Devices = new[] {
+    new LocalBatterySnapshot.Entry("aula_receiver", 2, "fresh", 83, null, snapshotNow) } };
+var oldAulaMapping = HaSessionMapping.Bind(oldAulaSnapshot, "aula_receiver", 2);
+var replacementAulaSnapshot = oldAulaSnapshot with { Devices = new[] {
+    oldAulaSnapshot.Devices[0] with { SessionSlot = 3 } } };
+Check("HA old AULA binding cannot read a replacement slot",
+    !oldAulaMapping.Read(replacementAulaSnapshot, snapshotNow).Available);
+
 // Pure MQTT 5 publication intent. No broker, credentials or network traffic.
 var mqttFresh = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot, snapshotNow);
 Check("MQTT fresh intent publishes battery before online",
@@ -1860,6 +1896,24 @@ Check("MQTT publication plan has only bounded topic suffixes",
 Check("MQTT policy does not modify the snapshot",
     haSnapshot.Devices[0].BatteryPercent == 83 &&
     haSnapshot.Devices[0].Status == "fresh");
+
+// MQTT expiry and zero-value boundaries must never alias unavailable.
+var mqttZero = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with { BatteryPercent = 0 } } },
+    snapshotNow);
+Check("MQTT zero percent is a valid fresh value", mqttZero[0].Payload == "0" &&
+    mqttZero[1].Payload == "online");
+var mqttInvalid = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with { BatteryPercent = -1 } } },
+    snapshotNow);
+Check("MQTT invalid percentage must fail closed", mqttInvalid[0].Payload == "offline");
+var mqttOutOfRange = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with { BatteryPercent = 101 } } },
+    snapshotNow);
+Check("MQTT over-range percentage must fail closed", mqttOutOfRange[0].Payload == "offline");
+var mqttChangedSchema = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { SchemaVersion = 999 }, snapshotNow);
+Check("MQTT unsupported schema must fail closed", mqttChangedSchema[0].Payload == "offline");
 
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

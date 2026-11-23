@@ -29,6 +29,9 @@ The optional --port argument accepts ports 1–65535 (default 18789);
 the destination is always 127.0.0.1. Redirected input is rejected. Exit
 status 0 means fresh preview or user cancellation at selection, 1 means
 unavailable/request failure, and 2 means invalid arguments or selection.
+AULA slot 1 is status-only and cannot be bound, including AULA rows from
+beta.52. Use the continuity-enabled API (candidate beta.53 or newer) for
+AULA preview. APEX and Bluetooth remain compatible with beta.52.
 No device name is inferred from a slot. Restarting the API invalidates
 previous bindings. No external network or hardware commands are used.
 
