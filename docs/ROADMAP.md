@@ -664,6 +664,8 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add optional progress stages for HID discovery/open/Set F7/Get 05,
       with Win32 error codes and elapsed time; no extra device commands.
 - [x] Add pure redaction tests and Windows CI deliberate timeout test.
+- [x] Remove nullable clock-status log argument warning (CS8604)
+      without changing dock command behavior.
 - [ ] Pass Windows, modern macOS and High Sierra Intel CI as applicable.
 - [x] Increment macOS universal bundle build number to 61;
       runtime behavior unchanged.
