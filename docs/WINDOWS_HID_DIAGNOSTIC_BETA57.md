@@ -36,6 +36,28 @@ To verify timeout handling **without sending any device requests**:
 
 Expected test exit code is 124; the file has BEGIN, STEP and TIMEOUT.
 
+## Repeatable Windows 11 owner acceptance
+
+From a local checkout of the project, the helper keeps awake and
+post-sleep readings in separate, timestamped files. Run `-DryRun`
+first; it creates no file and does not open HID:
+
+```powershell
+.	ools\Collect-AjazzHidDiagnostics.ps1 -DryRun -Label awake
+.	ools\Collect-AjazzHidDiagnostics.ps1 -Label awake
+# Let the mouse sleep naturally, wake it by moving it, then:
+.	ools\Collect-AjazzHidDiagnostics.ps1 -Label after-sleep
+```
+
+Use `-ExePath` for a portable beta.57+ EXE or
+`-OutputDirectory` for another report directory.
+`-SelfTest -Label watchdog` uses only a one-second delay,
+no HID request, and returns 124 by design.
+
+The helper does not put a mouse to sleep, reset USB interfaces or
+alter hardware settings. Review the files before sharing because
+they contain the first eight response bytes.
+
 ## Data and safety properties
 
 - The tool uses the existing, approved zero-payload F7 / feature 05
