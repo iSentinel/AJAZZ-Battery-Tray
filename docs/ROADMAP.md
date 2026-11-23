@@ -451,10 +451,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 
 ## beta.51 optional AULA timer and single-flight lifecycle
 - [x] Final beta.50 Windows 45087837752 / macOS 45087838061 PASS; merged.
-- [ ] beta.50 publication verification (workflow 45088588616).
+- [x] beta.50 published; workflow 45088588616 PASS, six assets.
 - [x] Lazy timer, release on disable, manual reads without timer.
 - [x] Ticket-based stale reply and concurrent read guards, prompt resampling
   after re-enable during an old read, fourteen lifecycle assertions.
-- [ ] Combined CI PR #65, beta.51 release and physical acceptance.
+- [x] Unified AULA dashboard/API fresh/cached classification; twelve more\n  assertions including synthetic eight-hour sleep, expiration and recovery.\n- [ ] Combined CI PR #65, beta.51 release and physical acceptance.
 - [ ] Observe prolonged AULA sleep and wake, confirm cached indication and
   fresh reading recovery without extra hardware traffic.
