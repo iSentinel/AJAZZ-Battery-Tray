@@ -1,4 +1,15 @@
-# Resume — High Sierra prerelease and stability checkpoints
+# Resume — High Sierra diagnostics checkpoint
+
+- PR #79 High Sierra Bluetooth lifecycle guards merged at
+  34c0b2505cc89a7fe5242c6f1f24f86e5524ade5.
+  Intel CI 45182624524 PASS, macOS 45182624492 PASS,
+  Windows 45182624479 PASS.
+- Experimental v0.3.0-highsierra.2 published, release workflow
+  45183055223 PASS; downloaded ZIP and checksum verified.
+- In progress: distinguish HID access/usage failures from absent or
+  sleeping receivers; avoid false low-battery and disconnect alerts.
+  Physical iMac Late 2013 / High Sierra acceptance is still pending.
+
 
 - PR #78 merged at 2080f302281fc6e0bfe4f05669e20de8cf562410.
   High Sierra Intel CI 45178005476 PASS, modern macOS 45178005491
