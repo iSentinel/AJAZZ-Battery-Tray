@@ -5,7 +5,7 @@
 - PR #76 single-pass opted-in BLE scheduling final Windows
   45151826742 / macOS 45151826820 PASS; merged
   d26780312170a71e5c87a7dccd049bbe5fa36da1.
-  beta.56 publication workflow 45152156278 pending confirmation.
+  beta.56 release workflow 45152156278 PASS; all six assets published.
 - PRs #70–#72 offline optional HA MQTT policy, ACK ordering and TLS
   parameters have passed CI and merged. No live broker/credentials.
 - Optional Windows resource/GDI/USER CSV comparator merged PR #74.
