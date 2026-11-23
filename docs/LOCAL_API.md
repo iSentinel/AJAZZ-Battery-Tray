@@ -9,6 +9,12 @@ Home Assistant integration. The optional HTTP listener is session-only and never
 - Session slot: ordinal only, not a persistent device/entity identity.
   Duplicate source/slot pairs are rejected. Do not treat this as a stable
   Home Assistant entity identifier across restarts or device changes.
+- Optional sessionEpoch: random identity per API activation, omitted from
+  inactive one-off copies. From the continuity candidate, AULA slot 1 is
+  status-only; slots 2–64 represent observed receiver continuity within
+  the current API session. A disconnected, disabled, unknown or replaced
+  receiver retires its previous slot. No-reply with the same known receiver
+  keeps the slot. No physical keyboard identity is inferred.
 - Machine-readable status and measurement time. BatteryPercent is emitted
   only for valid fresh measurements at most five minutes old; scheduled,
   cached or aging fresh data is separated into LastKnownPercent for at most
@@ -20,7 +26,8 @@ Home Assistant integration. The optional HTTP listener is session-only and never
 Twenty-five pure assertions exercise freshness, privacy, shape, bounds,
 immutable publication and read-time expiration. The existing monitoring
 refresh path publishes a sanitized snapshot only while the API is running.
-Receiver ordinals are assigned once per active API session; BLE uses its existing
+APEX receiver ordinals are assigned once per active API session; AULA
+ordinals are never reused after observed loss/change. BLE uses its existing
 session number. Stopping the API clears its snapshot and slot map. Overflow or projection errors clear the snapshot rather
 than returning partial data. The AULA row excludes manual-only readings
 when monitoring is disabled. Diagnostics > Copy local battery snapshot
