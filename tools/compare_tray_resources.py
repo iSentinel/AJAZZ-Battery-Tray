@@ -77,7 +77,10 @@ def read_run(path):
     result = {"version": versions.pop(), "duration": duration,
               "digest": digest, "gui_enabled": gui_enabled}
     result["cpu_one_core_percent"] = 100 * (cpu[-1] - cpu[0]) / duration
-    for key in ("working_set_bytes", "private_bytes", "handles", "threads") + (GUI_FIELDS if gui_enabled else ()):
+    fields = ("working_set_bytes", "private_bytes", "handles", "threads")
+    if gui_enabled:
+        fields += GUI_FIELDS
+    for key in fields:
         values = [number(row, key) for row in rows]
         target = key.replace("_bytes", "_mib")
         result[target] = statistics.median(values) / (
