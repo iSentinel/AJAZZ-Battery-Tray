@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from compare_tray_resources import FIELDS, compare, main, read_run
+from compare_tray_resources import FIELDS, GUI_FIELDS, compare, main, read_run
 
 
 class ResourceComparisonTests(unittest.TestCase):
@@ -18,18 +18,21 @@ class ResourceComparisonTests(unittest.TestCase):
         self.root = Path(self.directory.name)
 
     def fixture(self, name="test.csv", version="0.3.0-beta.50",
-                duration=30, cpu=0.3, memory=10485760):
+                duration=30, cpu=0.3, memory=10485760, gui=False):
         """Write three controlled samples with a known CPU delta."""
         path = self.root / name
         with path.open("w", encoding="utf-8", newline="") as output:
             writer = csv.writer(output)
-            writer.writerow(FIELDS)
+            writer.writerow(FIELDS + GUI_FIELDS if gui else FIELDS)
             for index in range(3):
-                writer.writerow([
+                values = [
                     "2026-11-23T00:00:00Z", version,
                     index * duration / 2, index * cpu / 2, "",
                     memory, memory / 2, 100, 5,
-                ])
+                ]
+                if gui:
+                    values.extend((10 + index, 4 + index))
+                writer.writerow(values)
         return path
 
     def test_known_metrics(self):
@@ -125,6 +128,32 @@ class ResourceComparisonTests(unittest.TestCase):
         path.write_text(path.read_text().replace(
             "2026-11-23T00:00:00Z", "2026-11-23T00:00:00.1234567+00:00"))
         self.assertAlmostEqual(read_run(path)["cpu_one_core_percent"], 1)
+
+
+    def test_optional_gui_resources(self):
+        run = read_run(self.fixture(gui=True))
+        self.assertTrue(run["gui_enabled"])
+        self.assertEqual(run["gdi_objects"], 11)
+        self.assertEqual(run["user_objects"], 5)
+
+    def test_gui_comparison(self):
+        original = read_run(self.fixture("old.csv", gui=True))
+        updated = read_run(self.fixture("new.csv", gui=True, version="beta.54"))
+        names = [row[0] for row in compare([original], [updated])]
+        self.assertIn("gdi_objects", names)
+        self.assertIn("user_objects", names)
+
+    def test_gui_schema_mismatch_rejected(self):
+        original = read_run(self.fixture("old.csv"))
+        updated = read_run(self.fixture("new.csv", gui=True))
+        with self.assertRaisesRegex(ValueError, "resource schema"):
+            compare([original], [updated])
+
+    def test_negative_gui_counts_rejected(self):
+        path = self.fixture(gui=True)
+        path.write_text(path.read_text().replace(",10,4", ",-1,4"))
+        with self.assertRaisesRegex(ValueError, "gdi_objects"):
+            read_run(path)
 
 
 if __name__ == "__main__":

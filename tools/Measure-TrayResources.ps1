@@ -3,13 +3,18 @@
 Measure the resource footprint of a running tray process without changing its settings.
 .EXAMPLE
 .\Measure-TrayResources.ps1 -ProcessId 1234 -DurationSeconds 300 -OutputPath .\baseline.csv
+.EXAMPLE
+.\Measure-TrayResources.ps1 -ProcessId 1234 -DurationSeconds 300 -IncludeGuiResources -OutputPath .\gui.csv
+.NOTES
+GUI objects are optional. They are not CPU wakeups.
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][ValidateRange(1,2147483647)][int]$ProcessId,
     [ValidateRange(30,3600)][int]$DurationSeconds = 300,
     [ValidateRange(1,60)][int]$IntervalSeconds = 5,
-    [Parameter(Mandatory=$true)][string]$OutputPath
+    [Parameter(Mandatory=$true)][string]$OutputPath,
+    [switch]$IncludeGuiResources
 )
 $ErrorActionPreference = 'Stop'
 if ($IntervalSeconds -gt $DurationSeconds) { throw 'Interval must not exceed duration.' }
@@ -17,6 +22,17 @@ if (Test-Path -LiteralPath $OutputPath) { throw 'Output already exists. Select a
 $initial = Get-Process -Id $ProcessId
 $identity = $initial.StartTime
 $version = $initial.MainModule.FileVersionInfo.ProductVersion
+if ($IncludeGuiResources -and -not ('GuiResourceCounter' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class GuiResourceCounter
+{
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int GetGuiResources(IntPtr process, int category);
+}
+'@
+}
 $clock = [System.Diagnostics.Stopwatch]::StartNew()
 $previousCpu = $null
 $previousSeconds = $null
@@ -30,7 +46,7 @@ while ($true) {
     if ($null -ne $previousSeconds -and $seconds -gt $previousSeconds) {
         $oneCorePercent = [Math]::Round(100 * ($cpu - $previousCpu) / ($seconds - $previousSeconds), 4)
     }
-    $rows.Add([pscustomobject]@{
+    $row = [ordered]@{
         utc = [DateTimeOffset]::UtcNow.ToString('o')
         version = $version
         elapsed_seconds = [Math]::Round($seconds, 3)
@@ -40,7 +56,12 @@ while ($true) {
         private_bytes = $process.PrivateMemorySize64
         handles = $process.HandleCount
         threads = $process.Threads.Count
-    })
+    }
+    if ($IncludeGuiResources) {
+        $row.gdi_objects = [GuiResourceCounter]::GetGuiResources($process.Handle, 0)
+        $row.user_objects = [GuiResourceCounter]::GetGuiResources($process.Handle, 1)
+    }
+    $rows.Add([pscustomobject]$row)
     $previousCpu = $cpu
     $previousSeconds = $seconds
     if ($seconds -ge $DurationSeconds) { break }

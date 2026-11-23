@@ -159,3 +159,18 @@ inventories, repeated discovery, unplug, empty/unknown results and single
 input enumeration. This is an allocation strategy, not a measured reduction
 of Windows CPU/working set or timer wakeups; actual side-by-side Windows
 benchmarks remain required.
+
+## Optional GDI/USER object sampling
+
+Use the explicit Windows-only -IncludeGuiResources switch:
+```powershell
+.\tools\Measure-TrayResources.ps1 -ProcessId 1234 -DurationSeconds 300 -IncludeGuiResources -OutputPath .\gui.csv
+python tools/compare_tray_resources.py --baseline old1.csv old2.csv old3.csv --candidate new1.csv new2.csv new3.csv
+```
+Default CSV remains compatible. With the switch, the sampler appends
+gdi_objects and user_objects from Windows GetGuiResources. The offline
+comparator accepts either exact schema and refuses mixed-schema data.
+These counts are not CPU wakeup metrics. A Windows CI smoke checks the
+extended sampler; four Python fixtures cover GUI comparison and rejection.
+Actual Windows CPU/RAM/GDI/USER improvements are not claimed until the
+owner provides same-PC, comparable measurement runs.
