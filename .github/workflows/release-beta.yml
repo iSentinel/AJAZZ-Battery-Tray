@@ -154,9 +154,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.57"
+          TAG="v0.3.0-beta.58"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.57 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.58 — Windows and macOS
+
+          **AULA L99 receiver continuity (Windows):** transient
+          HID enumeration errors hide charge but retain last verified
+          sample in memory, reusing it as timestamped Cached only
+          after the same receiver is confirmed present again.
+          Confirmed removal/identity replacement still clears it.
+          No new HID commands, polling intervals or notifications.
+          Physical L99 sleep/wake acceptance remains pending.
 
           **Bounded Windows 11 HID diagnostics (new):** optional
           --hid-diagnose --output PATH --timeout 40 saves an immediate
@@ -472,7 +480,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.57" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.58" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

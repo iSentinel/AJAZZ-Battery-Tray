@@ -54,6 +54,29 @@ history files. The 24-hour expiration can be marked NOT RUN if a full
 24-hour real-device observation is impractical; synthetic coverage
 does not count as physical acceptance.
 
+## beta.58 transient enumeration continuity
+
+While a keyboard is asleep, HID enumeration can occasionally become
+temporarily unavailable. Treat this as **presence unknown**, not as
+proof that the USB receiver was unplugged. In beta.58, the last
+confirmed sample is retained privately but hidden from the dashboard
+while presence is unknown. The first subsequent confirmed discovery
+of the *same* receiver may restore that sample as timestamped
+**Cached**, never **Fresh**, if it is still under 24 hours old.
+
+Confirmed receiver removal, a different local receiver identity,
+explicit AULA monitoring opt-out and stale cache expiry remain
+invalidating conditions. No additional USB/HID request is introduced.
+
+If this transition happens naturally, record an extra checkpoint
+A13: last known percent/time, unknown-presence status, later same
+receiver with no reply, cached state and original measurement time.
+Do not deliberately force driver failures, reconnect devices rapidly,
+or change USB configuration just to make this scenario occur.
+Mark NOT OBSERVED if ordinary sleep never produces an enumeration
+failure. A14, when observed naturally, checks that an actually
+different receiver cannot inherit another receiver's cached level.
+
 ## Resource comparison
 
 Follow [RESOURCE_OPTIMIZATION.md](RESOURCE_OPTIMIZATION.md) on the same PC

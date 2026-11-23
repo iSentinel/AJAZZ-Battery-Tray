@@ -27,6 +27,7 @@ public sealed class TrayAppContext : ApplicationContext
     private BatteryHistoryForm? _aulaHistoryWindow;
     private AulaL99Reading? _aulaLatest;
     private readonly AulaBatteryState _aulaBattery = new();
+    private readonly AulaReceiverContinuity _aulaContinuity = new();
     private DateTimeOffset? _aulaLastReadAt;
     private readonly AulaPollLifecycle _aulaPoll = new();
     private bool _hostMetricsBusy;
@@ -474,6 +475,7 @@ public sealed class TrayAppContext : ApplicationContext
             _aulaLatest = null;
             _aulaLastReadAt = null;
             _aulaBattery.Reset();
+            _aulaContinuity.Reset();
             _settings.Save();
             StopAulaTimer();
             if (auto.Checked) _ = PollAulaAsync(manual: true);
@@ -646,7 +648,8 @@ public sealed class TrayAppContext : ApplicationContext
         {
             AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
             if (_closing || !_aulaPoll.MayApply(ticket)) return;
-            if (result.LocalKey != _aulaLatest?.LocalKey)
+            if (_aulaContinuity.MustReset(result.PresenceKnown,
+                result.ReceiverPresent, result.LocalKey))
                 _aulaBattery.Reset();
             _aulaLatest = result;
             _aulaLastReadAt = DateTimeOffset.UtcNow;
@@ -672,7 +675,8 @@ public sealed class TrayAppContext : ApplicationContext
                 error.GetType().Name);
             if (!_closing && _aulaPoll.MayApply(ticket))
             {
-                _aulaBattery.Reset();
+                // Uncertain enumeration hides the cache; it does not prove
+                // the receiver changed or was physically disconnected.
                 _aulaLatest = new(false, null, "Unexpected read error", PresenceKnown: false);
                 _aulaLastReadAt = DateTimeOffset.UtcNow;
             }
