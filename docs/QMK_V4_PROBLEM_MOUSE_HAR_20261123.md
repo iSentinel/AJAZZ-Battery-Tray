@@ -4,6 +4,10 @@
 
 Owner supplied one Chrome DevTools HAR named
 `qmk.top_*.har`.
+The owner confirmed the capture was taken on **Windows 11** with the
+**affected mouse**, not on the High Sierra iMac. The browser
+User-Agent reports Windows NT 10.0 on Windows 11 as well, so this
+header cannot distinguish Windows 10 from 11.
 **The raw HAR is not committed** because request headers and future
 captures may contain sensitive information. This note records only
 aggregate metadata extracted from this single supplied file.
@@ -18,7 +22,7 @@ aggregate metadata extracted from this single supplied file.
 | HTTP responses | Six 200, three 304; no HTTP error statuses |
 | Origin | qmk.top only |
 | Resource categories | 5 scripts, 2 stylesheets, 2 image requests |
-| Browser User-Agent | Chrome 157 on Windows NT 10.0 x64 |
+| Browser User-Agent | Chrome 157, Windows NT 10.0 x64 (also used by Windows 11) |
 | Request bodies | None |
 | WebSocket messages | None |
 | Device-specific API calls | None captured |
@@ -34,9 +38,9 @@ a trace of executed WebHID calls or reports.
 
 - The HAR is consistent with normal frontend asset loading. It does not
   demonstrate successful or failed battery telemetry for any mouse.
-- The reported browser User-Agent identifies **Windows**, not the
-  owner's separate iMac/macOS High Sierra 10.13.6 system. The capture
-  cannot validate High Sierra compatibility.
+- The owner confirmed **Windows 11**. User-Agent Windows NT 10.0
+  cannot by itself establish the Windows release. The capture
+  cannot validate the separate High Sierra environment.
 - No VID/PID, HID usage, battery percentage, IOReturn, or WebHID
   feature report bytes are present in the nine network entries.
 - Do not conclude that the receiver works, is broken, or needs a

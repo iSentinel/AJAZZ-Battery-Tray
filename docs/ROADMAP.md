@@ -620,7 +620,8 @@ configuration commands. USB `VersionNumber` is a device revision,
 ## qmk.top/v4 owner HAR — affected mouse (network-only)
 - [x] Parse supplied HAR safely, without committing raw contents.
 - [x] Record nine qmk.top GETs, six 200 / three 304,
-      frontend assets only; user agent reports Windows 10 / Chrome 157.
+      frontend assets only; owner confirms Windows 11 / Chrome 157.
+      User-Agent Windows NT 10.0 is not Windows 10 proof.
 - [x] Document that no WebHID F7/05, VID/PID, charge or API request
       is present in the network capture. See
       [HAR evidence review](QMK_V4_PROBLEM_MOUSE_HAR_20261123.md).
