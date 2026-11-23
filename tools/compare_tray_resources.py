@@ -3,9 +3,12 @@
 
 import argparse
 import csv
+import hashlib
+import io
 import math
 import statistics
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 FIELDS = (
@@ -27,19 +30,36 @@ def number(row, key):
     return value
 
 
-def read_run(path):
-    """Validate and summarize one bounded sampler export."""
-    if path.stat().st_size > 2 * 1024 * 1024:
+def read_rows(path):
+    """Read bounded UTF-8 CSV and validate its exact schema."""
+    with path.open("rb") as source:
+        raw = source.read(2 * 1024 * 1024 + 1)
+    if len(raw) > 2 * 1024 * 1024:
         raise ValueError(f"{path}: CSV exceeds 2 MiB")
-    with path.open(encoding="utf-8-sig", newline="") as source:
-        reader = csv.DictReader(source)
-        if tuple(reader.fieldnames or ()) != FIELDS:
-            raise ValueError(f"{path}: unexpected CSV header")
-        rows = list(reader)
+    reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig")),
+                            strict=True)
+    if tuple(reader.fieldnames or ()) != FIELDS:
+        raise ValueError(f"{path}: unexpected CSV header")
+    rows = list(reader)
     if not 3 <= len(rows) <= 3601:
         raise ValueError(f"{path}: expected 3–3601 samples")
+    for row in rows:
+        if None in row or any(value is None for value in row.values()):
+            raise ValueError(f"{path}: malformed CSV row")
+        try:
+            stamp = datetime.fromisoformat(row["utc"].replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError(f"{path}: invalid UTC timestamp") from error
+        if stamp.utcoffset() != timedelta(0):
+            raise ValueError(f"{path}: invalid UTC timestamp")
+    return rows, hashlib.sha256(raw).hexdigest()
+
+
+def read_run(path):
+    """Validate and summarize one bounded sampler export."""
+    rows, digest = read_rows(path)
     versions = {row["version"] for row in rows}
-    if len(versions) != 1 or not next(iter(versions)):
+    if len(versions) != 1 or not next(iter(versions)).strip():
         raise ValueError(f"{path}: inconsistent version")
     elapsed = [number(row, "elapsed_seconds") for row in rows]
     cpu = [number(row, "cpu_seconds") for row in rows]
@@ -50,7 +70,8 @@ def read_run(path):
         raise ValueError(f"{path}: non-increasing elapsed time")
     if any(b < a for a, b in zip(cpu, cpu[1:])):
         raise ValueError(f"{path}: decreasing CPU counter")
-    result = {"version": versions.pop(), "duration": duration}
+    result = {"version": versions.pop(), "duration": duration,
+              "digest": digest}
     result["cpu_one_core_percent"] = 100 * (cpu[-1] - cpu[0]) / duration
     for key in ("working_set_bytes", "private_bytes", "handles", "threads"):
         values = [number(row, key) for row in rows]
@@ -58,6 +79,8 @@ def read_run(path):
         result[target] = statistics.median(values) / (
             1048576 if key.endswith("_bytes") else 1
         )
+    if not all(math.isfinite(result[key]) for key in METRICS):
+        raise ValueError(f"{path}: nonfinite calculated metric")
     return result
 
 
@@ -92,6 +115,9 @@ def main(argv=None):
             raise ValueError("duplicate input path")
         baseline = [read_run(p) for p in args.baseline]
         candidate = [read_run(p) for p in args.candidate]
+        digests = [run["digest"] for run in baseline + candidate]
+        if len(set(digests)) != len(digests):
+            raise ValueError("duplicate CSV content")
         result = compare(baseline, candidate)
     except (OSError, ValueError, TypeError, csv.Error) as error:
         print(f"FAIL: {error}", file=sys.stderr)

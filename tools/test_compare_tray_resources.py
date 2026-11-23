@@ -91,6 +91,41 @@ class ResourceComparisonTests(unittest.TestCase):
         path = str(self.fixture())
         self.assertEqual(main(["--baseline", path, "--candidate", path]), 1)
 
+    def test_duplicate_copy(self):
+        original = self.fixture("original.csv")
+        copy = self.root / "copy.csv"
+        copy.write_bytes(original.read_bytes())
+        self.assertEqual(main(["--baseline", str(original),
+                               "--candidate", str(copy)]), 1)
+
+    def test_malformed_row(self):
+        path = self.fixture()
+        rows = path.read_text().splitlines()
+        rows[1] += ",unrecognized"
+        path.write_text("\n".join(rows) + "\n")
+        with self.assertRaisesRegex(ValueError, "malformed CSV row"):
+            read_run(path)
+
+    def test_invalid_timestamp(self):
+        path = self.fixture()
+        path.write_text(path.read_text().replace(
+            "2026-11-23T00:00:00Z", "not-a-timestamp"))
+        with self.assertRaisesRegex(ValueError, "UTC timestamp"):
+            read_run(path)
+
+    def test_non_utc_timestamp(self):
+        path = self.fixture()
+        path.write_text(path.read_text().replace(
+            "2026-11-23T00:00:00Z", "2026-11-23T00:00:00+02:00"))
+        with self.assertRaisesRegex(ValueError, "UTC timestamp"):
+            read_run(path)
+
+    def test_powershell_timestamp_precision(self):
+        path = self.fixture()
+        path.write_text(path.read_text().replace(
+            "2026-11-23T00:00:00Z", "2026-11-23T00:00:00.1234567+00:00"))
+        self.assertAlmostEqual(read_run(path)["cpu_one_core_percent"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
