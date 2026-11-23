@@ -1,24 +1,16 @@
-# Resume — optional MQTT delivery acknowledgment gate
+# Resume — optional MQTT broker parameter preflight
 
-- beta.53 released; workflow 45139628072 PASS; six assets.
-- PR #70 availability policy Windows 45140136771 / macOS 45140136699 /
-  optional HA preview 45140136710 PASS; merged
-  10be9fde200ffd0b7f775ff62763a768c10c7a63.
-- feat/ha-mqtt-delivery-gate now synchronized with main. All MQTT code
-  remains optional in integrations/home-assistant; no broker, credentials,
-  service or tray distribution changes.
-- Separate pure delivery gate validates the two-message retained QoS1
-  sequence, cannot advance after failed acknowledgment or cancellation.
-  Eight additional assertions pending CI; Python regressions 23/23 PASS.
-- Next: open draft PR and verify Windows/macOS/preview CI; avoid release
-  version increment for this isolated optional pure-policy change.
-- Actual TLS/MQTT broker, HA discovery, live delivery receipts, stable
-  entity mapping and operator-approved credentials still unimplemented.
-  AULA sleep, affected AJ159, mixed BLE and measured Windows resources
-  remain open.
-
-- Reconciled with official HA MQTT sensor expire_after guidance:
-  online battery is non-retained, availability online remains retained;
-  offline uses retained availability followed by clearing any retained
-  battery. Delivery gate rejects retained fresh state. Real HA expire_after,
-  last will, legacy retained cleanup and broker behavior not implemented.
+- beta.53 published; workflow 45139628072 PASS; six assets.
+- PR #70 availability policy merged 10be9fde200ffd0b7f775ff62763a768c10c7a63.
+- PR #71 non-retained fresh battery / retained availability, ack gate;
+  final Windows 45140932515, macOS 45140932548 and preview
+  45140932525 PASS; merged 096778a40bc807d83643273a5a0527baea1d2001.
+- feat/ha-mqtt-tls-preflight adds optional offline config validation:
+  explicitly enabled, MQTT5, TLS, certificate verification, manual topic
+  prefix and session credentials presence. Twelve pure checks await CI.
+  No MQTT package, network calls, service, credentials on disk or tray code.
+- Next: open draft PR and verify Windows/macOS/preview CI. Real broker TLS
+  identity validation, scoped credentials, HA discovery/expire_after and
+  reconnect behavior require explicit operator opt-in and hardware tests.
+- Owner Windows idle resource measurement, AULA physical sleep/wake,
+  affected AJ159 capture and multi-BLE remain pending.

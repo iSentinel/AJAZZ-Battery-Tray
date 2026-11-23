@@ -2033,5 +2033,42 @@ async Task TestMqttAcknowledgmentGate()
 }
 TestMqttAcknowledgmentGate().GetAwaiter().GetResult();
 
+// No broker can be contacted until an explicit secure opt-in is supplied.
+var brokerGuard = new HaMqttBrokerPreflight(ExplicitlyEnabled: true,
+    BrokerHost: "broker.example.invalid", BrokerPort: 8883,
+    TopicPrefix: "owner-chosen/battery", CredentialsSuppliedForSession: true);
+bool BrokerRejected(HaMqttBrokerPreflight options)
+{
+    try { options.Validate(); return false; }
+    catch (InvalidDataException) { return true; }
+}
+Check("MQTT broker preflight accepts explicit secure parameters",
+    !BrokerRejected(brokerGuard));
+Check("MQTT broker preflight defaults fully disabled",
+    BrokerRejected(new HaMqttBrokerPreflight()));
+Check("MQTT broker preflight requires explicit opt-in",
+    BrokerRejected(brokerGuard with { ExplicitlyEnabled = false }));
+Check("MQTT broker preflight rejects plaintext transport",
+    BrokerRejected(brokerGuard with { UseTls = false }));
+Check("MQTT broker preflight forbids invalid certificate bypass",
+    BrokerRejected(brokerGuard with { VerifyServerCertificate = false }));
+Check("MQTT broker preflight requires MQTT 5",
+    BrokerRejected(brokerGuard with { UseMqtt5 = false }));
+Check("MQTT broker preflight requires session credentials",
+    BrokerRejected(brokerGuard with { CredentialsSuppliedForSession = false }));
+Check("MQTT broker preflight rejects URLs as broker host",
+    BrokerRejected(brokerGuard with { BrokerHost = "mqtts://broker.example.invalid" }));
+Check("MQTT broker preflight rejects invalid ports",
+    BrokerRejected(brokerGuard with { BrokerPort = 0 }) &&
+    BrokerRejected(brokerGuard with { BrokerPort = 65536 }));
+Check("MQTT broker preflight rejects wildcard and reserved MQTT topics",
+    BrokerRejected(brokerGuard with { TopicPrefix = "owner/+/battery" }) &&
+    BrokerRejected(brokerGuard with { TopicPrefix = "homeassistant/sensor" }));
+Check("MQTT broker preflight rejects topic paths with empty segments",
+    BrokerRejected(brokerGuard with { TopicPrefix = "owner//battery" }) &&
+    BrokerRejected(brokerGuard with { TopicPrefix = "/owner/battery" }));
+Check("MQTT broker preflight accepts a custom TLS port without opening it",
+    !BrokerRejected(brokerGuard with { BrokerPort = 8884 }));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

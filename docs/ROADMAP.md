@@ -517,3 +517,9 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Gate subsequent sends on previous QoS1 acknowledgment, cancellation-safe.
 - [ ] Eight pure C# tests and full Windows/macOS CI.
 - [ ] Broker reconnect and HA availability acceptance, no default daemon.
+
+## Optional MQTT broker preflight
+- [x] Explicit session-only config defaults disabled, TLS and certificate check required.
+- [x] Reject unapproved broker host, port, topic prefix and credentials-absent inputs.
+- [ ] Twelve pure C# checks and Windows/macOS/preview CI.
+- [ ] No broker connection, secret persistence or tray startup integration.
