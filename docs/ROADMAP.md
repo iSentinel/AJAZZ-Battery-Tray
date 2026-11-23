@@ -550,5 +550,6 @@ configuration commands. USB `VersionNumber` is a device revision,
 ## Opt-in BLE one-pass scheduler candidate
 - [x] Replace LINQ sort with streaming due-device selection.
 - [x] Preserve nullable attempt ordering, generation ties, USB priority.
-- [ ] Ten new pure assertions and Windows/macOS CI.
+- [x] Ten new assertions; initial Windows 45151372157 / macOS 45151372393 PASS.
+- [ ] Final beta.56 CI and release publication.
 - [ ] Actual two-device BLE/USB owner acceptance.

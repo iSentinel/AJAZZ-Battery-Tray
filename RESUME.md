@@ -1,13 +1,10 @@
-# Resume — opt-in multi-BLE selection candidate
+# Resume — beta.56 opt-in Bluetooth scheduling candidate
 
-- beta.55 PR #75 final Windows 45150679762/macOS 45150679558 PASS;
-  merged f76a89ee7f116a39d141a4012f05940f0be183d8.
-  Release workflow 45150994852 started; publication unverified.
-- perf/ble-single-pass-selection scans eligible BLE slots once without
-  LINQ sorting, preserving nullable last attempt and generation
-  ordering, forced refresh and USB priority. Ten C# assertions pending
-  full CI, 27 Python offline assertions PASS.
-- No runtime BLE activation by default, no extra GATT requests, no HID
-  protocol changes, no new timer or service. Hardware two-device BLE,
-  AULA long sleep, affected AJ159 and measured Windows idle resources
-  remain outstanding. MQTT broker/HA remains optional and unconnected.
+- beta.55 published: release workflow 45150994852 PASS, six assets.
+- PR #76 single-pass BluetoothMultiSession.TryBegin initial Windows
+  45151372157 and macOS 45151372393 PASS.
+- beta.56 release metadata prepared. Require final exact-head CI before
+  merging or publishing. HID readers and poll intervals unchanged.
+- No automatic BLE opt-in, no additional GATT request, service or HA broker.
+- Actual Windows CPU/GDI/USER measurements, AULA sleep/wake, paired
+  AJ159 evidence and multi-device BLE owner acceptance remain pending.

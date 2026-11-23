@@ -152,9 +152,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.55"
+          TAG="v0.3.0-beta.56"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.55 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.56 — Windows and macOS
 
           **Receiver and tray icon reconciliation (Windows):** reuse
           lazy temporary identity collections on confirmed USB discovery
@@ -461,7 +461,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.55" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.56" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
