@@ -8,15 +8,20 @@ internal sealed class DeviceAlertForm : Form
 {
     private readonly CheckBox _inherit = new();
     private readonly CheckBox[] _thresholds = { new(), new(), new() };
+    private readonly CheckBox _disconnectInherit = new();
+    private readonly CheckBox _disconnect = new();
+    public bool? DisconnectOverride => _disconnectInherit.Checked
+        ? null : _disconnect.Checked;
     public int? Mask => _inherit.Checked ? null :
         (_thresholds[0].Checked ? 1 : 0) | (_thresholds[1].Checked ? 2 : 0) |
         (_thresholds[2].Checked ? 4 : 0);
 
-    public DeviceAlertForm(string name, int? existing, int globalMask)
+    public DeviceAlertForm(string name, int? existing, int globalMask,
+        bool? disconnect, bool globalDisconnect)
     {
-        Text = UiText.Get("Device battery alerts...");
-        ClientSize = new Size(440, 300);
-        MinimumSize = new Size(360, 280);
+        Text = UiText.Get("Device notifications...");
+        ClientSize = new Size(440, 365);
+        MinimumSize = new Size(360, 310);
         StartPosition = FormStartPosition.CenterScreen;
         var layout = new FlowLayoutPanel
         {
@@ -43,8 +48,12 @@ internal sealed class DeviceAlertForm : Form
         }
         _inherit.CheckedChanged += (_, _) => RefreshEnabled();
         RefreshEnabled();
-        layout.Controls.Add(new Label { Text = UiText.Get("Global notification switch still applies."),
-            AutoSize = true, MaximumSize = new Size(390, 0) });
+        AddDisconnectControls(layout, disconnect, globalDisconnect);
+        layout.Controls.Add(new Label
+        {
+            Text = UiText.Get("Global low-battery switch applies only to battery thresholds."),
+            AutoSize = true, MaximumSize = new Size(390, 0)
+        });
         var buttons = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
         var ok = new Button { Text = UiText.Get("Save"), AutoSize = true, DialogResult = DialogResult.OK };
         var cancel = new Button { Text = UiText.Get("Cancel"), AutoSize = true, DialogResult = DialogResult.Cancel };
@@ -53,5 +62,24 @@ internal sealed class DeviceAlertForm : Form
         AcceptButton = ok;
         CancelButton = cancel;
         Controls.Add(layout);
+    }
+
+    private void AddDisconnectControls(FlowLayoutPanel layout,
+        bool? existing, bool globalDefault)
+    {
+        _disconnectInherit.Text = UiText.Get("Use global disconnect setting");
+        _disconnectInherit.AutoSize = true;
+        _disconnectInherit.Checked = !existing.HasValue;
+        _disconnect.Text = UiText.Get("Notify on receiver disconnect");
+        _disconnect.AutoSize = true;
+        _disconnect.Checked = existing ?? globalDefault;
+        _disconnect.Enabled = existing.HasValue;
+        _disconnectInherit.CheckedChanged += (_, _) =>
+        {
+            if (_disconnectInherit.Checked) _disconnect.Checked = globalDefault;
+            _disconnect.Enabled = !_disconnectInherit.Checked;
+        };
+        layout.Controls.Add(_disconnectInherit);
+        layout.Controls.Add(_disconnect);
     }
 }

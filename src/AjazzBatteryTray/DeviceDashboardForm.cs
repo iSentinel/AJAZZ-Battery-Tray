@@ -113,7 +113,7 @@ internal sealed class DeviceDashboardForm : Form
         _history.Text = UiText.Get("Battery history...");
         _rename.Text = UiText.Get("Edit local name...");
         _color.Text = UiText.Get("Tray icon color...");
-        _alerts.Text = UiText.Get("Device battery alerts...");
+        _alerts.Text = UiText.Get("Device notifications...");
         _interval.Text = UiText.Get("Device polling interval...");
         _diagnostics.Text = UiText.Get("Extended device diagnostics...");
         _telemetry.Text = UiText.Get("System telemetry preview...");

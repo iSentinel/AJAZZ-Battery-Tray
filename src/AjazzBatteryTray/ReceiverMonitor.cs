@@ -154,7 +154,7 @@ internal sealed class ReceiverMonitor : IDisposable
         if (settings.RecordBatteryHistory)
             state.History.Record(now, percent, state.Present);
         if (state.Connection.Evaluate(percent.HasValue, state.Present) &&
-            settings.NotifyOnDisconnect && !bluetoothEnabled)
+            settings.EffectiveDisconnectAlert(state.Key) && !bluetoothEnabled)
             notifier.ShowBalloonTip(4000, state.DisplayLabel,
                 UiText.Get("The 2.4 GHz receiver is no longer detected."),
                 ToolTipIcon.Warning);
@@ -196,7 +196,7 @@ internal sealed class ReceiverMonitor : IDisposable
             };
             item.DropDownItems.Add(visibility);
             item.DropDownItems.Add(UiText.Get("Tray icon color..."), null, (_, _) => editColor(state));
-            item.DropDownItems.Add(UiText.Get("Device battery alerts..."), null, (_, _) => editAlerts(state));
+            item.DropDownItems.Add(UiText.Get("Device notifications..."), null, (_, _) => editAlerts(state));
             item.DropDownItems.Add(UiText.Get("Device polling interval..."), null, (_, _) => editInterval(state));
             menu.DropDownItems.Add(item);
         }

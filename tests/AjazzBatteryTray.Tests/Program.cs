@@ -158,6 +158,43 @@ var alertRoundtrip = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
     System.Text.Json.JsonSerializer.Serialize(alertSettings));
 Check("Device alert settings round trip", alertRoundtrip?.EffectiveAlertMask(otherAlertDevice) == 0 &&
     alertRoundtrip.EffectiveAlertMask(DeviceAliasRules.AulaSlot) == 7);
+var disconnectSettings = new AppSettings { NotifyOnDisconnect = true };
+Check("Receiver disconnect setting defaults to global true",
+    disconnectSettings.EffectiveDisconnectAlert(alertDevice));
+disconnectSettings.DeviceDisconnectAlerts[alertDevice] = false;
+Check("Receiver disconnect override can mute a single device",
+    !disconnectSettings.EffectiveDisconnectAlert(alertDevice) &&
+    disconnectSettings.EffectiveDisconnectAlert(otherAlertDevice));
+disconnectSettings.DeviceDisconnectAlerts[DeviceAliasRules.AulaSlot] = false;
+Check("AULA disconnect can be independently muted",
+    !disconnectSettings.EffectiveDisconnectAlert(DeviceAliasRules.AulaSlot));
+disconnectSettings.NotifyOnDisconnect = false;
+disconnectSettings.DeviceDisconnectAlerts[otherAlertDevice] = true;
+Check("Individual disconnect can opt in while global default off",
+    disconnectSettings.EffectiveDisconnectAlert(otherAlertDevice) &&
+    !disconnectSettings.EffectiveDisconnectAlert(alertDevice));
+disconnectSettings.DeviceDisconnectAlerts.Remove(alertDevice);
+Check("Removing disconnect override inherits current global",
+    !disconnectSettings.EffectiveDisconnectAlert(alertDevice));
+disconnectSettings.DeviceDisconnectAlerts["invalid"] = true;
+var cleanedDisconnects = AppSettings.CleanDeviceDisconnectAlerts(
+    disconnectSettings.DeviceDisconnectAlerts);
+Check("Invalid disconnect override keys discarded",
+    cleanedDisconnects.Count == 2 && cleanedDisconnects[otherAlertDevice] &&
+    !cleanedDisconnects[DeviceAliasRules.AulaSlot]);
+Check("Null disconnect overrides normalize to empty",
+    AppSettings.CleanDeviceDisconnectAlerts(null).Count == 0);
+var disconnectRoundtrip = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+    System.Text.Json.JsonSerializer.Serialize(disconnectSettings));
+Check("Device disconnect override survives settings round trip",
+    disconnectRoundtrip is not null &&
+    disconnectRoundtrip.EffectiveDisconnectAlert(otherAlertDevice) &&
+    !disconnectRoundtrip.EffectiveDisconnectAlert(DeviceAliasRules.AulaSlot));
+var disconnectLegacy = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+    """{"NotifyOnDisconnect":true}""");
+Check("Legacy config without overrides inherits global",
+    disconnectLegacy?.EffectiveDisconnectAlert(alertDevice) == true &&
+    disconnectLegacy.DeviceDisconnectAlerts.Count == 0);
 
 Check("Primary stable despite enumeration order",
     ReceiverIdentity.SelectPrimary("b", new[] { "c", "b", "a" }) == "b");
@@ -274,10 +311,16 @@ UiText.SetLanguage("ru");
 Check("Russian settings label", UiText.Get("Settings") == "Настройки");
 Check("Russian thresholds formatted", UiText.Format("Below {0}%", 25) ==
     "Ниже 25%");
+Check("Russian receiver disconnect inheritance label",
+    UiText.Get("Use global disconnect setting") ==
+    "Использовать общее правило отключения");
 UiText.SetLanguage("uk");
 Check("Ukrainian settings label", UiText.Get("Settings") == "Налаштування");
 Check("Ukrainian notification label",
     UiText.Get("Low battery notifications") == "Сповіщення про низький заряд");
+Check("Ukrainian receiver disconnect inheritance label",
+    UiText.Get("Use global disconnect setting") ==
+    "Використовувати загальне правило відключення");
 Check("Ukrainian interval label", UiText.Format("{0} seconds", 30) == "30 с");
 UiText.SetLanguage("de");
 Check("unsupported language falls back to English",

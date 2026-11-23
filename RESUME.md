@@ -1,3 +1,23 @@
+# Resume — beta.59 per-device receiver disconnect candidate
+
+- Main before branch: 1a0e018986ea617047ed9e39238a4a14aad48538.
+  Current Latest beta.58, High Sierra experimental .5 separate.
+- Found stale open PR #48 (beta.37). Global and per-device battery
+  50/25/10 overrides already present in beta.58, but independent
+  receiver-disconnect preference not present. Do not merge entire
+  outdated PR, which conflicts heavily with newer code.
+- New beta.59 candidate introduces DeviceDisconnectAlerts (optional
+  per-device bool), inherits global default for all legacy settings,
+  resolves AJAZZ receiver and AULA L99 alert choices.
+- Device notifications editor supports separate disconnect
+  inheritance and explicit per-device opt-in/off, EN/RU/UA.
+  Threshold preferences persist and rollback together.
+- No new vendor HID command, timer, Bluetooth consent, service or
+  network request. Physical device notifications still unverified.
+- Pending Windows/modern macOS CI, installer smoke, beta.59 release
+  and SHA-256 download verification. Track issue #93 separately:
+  full-vendor GUI capture can still hang in native synchronous HID.
+
 # Resume — AJAZZ diagnostics roadmap checkpoint (2026-11-23)
 
 - GitHub main: d860f5bcf34f75898eabadbc742178fab71f40ea

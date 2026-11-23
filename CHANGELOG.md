@@ -8,6 +8,17 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.59 (2026-11-23)
+- Add independent receiver-disconnect alert opt-in per AJAZZ USB receiver
+  and AULA L99, with explicit inheritance of the global default.
+- Keep 50/25/10 thresholds independent; preserve global Bluetooth
+  precedence and existing disconnect detection without extra HID I/O.
+- Show disconnect override in the EN/RU/UA device notification editor.
+- Persist validated per-device rules and roll back both preferences
+  after failed saving; old settings continue inheriting defaults.
+- Regression coverage and Windows/macOS CI; actual device notification
+  acceptance remains pending.
+
 ## 0.3.0-beta.56 (2026-11-23)
 - Replace opt-in multi-Bluetooth due-device LINQ sorting with one-pass selection.
 - Preserve last-attempt priority, generation ties, USB priority, forced
