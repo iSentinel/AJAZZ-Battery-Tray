@@ -43,6 +43,32 @@ A receiver with VID:PID 3151:5007 but without the expected FFFF:0002 HID
 collection is reported as an unsupported interface, not a battery result.
 No hardware settings are changed.
 
+### iMac Late 2013 / High Sierra hardware evidence (2026-11-23)
+
+Owner-reported diagnostic: macOS **10.13.6 (17G14042)**, USB
+**3151:5007**, expected **FFFF:0002** vendor usage, **one matching HID
+collection**, battery state **unknown**. This confirms discovery of the
+interface on the real iMac, but **does not confirm battery telemetry**.
+
+The following optional command prints IOKit statuses for opening the
+receiver interface, sending the **existing F7 battery poll**, and
+requesting feature report **05**. Unlike passive USB inventory, this
+does send the same documented battery telemetry request already used
+by the application. It does not write dock configuration, key
+mapping, display, clock, or firmware settings.
+
+```bash
+"/Applications/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --trace-hid
+```
+
+The output is limited to return codes, packet lengths and at most the
+first eight bytes of each response. **Inspect even that shortened
+output before sharing**. It must never contain full raw reports,
+serial numbers, private USB paths, or device identifiers other than
+the fixed target VID:PID. Return code 2 means the evidence is
+inconclusive, **not** 0% battery. A newer High Sierra build is required
+for this optional command; .1/.2 do not contain it.
+
 If the compatible USB receiver is absent or does not supply a verified
 response, --diagnose prints UNKNOWN and exits 2, not a zero-percent reading.
 

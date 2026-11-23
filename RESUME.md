@@ -1,4 +1,13 @@
-# Resume — High Sierra diagnostics checkpoint
+# Resume — High Sierra on-device HID trace checkpoint
+
+- Owner iMac Late 2013 / macOS 10.13.6 (17G14042) report:
+  VID:PID 3151:5007, usage FFFF:0002, one HID collection, unknown
+  battery. Discovery PASS, telemetry not yet verified.
+- PR #80 merged 4a3ae29e14a224274be1cc388b650fd50e5321c9;
+  separate v0.3.0-highsierra.3 CI publication succeeded.
+- In progress: opt-in --trace-hid of the existing F7/05 battery query,
+  bounded return codes, lengths, first eight response bytes only.
+  Do not guess payload semantics or claim physical compatibility.
 
 - PR #79 High Sierra Bluetooth lifecycle guards merged at
   34c0b2505cc89a7fe5242c6f1f24f86e5524ade5.
