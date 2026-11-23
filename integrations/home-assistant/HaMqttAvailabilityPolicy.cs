@@ -10,21 +10,37 @@ public static class HaMqttAvailabilityPolicy
     public const int FreshExpirySeconds = 300;
 
     /// <summary>Plan ordered retained messages for a future opt-in transport.</summary>
+    private static int RemainingSeconds(HaSessionMapping mapping,
+        LocalBatterySnapshot? snapshot, DateTimeOffset now)
+    {
+        if (snapshot is null) return 0;
+        DateTimeOffset? measured = snapshot.Devices.FirstOrDefault(x =>
+            x.Source == mapping.Source && x.SessionSlot == mapping.SessionSlot)?.MeasuredAt;
+        if (measured is null) return 0;
+        double sample = (LocalBatterySnapshot.MaximumFreshAge -
+            (now - measured.Value)).TotalSeconds;
+        double generation = (LocalBatterySnapshot.MaximumFreshAge -
+            (now - snapshot.GeneratedAt)).TotalSeconds;
+        return (int)Math.Clamp(Math.Floor(Math.Min(sample, generation)),
+            0, FreshExpirySeconds);
+    }
+
     public static IReadOnlyList<HaMqttMessage> Plan(
         HaSessionMapping mapping, LocalBatterySnapshot? snapshot, DateTimeOffset now)
     {
         var reading = mapping.Read(snapshot, now);
+        int expiry = RemainingSeconds(mapping, snapshot, now);
         if (reading is { Available: true, BatteryPercent: int percent } &&
-            percent is >= 0 and <= 100)
+            percent is >= 0 and <= 100 && expiry > 0)
         {
             return new[]
             {
                 // Publish the value before changing availability to online.
                 new HaMqttMessage("battery", percent.ToString(
                     System.Globalization.CultureInfo.InvariantCulture),
-                    true, 1, FreshExpirySeconds),
+                    true, 1, expiry),
                 new HaMqttMessage("availability", "online", true, 1,
-                    FreshExpirySeconds)
+                    expiry)
             };
         }
 

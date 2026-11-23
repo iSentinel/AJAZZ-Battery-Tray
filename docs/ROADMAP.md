@@ -504,7 +504,8 @@ configuration commands. USB `VersionNumber` is a device revision,
   before external broker publication.
 
 ## Optional MQTT 5 availability policy
-- [x] Draft bounded offline QoS1 retained message order and expiry intent.
+- [x] Draft bounded offline QoS1 retained message order, expiry limited to
+  remaining fresh lifetime of snapshot and observation.
 - [ ] Twelve pure assertions; Windows/macOS/preview CI and review.
 - [ ] Validate broker support for MQTT 5 expiry and HA offline handling.
 - [ ] Implement separate opt-in TLS transport only with confirmed credentials.

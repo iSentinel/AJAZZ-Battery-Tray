@@ -1915,5 +1915,31 @@ var mqttChangedSchema = HaMqttAvailabilityPolicy.Plan(haMapping,
     haSnapshot with { SchemaVersion = 999 }, snapshotNow);
 Check("MQTT unsupported schema must fail closed", mqttChangedSchema[0].Payload == "offline");
 
+// Retained MQTT expiry must be bounded by remaining sample freshness.
+var mqttAfterFourMinutes = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot,
+    snapshotNow.AddMinutes(4));
+Check("MQTT expiry follows remaining measurement lifetime",
+    mqttAfterFourMinutes[0].ExpirySeconds == 60 &&
+    mqttAfterFourMinutes[1].ExpirySeconds == 60);
+var mqttFraction = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot,
+    snapshotNow.AddMinutes(4).AddMilliseconds(1));
+Check("MQTT fractional lifetime rounds down, never extends freshness",
+    mqttFraction[0].ExpirySeconds == 59 && mqttFraction[1].ExpirySeconds == 59);
+var mqttBoundary = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot,
+    snapshotNow.AddMinutes(5));
+Check("MQTT zero remaining lifetime fails closed",
+    mqttBoundary[0].Payload == "offline" && mqttBoundary[1].Payload == "");
+var mqttMeasuredLater = haSnapshot with
+{
+    GeneratedAt = snapshotNow.AddMinutes(3),
+    Devices = new[] { haSnapshot.Devices[0] with
+        { MeasuredAt = snapshotNow.AddMinutes(2) } }
+};
+var mqttLaterPlan = HaMqttAvailabilityPolicy.Plan(haMapping, mqttMeasuredLater,
+    snapshotNow.AddMinutes(4));
+Check("MQTT expiry considers both snapshot and measurement ages",
+    mqttLaterPlan[0].ExpirySeconds == 180 &&
+    mqttLaterPlan[1].ExpirySeconds == 180);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

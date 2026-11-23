@@ -76,8 +76,10 @@ Ten added assertions pending C# CI; no HID requests or default overhead added.
 
 A pure optional component plans exactly two retained QoS1 messages for each
 explicitly mapped reading; it opens no connection and requires no broker.
-Fresh reads plan battery value (5-minute MQTT 5 message expiry) followed by
-availability=online (also expiring). Missing, cached, expired, wrong-epoch,
+Fresh reads plan battery value followed by availability=online, with MQTT 5
+expiry equal to the remaining freshness lifetime of the measurement and
+snapshot (floor to seconds, maximum five minutes). A reading with less than
+one complete second remaining fails closed, rather than extending its age. Missing, cached, expired, wrong-epoch,
 future or disconnected reads plan availability=offline first, then a retained
 empty battery message to clear stale state. Broker implementations MUST check
 publish acknowledgments and must not claim availability until both online
