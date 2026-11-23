@@ -22,15 +22,15 @@ public static class HaMqttDeliveryGate
 
     private static void Validate(IReadOnlyList<HaMqttMessage> plan)
     {
-        if (plan is not { Count: 2 } || plan.Any(x => !x.Retain || x.Qos != 1))
+        if (plan is not { Count: 2 } || plan.Any(x => x.Qos != 1))
             throw new InvalidDataException("Invalid MQTT publication plan.");
         var first = plan[0];
         var second = plan[1];
         bool offline = first is { TopicSuffix: "availability", Payload: "offline",
-            ExpirySeconds: null } && second is { TopicSuffix: "battery",
-            Payload: "", ExpirySeconds: null };
-        bool fresh = first.TopicSuffix == "battery" &&
-            second is { TopicSuffix: "availability", Payload: "online" } &&
+            Retain: true, ExpirySeconds: null } && second is { TopicSuffix: "battery",
+            Payload: "", Retain: true, ExpirySeconds: null };
+        bool fresh = first is { TopicSuffix: "battery", Retain: false } &&
+            second is { TopicSuffix: "availability", Payload: "online", Retain: true } &&
             first.ExpirySeconds is >= 1 and <= HaMqttAvailabilityPolicy.FreshExpirySeconds &&
             second.ExpirySeconds == first.ExpirySeconds &&
             int.TryParse(first.Payload, NumberStyles.None, CultureInfo.InvariantCulture,

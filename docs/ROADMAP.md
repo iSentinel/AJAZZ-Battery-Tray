@@ -512,7 +512,8 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] No default service, additional tray dependency or automatic network use.
 
 ## Optional MQTT delivery acknowledgment candidate
-- [x] Validate offline/online two-message ordering and finite expiration.
+- [x] Validate offline/online message ordering and remaining-fresh expiry.
+- [x] Avoid retained fresh battery state per Home Assistant expire_after guidance.
 - [x] Gate subsequent sends on previous QoS1 acknowledgment, cancellation-safe.
 - [ ] Eight pure C# tests and full Windows/macOS CI.
 - [ ] Broker reconnect and HA availability acceptance, no default daemon.

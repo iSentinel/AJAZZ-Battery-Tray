@@ -16,3 +16,9 @@
   entity mapping and operator-approved credentials still unimplemented.
   AULA sleep, affected AJ159, mixed BLE and measured Windows resources
   remain open.
+
+- Reconciled with official HA MQTT sensor expire_after guidance:
+  online battery is non-retained, availability online remains retained;
+  offline uses retained availability followed by clearing any retained
+  battery. Delivery gate rejects retained fresh state. Real HA expire_after,
+  last will, legacy retained cleanup and broker behavior not implemented.

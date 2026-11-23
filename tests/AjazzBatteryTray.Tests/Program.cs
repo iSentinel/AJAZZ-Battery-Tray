@@ -1865,8 +1865,9 @@ Check("MQTT fresh intent publishes battery before online",
     mqttFresh.Count == 2 && mqttFresh[0].TopicSuffix == "battery" &&
     mqttFresh[0].Payload == "83" && mqttFresh[1].TopicSuffix == "availability" &&
     mqttFresh[1].Payload == "online");
-Check("MQTT fresh retained values use QoS1 and finite expiry",
-    mqttFresh.All(x => x.Retain && x.Qos == 1 &&
+Check("MQTT fresh battery is not retained; availability is retained",
+    !mqttFresh[0].Retain && mqttFresh[1].Retain &&
+    mqttFresh.All(x => x.Qos == 1 &&
         x.ExpirySeconds == HaMqttAvailabilityPolicy.FreshExpirySeconds));
 var mqttMissing = HaMqttAvailabilityPolicy.Plan(haMapping, null, snapshotNow);
 Check("MQTT absent API marks offline before clearing battery",
@@ -1976,6 +1977,16 @@ async Task TestMqttAcknowledgmentGate()
     }, CancellationToken.None);
     Check("MQTT failed offline acknowledgment blocks stale-value clear",
         !failedOffline && accepted.SequenceEqual(new[] { "availability" }));
+    bool retainedState = false;
+    try
+    {
+        await HaMqttDeliveryGate.PublishAsync(new[]
+        {
+            mqttFresh[0] with { Retain = true }, mqttFresh[1]
+        }, (message, _) => Task.FromResult(true), CancellationToken.None);
+    }
+    catch (InvalidDataException) { retainedState = true; }
+    Check("MQTT gate rejects retained fresh sensor state", retainedState);
     bool malformed = false;
     try
     {
