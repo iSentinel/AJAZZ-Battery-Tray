@@ -154,9 +154,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.59"
+          TAG="v0.3.0-beta.60"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.59 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.60 — Windows and macOS
+
+          **AJ159 shared receiver / F7 status (Windows):**
+          stop asserting AJ179 from shared VID:PID 3151:5007 and
+          bcdDevice 0002. Parse F7 mouse slot/status and only accept
+          a 1..100 level when read/online/send and RF-boot flags
+          confirm a valid observation. Preserve legacy short replies;
+          reject 0 and unknown, without new device commands.
+          Actual owner's F7 field remained zero in all collected
+          Windows and GearHub captures. Physical AJ159 validation
+          with a real nonzero F7 reply is still required.
 
           **Independent receiver disconnect notifications (Windows):**
           each AJAZZ receiver and AULA L99 can inherit the existing
@@ -489,7 +499,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.59" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.60" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

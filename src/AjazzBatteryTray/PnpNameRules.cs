@@ -42,7 +42,7 @@ public static class PnpNameRules
     public static string Model(string family, ushort? revision) => (family, revision) switch
     {
         ("3151:5007", 0x0300) => "AJAZZ AJ159 APEX",
-        ("3151:5007", 0x0002) => "AJAZZ AJ179 APEX",
+        ("3151:5007", 0x0002) => "AJAZZ shared receiver (model unverified)",
         ("05AC:024F", 0x0136) => "AULA L99",
         ("3151:5007", _) => "AJAZZ receiver",
         ("05AC:024F", _) => "AULA candidate receiver",

@@ -28,7 +28,7 @@ public static class ReceiverIdentity
     public static string Label(ushort? revision) => revision switch
     {
         0x0300 => "AJAZZ AJ159 (rev. 0300)",
-        0x0002 => "AJAZZ AJ179 (rev. 0002)",
+        0x0002 => "AJAZZ shared receiver (rev. 0002; model unverified)",
         ushort value => $"AJAZZ (rev. {value:X4})",
         _ => "AJAZZ (unknown revision)"
     };

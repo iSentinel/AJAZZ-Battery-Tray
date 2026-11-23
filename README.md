@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.56 (opt-in BLE one-pass scheduler candidate).
+**Version:** v0.3.0-beta.60 (shared-receiver F7 status diagnostics; physical AJ159 acceptance pending).
 
 See [resource optimization and measurement](docs/RESOURCE_OPTIMIZATION.md)
 for the controlled Windows comparison procedure.
@@ -26,6 +26,15 @@ and explicitly look up GitHub releases. See [update checker](docs/UPDATE_CHECKER
 Windows supports multiple explicitly selected paired LE monitors in one session.
 See [limitations and acceptance](docs/MULTI_BLUETOOTH.md) and
 [GearHub protocol research](docs/APEX_GEARHUB.md).
+
+**AJ159 / AJ179 shared receiver:** `3151:5007` and revision `0002`
+are not unique enough to identify a mouse model. The application
+now labels this receiver as **model unverified** instead of AJ179.
+An owner-confirmed AJ159 name can be set via the per-device
+**Edit local name...** action. With an unavailable or zero F7 battery
+field, the tray continues to display Unknown rather than inventing
+a charge percentage. See the
+[AJ159 F7 forensic findings](docs/AJ159_APEX_F7_HAR_FORENSICS_20261123.md).
 
 For APEX comparison use **Diagnostics → Full APEX comparison report...**.
 One local report contains HID descriptor inventory, last ordinary state and
@@ -280,7 +289,7 @@ Use the **Releases** section rather than GitHub Actions artifacts.
 
 - **Installer (recommended):** `AJAZZBatteryTray-Setup-win-x64.exe`.
   Run it, approve the Windows administrator prompt, and the application is
-  installed in `C:\Program Files\AJAZZ Battery Tray\` with a Start menu
+  installed in `C:\Program Files\AJAZZ Battery Tray` with a Start menu
   shortcut and an entry in Windows Settings → Installed apps.
   An optional desktop shortcut is available in the wizard.
 - **Portable:** `AJAZZBatteryTray-win-x64.exe`.

@@ -838,3 +838,27 @@ configuration commands. USB `VersionNumber` is a device revision,
       --output PATH and inspect actual IOKit status.
 - [ ] Issue #93: bound explicitly consented full-vendor Windows GUI
       capture using a killable isolated worker before closing risk.
+
+
+## beta.60 AJ159 APEX shared receiver HID analysis
+- [x] Review four user diagnostics and both new qmk.top HAR
+      files, including local gRPC-web HID Send/GetFeatureReport.
+- [x] Document sanitized F7 findings and shared model catalog:
+      docs/AJ159_APEX_F7_HAR_FORENSICS_20261123.md.
+- [x] Remove hard-coded AJ179 assertion from shared
+      3151:5007 revision 0002; preserve per-receiver user aliases.
+- [x] Add conservative F7 mouse-slot parsing with read/online,
+      canSend, RF boot and percent gates. Preserve legacy compact
+      parser for older report framing.
+- [x] Regression fixtures from real zero/unknown response and
+      simulated valid/nonvalid status transitions.
+- [ ] Windows CI, macOS CI, installer smoke tests before merge.
+- [ ] Publish beta.60 only if CI passes, then re-download binaries
+      and check the three published SHA-256 manifests.
+- [ ] Real AJ159 on Windows 11: re-run -hid-diagnose awake;
+      owner must verify nonzero F7 status before battery PASS.
+- [ ] Explore the official local HID bridge's report ID 00 versus
+      our 05 as a separately reviewed read-only diagnostic,
+      not as an automatic speculative fallback.
+- [ ] Preserve High Sierra .5 experimental release separately;
+      its F7 parser must be reviewed with physical trace data.

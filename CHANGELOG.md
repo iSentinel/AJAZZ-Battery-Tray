@@ -8,6 +8,19 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.60 (2026-11-23)
+- Replace unsupported hard-coded AJ179 model assertion for shared
+  3151:5007 revision 0002 with model-unverified receiver name.
+- Extract the mouse-specific F7 state gates from GearHub client
+  JavaScript bundled in the owner's Windows 11 HAR evidence.
+- Parse mouse-slot F7 battery only after read availability, online,
+  send and RF-boot checks; never treat zero as a valid percentage.
+- Retain existing legacy compact reply compatibility. No new vendor
+  requests, firmware writes, automatic discovery or polling interval.
+- The owner's real AJ159 APEX F7 responses have a zero battery field
+  even in the official client trace. Physical nonzero data still
+  required before marking battery monitoring verified.
+
 ## 0.3.0-beta.59 (2026-11-23)
 - Add independent receiver-disconnect alert opt-in per AJAZZ USB receiver
   and AULA L99, with explicit inheritance of the global default.
