@@ -28,8 +28,7 @@ public sealed class TrayAppContext : ApplicationContext
     private AulaL99Reading? _aulaLatest;
     private readonly AulaBatteryState _aulaBattery = new();
     private DateTimeOffset? _aulaLastReadAt;
-    private bool _aulaBusy;
-    private int _aulaGeneration;
+    private readonly AulaPollLifecycle _aulaPoll = new();
     private bool _hostMetricsBusy;
     private bool _pnpPreviewBusy;
     private ToolStripMenuItem _aulaStatus = new();
@@ -91,6 +90,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     public TrayAppContext()
     {
+        _aulaPoll.Configure(_settings.MonitorAulaL99);
         UiText.SetLanguage(_settings.Language);
         _tray = new NotifyIcon { Text = "AJAZZ APEX: " + UiText.Get("Connecting...") };
         UpdateIcon(null, false);
@@ -478,8 +478,8 @@ public sealed class TrayAppContext : ApplicationContext
         };
         auto.CheckedChanged += (_, _) =>
         {
-            _aulaGeneration++;
             _settings.MonitorAulaL99 = auto.Checked;
+            _aulaPoll.Configure(auto.Checked);
             _aulaLatest = null;
             _aulaLastReadAt = null;
             _aulaBattery.Reset();
@@ -590,7 +590,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void UpdateAulaStatus()
     {
-        if (_aulaBusy)
+        if (_aulaPoll.IsBusy)
             _aulaStatus.Text = UiText.Get("AULA L99: checking battery...");
         else if (_aulaLatest is null)
             _aulaStatus.Text = UiText.Get("AULA L99: not checked");
@@ -623,7 +623,7 @@ public sealed class TrayAppContext : ApplicationContext
             StopAulaTimer();
             return;
         }
-        if (_aulaBusy) return;
+        if (!_aulaPoll.CanArm) return;
         if (_aulaTimer is null)
         {
             _aulaTimer = new System.Windows.Forms.Timer();
@@ -648,16 +648,13 @@ public sealed class TrayAppContext : ApplicationContext
     /// <summary>Run at most one explicit, battery-only dongle poll at a time.</summary>
     private async Task PollAulaAsync(bool manual = false)
     {
-        if (_closing || _aulaBusy ||
-            (!manual && !_settings.MonitorAulaL99)) return;
+        if (_closing || _aulaPoll.TryBegin(manual) is not long ticket) return;
         _aulaTimer?.Stop();
-        _aulaBusy = true;
-        int generation = _aulaGeneration;
         UpdateAulaStatus();
         try
         {
             AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
-            if (_closing || generation != _aulaGeneration) return;
+            if (_closing || !_aulaPoll.MayApply(ticket)) return;
             if (result.LocalKey != _aulaLatest?.LocalKey)
                 _aulaBattery.Reset();
             _aulaLatest = result;
@@ -682,7 +679,7 @@ public sealed class TrayAppContext : ApplicationContext
         {
             FileLog.Write("WARN", "AULA monitoring failed: " +
                 error.GetType().Name);
-            if (!_closing && generation == _aulaGeneration)
+            if (!_closing && _aulaPoll.MayApply(ticket))
             {
                 _aulaLatest = new(false, null, "Unexpected read error", PresenceKnown: false);
                 _aulaLastReadAt = DateTimeOffset.UtcNow;
@@ -690,10 +687,12 @@ public sealed class TrayAppContext : ApplicationContext
         }
         finally
         {
-            _aulaBusy = false;
+            int? delay = _aulaPoll.Complete(ticket,
+                _settings.EffectivePollInterval(DeviceAliasRules.AulaSlot) * 1000);
             if (!_closing)
             {
-                ArmAulaTimer(_settings.EffectivePollInterval(DeviceAliasRules.AulaSlot) * 1000);
+                if (delay is int milliseconds) ArmAulaTimer(milliseconds);
+                else StopAulaTimer();
                 UpdateAulaStatus();
                 RefreshDeviceDisplay();
             }
@@ -1774,6 +1773,7 @@ public sealed class TrayAppContext : ApplicationContext
         _updateRequestCancellation?.Cancel();
         _timer.Stop();
         _timer.Dispose();
+        _aulaPoll.Close();
         StopAulaTimer();
         _ble.DisableAll();
         _bleSlots.Clear();

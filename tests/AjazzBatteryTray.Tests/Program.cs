@@ -1613,5 +1613,48 @@ catch (IOException) { gateFailed = true; }
 Check("Update gate releases after operation failure", gateFailed &&
     gate.RunAsync(_ => Task.FromResult(3), CancellationToken.None).GetAwaiter().GetResult() == 3);
 
+// Optional AULA timer and single-flight transitions without Windows or HID.
+var aulaLifecycle = new AulaPollLifecycle();
+Check("AULA lifecycle defaults to disabled with no timer",
+    !aulaLifecycle.Enabled && !aulaLifecycle.CanArm && aulaLifecycle.TryBegin(false) is null);
+long manualAulaTicket = aulaLifecycle.TryBegin(true)!.Value;
+Check("AULA lifecycle permits explicit read while disabled",
+    aulaLifecycle.IsBusy && aulaLifecycle.MayApply(manualAulaTicket) && !aulaLifecycle.CanArm);
+Check("AULA lifecycle rejects duplicate manual read", aulaLifecycle.TryBegin(true) is null);
+Check("AULA lifecycle manual completion does not start automatic timer",
+    aulaLifecycle.Complete(manualAulaTicket, 30000) is null && !aulaLifecycle.IsBusy);
+aulaLifecycle.Configure(true);
+Check("AULA lifecycle enabled can arm timer", aulaLifecycle.CanArm);
+long autoAulaTicket = aulaLifecycle.TryBegin(false)!.Value;
+Check("AULA lifecycle busy automatic poll suppresses timer and duplicates",
+    !aulaLifecycle.CanArm && aulaLifecycle.TryBegin(false) is null);
+Check("AULA lifecycle completion uses configured interval",
+    aulaLifecycle.Complete(autoAulaTicket, 60000) == 60000);
+long oldAulaTicket = aulaLifecycle.TryBegin(false)!.Value;
+aulaLifecycle.Configure(false);
+Check("AULA lifecycle disable invalidates pending reply",
+    !aulaLifecycle.MayApply(oldAulaTicket) && !aulaLifecycle.CanArm);
+Check("AULA lifecycle disabled completion does not re-arm",
+    aulaLifecycle.Complete(oldAulaTicket, 30000) is null);
+aulaLifecycle.Configure(true);
+long replacedAulaTicket = aulaLifecycle.TryBegin(false)!.Value;
+aulaLifecycle.Configure(false);
+aulaLifecycle.Configure(true);
+Check("AULA lifecycle re-enable cannot overlap pending request",
+    aulaLifecycle.TryBegin(true) is null && !aulaLifecycle.MayApply(replacedAulaTicket));
+Check("AULA lifecycle re-enable schedules prompt replacement",
+    aulaLifecycle.Complete(replacedAulaTicket, 120000) == 100);
+long currentAulaTicket = aulaLifecycle.TryBegin(false)!.Value;
+Check("AULA lifecycle duplicate completion cannot release newer worker",
+    aulaLifecycle.Complete(replacedAulaTicket, 30000) is null &&
+    aulaLifecycle.IsBusy && aulaLifecycle.MayApply(currentAulaTicket));
+aulaLifecycle.Close();
+Check("AULA lifecycle shutdown invalidates result and timer",
+    !aulaLifecycle.MayApply(currentAulaTicket) &&
+    aulaLifecycle.Complete(currentAulaTicket, 30000) is null &&
+    aulaLifecycle.TryBegin(true) is null && !aulaLifecycle.CanArm);
+aulaLifecycle.Configure(true);
+Check("AULA lifecycle closed state cannot be re-enabled", !aulaLifecycle.Enabled);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
