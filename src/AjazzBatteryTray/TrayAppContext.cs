@@ -618,7 +618,7 @@ public sealed class TrayAppContext : ApplicationContext
         if (_aulaTimer is null)
         {
             _aulaTimer = new System.Windows.Forms.Timer();
-            _aulaTimer.Tick += (sender, _) =>
+            _aulaTimer.Tick += (sender, args) =>
             {
                 if (!ReferenceEquals(sender, _aulaTimer)) return;
                 _ = PollAulaAsync();
