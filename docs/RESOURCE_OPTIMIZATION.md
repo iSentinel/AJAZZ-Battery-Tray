@@ -87,3 +87,17 @@ the HID poll cadence or add HA dependencies.
 - Five more assertions cover deadline overflow, overlapping callers,
   queued cancellation and gate release on completion/failure. These use
   synthetic operations without a live network. Combined CI pending.
+
+## Optional AULA timer lifecycle
+The prior AULA timer already stopped during each poll and used the configured
+interval after completion. Do not claim a reduction in periodic wakeups from
+this change. Allocate the timer only when automatic AULA monitoring is enabled,
+dispose it on opt-out or shutdown, and ignore callbacks from replaced timers.
+Manual battery reads remain possible with monitoring off without allocating a
+timer. Preserve the first startup delay (1 second), 100 ms interval-change
+refresh, configured completion-based cadence, and existing generation guard.
+Acceptance: disabled startup; manual read while disabled; enable; change
+interval; disable during a pending read; re-enable before completion; exit
+with a pending read. Verify no stale result or automatic polling after opt-out,
+no duplicate workers, unchanged cached readings and normal sleep recovery.
+C# compilation, actual Windows timer lifecycle and hardware acceptance pending.
