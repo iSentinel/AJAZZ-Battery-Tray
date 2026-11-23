@@ -154,9 +154,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.58"
+          TAG="v0.3.0-beta.59"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.58 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.59 — Windows and macOS
+
+          **Independent receiver disconnect notifications (Windows):**
+          each AJAZZ receiver and AULA L99 can inherit the existing
+          global disconnect preference or explicitly enable/disable
+          its own alert. Battery thresholds remain independent and
+          unaffected, as do existing Bluetooth precedence and
+          confirmed receiver absence policies. Existing settings
+          inherit global defaults; no new HID or firmware commands.
+          Owner visual and disconnect tests remain pending.
 
           **AULA L99 receiver continuity (Windows):** transient
           HID enumeration errors hide charge but retain last verified
@@ -480,7 +489,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.58" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.59" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

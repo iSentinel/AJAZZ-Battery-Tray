@@ -795,3 +795,27 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] AULA L99 physical owner A01-A14 sleep/wake on beta.58.
 - [ ] Affected mouse Windows 11 bounded awake/after-sleep F7/05 logs.
 - [ ] iMac High Sierra 10.13.6 owner --trace-hid .5 output.
+
+
+## beta.59 independent receiver-disconnect notifications
+- [x] Review unmerged beta.37 PR #48 against current beta.58 and
+      identify its missing per-device receiver-disconnect override.
+- [x] Preserve existing per-device low-battery masks and global
+      disconnected-receiver default; add optional bool overrides.
+- [x] Resolve disconnect alerts by AJAZZ receiver identity or AULA
+      L99 slot, with existing BLE priority and detection unchanged.
+- [x] Add EN/RU/UA editor controls for inherit/enable/disable,
+      independent of low-battery 50/25/10 threshold settings.
+- [x] Sanitize persisted override keys and preserve legacy
+      settings.json inheritance on upgrade.
+- [x] Roll back threshold and disconnect override together when
+      settings persistence fails.
+- [x] Add standalone settings inheritance, round-trip, validation,
+      AULA and translation regression assertions.
+- [ ] Windows CI and universal macOS CI must PASS before merging.
+- [ ] beta.59 release workflow, Windows install/uninstall, download
+      six assets and verify three SHA-256 checks.
+- [ ] Owner Windows visual/notification test with at least two
+      independent receivers and AULA if physically available.
+- [ ] Retire PR #48 only after remaining independent disconnect
+      functionality is verified in a newer integrated release.

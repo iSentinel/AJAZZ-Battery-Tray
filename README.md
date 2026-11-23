@@ -53,14 +53,21 @@ history or alerts. AULA has its own completion-based timer; its presence is
 last-known until the next read. Actual timing depends on HID latency and
 Windows scheduling. See [polling integration](docs/PER_DEVICE_POLLING.md).
 
-## Individual low-battery alerts (Windows)
+## Independent device notifications (Windows)
 
-Select an AJAZZ receiver or AULA L99 in Device Manager and choose
-**Device battery alerts...**, or open the same editor from its tray submenu.
-Inherit the global 50/25/10 thresholds or choose an independent set.
-An empty custom set mutes low-battery alerts for that device only.
-The global notification switch remains authoritative. Bluetooth fallback
-and receiver-disconnect settings are unchanged. Preferences persist locally.
+Select an AJAZZ USB receiver or AULA L99 in Device Manager and choose
+**Device notifications...**, or open the same editor from its tray submenu.
+For battery, inherit global 50/25/10 thresholds or choose a custom set;
+an empty custom set mutes that device's low-battery alerts. The global
+low-battery notification switch remains authoritative for these thresholds.
+
+For USB receiver disconnects, separately inherit the existing global
+disconnect preference or explicitly enable/disable warnings for this
+device. A custom choice overrides only the disconnect default for the
+selected receiver/AULA profile; Bluetooth precedence and confirmed
+disconnect detection remain unchanged. Missing settings continue to
+inherit global defaults. All overrides are stored locally, not sent
+to hardware.
 
 ## APEX battery protocol capture (Windows)
 

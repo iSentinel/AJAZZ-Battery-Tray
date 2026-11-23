@@ -232,15 +232,25 @@ public sealed class TrayAppContext : ApplicationContext
     private void EditDeviceAlerts(string key, string name)
     {
         if (_closing || !DeviceAliasRules.ValidKey(key)) return;
-        int? original = _settings.DeviceAlertMasks.TryGetValue(key, out int value) ? value : null;
-        using var dialog = new DeviceAlertForm(name, original, _settings.GlobalAlertMask);
+        int? maskBefore = _settings.DeviceAlertMasks.TryGetValue(key, out int mask)
+            ? mask : null;
+        bool? disconnectBefore = _settings.DeviceDisconnectAlerts.TryGetValue(
+            key, out bool enabled) ? enabled : null;
+        using var dialog = new DeviceAlertForm(name, maskBefore,
+            _settings.GlobalAlertMask, disconnectBefore, _settings.NotifyOnDisconnect);
         if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
-        if (dialog.Mask is int mask) _settings.DeviceAlertMasks[key] = mask;
+        if (dialog.Mask is int changed) _settings.DeviceAlertMasks[key] = changed;
         else _settings.DeviceAlertMasks.Remove(key);
+        if (dialog.DisconnectOverride is bool choice)
+            _settings.DeviceDisconnectAlerts[key] = choice;
+        else _settings.DeviceDisconnectAlerts.Remove(key);
         if (!_settings.Save())
         {
-            if (original is int old) _settings.DeviceAlertMasks[key] = old;
+            if (maskBefore is int oldMask) _settings.DeviceAlertMasks[key] = oldMask;
             else _settings.DeviceAlertMasks.Remove(key);
+            if (disconnectBefore is bool oldChoice)
+                _settings.DeviceDisconnectAlerts[key] = oldChoice;
+            else _settings.DeviceDisconnectAlerts.Remove(key);
             MessageBox.Show(UiText.Get("Unable to save device preference."),
                 UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
@@ -496,7 +506,7 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(visibility);
         menu.DropDownItems.Add(UiText.Get("Tray icon color..."), null,
             (_, _) => EditTrayColor(DeviceAliasRules.AulaSlot, AulaName));
-        menu.DropDownItems.Add(UiText.Get("Device battery alerts..."), null,
+        menu.DropDownItems.Add(UiText.Get("Device notifications..."), null,
             (_, _) => EditDeviceAlerts(DeviceAliasRules.AulaSlot, AulaName));
         menu.DropDownItems.Add(UiText.Get("Device polling interval..."), null,
             (_, _) => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName));
@@ -662,7 +672,7 @@ public sealed class TrayAppContext : ApplicationContext
             {
                 if (result.PresenceKnown && _aulaConnection.Evaluate(
                         result.Percent.HasValue, result.ReceiverPresent) &&
-                    _settings.NotifyOnDisconnect)
+                    _settings.EffectiveDisconnectAlert(DeviceAliasRules.AulaSlot))
                     _tray.ShowBalloonTip(4000, AulaName,
                         UiText.Get("The 2.4 GHz receiver is no longer detected."),
                         ToolTipIcon.Warning);

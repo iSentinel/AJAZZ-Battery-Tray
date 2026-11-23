@@ -22,6 +22,9 @@ public sealed class AppSettings
     public Dictionary<string, int> DevicePollIntervals { get; set; } = new(StringComparer.Ordinal);
     // Absent key inherits global thresholds; zero explicitly mutes this device.
     public Dictionary<string, int> DeviceAlertMasks { get; set; } = new(StringComparer.Ordinal);
+    // Absence inherits global receiver disconnect preference; false mutes one device.
+    public Dictionary<string, bool> DeviceDisconnectAlerts { get; set; } =
+        new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceTrayColors { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> HiddenTrayDevices { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> DeviceAliases { get; set; } = new(StringComparer.Ordinal);
@@ -44,6 +47,8 @@ public sealed class AppSettings
                 {
                     result.DevicePollIntervals = DevicePollSchedule.CleanOverrides(result.DevicePollIntervals);
                     result.DeviceAlertMasks = CleanDeviceAlertMasks(result.DeviceAlertMasks);
+                    result.DeviceDisconnectAlerts =
+                        CleanDeviceDisconnectAlerts(result.DeviceDisconnectAlerts);
                     result.DeviceTrayColors = TrayColorRules.Clean(result.DeviceTrayColors);
                     result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
                     result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
@@ -77,6 +82,22 @@ public sealed class AppSettings
         return DeviceAliasRules.ValidKey(key) &&
             DeviceAlertMasks.TryGetValue(key, out int mask) && mask is >= 0 and <= 7
             ? mask : GlobalAlertMask;
+    }
+
+    public bool EffectiveDisconnectAlert(string key)
+        => DeviceAliasRules.ValidKey(key) &&
+           DeviceDisconnectAlerts.TryGetValue(key, out bool enabled)
+            ? enabled : NotifyOnDisconnect;
+
+    public static Dictionary<string, bool> CleanDeviceDisconnectAlerts(
+        Dictionary<string, bool>? values)
+    {
+        Dictionary<string, bool> clean = new(StringComparer.Ordinal);
+        if (values is null) return clean;
+        foreach (var pair in values)
+            if (DeviceAliasRules.ValidKey(pair.Key))
+                clean[pair.Key] = pair.Value;
+        return clean;
     }
 
     public static Dictionary<string, int> CleanDeviceAlertMasks(Dictionary<string, int>? values)
