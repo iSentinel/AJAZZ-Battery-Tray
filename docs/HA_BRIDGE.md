@@ -71,3 +71,21 @@ physical keyboard identities: the same receiver path or paired device
 replacement without an observed identity change cannot be distinguished.
 No persistent mapping or MQTT publication is approved on that basis.
 Ten added assertions pending C# CI; no HID requests or default overhead added.
+
+## Offline MQTT 5 availability intent (candidate)
+
+A pure optional component plans exactly two retained QoS1 messages for each
+explicitly mapped reading; it opens no connection and requires no broker.
+Fresh reads plan battery value followed by availability=online, with MQTT 5
+expiry equal to the remaining freshness lifetime of the measurement and
+snapshot (floor to seconds, maximum five minutes). A reading with less than
+one complete second remaining fails closed, rather than extending its age. Missing, cached, expired, wrong-epoch,
+future or disconnected reads plan availability=offline first, then a retained
+empty battery message to clear stale state. Broker implementations MUST check
+publish acknowledgments and must not claim availability until both online
+messages complete. On reconnect they must first re-read authenticated Local
+API and validate the session mapping; never replay cached online plans.
+No stable entity ID or topic prefix is inferred from source/slot. MQTT 5
+expiry support, HA discovery expire_after, transport authentication, TLS,
+credential storage, topic permission scope and actual broker behavior remain
+unimplemented/unverified. Tests use synthetic snapshots only.

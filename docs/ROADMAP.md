@@ -497,6 +497,16 @@ configuration commands. USB `VersionNumber` is a device revision,
   reserve non-bindable status placeholder, reject slot exhaustion.
 - [x] Ten regression assertions; initial Windows 45096569893 /
   macOS 45096569901 / optional preview 45096569934 PASS.
-- [ ] Final beta.53 CI and publication; physical acceptance.
+- [x] beta.53 final Windows 45139329299 / macOS 45139329460 /
+  HA preview 45139329257 PASS; merged 1a053ddd611dd50b058bd95d1d187bb5698932da.
+- [ ] beta.53 publication and physical acceptance.
 - [ ] Require opt-in mapping and documented physical identity limitations
   before external broker publication.
+
+## Optional MQTT 5 availability policy
+- [x] Draft bounded offline QoS1 retained message order, expiry limited to
+  remaining fresh lifetime of snapshot and observation.
+- [ ] Twelve pure assertions; Windows/macOS/preview CI and review.
+- [ ] Validate broker support for MQTT 5 expiry and HA offline handling.
+- [ ] Implement separate opt-in TLS transport only with confirmed credentials.
+- [ ] No default service, additional tray dependency or automatic network use.

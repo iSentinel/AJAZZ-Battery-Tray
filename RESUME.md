@@ -1,18 +1,19 @@
-# Resume — beta.53 AULA API continuity release candidate
+# Resume — optional MQTT availability policy candidate
 
-- beta.52 published; release workflow 45093197963 PASS; six assets.
-- PR #68 merged a1f280379e68504a1d39fc55daf5f3ff3f51e534;
-  standalone HA preview EXE SHA256 verification PASS.
-- PR #69 exact head 4c34a1151c7e18c40185c3d9db571da4d19ce2a4;
-  Windows 45096569893, macOS 45096569901, preview 45096569934 PASS.
-- Beta.53 version, installer, macOS build, release workflow and changelog
-  metadata prepared; MUST verify final HEAD CI before merging and publishing.
-- AULA API slot 1 unbindable status; known receiver gets non-reused ordinal,
-  replaced/unknown identities retire previous slots; same receiver during
-  no-reply sleep retains slot. Ten continuity assertions, not physical proof.
-- No MQTT/broker/HA runtime included. Optional CLI remains separately
-  run only on explicit user action.
-- Next after beta.53 publication: offline MQTT availability/expiry policy,
-  no network access/broker credentials until opted-in transport gates.
-- Actual Windows resources, AULA long sleep, paired AJ159 reports/HAR,
-  two-device BLE and interactive preview remain open.
+- beta.53 PR #69 final Windows 45139329299 / macOS 45139329460 /
+  preview 45139329257 PASS, merged
+  1a053ddd611dd50b058bd95d1d187bb5698932da.
+  Release publication not yet verified.
+- feat/ha-mqtt-availability synchronized with beta.53 main; conflicts
+  resolved by preserving complete main AULA tests and appending MQTT tests.
+  Optional pure message-intent policy only, no network/broker dependency.
+- Fresh session-bound reading: retained QoS1 battery followed by online;
+  both have proposed 300s MQTT5 message expiry. Missing/stale: offline
+  first, then empty retained battery message to clear a previous value.
+- Twenty pure policy assertions pending C# CI, including remaining
+  expiry floor and 5-minute boundary. Python tools 23/23 PASS.
+- Next: verify beta.53 release, open PR for policy and run Windows/macOS/
+  HA preview CI. Do not publish MQTT until authenticated TLS transport,
+  acknowledgments, HA discovery/expiry and explicit stable mapping tested.
+- Actual Windows resource baselines, AULA sleep/wake, AJ159 affected
+  captures and multi-BLE remain pending.

@@ -1859,5 +1859,87 @@ var replacementAulaSnapshot = oldAulaSnapshot with { Devices = new[] {
 Check("HA old AULA binding cannot read a replacement slot",
     !oldAulaMapping.Read(replacementAulaSnapshot, snapshotNow).Available);
 
+// Pure MQTT 5 publication intent. No broker, credentials or network traffic.
+var mqttFresh = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot, snapshotNow);
+Check("MQTT fresh intent publishes battery before online",
+    mqttFresh.Count == 2 && mqttFresh[0].TopicSuffix == "battery" &&
+    mqttFresh[0].Payload == "83" && mqttFresh[1].TopicSuffix == "availability" &&
+    mqttFresh[1].Payload == "online");
+Check("MQTT fresh retained values use QoS1 and finite expiry",
+    mqttFresh.All(x => x.Retain && x.Qos == 1 &&
+        x.ExpirySeconds == HaMqttAvailabilityPolicy.FreshExpirySeconds));
+var mqttMissing = HaMqttAvailabilityPolicy.Plan(haMapping, null, snapshotNow);
+Check("MQTT absent API marks offline before clearing battery",
+    mqttMissing.Count == 2 && mqttMissing[0] is
+    { TopicSuffix: "availability", Payload: "offline", ExpirySeconds: null } &&
+    mqttMissing[1] is { TopicSuffix: "battery", Payload: "", ExpirySeconds: null });
+Check("MQTT offline intent retains its status and clearing command",
+    mqttMissing.All(x => x.Retain && x.Qos == 1));
+var mqttStale = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot, snapshotNow.AddMinutes(6));
+Check("MQTT expired snapshot never publishes online", mqttStale[0].Payload == "offline");
+var mqttRestart = HaMqttAvailabilityPolicy.Plan(haMapping, haOtherWire, snapshotNow);
+Check("MQTT changed API session never publishes online", mqttRestart[0].Payload == "offline");
+var mqttCached = HaMqttAvailabilityPolicy.Plan(haMapping, haCachedWire, snapshotNow);
+Check("MQTT cached reading cannot advertise fresh charge", mqttCached[0].Payload == "offline");
+var mqttFuture = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { GeneratedAt = snapshotNow.AddSeconds(1) }, snapshotNow);
+Check("MQTT future snapshot is unavailable", mqttFuture[0].Payload == "offline");
+var mqttUnknown = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { Devices = Array.Empty<LocalBatterySnapshot.Entry>() }, snapshotNow);
+Check("MQTT missing row is unavailable", mqttUnknown[0].Payload == "offline");
+var mqttRecovery = HaMqttAvailabilityPolicy.Plan(haMapping, haNext, snapshotNow.AddSeconds(1));
+Check("MQTT new fresh sample restores online state", mqttRecovery[0].Payload == "82" &&
+    mqttRecovery[1].Payload == "online");
+Check("MQTT publication plan has only bounded topic suffixes",
+    mqttFresh.Concat(mqttMissing).All(x =>
+        x.TopicSuffix is "battery" or "availability" && x.Payload.Length <= 7));
+Check("MQTT policy does not modify the snapshot",
+    haSnapshot.Devices[0].BatteryPercent == 83 &&
+    haSnapshot.Devices[0].Status == "fresh");
+
+// MQTT expiry and zero-value boundaries must never alias unavailable.
+var mqttZero = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with { BatteryPercent = 0 } } },
+    snapshotNow);
+Check("MQTT zero percent is a valid fresh value", mqttZero[0].Payload == "0" &&
+    mqttZero[1].Payload == "online");
+var mqttInvalid = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with { BatteryPercent = -1 } } },
+    snapshotNow);
+Check("MQTT invalid percentage must fail closed", mqttInvalid[0].Payload == "offline");
+var mqttOutOfRange = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with { BatteryPercent = 101 } } },
+    snapshotNow);
+Check("MQTT over-range percentage must fail closed", mqttOutOfRange[0].Payload == "offline");
+var mqttChangedSchema = HaMqttAvailabilityPolicy.Plan(haMapping,
+    haSnapshot with { SchemaVersion = 999 }, snapshotNow);
+Check("MQTT unsupported schema must fail closed", mqttChangedSchema[0].Payload == "offline");
+
+// Retained MQTT expiry must be bounded by remaining sample freshness.
+var mqttAfterFourMinutes = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot,
+    snapshotNow.AddMinutes(4));
+Check("MQTT expiry follows remaining measurement lifetime",
+    mqttAfterFourMinutes[0].ExpirySeconds == 60 &&
+    mqttAfterFourMinutes[1].ExpirySeconds == 60);
+var mqttFraction = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot,
+    snapshotNow.AddMinutes(4).AddMilliseconds(1));
+Check("MQTT fractional lifetime rounds down, never extends freshness",
+    mqttFraction[0].ExpirySeconds == 59 && mqttFraction[1].ExpirySeconds == 59);
+var mqttBoundary = HaMqttAvailabilityPolicy.Plan(haMapping, haSnapshot,
+    snapshotNow.AddMinutes(5));
+Check("MQTT zero remaining lifetime fails closed",
+    mqttBoundary[0].Payload == "offline" && mqttBoundary[1].Payload == "");
+var mqttMeasuredLater = haSnapshot with
+{
+    GeneratedAt = snapshotNow.AddMinutes(3),
+    Devices = new[] { haSnapshot.Devices[0] with
+        { MeasuredAt = snapshotNow.AddMinutes(2) } }
+};
+var mqttLaterPlan = HaMqttAvailabilityPolicy.Plan(haMapping, mqttMeasuredLater,
+    snapshotNow.AddMinutes(4));
+Check("MQTT expiry considers both snapshot and measurement ages",
+    mqttLaterPlan[0].ExpirySeconds == 180 &&
+    mqttLaterPlan[1].ExpirySeconds == 180);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
