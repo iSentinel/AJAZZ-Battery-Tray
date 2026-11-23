@@ -1,3 +1,17 @@
+# Resume — Windows HID offline comparison candidate
+
+- Latest release is v0.3.0-beta.58. PR #91 merged
+  b4c5fd17c4700793d726f0c3c8aa330fd381a0b6, all CIs PASS.
+- Windows 11 beta.57+ --hid-diagnose already generates bounded
+  redacted local logs. New Python comparator reads awake/after-sleep
+  and optional reconnect reports only, never opens USB or network.
+- Classifies progress from HID enumeration/open through SET F7,
+  GET 05 and verified parser output. No serials/vendor full reports.
+- Fix PowerShell path escaping in Windows diagnostic documentation;
+  add offline regressions and --help to test-tools CI.
+- Pending CI and merge; await actual affected-mouse owner reports.
+  No app binary or version change intended.
+
 # Resume — AULA offline analyzer timeline validation
 
 - PR #90 merged 65a5cb729a44ccf36aec2e8f3b1177de49937b58;

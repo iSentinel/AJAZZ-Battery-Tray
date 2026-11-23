@@ -43,10 +43,10 @@ post-sleep readings in separate, timestamped files. Run `-DryRun`
 first; it creates no file and does not open HID:
 
 ```powershell
-.	ools\Collect-AjazzHidDiagnostics.ps1 -DryRun -Label awake
-.	ools\Collect-AjazzHidDiagnostics.ps1 -Label awake
+.\tools\Collect-AjazzHidDiagnostics.ps1 -DryRun -Label awake
+.\tools\Collect-AjazzHidDiagnostics.ps1 -Label awake
 # Let the mouse sleep naturally, wake it by moving it, then:
-.	ools\Collect-AjazzHidDiagnostics.ps1 -Label after-sleep
+.\tools\Collect-AjazzHidDiagnostics.ps1 -Label after-sleep
 ```
 
 Use `-ExePath` for a portable beta.57+ EXE or
@@ -57,6 +57,28 @@ no HID request, and returns 124 by design.
 The helper does not put a mouse to sleep, reset USB interfaces or
 alter hardware settings. Review the files before sharing because
 they contain the first eight response bytes.
+
+## Compare awake / after-sleep diagnostic files offline
+
+After obtaining the two separate text reports with the beta.57+
+collector, compare the actual progress markers without opening USB:
+
+```powershell
+python tools/compare_windows_hid_logs.py --awake "C:\Logs\awake.txt" --after-sleep "C:\Logs\after-sleep.txt"
+```
+
+A third report can be added with `--reconnect "C:\Logs\reconnect.txt"`.
+Use `python tools/compare_windows_hid_logs.py --help` for syntax.
+
+The result distinguishes NO RECEIVER, OPEN FAILED, SET FAILED,
+GET FAILED, TIMEOUT, UNVERIFIED and VERIFIED. Exit codes are
+0 when *all supplied captures* contain a parser-verified battery
+value, 2 for inconclusive responses/timeouts and 1 for malformed
+reports or an explicit worker error. These classifications do
+**not** prove that the device slept, that the same physical receiver
+was connected, or that the vendor packet framing is correct.
+The tool only reads the supplied local reports, never the HID device.
+Inspect short response prefixes before sharing the original logs.
 
 ## Data and safety properties
 
