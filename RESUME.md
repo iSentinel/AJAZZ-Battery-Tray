@@ -1,3 +1,12 @@
+# Resume — beta.57 macOS runner capacity recovery
+
+- PR #86 Windows CI PASS (45218093365).
+- macOS 45218094411 failed to acquire hosted arm64 runner in 15m,
+  GitHub annotation confirms arm64 capacity constraints.
+- Changed modern macOS PR/release runner to available macos-15-intel
+  to build universal arm64+x86_64 artifacts; CI still required.
+- Current latest release is beta.56 until beta.57 release passes.
+
 # Resume — Windows 11 bounded HID comparison beta.57 candidate
 
 - High Sierra .5 published, verified ZIP SHA-256, bundle build 5,

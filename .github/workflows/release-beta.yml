@@ -120,7 +120,8 @@ jobs:
 
   macos:
     needs: verify-version
-    runs-on: macos-latest
+    # Intel macOS runner avoids arm64 queue saturation; swiftc cross-builds both architectures.
+    runs-on: macos-15-intel
     permissions:
       contents: read
     steps:

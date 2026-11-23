@@ -674,3 +674,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Physical Windows 11 HID trace of affected mouse and owner review.
 - [ ] Evaluate full-raw GUI capture privacy as a separate consent change;
       do not silently remove it.
+
+
+## beta.57 CI runner capacity recovery
+- [x] Windows diagnostic build and watchdog CI passed at run 45218093365.
+- [x] macOS run 45218094411 failed without acquiring a runner:
+      GitHub Actions reported arm64 runner capacity constraints.
+- [x] Switch modern macOS CI and beta-release macOS job to
+      macos-15-intel, compiling both arm64 + x86_64 via the same
+      universal Swift build script, with runtime smoke tests on Intel.
+- [ ] Confirm universal binary architectures/CI PASS on Intel runner.
+- [ ] Run separate full beta.57 release CI before publishing binaries.
