@@ -2164,5 +2164,36 @@ for (int round = 0; round < 1000; round++)
 }
 Check("Scratch thousand-frame inventory parity", !largeScratch.Keys.Any());
 
+// An aborted identity enumeration must not retain stale identities.
+var failingScratch = new InventoryFrameScratch();
+IEnumerable<string> FailingKeys()
+{
+    yield return "temporary-identity";
+    throw new InvalidOperationException("Synthetic inventory failure");
+}
+failingScratch.Begin();
+failingScratch.Add("present");
+bool enumerationFailed = false;
+try
+{
+    failingScratch.Missing(FailingKeys());
+}
+catch (InvalidOperationException)
+{
+    enumerationFailed = true;
+}
+finally
+{
+    failingScratch.End();
+}
+Check("Scratch exception path clears seen and missing identities",
+    enumerationFailed && !failingScratch.Keys.Any() &&
+    failingScratch.Missing(Array.Empty<string>()).Count == 0);
+failingScratch.Begin();
+failingScratch.Add("reconnected");
+Check("Scratch resumes after exception without stale identities",
+    failingScratch.Contains("reconnected") && !failingScratch.Contains("present"));
+failingScratch.End();
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

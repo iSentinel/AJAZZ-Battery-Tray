@@ -528,17 +528,21 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Avoid per-known-inventory HashSet and ToArray by lazy reusable scratch.
 - [x] No new thread, timer or HID reads; polling intervals unchanged.
 - [x] Ten pure assertions; initial Windows 45142142430 / macOS 45142142117 PASS.
-- [ ] Final beta.54 CI, publication and hardware acceptance.
+- [x] beta.54 published via workflow 45142789278; six assets.
+- [ ] Physical hardware acceptance.
 - [ ] Release only after final CI; real Windows idle resource acceptance.
 
 ## Optional Windows GUI resource acceptance
 - [x] Explicit GDI/USER opt-in; default CSV schema unchanged.
 - [x] Offline comparator supports either format but rejects mixed schemas.
-- [ ] Four additional Python fixtures and Windows CI smoke.
+- [x] Four additional fixtures; PR #74 Windows 45143788162 /
+  macOS 45143788089 / Python 45143788173 PASS; merged.
 - [ ] Real same-PC, three-run CPU/RAM/handles/GDI/USER benchmark.
 
 ## beta.55 receiver and optional icon scratch candidate
 - [x] Reuse lazy per-pass identity collection for receiver and additional icons.
 - [x] Release scratch identity references in finally; preserve unknown presence.
-- [ ] Ten pure assertions and full Windows/macOS CI.
+- [x] Ten frame assertions; initial Windows 45150093604 / macOS 45150093633 PASS.
+- [x] Two more assertions cover exception cleanup and recovery.
+- [ ] Final beta.55 Windows/macOS CI and publication.
 - [ ] Final release and real idle resource comparison before claims.
