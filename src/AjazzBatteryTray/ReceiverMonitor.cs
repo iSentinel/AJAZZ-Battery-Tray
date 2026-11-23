@@ -78,40 +78,40 @@ internal sealed class ReceiverMonitor : IDisposable
         seen.Begin();
         try
         {
-        foreach (var item in batch.Receivers)
-        {
-            seen.Add(item.Key);
-            State state = FindOrCreate(item);
-            state.Alias = settings.DeviceAliases.GetValueOrDefault(item.Key);
-            state.Present = true;
-            state.ScheduledSkip = !item.Sampled;
-            if (!item.Sampled) continue;
-            state.Reading = item.Reading;
-            state.MeasuredAt = item.MeasuredAt ?? now;
-            Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
-        }
+            foreach (var item in batch.Receivers)
+            {
+                seen.Add(item.Key);
+                State state = FindOrCreate(item);
+                state.Alias = settings.DeviceAliases.GetValueOrDefault(item.Key);
+                state.Present = true;
+                state.ScheduledSkip = !item.Sampled;
+                if (!item.Sampled) continue;
+                state.Reading = item.Reading;
+                state.MeasuredAt = item.MeasuredAt ?? now;
+                Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
+            }
 
-        foreach (string missingKey in seen.Missing(_states.Keys))
-        {
-            State missing = _states[missingKey];
-            missing.Present = false;
-            missing.Reading = AbsentReading;
-            missing.ScheduledSkip = false;
-            missing.MeasuredAt = null;
-            Record(missing, settings, notifier,
-                bluetoothEnabled && batch.Receivers.Count == 0, now);
-        }
+            foreach (string missingKey in seen.Missing(_states.Keys))
+            {
+                State missing = _states[missingKey];
+                missing.Present = false;
+                missing.Reading = AbsentReading;
+                missing.ScheduledSkip = false;
+                missing.MeasuredAt = null;
+                Record(missing, settings, notifier,
+                    bluetoothEnabled && batch.Receivers.Count == 0, now);
+            }
 
-        PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen);
-        SummaryState = null;
-        foreach (var item in batch.Receivers)
-        {
-            var state = _states[item.Key];
-            SummaryState ??= state;
-            if (!state.Reading.Percent.HasValue) continue;
-            SummaryState = state;
-            break;
-        }
+            PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen.Keys);
+            SummaryState = null;
+            foreach (var item in batch.Receivers)
+            {
+                var state = _states[item.Key];
+                SummaryState ??= state;
+                if (!state.Reading.Percent.HasValue) continue;
+                SummaryState = state;
+                break;
+            }
         }
         finally
         {
@@ -236,30 +236,30 @@ internal sealed class ReceiverMonitor : IDisposable
         wanted.Begin();
         try
         {
-        foreach (var pair in _states)
-        {
-            if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
-            wanted.Add(pair.Key);
-            SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
-                color: color(pair.Key));
-        }
-        if (showAula && !aulaIsPrimary)
-        {
-            wanted.Add("AULA");
-            SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale,
-                color(DeviceAliasRules.AulaSlot));
-        }
-        foreach (var item in bluetooth)
-        {
-            wanted.Add(item.Key);
-            SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
-        }
+            foreach (var pair in _states)
+            {
+                if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
+                wanted.Add(pair.Key);
+                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
+                    color: color(pair.Key));
+            }
+            if (showAula && !aulaIsPrimary)
+            {
+                wanted.Add("AULA");
+                SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale,
+                    color(DeviceAliasRules.AulaSlot));
+            }
+            foreach (var item in bluetooth)
+            {
+                wanted.Add(item.Key);
+                SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
+            }
 
-        foreach (string key in wanted.Missing(_icons.Keys))
-        {
-            _icons[key].Dispose();
-            _icons.Remove(key);
-        }
+            foreach (string key in wanted.Missing(_icons.Keys))
+            {
+                _icons[key].Dispose();
+                _icons.Remove(key);
+            }
         }
         finally
         {
