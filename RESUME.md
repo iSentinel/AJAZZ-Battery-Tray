@@ -1,24 +1,15 @@
-# Resume — optional MQTT delivery acknowledgment gate
+# Resume — USB discovery allocation candidate
 
-- beta.53 released; workflow 45139628072 PASS; six assets.
-- PR #70 availability policy Windows 45140136771 / macOS 45140136699 /
-  optional HA preview 45140136710 PASS; merged
+- beta.53 release 45139628072 PASS, six assets verified.
+- PR #70 offline optional HA MQTT availability merged
   10be9fde200ffd0b7f775ff62763a768c10c7a63.
-- feat/ha-mqtt-delivery-gate now synchronized with main. All MQTT code
-  remains optional in integrations/home-assistant; no broker, credentials,
-  service or tray distribution changes.
-- Separate pure delivery gate validates the two-message retained QoS1
-  sequence, cannot advance after failed acknowledgment or cancellation.
-  Eight additional assertions pending CI; Python regressions 23/23 PASS.
-- Next: open draft PR and verify Windows/macOS/preview CI; avoid release
-  version increment for this isolated optional pure-policy change.
-- Actual TLS/MQTT broker, HA discovery, live delivery receipts, stable
-  entity mapping and operator-approved credentials still unimplemented.
-  AULA sleep, affected AJ159, mixed BLE and measured Windows resources
-  remain open.
-
-- Reconciled with official HA MQTT sensor expire_after guidance:
-  online battery is non-retained, availability online remains retained;
-  offline uses retained availability followed by clearing any retained
-  battery. Delivery gate rejects retained fresh state. Real HA expire_after,
-  last will, legacy retained cleanup and broker behavior not implemented.
+- PR #71 MQTT acknowledgment/order, non-retained battery state merged
+  096778a40bc807d83643273a5a0527baea1d2001.
+- PR #72 optional broker TLS parameter preflight pending CI; no network.
+- perf/reconcile-scratch-reuse reduces repeated known USB inventory
+  allocations by lazy scratch reuse, preserving polling deadlines and
+  no changes to HID reader. Ten additional pure C# checks pending CI.
+  Python 23/23 PASS. No benchmark improvement claimed.
+- Next: verify PR #72 and this branch CI, prepare beta.54 metadata
+  only after successful initial checks. Real Windows measurements,
+  AULA sleep/recovery, AJ159 affected capture and multi-BLE pending.

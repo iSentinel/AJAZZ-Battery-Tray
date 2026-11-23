@@ -2033,5 +2033,49 @@ async Task TestMqttAcknowledgmentGate()
 }
 TestMqttAcknowledgmentGate().GetAwaiter().GetResult();
 
+// Reconcile reuses scratch storage without changing known/unknown semantics.
+var reconcileSchedule = new DevicePollSchedule();
+var pollKeys = Enumerable.Range(0, 64).Select(n => n.ToString("X64")).ToArray();
+for (int i = 0; i < pollKeys.Length; i++)
+    reconcileSchedule.Complete(pollKeys[i], 100000);
+reconcileSchedule.Reconcile(pollKeys.Where((_, index) => index % 2 == 0),
+    presenceKnown: false);
+Check("USB unknown discovery retains all per-device deadlines",
+    pollKeys.All(key => !reconcileSchedule.IsDue(key, 101000, 60)));
+reconcileSchedule.Reconcile(pollKeys.Where((_, index) => index % 2 == 0),
+    presenceKnown: true);
+Check("USB known discovery retains present receiver deadlines",
+    pollKeys.Where((_, index) => index % 2 == 0)
+        .All(key => !reconcileSchedule.IsDue(key, 101000, 60)));
+Check("USB known discovery forgets only absent receiver deadlines",
+    pollKeys.Where((_, index) => index % 2 != 0)
+        .All(key => reconcileSchedule.IsDue(key, 101000, 60)));
+reconcileSchedule.Reconcile(pollKeys.Where((_, index) => index % 2 == 0),
+    presenceKnown: true);
+Check("USB repeat discovery does not reset surviving deadlines",
+    !reconcileSchedule.IsDue(pollKeys[0], 101000, 60));
+int enumerations = 0;
+IEnumerable<string> PresentOnce()
+{
+    enumerations++;
+    yield return pollKeys[0];
+}
+reconcileSchedule.Reconcile(PresentOnce(), presenceKnown: true);
+Check("USB reconcile enumerates fresh discovery once", enumerations == 1);
+Check("USB later confirmed removal resets previously retained receiver",
+    reconcileSchedule.IsDue(pollKeys[2], 101000, 60));
+Check("USB surviving receiver still follows its interval",
+    !reconcileSchedule.IsDue(pollKeys[0], 101000, 60));
+reconcileSchedule.Reconcile(Array.Empty<string>(), presenceKnown: false);
+Check("USB unknown empty inventory cannot erase last deadline",
+    !reconcileSchedule.IsDue(pollKeys[0], 101000, 60));
+reconcileSchedule.Reconcile(Array.Empty<string>(), presenceKnown: true);
+Check("USB confirmed empty inventory clears all deadlines",
+    reconcileSchedule.IsDue(pollKeys[0], 101000, 60));
+reconcileSchedule.Complete(pollKeys[1], 101000);
+reconcileSchedule.Reconcile(new[] { pollKeys[1] }, presenceKnown: true);
+Check("USB discovery after full cleanup preserves new completion",
+    !reconcileSchedule.IsDue(pollKeys[1], 101001, 60));
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

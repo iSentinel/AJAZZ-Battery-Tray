@@ -517,3 +517,9 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Gate subsequent sends on previous QoS1 acknowledgment, cancellation-safe.
 - [ ] Eight pure C# tests and full Windows/macOS CI.
 - [ ] Broker reconnect and HA availability acceptance, no default daemon.
+
+## beta.54 USB reconcile allocation candidate
+- [x] Avoid per-known-inventory HashSet and ToArray by lazy reusable scratch.
+- [x] No new thread, timer or HID reads; polling intervals unchanged.
+- [ ] Ten new pure assertions and combined Windows/macOS CI.
+- [ ] Release only after final CI; real Windows idle resource acceptance.
