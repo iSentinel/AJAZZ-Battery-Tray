@@ -1,3 +1,17 @@
+# Resume — AULA L99 offline sleep acceptance analyzer
+
+- Latest release v0.3.0-beta.58, six assets and published SHA-256
+  verified. PR #89 release checkpoint merged ffddcba12180c211.
+- Current work: offline Python tool tools/analyze_aula_sleep.py
+  accepts awake/asleep/recovered clipboard summaries from the
+  AULA menu; no extra device commands or automatic polling.
+- PASS / FAIL / NOT OBSERVED results, strict timestamp/charge
+  validation, 24-hour cache expiry and unknown-presence logic.
+- Offline regression tests added to .github/workflows/test-tools.yml.
+  Await CI and PR merge; physical AULA L99 acceptance still pending.
+- Separate owner tests remain: Windows 11 problem mouse beta.58
+  HID diagnostics and macOS High Sierra .5 --trace-hid.
+
 # Resume — beta.58 published and hardware acceptance pending
 
 - PR #88 merged 5683dbec13bd4280bf06343d2ac0e68d2c3d15b9.

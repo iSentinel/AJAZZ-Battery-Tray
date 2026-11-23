@@ -77,6 +77,35 @@ Mark NOT OBSERVED if ordinary sleep never produces an enumeration
 failure. A14, when observed naturally, checks that an actually
 different receiver cannot inherit another receiver's cached level.
 
+## Offline comparison of three clipboard summaries
+
+For AULA L99 on Windows beta.58 or newer, collect exactly one
+**Copy AULA diagnostic summary** at each checkpoint, saving the
+clipboard text to separate UTF-8 files:
+
+- `aula-awake.txt` — after a successful fresh reading
+- `aula-asleep.txt` — after ordinary idle/sleep, without manual refresh
+- `aula-recovered.txt` — after waking the keyboard and receiving a new poll
+
+With a local checkout of the project, run the offline Python analyzer:
+
+```bash
+python tools/analyze_aula_sleep.py --awake aula-awake.txt --asleep aula-asleep.txt --recovered aula-recovered.txt
+```
+
+Use `python tools/analyze_aula_sleep.py --help` for the complete command.
+No USB/HID operations, device queries, browser access or network access
+are performed by this tool. Exit codes: `0` = PASS for the observed
+clipboard-state sequence, `1` = FAIL or malformed input, `2` = NOT
+OBSERVED (for example, the keyboard still responds during idle).
+
+The script checks cache/fresh status, measurement timestamps,
+no-reply counts, unknown receiver presence and the 24-hour cache
+boundary. It does **not** demonstrate that the HID protocol is correct
+or that the same physical receiver was used: the clipboard report
+intentionally omits serials and identity keys. Do not infer confirmed
+hardware recovery from synthetic tests or a single PASS.
+
 ## Resource comparison
 
 Follow [RESOURCE_OPTIMIZATION.md](RESOURCE_OPTIMIZATION.md) on the same PC
