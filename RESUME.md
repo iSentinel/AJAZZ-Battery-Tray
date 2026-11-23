@@ -1,19 +1,16 @@
-# Resume — optional MQTT availability policy candidate
+# Resume — offline MQTT acknowledgment candidate
 
-- beta.53 PR #69 final Windows 45139329299 / macOS 45139329460 /
-  preview 45139329257 PASS, merged
-  1a053ddd611dd50b058bd95d1d187bb5698932da.
-  Release publication not yet verified.
-- feat/ha-mqtt-availability synchronized with beta.53 main; conflicts
-  resolved by preserving complete main AULA tests and appending MQTT tests.
-  Optional pure message-intent policy only, no network/broker dependency.
-- Fresh session-bound reading: retained QoS1 battery followed by online;
-  both have proposed 300s MQTT5 message expiry. Missing/stale: offline
-  first, then empty retained battery message to clear a previous value.
-- Twenty pure policy assertions pending C# CI, including remaining
-  expiry floor and 5-minute boundary. Python tools 23/23 PASS.
-- Next: verify beta.53 release, open PR for policy and run Windows/macOS/
-  HA preview CI. Do not publish MQTT until authenticated TLS transport,
-  acknowledgments, HA discovery/expiry and explicit stable mapping tested.
-- Actual Windows resource baselines, AULA sleep/wake, AJ159 affected
-  captures and multi-BLE remain pending.
+- beta.53 merged 1a053ddd611dd50b058bd95d1d187bb5698932da;
+  publication check pending at branch creation.
+- PR #70 availability policy head 264aab562f040d22949c59f05721fd3db11aa970.
+- feat/ha-mqtt-delivery-gate branches from PR #70, not from main:
+  pure in-memory QoS1 message sequence validation and acknowledged
+  progression only, with explicit cancellation. Eight assertions added.
+  Python offline tests PASS. No broker, credentials, MQTT library, service
+  or runtime tray dependency.
+- Next: verify PR #70 exact CI and merge; sync this branch with main,
+  review C# CI and publish no app release without a functional tray change.
+  Actual TLS transport, MQTT5 broker and Home Assistant tests remain
+  blocked on explicit opt-in/credentials and real acceptance environment.
+- AULA long sleep, AJ159 affected capture, multiple BLE and Windows idle
+  resource measurements remain unverified.

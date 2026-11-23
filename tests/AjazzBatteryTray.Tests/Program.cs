@@ -1941,5 +1941,86 @@ Check("MQTT expiry considers both snapshot and measurement ages",
     mqttLaterPlan[0].ExpirySeconds == 180 &&
     mqttLaterPlan[1].ExpirySeconds == 180);
 
+// Offline delivery gate prevents a partial publish from advertising online.
+async Task TestMqttAcknowledgmentGate()
+{
+    var accepted = new List<string>();
+    bool ok = await HaMqttDeliveryGate.PublishAsync(mqttFresh, (message, _) =>
+    {
+        accepted.Add(message.TopicSuffix);
+        return Task.FromResult(true);
+    }, CancellationToken.None);
+    Check("MQTT gate permits online only after battery acknowledgment", ok &&
+        accepted.SequenceEqual(new[] { "battery", "availability" }));
+    accepted.Clear();
+    bool rejected = await HaMqttDeliveryGate.PublishAsync(mqttFresh, (message, _) =>
+    {
+        accepted.Add(message.TopicSuffix);
+        return Task.FromResult(false);
+    }, CancellationToken.None);
+    Check("MQTT failed battery acknowledgment blocks online", !rejected &&
+        accepted.SequenceEqual(new[] { "battery" }));
+    accepted.Clear();
+    bool offline = await HaMqttDeliveryGate.PublishAsync(mqttMissing, (message, _) =>
+    {
+        accepted.Add(message.TopicSuffix);
+        return Task.FromResult(true);
+    }, CancellationToken.None);
+    Check("MQTT offline acknowledgment precedes battery clear", offline &&
+        accepted.SequenceEqual(new[] { "availability", "battery" }));
+    accepted.Clear();
+    bool failedOffline = await HaMqttDeliveryGate.PublishAsync(mqttMissing, (message, _) =>
+    {
+        accepted.Add(message.TopicSuffix);
+        return Task.FromResult(false);
+    }, CancellationToken.None);
+    Check("MQTT failed offline acknowledgment blocks stale-value clear",
+        !failedOffline && accepted.SequenceEqual(new[] { "availability" }));
+    bool malformed = false;
+    try
+    {
+        await HaMqttDeliveryGate.PublishAsync(new[] { mqttFresh[1], mqttFresh[0] },
+            (message, _) => Task.FromResult(true), CancellationToken.None);
+    }
+    catch (InvalidDataException) { malformed = true; }
+    Check("MQTT gate rejects unsafe online ordering", malformed);
+    bool invalidTopic = false;
+    try
+    {
+        await HaMqttDeliveryGate.PublishAsync(new[]
+        {
+            mqttFresh[0] with { TopicSuffix = "arbitrary/topic" }, mqttFresh[1]
+        }, (message, _) => Task.FromResult(true), CancellationToken.None);
+    }
+    catch (InvalidDataException) { invalidTopic = true; }
+    Check("MQTT gate rejects injected topic suffix", invalidTopic);
+    using var cancelled = new CancellationTokenSource();
+    cancelled.Cancel();
+    bool cancelledBeforePublish = false;
+    try
+    {
+        await HaMqttDeliveryGate.PublishAsync(mqttFresh,
+            (message, _) => Task.FromResult(true), cancelled.Token);
+    }
+    catch (OperationCanceledException) { cancelledBeforePublish = true; }
+    Check("MQTT gate honors pre-cancellation", cancelledBeforePublish);
+    accepted.Clear();
+    using var cancelledDuring = new CancellationTokenSource();
+    bool cancelledBeforeOnline = false;
+    try
+    {
+        await HaMqttDeliveryGate.PublishAsync(mqttFresh, (message, _) =>
+        {
+            accepted.Add(message.TopicSuffix);
+            cancelledDuring.Cancel();
+            return Task.FromResult(true);
+        }, cancelledDuring.Token);
+    }
+    catch (OperationCanceledException) { cancelledBeforeOnline = true; }
+    Check("MQTT cancellation after battery blocks online",
+        cancelledBeforeOnline && accepted.SequenceEqual(new[] { "battery" }));
+}
+TestMqttAcknowledgmentGate().GetAwaiter().GetResult();
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

@@ -89,3 +89,16 @@ No stable entity ID or topic prefix is inferred from source/slot. MQTT 5
 expiry support, HA discovery expire_after, transport authentication, TLS,
 credential storage, topic permission scope and actual broker behavior remain
 unimplemented/unverified. Tests use synthetic snapshots only.
+
+## Offline QoS1 acknowledgment gate
+
+A separate pure component validates exact two-message sequence, topic suffixes,
+QoS1, retained state, numeric battery payload and finite MQTT5 expiry.
+The optional transport callback must positively acknowledge the first
+message before the second can be sent; any rejection, cancellation or thrown
+exception stops progression. Online cannot be advertised after a rejected
+battery publication; offline must be acknowledged before retained battery
+clearing. This does not itself connect to a broker, verify that the broker
+durably persisted data, or establish Home Assistant consumption. Session
+revalidation, reconnection semantics, TLS, MQTT5 support and credentials
+must be implemented and physically verified before deployment.
