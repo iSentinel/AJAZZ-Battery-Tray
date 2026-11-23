@@ -22,14 +22,17 @@ public sealed class AjazzHidReader
         => receivers.FirstOrDefault(x => x.Reading.Percent.HasValue)
             ?? receivers.FirstOrDefault();
 
-    public Batch ReadAll(bool captureProtocol = false, Func<string, bool>? shouldSample = null)
+    public Batch ReadAll(bool captureProtocol = false, Func<string, bool>? shouldSample = null,
+        Action<string>? progress = null, bool redactRaw = false)
     {
         List<string> attempts = new();
         List<ReceiverReading> receivers = new();
         try
         {
+            progress?.Invoke("STEP: enumerating receiver HID paths");
             IReadOnlyList<string> paths = HidNative.FindAjazzPaths();
             attempts.Add($"Matching MI_02 paths: {paths.Count}");
+            progress?.Invoke($"STEP: found {paths.Count} matching MI_02 paths");
             foreach (string path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 string key = ReceiverIdentity.LocalKey(path);
@@ -46,7 +49,8 @@ public sealed class AjazzHidReader
                 ushort? revision = null;
                 try
                 {
-                    reading = QueryPath(path, trace, out revision, captureProtocol);
+                    reading = QueryPath(path, trace, out revision, captureProtocol,
+                        progress, redactRaw);
                 }
                 catch (Exception error)
                 {
@@ -112,11 +116,14 @@ public sealed class AjazzHidReader
     }
 
     private static Reading? QueryPath(string path, List<string> attempts, out ushort? revision,
-        bool captureProtocol)
+        bool captureProtocol, Action<string>? progress, bool redactRaw)
     {
         revision = null;
         attempts.Add($"Interface: {DiagnosticHidIdentity.FromPath(path)}");
+        progress?.Invoke("STEP: opening matched receiver interface");
         using SafeFileHandle handle = HidNative.Open(path);
+        progress?.Invoke(handle.IsInvalid ? "STEP: HID open failed" :
+            "STEP: HID open succeeded");
         if (handle.IsInvalid)
         {
             attempts.Add($"  Open failed: Win32 {Marshal.GetLastWin32Error()}");
@@ -151,7 +158,8 @@ public sealed class AjazzHidReader
         int validAttempts = 0, totalAttempts = 0;
         foreach (var (length, delay) in ApexProtocolMatrix.Build(caps.FeatureReportByteLength, captureProtocol))
         {
-            int? percent = PollBattery(handle, length, attempts, delay, captureProtocol);
+            int? percent = PollBattery(handle, length, attempts, delay,
+                captureProtocol, progress, redactRaw);
             totalAttempts++;
             if (percent.HasValue)
             {
@@ -168,17 +176,22 @@ public sealed class AjazzHidReader
     }
 
     private static int? PollBattery(SafeFileHandle handle, int length,
-        List<string> attempts, int delayMs, bool captureProtocol)
+        List<string> attempts, int delayMs, bool captureProtocol,
+        Action<string>? progress, bool redactRaw)
     {
         // Only the existing allowlisted zero-payload telemetry request.
         byte[] poll = new byte[length];
         poll[1] = 0xF7;
         if (captureProtocol)
-            attempts.Add($"  Attempt UTC={DateTimeOffset.UtcNow:O}; delay={delayMs}ms; TX[{length}]={Convert.ToHexString(poll)}");
+            attempts.Add($"  Attempt UTC={DateTimeOffset.UtcNow:O}; delay={delayMs}ms; " +
+                (redactRaw ? $"TX[{length}]=approved F7 zero-payload request" :
+                 $"TX[{length}]={Convert.ToHexString(poll)}"));
+        progress?.Invoke($"STEP: SET F7 begin length={length}");
         Stopwatch elapsed = Stopwatch.StartNew();
         bool sent = HidNative.SendApprovedFeature(handle, poll);
         int sendError = sent ? 0 : Marshal.GetLastWin32Error();
         long setMs = elapsed.ElapsedMilliseconds;
+        progress?.Invoke($"STEP: SET F7 {(sent ? "OK" : "FAILED")} Win32={sendError} elapsed={setMs}ms");
         if (!sent)
         {
             attempts.Add($"  SET F7 ({length} bytes): failed, Win32 {sendError}");
@@ -192,11 +205,15 @@ public sealed class AjazzHidReader
         byte[] response = new byte[length];
         response[0] = 0x05;
         if (captureProtocol)
-            attempts.Add($"  GET request buffer[{length}]={Convert.ToHexString(response)}");
+            attempts.Add(redactRaw ?
+                $"  GET request buffer[{length}]: report 05, rest zero" :
+                $"  GET request buffer[{length}]={Convert.ToHexString(response)}");
+        progress?.Invoke($"STEP: GET 05 begin length={length}");
         elapsed.Restart();
         bool received = HidNative.HidD_GetFeature(handle, response, length);
         int getError = received ? 0 : Marshal.GetLastWin32Error();
         long getMs = elapsed.ElapsedMilliseconds;
+        progress?.Invoke($"STEP: GET 05 {(received ? "OK" : "FAILED")} Win32={getError} elapsed={getMs}ms");
         if (captureProtocol)
             attempts.Add($"  SET elapsed={setMs}ms; actual wait={waitMs}ms; GET elapsed={getMs}ms");
         if (!received)
@@ -211,7 +228,9 @@ public sealed class AjazzHidReader
             (percent.HasValue ? $"battery={percent}%" : "no valid battery"));
         if (captureProtocol)
         {
-            attempts.Add($"  RX buffer[{length}]={Convert.ToHexString(response)}");
+            attempts.Add(redactRaw ?
+                $"  RX prefix[{length}]={DiagnosticHidIdentity.SafeFeaturePreview(response)}" :
+                $"  RX buffer[{length}]={Convert.ToHexString(response)}");
             attempts.Add("  Parser: " + BatteryReportParser.DescribeWindowsFeature(response));
         }
         return percent;

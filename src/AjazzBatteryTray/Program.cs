@@ -6,8 +6,13 @@ namespace AjazzBatteryTray;
 internal static class Program
 {
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
+        if (args.Length > 0)
+        {
+            Environment.ExitCode = WindowsHidDiagnostics.Run(args);
+            return;
+        }
         using Mutex singleInstance = new(true, "Local\\AJAZZBatteryTray_AJ179_APEX", out bool first);
         if (!first)
         {

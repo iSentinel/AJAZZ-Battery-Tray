@@ -1,3 +1,18 @@
+# Resume — Windows 11 bounded HID comparison beta.57 candidate
+
+- High Sierra .5 published, verified ZIP SHA-256, bundle build 5,
+  10.13 target and watchdog flags. Release workflow 45214211409 PASS.
+- Windows 11 owner problem-mouse HAR remains network-only; no HID
+  response was captured there.
+- In progress: optional --hid-diagnose --output PATH --timeout 40 in
+  WinExe with separate worker and immediate private local log.
+  Redacted prefix of received HID bytes, stages of F7/05 and Win32
+  errors; old raw GUI diagnostic remains separately opt-in.
+- Explicit test worker timeout, file preservation and pure redaction
+  tests added. Pending CI and beta.57 publication.
+- No vendor command, parser, automatic HID polling or default
+  background service changed.
+
 # Resume — High Sierra bounded diagnostic audit candidate
 
 - Deep audit of macos/high-sierra completed. Details in

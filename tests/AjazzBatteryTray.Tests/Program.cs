@@ -62,6 +62,13 @@ Check("Diagnostic header excludes remaining payload",
     "05000053");
 Check("Diagnostic short header", DiagnosticHidIdentity.BatteryHeader(
     new byte[] { 5, 0 }) == "0500");
+Check("Safe feature preview redacts trailing HID bytes",
+    DiagnosticHidIdentity.SafeFeaturePreview(
+        new byte[] { 5, 0, 0, 83, 1, 2, 3, 4, 0xAA }) ==
+        "0500005301020304 (1 additional bytes redacted)");
+Check("Safe feature preview handles short report",
+    DiagnosticHidIdentity.SafeFeaturePreview(new byte[] { 5, 1 }) ==
+        "0501 (0 additional bytes redacted)");
 
 // Independent completion-based polling deadlines; no HID I/O.
 var deviceSchedule = new DevicePollSchedule();

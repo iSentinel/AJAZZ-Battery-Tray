@@ -153,9 +153,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.56"
+          TAG="v0.3.0-beta.57"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.56 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.57 — Windows and macOS
+
+          **Bounded Windows 11 HID diagnostics (new):** optional
+          --hid-diagnose --output PATH --timeout 40 saves an immediate
+          local report with operation progress, verified F7/05 status
+          and redacted vendor payloads. A separate worker is terminated
+          after the chosen deadline; return 124 means timeout.
+          Existing full raw comparison remains explicitly opt-in in
+          the GUI and is not performed by the new CLI. No new HID
+          commands or startup services.
 
           **Receiver and tray icon reconciliation (Windows):** reuse
           lazy temporary identity collections on confirmed USB discovery
@@ -462,7 +471,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.56" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.57" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
