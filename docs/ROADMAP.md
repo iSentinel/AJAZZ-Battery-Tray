@@ -459,7 +459,8 @@ configuration commands. USB `VersionNumber` is a device revision,
   assertions including synthetic eight-hour sleep, expiration and recovery.
 - [x] Combined CI after callback compile fix: Windows 45089648620 / macOS 45089648574 PASS.
 - [x] Final beta.51 Windows 45090441648 / macOS 45090441628 PASS; merged.
-- [ ] beta.51 publication verification (45091032358) and physical acceptance.
+- [x] beta.51 publication 45091032358 PASS; six assets.
+- [ ] Physical beta.51 acceptance.
 - [ ] Observe prolonged AULA sleep and wake, confirm cached indication and
   fresh reading recovery without extra hardware traffic.
 
@@ -468,5 +469,12 @@ configuration commands. USB `VersionNumber` is a device revision,
   eight APEX tests and fifteen resource tests PASS on Gateway.
 - [x] Dedicated Python developer-tools CI added in PR #66.
 - [x] Passive [AULA sleep/wake acceptance](AULA_SLEEP_ACCEPTANCE.md) matrix.
-- [ ] PR #66 CI and merge; no application artifact version bump required.
+- [x] PR #66 CI and merge; main Python tools 45092260378 PASS.
 - [ ] Actual owner Windows resource CSVs and hardware acceptance results.
+
+## Optional HA session mapping foundation
+- [x] Transplant isolated mapping into integrations/home-assistant; test-only link.
+- [x] Add API-activation epoch; omit epoch on one-off snapshots.
+- [ ] Seventeen mapping and lifecycle assertions, combined CI.
+- [ ] Explicit independently installed bridge transport, credential and availability policy.
+- [ ] Actual Home Assistant acceptance; no automatic service or MQTT startup.

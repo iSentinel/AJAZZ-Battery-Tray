@@ -9,6 +9,9 @@ public sealed record LocalBatterySnapshot(int SchemaVersion, DateTimeOffset Gene
     IReadOnlyList<LocalBatterySnapshot.Entry> Devices)
 {
     public const int Schema = 1;
+    // Random per active API store, absent from one-off copies.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? SessionEpoch { get; init; }
     public const int MaximumDevices = 64;
     public static readonly TimeSpan MaximumFreshAge = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan MaximumCachedAge = TimeSpan.FromHours(24);

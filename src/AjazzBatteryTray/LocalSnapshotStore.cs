@@ -4,12 +4,13 @@ namespace AjazzBatteryTray;
 public sealed class LocalSnapshotStore
 {
     private LocalBatterySnapshot? _latest;
+    private readonly string _sessionEpoch = Guid.NewGuid().ToString("N");
 
     public void Publish(DateTimeOffset now, IEnumerable<LocalBatterySnapshot.Input> inputs)
     {
         try
         {
-            var snapshot = LocalBatterySnapshot.Create(now, inputs);
+            var snapshot = LocalBatterySnapshot.Create(now, inputs) with { SessionEpoch = _sessionEpoch };
             Volatile.Write(ref _latest, snapshot);
         }
         catch
