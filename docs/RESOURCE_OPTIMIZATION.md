@@ -121,3 +121,22 @@ expired cache never become fresh. Unexpected read failures clear the cache.
 Twelve new assertions include a simulated eight-hour sleep (960 no-reply
 observations), 24-hour expiration, and successful recovery. These are
 synthetic state tests, not real hardware or wall-clock endurance evidence.
+
+## Offline comparison of measured runs
+After collecting comparable CSVs on the same Windows PC, run the standalone
+standard-library Python analyzer (no dependency added to the tray):
+
+```powershell
+python tools/compare_tray_resources.py --baseline baseline1.csv baseline2.csv baseline3.csv --candidate candidate1.csv candidate2.csv candidate3.csv
+```
+
+CPU is calculated from total CPU-time delta divided by elapsed duration,
+normalized to one logical core. Each run contributes a median for RAM,
+handles and threads; the report compares medians across runs. A zero
+baseline reports N/A for relative change. Durations must be within 10%;
+versions must be consistent within each group. Fewer than three runs raises
+a warning. PASS means validated inputs, not a performance acceptance gate.
+The analyzer cannot independently verify identical hardware, workload or
+settings, and does not measure GDI objects or wakeups. No measured tray
+improvement is claimed. Ten fixture tests and eight APEX tests PASS on
+Gateway. Actual owner Windows CSVs remain outstanding.
