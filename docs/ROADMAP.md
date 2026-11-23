@@ -615,3 +615,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add CI coverage for --dry-run --trace.
 - [ ] Verify F7/05 trace, mouse sleep and reconnect on iMac 10.13.6.
 - [ ] Do not change telemetry parser framing without physical evidence.
+
+
+## qmk.top/v4 owner HAR — affected mouse (network-only)
+- [x] Parse supplied HAR safely, without committing raw contents.
+- [x] Record nine qmk.top GETs, six 200 / three 304,
+      frontend assets only; user agent reports Windows 10 / Chrome 157.
+- [x] Document that no WebHID F7/05, VID/PID, charge or API request
+      is present in the network capture. See
+      [HAR evidence review](QMK_V4_PROBLEM_MOUSE_HAR_20261123.md).
+- [ ] Obtain redacted Chrome WebHID/console trace and identify affected
+      model/receiver without guessing from downloaded image filenames.
+- [ ] Obtain owner macOS 10.13.6 --trace-hid F7/05 output before
+      modifying the actual telemetry protocol or parser.
