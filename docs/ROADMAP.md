@@ -499,14 +499,16 @@ configuration commands. USB `VersionNumber` is a device revision,
   macOS 45096569901 / optional preview 45096569934 PASS.
 - [x] beta.53 final Windows 45139329299 / macOS 45139329460 /
   HA preview 45139329257 PASS; merged 1a053ddd611dd50b058bd95d1d187bb5698932da.
-- [ ] beta.53 publication and physical acceptance.
+- [x] beta.53 release 45139628072 PASS; six assets.
+- [ ] Physical receiver continuity acceptance.
 - [ ] Require opt-in mapping and documented physical identity limitations
   before external broker publication.
 
 ## Optional MQTT 5 availability policy
 - [x] Draft bounded offline QoS1 retained message order, expiry limited to
   remaining fresh lifetime of snapshot and observation.
-- [ ] Twelve pure assertions; Windows/macOS/preview CI and review.
+- [x] Availability policy CI: PR #70 Windows 45140136771,
+  macOS 45140136699, preview 45140136710 PASS; merged.
 - [ ] Validate broker support for MQTT 5 expiry and HA offline handling.
 - [ ] Implement separate opt-in TLS transport only with confirmed credentials.
 - [ ] No default service, additional tray dependency or automatic network use.
@@ -515,13 +517,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Validate offline/online message ordering and remaining-fresh expiry.
 - [x] Avoid retained fresh battery state per Home Assistant expire_after guidance.
 - [x] Gate subsequent sends on previous QoS1 acknowledgment, cancellation-safe.
-- [ ] Eight pure C# tests and full Windows/macOS CI.
+- [x] ACK gate CI: PR #71 Windows 45140932515,
+  macOS 45140932548, preview 45140932525 PASS; merged.
 - [ ] Broker reconnect and HA availability acceptance, no default daemon.
 
 ## Optional MQTT broker preflight
 - [x] Explicit session-only config defaults disabled, TLS and certificate check required.
 - [x] Reject unapproved broker host, port, topic prefix and credentials-absent inputs.
-- [ ] Fifteen pure C# checks and Windows/macOS/preview CI.
+- [x] Offline broker preflight: PR #72 Windows 45141549065,
+  macOS 45141549003, preview 45141549165 PASS; merged.
 - [ ] No broker connection, secret persistence or tray startup integration.
 
 ## beta.54 USB reconcile allocation candidate
@@ -544,12 +548,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Release scratch identity references in finally; preserve unknown presence.
 - [x] Ten frame assertions; initial Windows 45150093604 / macOS 45150093633 PASS.
 - [x] Two more assertions cover exception cleanup and recovery.
-- [ ] Final beta.55 Windows/macOS CI and publication.
+- [x] beta.55 Windows 45150679762 / macOS 45150679558 PASS;
+  release 45150994852 PASS, all six assets.
 - [ ] Final release and real idle resource comparison before claims.
 
 ## Opt-in BLE one-pass scheduler candidate
 - [x] Replace LINQ sort with streaming due-device selection.
 - [x] Preserve nullable attempt ordering, generation ties, USB priority.
 - [x] Ten new assertions; initial Windows 45151372157 / macOS 45151372393 PASS.
-- [ ] Final beta.56 CI and release publication.
+- [x] beta.56 Windows 45151826742 / macOS 45151826820 PASS;
+  merged d26780312170a71e5c87a7dccd049bbe5fa36da1.
+- [x] beta.56 release 45152156278 PASS; six assets published.
 - [ ] Actual two-device BLE/USB owner acceptance.
