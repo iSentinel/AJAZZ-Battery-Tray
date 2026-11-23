@@ -8,6 +8,14 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.50 (2026-11-23)
+- Replace the opt-in ten-second timer with one-shot update deadlines.
+- Preserve initial 60-second delay, daily success and hourly failure retry.
+- Guard stale timer events and saturate deadline arithmetic.
+- Serialize manual and automatic update lookups using a lazy cancellable gate.
+- Sixteen new assertions; initial Windows/macOS CI PASS.
+- No HID poll cadence, default HA integration or update consent changes.
+
 ## 0.3.0-beta.49 (2026-11-23)
 - Avoid transient collections in receiver selection and inactive icon paths.
 - Compute USB discovery intervals without sorting or LINQ.
