@@ -8,6 +8,14 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.54 (2026-11-23)
+- Reuse lazily allocated temporary sets/lists during confirmed USB inventory reconciliation.
+- Avoid per-reconciliation allocation of a HashSet and filtered array.
+- Preserve known/unknown receiver behavior, completion deadlines and polling intervals.
+- Ten new pure regression assertions; initial Windows/macOS CI PASS.
+- No additional HID commands, timers, services or default Home Assistant dependency.
+- Hardware and Windows CPU/RAM measurement still pending.
+
 ## 0.3.0-beta.53 (2026-11-23)
 - Reserve Local API AULA slot 1 for unbindable status; verified receivers
   receive non-reused ordinals within an explicit API activation.

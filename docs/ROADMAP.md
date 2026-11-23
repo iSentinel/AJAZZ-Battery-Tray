@@ -527,5 +527,6 @@ configuration commands. USB `VersionNumber` is a device revision,
 ## beta.54 USB reconcile allocation candidate
 - [x] Avoid per-known-inventory HashSet and ToArray by lazy reusable scratch.
 - [x] No new thread, timer or HID reads; polling intervals unchanged.
-- [ ] Ten new pure assertions and combined Windows/macOS CI.
+- [x] Ten pure assertions; initial Windows 45142142430 / macOS 45142142117 PASS.
+- [ ] Final beta.54 CI, publication and hardware acceptance.
 - [ ] Release only after final CI; real Windows idle resource acceptance.
