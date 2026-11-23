@@ -26,6 +26,7 @@ jobs:
         run: |
           bash -n macos/high-sierra/acceptance.sh
           bash macos/high-sierra/acceptance.sh --help
+          bash macos/high-sierra/acceptance.sh --dry-run --trace
           bash macos/high-sierra/acceptance.sh --dry-run --app             "dist/high-sierra/AJAZZ Battery Tray High Sierra.app"
       - name: Check package target, architecture, and SHA256
         run: |

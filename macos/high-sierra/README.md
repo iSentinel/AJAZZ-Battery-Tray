@@ -66,7 +66,16 @@ first eight bytes of each response. **Inspect even that shortened
 output before sharing**. It must never contain full raw reports,
 serial numbers, private USB paths, or device identifiers other than
 the fixed target VID:PID. Return code 2 means the evidence is
-inconclusive, **not** 0% battery. A newer High Sierra build is required
+inconclusive, **not** 0% battery. From a checkout of the project on the iMac, the owner acceptance
+helper can also run an explicitly opted-in trace. Always review output
+before sharing, even though full HID packets are never printed:
+
+```bash
+bash macos/high-sierra/acceptance.sh --dry-run --trace
+bash macos/high-sierra/acceptance.sh --trace
+```
+
+A newer High Sierra build is required
 for this optional command; .1/.2 do not contain it.
 
 If the compatible USB receiver is absent or does not supply a verified

@@ -590,7 +590,8 @@ configuration commands. USB `VersionNumber` is a device revision,
       sleeping/unresponsive receiver, and valid battery percentage.
 - [x] Suppress battery/disconnect alerts for unverified/error states.
 - [x] Add non-hardware self-tests of error-state notification suppression.
-- [ ] Intel CI and High Sierra follow-up release, without changing Latest.
+- [x] PR #80 passed Intel/Windows/macOS CI and merged 4a3ae29e.
+- [x] Published v0.3.0-highsierra.3 with separate release workflow PASS.
 - [ ] Confirm errors correspond to actual High Sierra receiver behavior.
 
 
@@ -601,5 +602,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       GetFeature and response-prefix parsing; no new device commands.
 - [ ] Run trace on actual iMac, then compare lengths/status to Windows
       report framing before altering the parser or polling behavior.
-- [ ] Pass Intel CI; publish separate experimental High Sierra update.
+- [x] PR #82 passed Intel/Windows/macOS CI and merged 18510a76.
+- [x] Published v0.3.0-highsierra.4; CI 45187068489 PASS;
+      downloaded ZIP, SHA-256 and trace option verified.
 - [ ] Receiver sleep/wake and optional GATT hardware acceptance pending.
+
+
+## iMac owner acceptance trace checkpoint
+- [x] PR #81 merged 17c679e; privacy-safe High Sierra helper.
+- [x] Add explicitly opted-in --trace to the helper; guard editions
+      older than .4, and keep --dry-run entirely free of device queries.
+- [x] Add CI coverage for --dry-run --trace.
+- [ ] Verify F7/05 trace, mouse sleep and reconnect on iMac 10.13.6.
+- [ ] Do not change telemetry parser framing without physical evidence.
