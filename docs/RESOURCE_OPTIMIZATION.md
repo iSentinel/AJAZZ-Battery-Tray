@@ -110,3 +110,14 @@ read waits for that read to finish, then schedules a replacement after
 worker or new HID command is introduced. Fourteen assertions exercise
 manual/automatic reads, disabled/idle states, repeated completion, stale
 reply, fast re-enable and shutdown. C# CI and physical acceptance pending.
+
+### AULA sleep and recovery state consistency
+AULA dashboard and active API projection share one observation classifier.
+A successful automatic reading is fresh, never a scheduled-skip state.
+Explicit manual reads remain manual-only and are excluded from API output
+when automatic monitoring is disabled. Cached replies retain the original
+observation timestamp; unknown presence, unplug, invalid samples and
+expired cache never become fresh. Unexpected read failures clear the cache.
+Twelve new assertions include a simulated eight-hour sleep (960 no-reply
+observations), 24-hour expiration, and successful recovery. These are
+synthetic state tests, not real hardware or wall-clock endurance evidence.
