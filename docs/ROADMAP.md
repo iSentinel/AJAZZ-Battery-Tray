@@ -560,3 +560,12 @@ configuration commands. USB `VersionNumber` is a device revision,
   merged d26780312170a71e5c87a7dccd049bbe5fa36da1.
 - [x] beta.56 release 45152156278 PASS; six assets published.
 - [ ] Actual two-device BLE/USB owner acceptance.
+
+## High Sierra Intel edition — independent compatibility release
+- [x] Isolate legacy macOS 10.13 Intel Objective-C AppKit/IOKit implementation.
+- [x] Preserve the existing macOS 13+ Swift app and Windows distribution.
+- [x] Add x86_64 build, checksum, interpreter self-test and separate CI/release workflow.
+- [ ] Pass Intel macOS CI build and publish a separate prerelease asset.
+- [ ] Test real iMac Late 2013 with High Sierra 10.13: launch, 3151:5007 HID,
+      sleep/reconnect, native notifications, Bluetooth 180F/2A19 as available.
+- [ ] Do not claim device compatibility before physical acceptance.

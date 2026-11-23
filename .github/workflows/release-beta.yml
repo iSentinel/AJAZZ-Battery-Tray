@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/**'
       - 'macos/**'
+      - '!macos/high-sierra/**'
       - 'installer/**'
   workflow_dispatch:
 
