@@ -1,0 +1,48 @@
+name: Publish High Sierra Intel prerelease
+
+on:
+  push:
+    tags:
+      - 'v*-highsierra.*'
+
+permissions:
+  contents: read
+
+jobs:
+  release-high-sierra:
+    runs-on: macos-15-intel
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate tag and build independent legacy edition
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-highsierra\.[0-9]+$ ]]
+          bash macos/high-sierra/build.sh
+          (cd dist && shasum -a 256 -c AJAZZBatteryTray-macOS-HighSierra-Intel.sha256)
+      - name: Publish separate experimental release (not Latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/ajazz-highsierra-release-notes.md <<'NOTES'
+          ## AJAZZ Battery Tray — High Sierra Intel Edition
+
+          Experimental native status-bar application for macOS 10.13,
+          Intel x86_64 (including iMac Late 2013).
+          Independent app and tag; the existing Latest release is untouched.
+
+          - Conservative 3151:5007 / HID FFFF:0002 F7/05 battery telemetry
+          - Manual connected Bluetooth GATT 180F / 2A19 battery check
+          - Optional High Sierra notifications, 50/25/10 thresholds, RU/UA/EN
+          - No firmware or configuration commands
+          - Physical High Sierra device acceptance remains pending
+          - Ad-hoc signed, not Apple-notarized; verify the ZIP SHA-256
+
+          See macos/high-sierra/README.md for installation and limitations.
+          NOTES
+          gh release create "$GITHUB_REF_NAME"             dist/AJAZZBatteryTray-macOS-HighSierra-Intel.zip             dist/AJAZZBatteryTray-macOS-HighSierra-Intel.sha256             --verify-tag --prerelease --latest=false             --title "AJAZZ Battery Tray High Sierra Intel $GITHUB_REF_NAME"             --notes-file /tmp/ajazz-highsierra-release-notes.md
