@@ -1,0 +1,70 @@
+name: Test optional HA preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'integrations/home-assistant/**'
+      - 'src/AjazzBatteryTray/LocalBatterySnapshot.cs'
+      - 'src/AjazzBatteryTray/DeviceDashboardState.cs'
+      - '.github/workflows/test-ha-preview.yml'
+  pull_request:
+    paths:
+      - 'integrations/home-assistant/**'
+      - 'src/AjazzBatteryTray/LocalBatterySnapshot.cs'
+      - 'src/AjazzBatteryTray/DeviceDashboardState.cs'
+      - '.github/workflows/test-ha-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build standalone preview
+        run: dotnet build integrations/home-assistant/AjazzHaPreview.csproj -c Release
+      - name: Validate CLI exit codes and isolation
+        shell: pwsh
+        run: |
+          $app = "integrations/home-assistant/bin/Release/net8.0/AjazzHaPreview.dll"
+          dotnet $app --help
+          if ($LASTEXITCODE -ne 0) { throw 'Help failed' }
+          dotnet $app --port 0
+          if ($LASTEXITCODE -ne 2) { throw 'Invalid port not rejected' }
+          'unused' | dotnet $app
+          if ($LASTEXITCODE -ne 2) { throw 'Redirected token input not rejected' }
+          dotnet build src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Tray build failed' }
+          $project = Get-Content src/AjazzBatteryTray/AjazzBatteryTray.csproj -Raw
+          if ($project -match 'home-assistant|MQTT|AjazzHaPreview') {
+            throw 'Optional integration must not be referenced by tray'
+          }
+          Write-Host 'PASS: CLI smoke checks and project isolation'
+      - name: Publish independent Windows x64 preview
+        shell: pwsh
+        run: |
+          dotnet publish integrations/home-assistant/AjazzHaPreview.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/ha-preview
+          if ($LASTEXITCODE -ne 0) { throw 'Preview publish failed' }
+          $app = Join-Path $PWD 'dist/ha-preview/AjazzHaPreview.exe'
+          & $app --help
+          if ($LASTEXITCODE -ne 0) { throw 'Published preview help failed' }
+          & $app --port 0
+          if ($LASTEXITCODE -ne 2) { throw 'Published preview invalid port not rejected' }
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $app).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath "$app.sha256" -Encoding ascii -Value "$hash  AjazzHaPreview.exe"
+          # The expected negative CLI test leaves LASTEXITCODE=2.
+          # Only report success after its assertion and checksum creation.
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: optional-AjazzHaPreview-win-x64
+          path: |
+            dist/ha-preview/AjazzHaPreview.exe
+            dist/ha-preview/AjazzHaPreview.exe.sha256
+          if-no-files-found: error

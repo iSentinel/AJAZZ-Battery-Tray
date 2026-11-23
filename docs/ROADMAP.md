@@ -481,3 +481,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Final beta.52 CI and publication.
 - [ ] Explicit independently installed bridge transport, credential and availability policy.
 - [ ] Actual Home Assistant acceptance; no automatic service or MQTT startup.
+
+## Optional HA preview — standalone console
+- [x] Independent .NET project, hidden token prompt, explicit session mapping.
+- [x] Preserve native Ctrl+C exit during blocking input; clear mutable token buffer.
+- [x] Dedicated CI and separate portable Windows x64 preview artifact with checksum.
+- [ ] PR #68 CI and merge, interactive acceptance.
+- [ ] Protected broker credentials, verified TLS, availability/expiry policy and MQTT.
+- [ ] Separate user-controlled distribution; never bundle or auto-start with tray.

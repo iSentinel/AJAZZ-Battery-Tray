@@ -1,15 +1,19 @@
-# Resume — beta.52 optional API session identity candidate
+# Resume — isolated portable HA preview candidate
 
-- beta.51 published; workflow 45091032358 PASS, six assets verified.
-- PR #66 merged dca6bee7e2ef79e28e7e093e65e34dc4940660cc;
-  main Python 45092260378 PASS.
-- PR #67 initial Windows 45092378014 / macOS 45092378033 PASS.
-  Combined head d1c056a Windows 45092724526 / macOS 45092724453 PASS.
-  Thirty-five new HA mapping, JSON and loopback assertions.
-- Optional API epoch per activation; one-off inactive copies omit it.
-  HA consumer code is outside tray project. No MQTT or auto-start.
-- beta.52 release metadata prepared; verify final CI before merge.
-- Next: independently runnable optional consumer with explicit
-  interactive mapping, in-memory token, no broker yet, no tray dependency.
-- Actual Windows resources, AULA sleep/wake, AJ159 evidence and multi-BLE
-  acceptance remain open.
+- beta.52 PR #67 final Windows 45092998151 / macOS 45092998102 PASS;
+  merged ec66c667433f818e6c440595250baf8e217f4f90. Release workflow
+  45093197963 started; confirm all six assets before claiming publication.
+- PR #68 feat/optional-ha-cli synced with beta.52 main without conflict.
+  No source/installer/macOS/release workflow differences.
+- Native Ctrl+C terminates blocking input; Escape cancels token entry.
+  Mutable 64-character token buffer cleared in finally; managed token
+  string remains in process memory until GC/exit, not persisted.
+- Dedicated CI builds, smoke-tests and publishes a separate self-contained
+  win-x64 preview EXE and SHA256 manifest as Actions artifacts only.
+  Latest C# preview CI pending. Gateway Python 23/23 PASS and diff checks PASS.
+- Next: verify beta.52 publication and exact PR #68 head Windows/macOS/
+  optional preview CI; verify portable artifact and merge if all PASS.
+  Then audit session-bound mapping identity and design explicit MQTT opt-in
+  with TLS/credentials/availability before transport implementation.
+- No Home Assistant connection, broker, service, auto-start or tray bundle.
+  Physical AULA, AJ159, multi-BLE and resource measurements remain open.
