@@ -666,11 +666,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add pure redaction tests and Windows CI deliberate timeout test.
 - [x] Remove nullable clock-status log argument warning (CS8604)
       without changing dock command behavior.
-- [ ] Pass Windows, modern macOS and High Sierra Intel CI as applicable.
+- [x] PR #86 Windows and universal macOS CI PASS;
+      merged fd9701671f3b3bd002916e7e6400ca554248a3b2.
 - [x] Increment macOS universal bundle build number to 61;
       runtime behavior unchanged.
-- [ ] Publish beta.57 Windows setup/portable and macOS universal
-      six assets, verify SHA-256 and installer smoke tests.
+- [x] beta.57 release CI 45221783995 PASS, installer smoke tests PASS;
+      six assets published; three binary SHA-256 checks PASS.
 - [ ] Physical Windows 11 HID trace of affected mouse and owner review.
 - [ ] Evaluate full-raw GUI capture privacy as a separate consent change;
       do not silently remove it.
@@ -683,5 +684,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Switch modern macOS CI and beta-release macOS job to
       macos-15-intel, compiling both arm64 + x86_64 via the same
       universal Swift build script, with runtime smoke tests on Intel.
-- [ ] Confirm universal binary architectures/CI PASS on Intel runner.
-- [ ] Run separate full beta.57 release CI before publishing binaries.
+- [x] Universal macOS CI 45221233319 PASS on Intel runner.
+- [x] Full beta.57 release workflow 45221783995 PASS.
+
+
+## Windows 11 owner HID diagnostics acceptance helper
+- [x] Add non-interactive PowerShell helper with -Help, -DryRun,
+      -SelfTest, -Label, -TimeoutSeconds, and -ExePath.
+- [x] Unique timestamped awake/after-sleep/reconnect reports,
+      without overwriting prior captures.
+- [x] Preserve exit codes 0, 2, 124 and 1.
+- [x] Test dry-run without USB traffic and a deliberate watchdog
+      fixture without HID requests.
+- [ ] Obtain real owner awake/after-sleep/reconnect F7/05 reports.
+- [ ] Confirm USB collection and battery parsing before adjusting
+      protocol on the affected Windows 11 hardware.

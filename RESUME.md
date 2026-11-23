@@ -1,3 +1,19 @@
+# Resume — beta.57 released; Windows 11 owner diagnostics helper
+
+- PR #86 merged fd9701671f3b3bd002916e7e6400ca554248a3b2.
+- beta.57 release workflow 45221783995 PASS. Windows installer
+  installation/removal smoke test PASS, macOS universal build 61 PASS.
+- Three published binaries re-downloaded and SHA-256 verified:
+  Windows portable, Windows Setup, macOS universal ZIP.
+  Six assets published; Latest beta.57 confirmed.
+- macOS runner switch to macos-15-intel solved hosted arm64 runner
+  capacity timeouts. Modern macOS CI 45221233319 PASS.
+- Next stage: tools/Collect-AjazzHidDiagnostics.ps1 provides
+  Windows 11 owner awake/after-sleep/reconnect diagnostics with
+  -DryRun, -SelfTest, unique report files and stable result codes.
+- Physical Windows 11 and iMac 10.13.6 HID acceptance still
+  pending; no raw HAR or private USB serials committed.
+
 # Resume — beta.57 macOS runner capacity recovery
 
 - PR #86 Windows CI PASS (45218093365).

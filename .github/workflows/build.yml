@@ -82,6 +82,33 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $report -ErrorAction SilentlyContinue
           }
+      - name: Validate owner HID acceptance helper
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP ('ajazz-owner-' + [Guid]::NewGuid().ToString('N'))
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $helper = (Resolve-Path 'tools/Collect-AjazzHidDiagnostics.ps1').Path
+          $dry = & $helper -DryRun -ExePath $exe -OutputDirectory $dir -Label awake
+          if (($dry -join ' ') -notmatch 'DRY-RUN' -or (Test-Path $dir)) {
+            throw 'Dry-run wrote output or failed'
+          }
+          New-Item -ItemType Directory -Path $dir | Out-Null
+          try {
+            $args = '-NoLogo -NoProfile -File "' + $helper +
+              '" -SelfTest -Label watchdog -ExePath "' + $exe +
+              '" -OutputDirectory "' + $dir + '"'
+            $run = Start-Process -FilePath (Get-Command pwsh).Source -ArgumentList $args -Wait -PassThru
+            if ($run.ExitCode -ne 124) { throw "Expected watchdog 124, got $($run.ExitCode)" }
+            $logs = @(Get-ChildItem -LiteralPath $dir -Filter 'ajazz-hid-watchdog-*.txt')
+            if ($logs.Count -ne 1) { throw 'Expected exactly one owner report' }
+            $body = Get-Content -LiteralPath $logs[0].FullName -Raw
+            if ($body -notmatch 'BEGIN:' -or $body -notmatch 'TIMEOUT:') {
+              throw 'Missing persisted watchdog progress'
+            }
+            echo 'PASS: owner wrapper dry-run, bounded self-test and one report'
+          } finally {
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+          }
       # upload-artifact already delivers a ZIP download. Upload the executable
       # directory, not a pre-zipped archive, to avoid nested ZIP files.
       - uses: actions/upload-artifact@v4
