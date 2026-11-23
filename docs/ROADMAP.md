@@ -852,13 +852,20 @@ configuration commands. USB `VersionNumber` is a device revision,
       parser for older report framing.
 - [x] Regression fixtures from real zero/unknown response and
       simulated valid/nonvalid status transitions.
-- [ ] Windows CI, macOS CI, installer smoke tests before merge.
-- [ ] Publish beta.60 only if CI passes, then re-download binaries
-      and check the three published SHA-256 manifests.
+- [x] PR #97 Windows CI 45247132617 / macOS CI
+      45247132614 PASS; merged e9c1f21acee64e51b7b064a97492e434ad41b52f.
+- [x] beta.60 release workflow 45247584544 PASS, Windows installer
+      install/uninstall PASS, six assets published, three binary
+      SHA-256 manifests verified after downloading from GitHub.
 - [ ] Real AJ159 on Windows 11: re-run -hid-diagnose awake;
       owner must verify nonzero F7 status before battery PASS.
 - [ ] Explore the official local HID bridge's report ID 00 versus
       our 05 as a separately reviewed read-only diagnostic,
       not as an automatic speculative fallback.
-- [ ] Preserve High Sierra .5 experimental release separately;
-      its F7 parser must be reviewed with physical trace data.
+- [x] Preserve High Sierra .5 experimental release separately;
+      universal beta.60 macOS build 64 targets macOS 13+ only.
+- [ ] High Sierra .5 F7 parser must be reviewed with physical iMac
+      trace data; do not treat synthetic Windows F7 as proof.
+- [ ] AJ159 owner acceptance issue #53 remains open. The owner's
+      real Windows GearHub and beta.59 status replies contained
+      zero battery fields; this release does not assert a fix.
