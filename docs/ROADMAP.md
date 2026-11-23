@@ -437,6 +437,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Streaming receiver selection, inactive icon short-circuit and interval minimum.
 - [x] Bitmask alert state, immutable absent readings and saturated disconnect counter.
 - [x] Initial Windows 45086097090 / macOS 45086097051 PASS.
-- [ ] Final beta.49 CI and publication.
+- [x] Final beta.49 CI and publication: 45087429858 PASS; six assets.
 - [ ] Windows resource comparison before claiming measured improvements.
 - [ ] Further optimize opted-in update timer wakeups without changing consent or retries.
+
+## beta.50 update scheduling
+- [x] beta.49 published; all six assets verified.
+- [x] One-shot update deadlines, lifecycle guard and serialized request gate.
+- [x] Initial Windows 45087561973 / macOS 45087561984 PASS.
+- [ ] Final beta.50 CI and publication.
+- [ ] Review AULA heartbeat timer and idle scheduling separately.
+- [ ] Actual Windows resource and timer lifecycle acceptance.

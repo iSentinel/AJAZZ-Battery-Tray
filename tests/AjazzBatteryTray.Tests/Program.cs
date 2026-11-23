@@ -1555,5 +1555,63 @@ longAbsent.Evaluate(true, true);
 Check("Long disconnection saturates and re-arms after reconnect",
     longAbsentOnce && !longAbsent.Evaluate(false, false) && longAbsent.Evaluate(false, false));
 
+// One-shot timer must follow the same monotonic update policy deadlines.
+var deadlinePolicy = new AutomaticUpdatePolicy();
+Check("Update deadline disabled has no timer", deadlinePolicy.NextDelayMilliseconds(1000) is null);
+deadlinePolicy.Configure(true, false, 1000);
+Check("Update deadline initial timer sixty seconds", deadlinePolicy.NextDelayMilliseconds(1000) == 60000);
+Check("Update deadline remaining time", deadlinePolicy.NextDelayMilliseconds(61000 - 123) == 123);
+Check("Update deadline due and overdue clamp to one", deadlinePolicy.NextDelayMilliseconds(61000) == 1 &&
+    deadlinePolicy.NextDelayMilliseconds(62000) == 1);
+var deadlineRequest = deadlinePolicy.TryBegin(61000)!;
+Check("Update deadline pending has no timer", deadlinePolicy.NextDelayMilliseconds(61000) is null);
+deadlinePolicy.Complete(deadlineRequest, true, null, 62000);
+Check("Update deadline success schedules one day", deadlinePolicy.NextDelayMilliseconds(62000) == 86400000);
+var deadlineRetry = deadlinePolicy.TryBegin(62000 + 86400000)!;
+deadlinePolicy.Complete(deadlineRetry, false, null, 63000 + 86400000);
+Check("Update deadline failure schedules one hour",
+    deadlinePolicy.NextDelayMilliseconds(63000 + 86400000) == 3600000);
+deadlinePolicy.Configure(false, false, 64000 + 86400000);
+Check("Update deadline opt-out cancels timer", deadlinePolicy.NextDelayMilliseconds(64000 + 86400000) is null);
+deadlinePolicy.Configure(true, false, 100);
+var oldDeadlineRequest = deadlinePolicy.TryBegin(60100)!;
+deadlinePolicy.Configure(true, true, 60200);
+Check("Update deadline channel change waits for stale request", deadlinePolicy.NextDelayMilliseconds(60200) is null);
+deadlinePolicy.Complete(oldDeadlineRequest, true, null, 60300);
+Check("Update deadline stale reply preserves new deadline", deadlinePolicy.NextDelayMilliseconds(60300) == 59900);
+Check("Update deadline very large remaining time clamps", deadlinePolicy.NextDelayMilliseconds(long.MinValue) == int.MaxValue);
+
+// The shared gate prevents overlapping network work and releases on failure.
+var extremeDeadline = new AutomaticUpdatePolicy();
+extremeDeadline.Configure(true, false, long.MaxValue - 10);
+Check("Update deadline does not overflow near monotonic maximum",
+    extremeDeadline.NextDelayMilliseconds(long.MaxValue - 10) == 10);
+var gate = new UpdateRequestGate();
+var gateRelease = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+var gateFirst = gate.RunAsync(_ => gateRelease.Task, CancellationToken.None);
+bool gateSecondStarted = false;
+using var gateCancel = new CancellationTokenSource();
+var gateSecond = gate.RunAsync(_ =>
+{
+    gateSecondStarted = true;
+    return Task.FromResult(2);
+}, gateCancel.Token);
+Check("Update gate serializes simultaneous callers", !gateSecondStarted && !gateSecond.IsCompleted);
+gateCancel.Cancel();
+bool gateCanceled = false;
+try { gateSecond.GetAwaiter().GetResult(); }
+catch (OperationCanceledException) { gateCanceled = true; }
+Check("Update gate cancels queued lookup without network work", gateCanceled && !gateSecondStarted);
+gateRelease.SetResult(1);
+Check("Update gate completes original request", gateFirst.GetAwaiter().GetResult() == 1);
+bool gateFailed = false;
+try
+{
+    gate.RunAsync<int>(_ => throw new IOException("synthetic"), CancellationToken.None).GetAwaiter().GetResult();
+}
+catch (IOException) { gateFailed = true; }
+Check("Update gate releases after operation failure", gateFailed &&
+    gate.RunAsync(_ => Task.FromResult(3), CancellationToken.None).GetAwaiter().GetResult() == 3);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

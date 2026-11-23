@@ -1,18 +1,18 @@
-# Resume — monitoring hot-path candidate
+# Resume — update deadline scheduling candidate
 
-- beta.47 release 45084000358 PASS, six assets verified.
-- beta.48 PR #62 final Windows 45085165165 / macOS 45085165171 PASS;
-  merged ed8d8388a46ec0977457a47768edf2b0241237d4.
-  Release workflow 45086004496 PASS; six assets verified.
-- PR #63 synced with main, streaming receiver and BLE selection, fewer
-  temporary collections, same USB discovery interval. Ten assertions.
-- Added bitmask low-battery threshold policy with old-policy comparison
-  over 8192 deterministic samples; reusable absent/unknown readings and
-  saturated disconnect counter, preserving history and notification timing.
-  Twelve new assertions; Windows 45086097090 / macOS 45086097051 PASS.
-  Gateway Python APEX 8/8 PASS.
-- Next: beta.49 metadata prepared; final CI and release pending.
-  Audit idle timer scheduling in a separate branch. Windows resource
-  comparison still outstanding.
-- HA optional and isolated. Both AJ159 reports/HAR, multi-BLE, long AULA
-  sleep and physical UI acceptance pending. Live HID readers unchanged.
+- beta.49 PR #63 final Windows 45087023603 / macOS 45087023598 PASS;
+  merged a4a730c5ef851de934c9957572e1dc8c21a23820. Publication workflow
+  45087429858 PASS; all six assets verified.
+- PR #64 (perf/update-deadline-timer) synced with beta.49 main.
+  One-shot update scheduling, disabled by default; preserve initial
+  60-second delay, 24-hour success and 1-hour retry. No timer during
+  manual dialog or in-flight request.
+- Added stale timer guard, overflow-safe deadlines, lazily initialized
+  shared asynchronous gate to prevent manual/automatic HTTP overlap.
+  Existing 15-second deadline includes queued wait. Sixteen new assertions
+  total; Windows 45087561973 / macOS 45087561984 PASS. Gateway Python APEX 8/8 PASS; HID reader diff empty.
+- Next: beta.50 metadata prepared; verify final CI before merging.
+  Review AULA heartbeat scheduling separately. Real Windows UI timer and resource acceptance
+  remain pending; do not claim measured CPU/RAM savings.
+- HA optional and isolated; hardware gates unchanged (two AJ159 reports/HAR,
+  multi-BLE, AULA sleep, backup restore, actual Windows API).

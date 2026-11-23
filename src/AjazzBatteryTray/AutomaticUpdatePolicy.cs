@@ -11,6 +11,9 @@ public sealed class AutomaticUpdatePolicy
     private Request? _pending;
     private long _generation;
     private long _due = long.MaxValue;
+
+    private static long Deadline(long now, long delay) =>
+        now > long.MaxValue - delay ? long.MaxValue : now + delay;
     private readonly HashSet<ReleaseVersion> _notified = new();
     public bool Enabled { get; private set; }
     public bool Experimental { get; private set; }
@@ -21,7 +24,15 @@ public sealed class AutomaticUpdatePolicy
         Enabled = enabled;
         Experimental = experimental;
         _generation++;
-        _due = enabled ? now + InitialDelayMs : long.MaxValue;
+        _due = enabled ? Deadline(now, InitialDelayMs) : long.MaxValue;
+    }
+
+    /// <summary>Next one-shot timer interval; no wakeup while disabled or in flight.</summary>
+    public int? NextDelayMilliseconds(long now)
+    {
+        if (!Enabled || _pending is not null) return null;
+        // Clamp before converting to the Windows timer interval type.
+        return (int)Math.Clamp((decimal)_due - now, 1m, int.MaxValue);
     }
 
     public Request? TryBegin(long now)
@@ -37,7 +48,7 @@ public sealed class AutomaticUpdatePolicy
         if (!ReferenceEquals(_pending, request)) return false;
         _pending = null;
         if (!Enabled || request.Generation != _generation) return false;
-        _due = now + (success ? SuccessDelayMs : FailureDelayMs);
+        _due = Deadline(now, success ? SuccessDelayMs : FailureDelayMs);
         return success && available is not null &&
             (Experimental || !available.Beta.HasValue) && _notified.Add(available);
     }

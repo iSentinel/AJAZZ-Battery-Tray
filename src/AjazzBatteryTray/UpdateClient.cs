@@ -12,29 +12,38 @@ public sealed class UpdateClient
     private const int MaximumBytes = 2 * 1024 * 1024;
     public sealed record Candidate(ReleaseVersion Version, string Tag, string Page);
 
+    private static readonly Lazy<UpdateRequestGate> Gate = new(() => new UpdateRequestGate());
+
     public static async Task<Candidate?> CheckAsync(ReleaseVersion installed,
         bool experimental, CancellationToken cancellationToken = default)
     {
-        using var handler = new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false };
-        using var client = new HttpClient(handler);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
+        return await Gate.Value.RunAsync(token => CheckCoreAsync(installed, experimental, token),
+            timeout.Token).ConfigureAwait(false);
+    }
+
+    private static async Task<Candidate?> CheckCoreAsync(ReleaseVersion installed,
+        bool experimental, CancellationToken cancellationToken)
+    {
+        using var handler = new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false };
+        using var client = new HttpClient(handler);
         using var request = new HttpRequestMessage(HttpMethod.Get, Api);
         request.Headers.UserAgent.ParseAdd("AJAZZBatteryTray-UpdateChecker/1.0");
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
-            timeout.Token).ConfigureAwait(false);
+            cancellationToken).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.Forbidden ||
             response.StatusCode == HttpStatusCode.TooManyRequests)
             throw new HttpRequestException("GitHub release lookup limited.");
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength > MaximumBytes)
             throw new InvalidDataException("Release listing exceeds size limit.");
-        using var stream = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var body = new MemoryStream();
         byte[] buffer = new byte[8192];
         int count;
-        while ((count = await stream.ReadAsync(buffer.AsMemory(), timeout.Token).ConfigureAwait(false)) > 0)
+        while ((count = await stream.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
         {
             if (body.Length + count > MaximumBytes)
                 throw new InvalidDataException("Release listing exceeds size limit.");

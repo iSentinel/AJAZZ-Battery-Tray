@@ -67,3 +67,23 @@ improvement is claimed until the Windows comparison is completed.
   notification and history policies for every known absence. Missing-poll
   counter saturates at two, avoiding overflow after long uptime.
 - Two additional regression assertions; combined CI pending.
+
+## Deadline-based opt-in update scheduling
+When automatic checks are explicitly enabled, replace the 10-second
+repeating timer with a disposable one-shot timer scheduled from the policy's
+monotonic deadline. First check after 60 seconds, successful check after
+24 hours, failed check after one hour; suspend while manual dialog or an
+automatic request is active. Cancel on opt-out/channel change and re-arm
+only after the pending request completes. No schedule or timer by default.
+Eleven assertions cover initial, due/overdue, success/failure, disabled,
+pending and stale-generation deadlines. Windows timer UI lifecycle and
+actual wakeup measurements still require acceptance. This does not modify
+the HID poll cadence or add HA dependencies.
+
+- Guard callbacks from disposed/replaced update timers. Saturate monotonic
+  deadline addition against overflow. Serialize manual and automatic HTTP
+  lookups via a lazy shared asynchronous gate, including queue wait in the
+  existing 15-second timeout. No worker or timer when unused.
+- Five more assertions cover deadline overflow, overlapping callers,
+  queued cancellation and gate release on completion/failure. These use
+  synthetic operations without a live network. Combined CI pending.

@@ -15,6 +15,7 @@
     <Compile Include="../../src/AjazzBatteryTray/LocalApiServer.cs" Link="LocalApiServer.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalArtifactVerifier.cs" Link="LocalArtifactVerifier.cs" />
     <Compile Include="../../src/AjazzBatteryTray/UpdateClient.cs" Link="UpdateClient.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/UpdateRequestGate.cs" Link="UpdateRequestGate.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ApexProtocolMatrix.cs" Link="ApexProtocolMatrix.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BatteryReportParser.cs"
              Link="BatteryReportParser.cs" />
