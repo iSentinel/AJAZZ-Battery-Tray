@@ -409,7 +409,7 @@ static BatteryReading ReadReceiver(void) {
 }
 
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central {
-    if (central.state != CBCentralManagerStatePoweredOn) {
+    if (central.state != CBManagerStatePoweredOn) {
         [self message:[self word:@"Bluetooth is off or unavailable."
                                  ru:@"Bluetooth выключен или недоступен."
                                  uk:@"Bluetooth вимкнений або недоступний."]];
@@ -513,7 +513,7 @@ static BatteryReading ReadReceiver(void) {
 - (void)quit:(id)sender { [NSApp terminate:nil]; }
 @end
 
-int main(int argc, const char *argv[]) {
+int main(void) {
     @autoreleasepool {
         NSArray<NSString *> *arguments = [[NSProcessInfo processInfo] arguments];
         if ([arguments containsObject:@"--help"] || [arguments containsObject:@"-h"]) {
