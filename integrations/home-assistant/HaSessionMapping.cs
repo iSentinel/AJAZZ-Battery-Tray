@@ -10,7 +10,7 @@ public sealed record HaSessionMapping(string SessionEpoch, string Source, int Se
     {
         if (snapshot.SchemaVersion != LocalBatterySnapshot.Schema ||
             !ValidEpoch(snapshot.SessionEpoch) || !ValidSource(source) ||
-            slot is < 1 or > LocalBatterySnapshot.MaximumDevices ||
+            !ValidSlot(source, slot) ||
             snapshot.Devices.Count(x => x.Source == source && x.SessionSlot == slot) != 1)
             throw new InvalidDataException("No valid session mapping.");
         return new(snapshot.SessionEpoch!, source, slot);
@@ -25,7 +25,7 @@ public sealed record HaSessionMapping(string SessionEpoch, string Source, int Se
         if (snapshot.GeneratedAt > now ||
             now - snapshot.GeneratedAt > LocalBatterySnapshot.MaximumFreshAge)
             return new(false, null, "stale_snapshot");
-        if (!ValidSource(Source) || SessionSlot is < 1 or > LocalBatterySnapshot.MaximumDevices)
+        if (!ValidSource(Source) || !ValidSlot(Source, SessionSlot))
             return new(false, null, "mapping_required");
         var rows = snapshot.Devices.Where(x => x.Source == Source &&
             x.SessionSlot == SessionSlot).Take(2).ToArray();
@@ -40,6 +40,10 @@ public sealed record HaSessionMapping(string SessionEpoch, string Source, int Se
 
     private static bool ValidEpoch(string? value) =>
         value is { Length: 32 } && value.All(char.IsAsciiHexDigit);
+
+    private static bool ValidSlot(string source, int slot) =>
+        slot is >= 1 and <= LocalBatterySnapshot.MaximumDevices &&
+        (source != "aula_receiver" || slot != 1);
 
     private static bool ValidSource(string value) =>
         value is "apex_receiver" or "aula_receiver" or "bluetooth";
