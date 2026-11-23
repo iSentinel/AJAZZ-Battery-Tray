@@ -1,14 +1,14 @@
-# Resume — optional GDI/USER resource sampler candidate
+# Resume — receiver and icon scratch allocation candidate
 
-- beta.54 published; release 45142789278 PASS, six assets.
-  Main merge 5d99d10189f6627d918b8c39deb39575849233f1.
-- USB Reconcile scratch allocation optimization shipped in beta.54;
-  real CPU and memory improvement is not yet measured.
-- perf/gui-resource-sampler adds opt-in Windows GDI/USER object counts.
-  Default sampler CSV unchanged, offline comparator accepts base/GUI
-  formats and refuses mixed input. Four fixture tests; CI pending.
-- Only developer tools and docs/workflow modified, no tray, installer
-  or HID changes. No runtime GUI metrics collector added.
-- Next: verify Python and Windows CI, merge after PASS without new app
-  version. Actual device sleep, affected AJ159, multi-BLE and owner
-  Windows benchmarking remain outstanding; no live HA/MQTT broker.
+- beta.54 published, release workflow 45142789278 PASS; six assets.
+- PR #74 optional GDI/USER resource tool Windows 45143788162,
+  macOS 45143788089, Python 45143788173 PASS; merged
+  db331116f469da417539acec63959275ef659da9. No app version bump.
+- perf/receiver-frame-scratch optimizes ReceiverMonitor known inventory
+  and extra-icon reconciliation with lazily reused scratch sets and
+  missing-key lists. Clear after every pass, including exceptions.
+  No HID command or polling changes. Ten pure assertions pending C# CI.
+- No real Windows resource savings claimed; owner-side measurement,
+  AULA sleep/wake, two AJ159 captures and multi-BLE acceptance outstanding.
+- Next: verify exact branch CI, then beta.55 release metadata and final
+  verification; Home Assistant MQTT remains opt-in foundation only.

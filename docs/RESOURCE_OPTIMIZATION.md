@@ -174,3 +174,16 @@ These counts are not CPU wakeup metrics. A Windows CI smoke checks the
 extended sampler; four Python fixtures cover GUI comparison and rejection.
 Actual Windows CPU/RAM/GDI/USER improvements are not claimed until the
 owner provides same-PC, comparable measurement runs.
+
+## Receiver/icon reconciliation scratch candidate
+
+ReceiverMonitor.Apply and RefreshIcons previously constructed a fresh
+HashSet for each pass and icon cleanup created an additional ToArray.
+The candidate reuses separate lazy scratch sets and missing-key lists
+for USB receiver and tray icon inventories. The identity buffers are cleared
+in finally after each pass, including when notifications fail. Unknown USB
+enumeration still preserves the prior state, missing keys are captured
+before icon dictionary removals, and primary receiver selection remains
+ordinal/sticky. No HID commands or poll intervals change. Ten pure checks
+and combined CI are required before release; no CPU/RAM improvement is
+claimed absent repeatable Windows measurements.

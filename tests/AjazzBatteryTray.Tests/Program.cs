@@ -2121,5 +2121,48 @@ reconcileSchedule.Reconcile(new[] { pollKeys[1] }, presenceKnown: true);
 Check("USB discovery after full cleanup preserves new completion",
     !reconcileSchedule.IsDue(pollKeys[1], 101001, 60));
 
+// Receiver/icon reconciliation scratch must be reusable without stale keys.
+var scratch = new InventoryFrameScratch();
+scratch.Begin();
+scratch.Add("receiver-a");
+scratch.Add("receiver-b");
+Check("Scratch tracks current receiver identities",
+    scratch.Contains("receiver-a") && scratch.Contains("receiver-b"));
+Check("Scratch detects absent receiver without changing live inputs",
+    scratch.Missing(new[] { "receiver-a", "receiver-c" })
+        .SequenceEqual(new[] { "receiver-c" }));
+Check("Scratch picks only missing keys with ordinal case sensitivity",
+    scratch.Missing(new[] { "Receiver-a", "receiver-a" })
+        .SequenceEqual(new[] { "Receiver-a" }));
+Check("Scratch preserves stable primary selection in current frame",
+    ReceiverIdentity.SelectPrimary("receiver-b", scratch.Keys) == "receiver-b");
+scratch.End();
+Check("Scratch end clears all formerly seen identities",
+    !scratch.Contains("receiver-a") && !scratch.Keys.Any());
+scratch.Begin();
+scratch.Add("receiver-c");
+Check("Scratch reuse does not inherit prior receiver identity",
+    !scratch.Contains("receiver-a") && scratch.Contains("receiver-c"));
+Check("Scratch reusable missing collection starts empty",
+    scratch.Missing(new[] { "receiver-c" }).Count == 0);
+Check("Scratch captures snapshot of missing dictionary identities",
+    scratch.Missing(new[] { "receiver-b" }).SequenceEqual(new[] { "receiver-b" }));
+scratch.End();
+Check("Scratch releases missing keys on completion",
+    scratch.Missing(Array.Empty<string>()).Count == 0);
+var largeScratch = new InventoryFrameScratch();
+var inventoryKeys = Enumerable.Range(0, 64).Select(n => n.ToString("X4")).ToArray();
+for (int round = 0; round < 1000; round++)
+{
+    largeScratch.Begin();
+    foreach (string key in inventoryKeys)
+        if (round % 2 == 0 || key != inventoryKeys[0]) largeScratch.Add(key);
+    var absent = largeScratch.Missing(inventoryKeys);
+    if (absent.Count != (round % 2 == 0 ? 0 : 1))
+        throw new Exception("Scratch reconciliation mismatch.");
+    largeScratch.End();
+}
+Check("Scratch thousand-frame inventory parity", !largeScratch.Keys.Any());
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

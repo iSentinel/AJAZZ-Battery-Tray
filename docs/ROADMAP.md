@@ -536,3 +536,9 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Offline comparator supports either format but rejects mixed schemas.
 - [ ] Four additional Python fixtures and Windows CI smoke.
 - [ ] Real same-PC, three-run CPU/RAM/handles/GDI/USER benchmark.
+
+## beta.55 receiver and optional icon scratch candidate
+- [x] Reuse lazy per-pass identity collection for receiver and additional icons.
+- [x] Release scratch identity references in finally; preserve unknown presence.
+- [ ] Ten pure assertions and full Windows/macOS CI.
+- [ ] Final release and real idle resource comparison before claims.

@@ -40,6 +40,8 @@ internal sealed class ReceiverMonitor : IDisposable
         new(false, null, "HID enumeration unavailable", PresenceKnown: false);
     private readonly Dictionary<string, State> _states = new();
     private readonly Dictionary<string, ExtraIcon> _icons = new();
+    private InventoryFrameScratch? _receiverScratch;
+    private InventoryFrameScratch? _iconScratch;
     internal IEnumerable<State> Devices => _states.Values;
     internal string? PrimaryKey { get; private set; }
     internal State? PrimaryState => PrimaryKey is not null &&
@@ -72,7 +74,10 @@ internal sealed class ReceiverMonitor : IDisposable
             return;
         }
 
-        HashSet<string> seen = new();
+        var seen = _receiverScratch ??= new();
+        seen.Begin();
+        try
+        {
         foreach (var item in batch.Receivers)
         {
             seen.Add(item.Key);
@@ -86,13 +91,14 @@ internal sealed class ReceiverMonitor : IDisposable
             Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
         }
 
-        foreach (var pair in _states.Where(x => !seen.Contains(x.Key)))
+        foreach (string missingKey in seen.Missing(_states.Keys))
         {
-            pair.Value.Present = false;
-            pair.Value.Reading = AbsentReading;
-            pair.Value.ScheduledSkip = false;
-            pair.Value.MeasuredAt = null;
-            Record(pair.Value, settings, notifier,
+            State missing = _states[missingKey];
+            missing.Present = false;
+            missing.Reading = AbsentReading;
+            missing.ScheduledSkip = false;
+            missing.MeasuredAt = null;
+            Record(missing, settings, notifier,
                 bluetoothEnabled && batch.Receivers.Count == 0, now);
         }
 
@@ -105,6 +111,11 @@ internal sealed class ReceiverMonitor : IDisposable
             if (!state.Reading.Percent.HasValue) continue;
             SummaryState = state;
             break;
+        }
+        }
+        finally
+        {
+            seen.End();
         }
     }
 
@@ -221,7 +232,10 @@ internal sealed class ReceiverMonitor : IDisposable
             _icons.Clear();
             return;
         }
-        HashSet<string> wanted = new();
+        var wanted = _iconScratch ??= new();
+        wanted.Begin();
+        try
+        {
         foreach (var pair in _states)
         {
             if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
@@ -241,10 +255,15 @@ internal sealed class ReceiverMonitor : IDisposable
             SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
         }
 
-        foreach (string key in _icons.Keys.Where(x => !wanted.Contains(x)).ToArray())
+        foreach (string key in wanted.Missing(_icons.Keys))
         {
             _icons[key].Dispose();
             _icons.Remove(key);
+        }
+        }
+        finally
+        {
+            wanted.End();
         }
     }
 
