@@ -820,8 +820,7 @@ int main(int argc, char *argv[]) {
         BOOL testWatchdog = mode && !strcmp(mode, "--self-test-watchdog");
         if ((output && !diagnostic && !testWatchdog) ||
             (timeout && !diagnostic)) {
-            fputs("FAIL: unsupported diagnostic options for this mode
-", stderr);
+            fputs("FAIL: unsupported diagnostic options for this mode\n", stderr);
             return 1;
         }
         if (!mode) {
