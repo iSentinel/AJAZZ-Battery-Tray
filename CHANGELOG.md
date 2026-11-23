@@ -8,6 +8,15 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.49 (2026-11-23)
+- Avoid transient collections in receiver selection and inactive icon paths.
+- Compute USB discovery intervals without sorting or LINQ.
+- Replace threshold HashSet with a three-bit mask; 8192-sample comparison PASS.
+- Reuse immutable absent/unknown readings and saturate missing-poll count.
+- Twelve new assertions; initial Windows/macOS CI PASS.
+- No polling cadence, HID protocol or default HA behavior changes.
+- Windows resource comparison remains outstanding.
+
 ## 0.3.0-beta.48 (2026-11-23)
 - Reuse visually equivalent primary and secondary tray icons.
 - Defer history reads and avoid sorting until a graph is requested.

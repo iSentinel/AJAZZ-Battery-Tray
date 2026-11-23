@@ -429,5 +429,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Defer history file reads, stream newest retained row and skip unchanged sample allocation.
 - [x] Add eleven icon and eight history assertions; resource sampler and CI smoke step.
 - [x] Combined Windows 45084378739 / macOS 45084378734 PASS.
-- [ ] Final beta.48 CI and publication.
+- [x] Final beta.48 CI and publication: 45086004496 PASS, six assets.
 - [ ] Real Windows resource comparison and visual/hardware acceptance.
+
+## beta.49 monitoring hot paths
+- [x] beta.48 published; all six assets verified.
+- [x] Streaming receiver selection, inactive icon short-circuit and interval minimum.
+- [x] Bitmask alert state, immutable absent readings and saturated disconnect counter.
+- [x] Initial Windows 45086097090 / macOS 45086097051 PASS.
+- [ ] Final beta.49 CI and publication.
+- [ ] Windows resource comparison before claiming measured improvements.
+- [ ] Further optimize opted-in update timer wakeups without changing consent or retries.

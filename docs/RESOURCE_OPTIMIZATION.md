@@ -45,3 +45,25 @@ improvement is claimed until the Windows comparison is completed.
   lazy load and actual temporary-file append suppression.
 - Windows CI now smoke-tests the PowerShell sampler against its own process
   and verifies CSV shape and no overwrite. This is not a tray CPU benchmark.
+
+## Monitoring hot paths (next candidate)
+- Select the preferred present receiver or ordinal minimum in one pass;
+  no temporary sorted/distinct array. Visible receiver selection uses direct
+  lookup and streaming fallback, preserving hidden-device policy.
+- Select the first battery-bearing receiver in original batch order without
+  a temporary array. BLE primary selection preserves lowest session number.
+- Skip extra-icon collections entirely when multiple icons are disabled;
+  skip BLE extra-icon projection with no BLE slots.
+- USB discovery interval uses the same minimum and normalization without
+  LINQ; excludes AULA overrides. No changes to actual polling cadence.
+- Ten added pure selection and interval assertions. Initial CI pending.
+  Actual Windows CPU/allocations and rendered behavior still need measurement.
+
+- Low-battery threshold state now uses three bits instead of a HashSet and
+  reversed LINQ enumeration on each evaluation. Deterministic reference
+  comparison covers 8192 samples with changing thresholds and invalid
+  percentages. Preserve urgency, hysteresis and crossed-muted behavior.
+- Reuse immutable absent/unknown receiver readings; still run disconnect
+  notification and history policies for every known absence. Missing-poll
+  counter saturates at two, avoiding overflow after long uptime.
+- Two additional regression assertions; combined CI pending.

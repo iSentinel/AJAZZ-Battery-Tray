@@ -1,18 +1,18 @@
-# Resume — lightweight tray and history candidate
+# Resume — monitoring hot-path candidate
 
-- beta.47 PR #61 final Windows 45083807213 / macOS 45083807201 PASS;
-  merged 7c67549ac4a9022901d566677fc9b43022662eee.
-  Release workflow 45084000358 PASS; all six assets verified.
-- PR #62: primary/secondary icon visual keys and redundant shell updates.
-  Eleven icon assertions. Lazy history loading, streaming newest retained
-  sample and unchanged-record allocation suppression, eight additional
-  assertions. Existing history format/retention unchanged.
-- Windows resource sampler plus new CI smoke step with temporary CSV and
-  no-overwrite check. Actual tray CPU, RAM, GDI and wakeup measurements
-  remain pending; no measured resource improvement claimed.
-  Initial combined Windows 45084378739 / macOS 45084378734 PASS.
-- Next: beta.48 metadata prepared; check final CI and publish only after
-  success. Compare actual Windows builds. Further idle audit in separate branch.
-- HA remains optional and isolated; no MQTT dependency or auto-start.
-- Hardware gates: both AJ159 reports/HAR, multi-BLE, AULA long sleep,
-  backup restore and actual Windows API. No HID reader/parser changes.
+- beta.47 release 45084000358 PASS, six assets verified.
+- beta.48 PR #62 final Windows 45085165165 / macOS 45085165171 PASS;
+  merged ed8d8388a46ec0977457a47768edf2b0241237d4.
+  Release workflow 45086004496 PASS; six assets verified.
+- PR #63 synced with main, streaming receiver and BLE selection, fewer
+  temporary collections, same USB discovery interval. Ten assertions.
+- Added bitmask low-battery threshold policy with old-policy comparison
+  over 8192 deterministic samples; reusable absent/unknown readings and
+  saturated disconnect counter, preserving history and notification timing.
+  Twelve new assertions; Windows 45086097090 / macOS 45086097051 PASS.
+  Gateway Python APEX 8/8 PASS.
+- Next: beta.49 metadata prepared; final CI and release pending.
+  Audit idle timer scheduling in a separate branch. Windows resource
+  comparison still outstanding.
+- HA optional and isolated. Both AJ159 reports/HAR, multi-BLE, long AULA
+  sleep and physical UI acceptance pending. Live HID readers unchanged.

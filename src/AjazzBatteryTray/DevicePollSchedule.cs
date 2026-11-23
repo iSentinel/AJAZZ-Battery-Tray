@@ -13,6 +13,16 @@ public sealed class DevicePollSchedule
         => customSeconds is int value && IsValidInterval(value)
             ? value : NormalizeInterval(globalSeconds);
 
+    /// <summary>USB discovery uses the shortest configured interval except AULA.</summary>
+    public static int DiscoverySeconds(int globalSeconds, IReadOnlyDictionary<string, int> overrides)
+    {
+        int shortest = globalSeconds;
+        foreach (var pair in overrides)
+            if (pair.Key != DeviceAliasRules.AulaSlot)
+                shortest = Math.Min(shortest, NormalizeInterval(pair.Value));
+        return shortest;
+    }
+
     public static Dictionary<string, int> CleanOverrides(Dictionary<string, int>? values)
     {
         Dictionary<string, int> clean = new(StringComparer.Ordinal);

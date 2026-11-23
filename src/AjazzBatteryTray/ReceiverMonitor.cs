@@ -34,6 +34,10 @@ internal sealed class ReceiverMonitor : IDisposable
         public void Dispose() => Window?.Dispose();
     }
 
+    private static readonly AjazzHidReader.Reading AbsentReading =
+        new(false, null, "Receiver absent");
+    private static readonly AjazzHidReader.Reading UnknownReading =
+        new(false, null, "HID enumeration unavailable", PresenceKnown: false);
     private readonly Dictionary<string, State> _states = new();
     private readonly Dictionary<string, ExtraIcon> _icons = new();
     internal IEnumerable<State> Devices => _states.Values;
@@ -44,10 +48,18 @@ internal sealed class ReceiverMonitor : IDisposable
 
     internal State? VisiblePrimary(bool multiple, IReadOnlySet<string> hidden)
     {
-        string? key = TrayVisibilityRules.SelectMouse(
-            multiple ? PrimaryKey : SummaryState?.Key,
-            _states.Values.Where(s => s.Present).Select(s => s.Key), hidden);
-        return key is not null ? _states[key] : null;
+        string? preferred = multiple ? PrimaryKey : SummaryState?.Key;
+        if (preferred is not null && _states.TryGetValue(preferred, out var primary) &&
+            primary.Present && !hidden.Contains(preferred))
+            return primary;
+        State? first = null;
+        foreach (var state in _states.Values)
+        {
+            if (!state.Present || hidden.Contains(state.Key)) continue;
+            if (first is null || StringComparer.Ordinal.Compare(state.Key, first.Key) < 0)
+                first = state;
+        }
+        return first;
     }
 
     internal void Apply(AjazzHidReader.Batch batch, AppSettings settings,
@@ -56,8 +68,7 @@ internal sealed class ReceiverMonitor : IDisposable
         if (!batch.Summary.PresenceKnown)
         {
             foreach (State state in _states.Values.Where(s => s.Present))
-                state.Reading = new(false, null, "HID enumeration unavailable",
-                    PresenceKnown: false);
+                state.Reading = UnknownReading;
             return;
         }
 
@@ -78,7 +89,7 @@ internal sealed class ReceiverMonitor : IDisposable
         foreach (var pair in _states.Where(x => !seen.Contains(x.Key)))
         {
             pair.Value.Present = false;
-            pair.Value.Reading = new(false, null, "Receiver absent");
+            pair.Value.Reading = AbsentReading;
             pair.Value.ScheduledSkip = false;
             pair.Value.MeasuredAt = null;
             Record(pair.Value, settings, notifier,
@@ -86,9 +97,15 @@ internal sealed class ReceiverMonitor : IDisposable
         }
 
         PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen);
-        var present = batch.Receivers.Select(x => _states[x.Key]).ToArray();
-        SummaryState = present.FirstOrDefault(x => x.Reading.Percent.HasValue)
-            ?? present.FirstOrDefault();
+        SummaryState = null;
+        foreach (var item in batch.Receivers)
+        {
+            var state = _states[item.Key];
+            SummaryState ??= state;
+            if (!state.Reading.Percent.HasValue) continue;
+            SummaryState = state;
+            break;
+        }
     }
 
     private State FindOrCreate(AjazzHidReader.ReceiverReading item)
@@ -198,27 +215,30 @@ internal sealed class ReceiverMonitor : IDisposable
         Func<string, string> color,
         IReadOnlyList<(string Key, string Name, int? Percent)> bluetooth)
     {
-        HashSet<string> wanted = new();
-        if (enabled)
+        if (!enabled)
         {
-            foreach (var pair in _states)
-            {
-                if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
-                wanted.Add(pair.Key);
-                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
-                    color: color(pair.Key));
-            }
-            if (showAula && !aulaIsPrimary)
-            {
-                wanted.Add("AULA");
-                SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale,
-                    color(DeviceAliasRules.AulaSlot));
-            }
-            foreach (var item in bluetooth)
-            {
-                wanted.Add(item.Key);
-                SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
-            }
+            foreach (var icon in _icons.Values) icon.Dispose();
+            _icons.Clear();
+            return;
+        }
+        HashSet<string> wanted = new();
+        foreach (var pair in _states)
+        {
+            if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
+            wanted.Add(pair.Key);
+            SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
+                color: color(pair.Key));
+        }
+        if (showAula && !aulaIsPrimary)
+        {
+            wanted.Add("AULA");
+            SetIcon("AULA", aulaName, aulaLevel, menu, refresh, aulaStale,
+                color(DeviceAliasRules.AulaSlot));
+        }
+        foreach (var item in bluetooth)
+        {
+            wanted.Add(item.Key);
+            SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
         }
 
         foreach (string key in _icons.Keys.Where(x => !wanted.Contains(x)).ToArray())
