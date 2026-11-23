@@ -36,7 +36,9 @@ try
     for (int i = 0; i < first.Devices.Count; i++)
     {
         var row = first.Devices[i];
-        Console.WriteLine($"{i + 1,3}  {row.Source,-16} {row.SessionSlot,3}  {row.Status}");
+        string note = row.Source == "aula_receiver" && row.SessionSlot == 1
+            ? " (status only; not bindable)" : "";
+        Console.WriteLine($"{i + 1,3}  {row.Source,-16} {row.SessionSlot,3}  {row.Status}{note}");
     }
     Console.Write("Select a row number, or q to exit: ");
     string? choice = Console.ReadLine();
@@ -47,6 +49,11 @@ try
         return 2;
     }
     var selected = first.Devices[index - 1];
+    if (selected.Source == "aula_receiver" && selected.SessionSlot == 1)
+    {
+        Console.Error.WriteLine("FAIL: AULA status-only slot cannot be bound. A known receiver on a newer API is required.");
+        return 2;
+    }
     Console.Write($"Bind {selected.Source} slot {selected.SessionSlot} for this API session? [y/N] ");
     if (Console.ReadLine() != "y") return 0;
     var mapping = HaSessionMapping.Bind(first, selected.Source, selected.SessionSlot);

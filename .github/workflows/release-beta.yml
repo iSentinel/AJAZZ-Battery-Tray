@@ -152,9 +152,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.52"
+          TAG="v0.3.0-beta.53"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.52 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.53 — Windows and macOS
+
+          **AULA API receiver continuity (Windows):** session-local
+          non-reused receiver slots and non-bindable status placeholder.
+          Optional HA preview rejects the status-only row; no MQTT or
+          Home Assistant service is bundled. Physical identity requires
+          separate validation.
 
           **Optional local API (Windows):** a random identity per API activation
           supports explicitly bound external consumers. No Home Assistant
@@ -444,7 +450,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.52" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.53" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.

@@ -1,19 +1,18 @@
-# Resume — isolated portable HA preview candidate
+# Resume — beta.53 AULA API continuity release candidate
 
-- beta.52 PR #67 final Windows 45092998151 / macOS 45092998102 PASS;
-  merged ec66c667433f818e6c440595250baf8e217f4f90. Release workflow
-  45093197963 started; confirm all six assets before claiming publication.
-- PR #68 feat/optional-ha-cli synced with beta.52 main without conflict.
-  No source/installer/macOS/release workflow differences.
-- Native Ctrl+C terminates blocking input; Escape cancels token entry.
-  Mutable 64-character token buffer cleared in finally; managed token
-  string remains in process memory until GC/exit, not persisted.
-- Dedicated CI builds, smoke-tests and publishes a separate self-contained
-  win-x64 preview EXE and SHA256 manifest as Actions artifacts only.
-  Latest C# preview CI pending. Gateway Python 23/23 PASS and diff checks PASS.
-- Next: verify beta.52 publication and exact PR #68 head Windows/macOS/
-  optional preview CI; verify portable artifact and merge if all PASS.
-  Then audit session-bound mapping identity and design explicit MQTT opt-in
-  with TLS/credentials/availability before transport implementation.
-- No Home Assistant connection, broker, service, auto-start or tray bundle.
-  Physical AULA, AJ159, multi-BLE and resource measurements remain open.
+- beta.52 published; release workflow 45093197963 PASS; six assets.
+- PR #68 merged a1f280379e68504a1d39fc55daf5f3ff3f51e534;
+  standalone HA preview EXE SHA256 verification PASS.
+- PR #69 exact head 4c34a1151c7e18c40185c3d9db571da4d19ce2a4;
+  Windows 45096569893, macOS 45096569901, preview 45096569934 PASS.
+- Beta.53 version, installer, macOS build, release workflow and changelog
+  metadata prepared; MUST verify final HEAD CI before merging and publishing.
+- AULA API slot 1 unbindable status; known receiver gets non-reused ordinal,
+  replaced/unknown identities retire previous slots; same receiver during
+  no-reply sleep retains slot. Ten continuity assertions, not physical proof.
+- No MQTT/broker/HA runtime included. Optional CLI remains separately
+  run only on explicit user action.
+- Next after beta.53 publication: offline MQTT availability/expiry policy,
+  no network access/broker credentials until opted-in transport gates.
+- Actual Windows resources, AULA long sleep, paired AJ159 reports/HAR,
+  two-device BLE and interactive preview remain open.

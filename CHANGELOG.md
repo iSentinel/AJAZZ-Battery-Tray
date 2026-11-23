@@ -8,6 +8,17 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.53 (2026-11-23)
+- Reserve Local API AULA slot 1 for unbindable status; verified receivers
+  receive non-reused ordinals within an explicit API activation.
+- Retire previous AULA slots on observed receiver identity loss or change;
+  retain the same slot through no-reply sleep when identity remains known.
+- Optional HA preview labels and rejects status-only AULA rows.
+- Ten new continuity assertions and compatibility documentation;
+  initial combined Windows/macOS/preview CI PASS.
+- No new HID command, MQTT service, dependency or automatic API activation.
+- Actual physical receiver replacement and long sleep acceptance pending.
+
 ## 0.3.0-beta.52 (2026-11-23)
 - Add a random session epoch to snapshots from the explicitly started local API.
 - One-off snapshots without the API omit the epoch.

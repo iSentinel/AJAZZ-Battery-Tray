@@ -13,7 +13,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly DevicePollSchedule _usbSchedule = new();
     private LocalSnapshotStore? _localSnapshot;
     private LocalApiForm? _localApiWindow;
-    private Dictionary<string, int>? _snapshotReceiverSlots;
+    private SnapshotSessionSlots? _snapshotReceiverSlots;
     private System.Windows.Forms.Timer? _updateTimer;
     private readonly AutomaticUpdatePolicy _updatePolicy = new();
     private CancellationTokenSource? _updateRequestCancellation;
@@ -328,18 +328,12 @@ public sealed class TrayAppContext : ApplicationContext
         catch (Exception) { store.Clear(); }
     }
 
-    private List<LocalBatterySnapshot.Input> CollectSnapshotInputs(Dictionary<string, int> slots)
+    private List<LocalBatterySnapshot.Input> CollectSnapshotInputs(SnapshotSessionSlots slots)
     {
         var inputs = new List<LocalBatterySnapshot.Input>();
         foreach (var receiver in _receivers.Devices)
         {
-            if (!slots.TryGetValue(receiver.Key, out int slot))
-            {
-                if (slots.Count >= LocalBatterySnapshot.MaximumDevices)
-                    throw new InvalidDataException("Snapshot slot limit exceeded.");
-                slot = slots.Count + 1;
-                slots.Add(receiver.Key, slot);
-            }
+            int slot = slots.Apex(receiver.Key);
             var reading = receiver.Reading;
             var state = DeviceDashboardState.FromPoll("", "", true,
                 reading.PresenceKnown, receiver.Present, reading.Percent,
@@ -349,7 +343,13 @@ public sealed class TrayAppContext : ApplicationContext
         var aula = !_settings.MonitorAulaL99
             ? new DeviceDashboardState("", "", DeviceDashboardStatus.Disabled, null, null)
             : AulaDashboardState();
-        inputs.Add(new(LocalBatterySource.AulaReceiver, 1, aula));
+        string? aulaIdentity = _settings.MonitorAulaL99 &&
+            _aulaLatest is { PresenceKnown: true, ReceiverPresent: true }
+            ? _aulaLatest.LocalKey : null;
+        int aulaSlot = slots.Aula(aulaIdentity);
+        if (aulaSlot == 1 && aula.Status is DeviceDashboardStatus.Fresh or DeviceDashboardStatus.Cached)
+            aula = new("", "", DeviceDashboardStatus.PresenceUnknown, null, null);
+        inputs.Add(new(LocalBatterySource.AulaReceiver, aulaSlot, aula));
         foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
             inputs.Add(new(LocalBatterySource.Bluetooth, pair.Value.Number,
                 BluetoothDashboardState(pair.Key, pair.Value)));
@@ -358,7 +358,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void ActivateLocalSnapshot(LocalSnapshotStore store)
     {
-        _snapshotReceiverSlots = new(StringComparer.Ordinal);
+        _snapshotReceiverSlots = new();
         _localSnapshot = store;
         PublishLocalSnapshot();
     }
@@ -393,7 +393,7 @@ public sealed class TrayAppContext : ApplicationContext
             }
             else
             {
-                var inputs = CollectSnapshotInputs(new(StringComparer.Ordinal));
+                var inputs = CollectSnapshotInputs(new());
                 snapshot = LocalBatterySnapshot.Create(DateTimeOffset.UtcNow, inputs);
             }
             if (snapshot is null) throw new InvalidOperationException();
