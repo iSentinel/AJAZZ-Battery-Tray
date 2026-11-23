@@ -809,8 +809,9 @@ public sealed class TrayAppContext : ApplicationContext
         if (_updateTimer is null)
         {
             _updateTimer = new System.Windows.Forms.Timer();
-            _updateTimer.Tick += async (_, _) =>
+            _updateTimer.Tick += async (sender, _) =>
             {
+                if (!ReferenceEquals(sender, _updateTimer)) return;
                 StopUpdateTimer();
                 await PollUpdatesAsync();
             };
