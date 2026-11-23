@@ -1,19 +1,18 @@
-# Resume — AULA API continuity candidate
+# Resume — beta.53 AULA API continuity release candidate
 
-- beta.52 published; workflow 45093197963 PASS, all six release assets.
-- PR #68 Windows 45094887420 / macOS 45094887419 / optional preview
-  45094887408 PASS. Downloaded EXE and manifest, sha256sum -c PASS;
-  PE32+ x64 console, 67539577 bytes. Merged
-  a1f280379e68504a1d39fc55daf5f3ff3f51e534. No tray version bump.
-- fix/api-aula-slot-continuity synced with main. Slot 1 reserved for
-  status, known AULA receiver gets non-reused ordinal, observed identity
-  loss/change retires old slot. Ten C# assertions await CI.
-- PR #69 created; preview labels status-only AULA slot 1 and rejects
-  it before confirmation. API and preview docs describe the compatibility
-  restriction: do not bind AULA rows from beta.52 with older clients.
-- Next: verify exact PR #69 head Windows/macOS/preview CI and prepare
-  beta.53 only after PASS. No actual MQTT publication before continuity
-  and explicit mapping policy are validated.
-- MQTT remains unimplemented; no actual HA connection or persistent mapping.
-  Physical AULA sleep/wake, AJ159 evidence, multi-BLE and real resource
-  measurements remain open.
+- beta.52 published; release workflow 45093197963 PASS; six assets.
+- PR #68 merged a1f280379e68504a1d39fc55daf5f3ff3f51e534;
+  standalone HA preview EXE SHA256 verification PASS.
+- PR #69 exact head 4c34a1151c7e18c40185c3d9db571da4d19ce2a4;
+  Windows 45096569893, macOS 45096569901, preview 45096569934 PASS.
+- Beta.53 version, installer, macOS build, release workflow and changelog
+  metadata prepared; MUST verify final HEAD CI before merging and publishing.
+- AULA API slot 1 unbindable status; known receiver gets non-reused ordinal,
+  replaced/unknown identities retire previous slots; same receiver during
+  no-reply sleep retains slot. Ten continuity assertions, not physical proof.
+- No MQTT/broker/HA runtime included. Optional CLI remains separately
+  run only on explicit user action.
+- Next after beta.53 publication: offline MQTT availability/expiry policy,
+  no network access/broker credentials until opted-in transport gates.
+- Actual Windows resources, AULA long sleep, paired AJ159 reports/HAR,
+  two-device BLE and interactive preview remain open.

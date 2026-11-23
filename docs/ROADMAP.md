@@ -495,6 +495,8 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Identify fixed AULA slot reuse risk in beta.52.
 - [x] Allocate non-reused AULA ordinals within optional API activation;
   reserve non-bindable status placeholder, reject slot exhaustion.
-- [ ] Ten regression assertions, full CI, physical acceptance.
+- [x] Ten regression assertions; initial Windows 45096569893 /
+  macOS 45096569901 / optional preview 45096569934 PASS.
+- [ ] Final beta.53 CI and publication; physical acceptance.
 - [ ] Require opt-in mapping and documented physical identity limitations
   before external broker publication.
