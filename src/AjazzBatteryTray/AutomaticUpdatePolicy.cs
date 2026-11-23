@@ -24,6 +24,14 @@ public sealed class AutomaticUpdatePolicy
         _due = enabled ? now + InitialDelayMs : long.MaxValue;
     }
 
+    /// <summary>Next one-shot timer interval; no wakeup while disabled or in flight.</summary>
+    public int? NextDelayMilliseconds(long now)
+    {
+        if (!Enabled || _pending is not null) return null;
+        // Clamp before converting to the Windows timer interval type.
+        return (int)Math.Clamp((decimal)_due - now, 1m, int.MaxValue);
+    }
+
     public Request? TryBegin(long now)
     {
         if (!Enabled || _pending is not null || now < _due) return null;

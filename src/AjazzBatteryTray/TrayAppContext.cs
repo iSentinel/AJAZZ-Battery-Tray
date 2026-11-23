@@ -793,16 +793,31 @@ public sealed class TrayAppContext : ApplicationContext
         _updatePolicy.Configure(active,
             _settings.ExperimentalUpdateChannel, Environment.TickCount64);
         if (changed) _updateRequestCancellation?.Cancel();
-        if (active && !_closing)
+        ArmUpdateTimer();
+    }
+
+    private void ArmUpdateTimer()
+    {
+        int? delay = !_closing && !_manualUpdateDialog && !_automaticUpdateBusy &&
+            _settings.NotificationsEnabled
+            ? _updatePolicy.NextDelayMilliseconds(Environment.TickCount64) : null;
+        if (delay is null)
         {
-            if (_updateTimer is null)
-            {
-                _updateTimer = new System.Windows.Forms.Timer { Interval = 10000 };
-                _updateTimer.Tick += (_, _) => _ = PollUpdatesAsync();
-                _updateTimer.Start();
-            }
+            StopUpdateTimer();
+            return;
         }
-        else StopUpdateTimer();
+        if (_updateTimer is null)
+        {
+            _updateTimer = new System.Windows.Forms.Timer();
+            _updateTimer.Tick += async (_, _) =>
+            {
+                StopUpdateTimer();
+                await PollUpdatesAsync();
+            };
+        }
+        _updateTimer.Stop();
+        _updateTimer.Interval = delay.Value;
+        _updateTimer.Start();
     }
 
     private void StopUpdateTimer()
@@ -822,12 +837,17 @@ public sealed class TrayAppContext : ApplicationContext
             return;
         }
         _manualUpdateDialog = true;
+        StopUpdateTimer();
         try
         {
             using var dialog = new UpdateCheckForm(_settings.ExperimentalUpdateChannel);
             dialog.ShowDialog();
         }
-        finally { _manualUpdateDialog = false; }
+        finally
+        {
+            _manualUpdateDialog = false;
+            ArmUpdateTimer();
+        }
     }
 
     private async Task PollUpdatesAsync()
@@ -837,7 +857,11 @@ public sealed class TrayAppContext : ApplicationContext
         var installed = ReleaseVersion.Parse(Application.ProductVersion.Split('+')[0]);
         if (installed is null) return;
         var request = _updatePolicy.TryBegin(Environment.TickCount64);
-        if (request is null) return;
+        if (request is null)
+        {
+            ArmUpdateTimer();
+            return;
+        }
         _automaticUpdateBusy = true;
         using var cancel = new CancellationTokenSource();
         _updateRequestCancellation = cancel;
@@ -855,9 +879,16 @@ public sealed class TrayAppContext : ApplicationContext
             _automaticUpdateBusy = false;
             bool notify = _updatePolicy.Complete(request, success,
                 _settings.NotificationsEnabled ? candidate?.Version : null, Environment.TickCount64);
+            ArmUpdateTimer();
             if (notify && !_closing && _settings.NotificationsEnabled && candidate is not null)
-                _tray.ShowBalloonTip(5000, "AJAZZ Battery Tray",
-                    UiText.Format("Update available: {0}", candidate.Tag), ToolTipIcon.Info);
+            {
+                try
+                {
+                    _tray.ShowBalloonTip(5000, "AJAZZ Battery Tray",
+                        UiText.Format("Update available: {0}", candidate.Tag), ToolTipIcon.Info);
+                }
+                catch (Exception) { /* Notification failure must not disrupt the tray. */ }
+            }
         }
     }
 
