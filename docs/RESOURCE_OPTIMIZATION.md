@@ -79,3 +79,11 @@ Eleven assertions cover initial, due/overdue, success/failure, disabled,
 pending and stale-generation deadlines. Windows timer UI lifecycle and
 actual wakeup measurements still require acceptance. This does not modify
 the HID poll cadence or add HA dependencies.
+
+- Guard callbacks from disposed/replaced update timers. Saturate monotonic
+  deadline addition against overflow. Serialize manual and automatic HTTP
+  lookups via a lazy shared asynchronous gate, including queue wait in the
+  existing 15-second timeout. No worker or timer when unused.
+- Five more assertions cover deadline overflow, overlapping callers,
+  queued cancellation and gate release on completion/failure. These use
+  synthetic operations without a live network. Combined CI pending.
