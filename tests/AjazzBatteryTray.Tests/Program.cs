@@ -1785,5 +1785,43 @@ var haOtherWire = HaSnapshotDecoder.Decode(haOther.Read(snapshotNow)!.Export());
 Check("HA wire new activation never inherits old binding",
     haMapping.Read(haOtherWire, snapshotNow).Status == "mapping_required");
 
+// Actual loopback HTTP producer/consumer interoperability, without external services.
+async Task TestHaLoopback()
+{
+    var store = new LocalSnapshotStore();
+    await using var server = new LocalApiServer(store, 0);
+    Check("HA client handles unavailable server snapshot",
+        await HaLocalClient.ReadAsync(server.Port, server.Token) is null);
+    var now = DateTimeOffset.UtcNow;
+    store.Publish(now, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 71, now) });
+    var snapshot = (await HaLocalClient.ReadAsync(server.Port, server.Token))!;
+    var mapping = HaSessionMapping.Bind(snapshot, "apex_receiver", 1);
+    Check("HA client reads real local API bytes",
+        mapping.Read(snapshot, DateTimeOffset.UtcNow).BatteryPercent == 71);
+    bool wrongToken = false;
+    try { await HaLocalClient.ReadAsync(server.Port, new string('0', 64)); }
+    catch (InvalidDataException) { wrongToken = true; }
+    Check("HA client rejects invalid API authentication", wrongToken);
+    bool invalidEndpoint = false;
+    try { await HaLocalClient.ReadAsync(0, server.Token); }
+    catch (ArgumentException) { invalidEndpoint = true; }
+    Check("HA client rejects invalid endpoint before request", invalidEndpoint);
+    using var cancelled = new CancellationTokenSource();
+    cancelled.Cancel();
+    bool cancelledRead = false;
+    try { await HaLocalClient.ReadAsync(server.Port, server.Token, cancelled.Token); }
+    catch (OperationCanceledException) { cancelledRead = true; }
+    Check("HA client honors cancellation", cancelledRead);
+    await server.DisposeAsync();
+    var replacementStore = new LocalSnapshotStore();
+    await using var replacement = new LocalApiServer(replacementStore, 0);
+    now = DateTimeOffset.UtcNow;
+    replacementStore.Publish(now, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 69, now) });
+    var changed = await HaLocalClient.ReadAsync(replacement.Port, replacement.Token);
+    Check("HA client refuses old mapping after actual API restart",
+        mapping.Read(changed, DateTimeOffset.UtcNow).Status == "mapping_required");
+}
+TestHaLoopback().GetAwaiter().GetResult();
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
