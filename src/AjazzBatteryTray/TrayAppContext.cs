@@ -348,9 +348,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         var aula = !_settings.MonitorAulaL99
             ? new DeviceDashboardState("", "", DeviceDashboardStatus.Disabled, null, null)
-            : DeviceDashboardState.FromPoll("", "", _aulaLatest is not null,
-                _aulaLatest?.PresenceKnown == true, _aulaLatest?.ReceiverPresent == true,
-                _aulaLatest?.Percent, _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt);
+            : AulaDashboardState();
         inputs.Add(new(LocalBatterySource.AulaReceiver, 1, aula));
         foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
             inputs.Add(new(LocalBatterySource.Bluetooth, pair.Value.Number,
@@ -411,17 +409,10 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     private DeviceDashboardState AulaDashboardState()
-    {
-        if (!_settings.MonitorAulaL99 && _aulaLatest is null)
-            return new(AulaName, "2.4 GHz", DeviceDashboardStatus.Disabled, null, null);
-        var state = DeviceDashboardState.FromPoll(AulaName, "2.4 GHz",
+        => _aulaBattery.Dashboard(AulaName, _settings.MonitorAulaL99,
             _aulaLatest is not null, _aulaLatest?.PresenceKnown == true,
             _aulaLatest?.ReceiverPresent == true, _aulaLatest?.Percent,
-            _aulaLastReadAt, AulaDisplayPercent(), _aulaBattery.LastGoodAt,
-            scheduled: _settings.MonitorAulaL99);
-        return !_settings.MonitorAulaL99 && state.Status == DeviceDashboardStatus.Fresh
-            ? state with { Status = DeviceDashboardStatus.ManualReading } : state;
-    }
+            _aulaLastReadAt, DateTimeOffset.UtcNow);
 
     private DeviceDashboardState BluetoothDashboardState(string key, BleSlot slot)
     {
@@ -681,6 +672,7 @@ public sealed class TrayAppContext : ApplicationContext
                 error.GetType().Name);
             if (!_closing && _aulaPoll.MayApply(ticket))
             {
+                _aulaBattery.Reset();
                 _aulaLatest = new(false, null, "Unexpected read error", PresenceKnown: false);
                 _aulaLastReadAt = DateTimeOffset.UtcNow;
             }

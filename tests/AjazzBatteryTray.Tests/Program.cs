@@ -1656,5 +1656,55 @@ Check("AULA lifecycle shutdown invalidates result and timer",
 aulaLifecycle.Configure(true);
 Check("AULA lifecycle closed state cannot be re-enabled", !aulaLifecycle.Enabled);
 
+// AULA dashboard and optional API must classify real sleep/recovery consistently.
+var aulaSleep = new AulaBatteryState();
+DateTimeOffset sleepStart = DateTimeOffset.Parse("2026-11-22T12:00:00Z");
+DeviceDashboardState AulaSleepView(bool automatic, bool checkedOnce, bool known,
+    bool present, int? fresh, DateTimeOffset? measured, DateTimeOffset now)
+    => aulaSleep.Dashboard("L99", automatic, checkedOnce, known, present, fresh, measured, now);
+Check("AULA disabled before first manual check",
+    AulaSleepView(false, false, false, false, null, null, sleepStart).Status == DeviceDashboardStatus.Disabled);
+Check("AULA automatic before first poll not checked",
+    AulaSleepView(true, false, false, false, null, null, sleepStart).Status == DeviceDashboardStatus.NotChecked);
+aulaSleep.Observe(true, true, 87, sleepStart);
+Check("AULA completed automatic poll is fresh, not scheduled",
+    AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart) is
+    { Status: DeviceDashboardStatus.Fresh, Percent: 87 });
+Check("AULA explicit read while disabled is manual only",
+    AulaSleepView(false, true, true, true, 87, sleepStart, sleepStart).Status == DeviceDashboardStatus.ManualReading);
+for (int n = 1; n <= 960; n++)
+    aulaSleep.Observe(true, true, null, sleepStart.AddSeconds(n * 30));
+var sleepView = AulaSleepView(true, true, true, true, null, sleepStart.AddHours(8), sleepStart.AddHours(8));
+Check("AULA eight-hour simulated sleep preserves cached timestamp",
+    sleepView is { Status: DeviceDashboardStatus.Cached, Percent: 87 } &&
+    sleepView.MeasuredAt == sleepStart && aulaSleep.ConsecutiveFailures == 960);
+var sleepSnapshot = LocalBatterySnapshot.Create(sleepStart.AddHours(8),
+    new[] { new LocalBatterySnapshot.Input(LocalBatterySource.AulaReceiver, 1, sleepView) });
+Check("AULA sleep snapshot separates cached value from fresh telemetry",
+    sleepSnapshot.Devices[0] is { Status: "cached", BatteryPercent: null, LastKnownPercent: 87 });
+Check("AULA expired sleep cache has no reply status",
+    AulaSleepView(true, true, true, true, null, sleepStart.AddHours(24), sleepStart.AddHours(24)) is
+    { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("AULA unknown presence hides cache in unified view",
+    AulaSleepView(true, true, false, true, null, sleepStart, sleepStart.AddHours(8)) is
+    { Status: DeviceDashboardStatus.PresenceUnknown, Percent: null });
+var wakeAt = sleepStart.AddHours(25);
+aulaSleep.Observe(true, true, 83, wakeAt);
+var wakeView = AulaSleepView(true, true, true, true, 83, wakeAt, wakeAt);
+Check("AULA recovered reply becomes fresh with new timestamp",
+    wakeView is { Status: DeviceDashboardStatus.Fresh, Percent: 83 } &&
+    wakeView.MeasuredAt == wakeAt && aulaSleep.ConsecutiveFailures == 0);
+var wakeSnapshot = LocalBatterySnapshot.Create(wakeAt,
+    new[] { new LocalBatterySnapshot.Input(LocalBatterySource.AulaReceiver, 1, wakeView) });
+Check("AULA recovered snapshot publishes only fresh percentage",
+    wakeSnapshot.Devices[0] is { Status: "fresh", BatteryPercent: 83, LastKnownPercent: null });
+aulaSleep.Reset();
+Check("AULA invalid zero response never becomes fresh",
+    AulaSleepView(true, true, true, true, 0, wakeAt, wakeAt) is
+    { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("AULA future measurement never becomes fresh",
+    AulaSleepView(true, true, true, true, 83, wakeAt.AddSeconds(1), wakeAt) is
+    { Status: DeviceDashboardStatus.NoReply, Percent: null });
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;
