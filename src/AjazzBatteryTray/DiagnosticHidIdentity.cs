@@ -28,6 +28,14 @@ public static class DiagnosticHidIdentity
         return $"{vid}:{pid} MI_{mi} COL{col}";
     }
 
+    /// <summary>Prefix-only diagnostic; redacts all remaining vendor bytes.</summary>
+    public static string SafeFeaturePreview(ReadOnlySpan<byte> report)
+    {
+        int shown = Math.Min(8, report.Length);
+        return $"{Convert.ToHexString(report[..shown])} " +
+            $"({report.Length - shown} additional bytes redacted)";
+    }
+
     /// <summary>Known AJAZZ battery status header only; never export payloads.</summary>
     public static string BatteryHeader(ReadOnlySpan<byte> report)
         => Convert.ToHexString(report[..Math.Min(4, report.Length)]);

@@ -1593,7 +1593,8 @@ public sealed class TrayAppContext : ApplicationContext
         _lastClockUpdate = DateTime.Now;
         _lastClockSucceeded = succeeded;
         UpdateClockStatus();
-        FileLog.Write(succeeded ? "INFO" : "WARN", _clockStatus.Text);
+        FileLog.Write(succeeded ? "INFO" : "WARN",
+            _clockStatus.Text ?? "Dock clock status unavailable");
     }
 
     private void UpdateClockStatus()

@@ -57,6 +57,31 @@ jobs:
             -p:PublishSingleFile=true -p:PublishTrimmed=false `
             -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Windows publish failed' }
+      - name: Verify opt-in Windows HID diagnostic watchdog
+        shell: pwsh
+        run: |
+          $report = Join-Path $env:RUNNER_TEMP ('ajazz-hid-watchdog-' + [Guid]::NewGuid().ToString('N') + '.txt')
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          try {
+            $p = Start-Process -FilePath $exe -ArgumentList @(
+              '--self-test-hid-watchdog', '--output', $report
+            ) -PassThru -Wait
+            if ($p.ExitCode -ne 124) { throw "Expected 124, got $($p.ExitCode)" }
+            $contents = Get-Content -LiteralPath $report -Raw
+            foreach ($mark in @('BEGIN:', 'STEP: worker started', 'TIMEOUT:')) {
+              if ($contents -notlike ('*' + $mark + '*')) { throw "Missing marker $mark" }
+            }
+            $existing = Start-Process -FilePath $exe -ArgumentList @(
+              '--self-test-hid-watchdog', '--output', $report
+            ) -PassThru -Wait
+            if ($existing.ExitCode -eq 0) { throw 'Existing diagnostics file was reused' }
+            if ((Get-Content -LiteralPath $report -Raw) -ne $contents) {
+              throw 'Existing diagnostic output was modified'
+            }
+            echo 'PASS: bounded worker, persistent progress, no report clobber'
+          } finally {
+            Remove-Item -LiteralPath $report -ErrorAction SilentlyContinue
+          }
       # upload-artifact already delivers a ZIP download. Upload the executable
       # directory, not a pre-zipped archive, to avoid nested ZIP files.
       - uses: actions/upload-artifact@v4

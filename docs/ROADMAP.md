@@ -651,3 +651,37 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Owner tests on 10.13.6 iMac: trace file, HID sleep/reconnect,
       and explicitly requested Bluetooth GATT.
 - [ ] Analyze 05 report before any protocol modification.
+
+
+## Windows 11 bounded, redacted HID comparison — beta.57
+- [x] Audit existing full vendor buffer capture and synchronous
+      HID diagnostic hang risk in explicit owner report action.
+- [x] Add standalone opt-in --hid-diagnose CLI with a spawned worker,
+      file-first BEGIN/progress output and 3..90s deadline.
+- [x] Redact received vendor payload beyond 8-byte prefix in the new
+      CLI only; preserve explicit full GUI comparison separately.
+- [x] Refuse to overwrite an existing diagnostic output file.
+- [x] Add optional progress stages for HID discovery/open/Set F7/Get 05,
+      with Win32 error codes and elapsed time; no extra device commands.
+- [x] Add pure redaction tests and Windows CI deliberate timeout test.
+- [x] Remove nullable clock-status log argument warning (CS8604)
+      without changing dock command behavior.
+- [ ] Pass Windows, modern macOS and High Sierra Intel CI as applicable.
+- [x] Increment macOS universal bundle build number to 61;
+      runtime behavior unchanged.
+- [ ] Publish beta.57 Windows setup/portable and macOS universal
+      six assets, verify SHA-256 and installer smoke tests.
+- [ ] Physical Windows 11 HID trace of affected mouse and owner review.
+- [ ] Evaluate full-raw GUI capture privacy as a separate consent change;
+      do not silently remove it.
+
+
+## beta.57 CI runner capacity recovery
+- [x] Windows diagnostic build and watchdog CI passed at run 45218093365.
+- [x] macOS run 45218094411 failed without acquiring a runner:
+      GitHub Actions reported arm64 runner capacity constraints.
+- [x] Switch modern macOS CI and beta-release macOS job to
+      macos-15-intel, compiling both arm64 + x86_64 via the same
+      universal Swift build script, with runtime smoke tests on Intel.
+- [ ] Confirm universal binary architectures/CI PASS on Intel runner.
+- [ ] Run separate full beta.57 release CI before publishing binaries.
