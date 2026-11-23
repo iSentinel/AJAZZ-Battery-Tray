@@ -1,15 +1,16 @@
-# Resume — beta.51 release candidate
+# Resume — offline resource comparison and AULA acceptance
 
-- beta.50 published; workflow 45088588616 PASS, six assets.
-- PR #65 adds lazy AULA timer, single-flight lifecycle, consistent
-  fresh/cached UI and API state. Twenty-six new assertions.
-- Windows 45088980556: 588 unit assertions and resource sampler PASS;
-  publish failed CS0029 on event parameter named underscore.
-- Fixed in 1ec83dcbfebd2a97362beb2e26e19034af8cd6e8;
-  Windows 45089648620 / macOS 45089648574 PASS.
-- beta.51 release metadata prepared. Final CI and publication pending.
-- Separate test/resource-comparison branch has ten new Python tests,
-  eight APEX tests PASS. Integrate after beta.51 release.
-- Hardware sleep/wake, both AJ159 reports/HAR, multi-BLE and actual
-  Windows resource measurements remain open. No HID reader changes.
-  HA stays optional and isolated.
+- beta.51 PR #65 final Windows 45090441648 / macOS 45090441628 PASS;
+  merged a1d9a06e61e11248e69d9746b29bc8699314e2c3.
+  Release workflow 45091032358 started; confirm all six assets.
+- PR #66 test/resource-comparison synced with beta.51 main; RESUME
+  conflict resolved. No runtime, installer, macOS or release code changes.
+  23 offline Python tests PASS on Gateway. Dedicated Python CI pending.
+- Passive AULA sleep/wake acceptance document includes 12 scenarios,
+  no forced refresh during sleep, privacy-safe copied summaries, explicit
+  NOT RUN/NOT OBSERVED rather than fabricated hardware results.
+- Next: verify beta.51 publication and exact PR #66 head CI; merge tools
+  after PASS without unnecessary application version bump. Review other
+  independent roadmap work while awaiting actual Windows measurements.
+- Physical AULA sleep/wake, both AJ159 reports/HAR, multi-BLE and actual
+  Windows resource comparison remain outstanding; HA optional.

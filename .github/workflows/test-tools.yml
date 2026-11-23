@@ -1,0 +1,29 @@
+name: Test offline developer tools
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/**'
+      - '.github/workflows/test-tools.yml'
+  pull_request:
+    paths:
+      - 'tools/**'
+      - '.github/workflows/test-tools.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run offline regressions
+        run: python -m unittest discover -s tools -p 'test_compare*.py' -v
+      - name: Validate help
+        run: python tools/compare_tray_resources.py --help
