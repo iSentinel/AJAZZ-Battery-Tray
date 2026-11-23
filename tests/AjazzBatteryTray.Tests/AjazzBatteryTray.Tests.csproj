@@ -11,6 +11,9 @@
     <Compile Include="../../src/AjazzBatteryTray/PreferencesBackup.cs" Link="PreferencesBackup.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalBatterySnapshot.cs" Link="LocalBatterySnapshot.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalSnapshotStore.cs" Link="LocalSnapshotStore.cs" />
+    <Compile Include="../../integrations/home-assistant/HaSessionMapping.cs" Link="HaSessionMapping.cs" />
+    <Compile Include="../../integrations/home-assistant/HaSnapshotDecoder.cs" Link="HaSnapshotDecoder.cs" />
+    <Compile Include="../../integrations/home-assistant/HaLocalClient.cs" Link="HaLocalClient.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalApiRequest.cs" Link="LocalApiRequest.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalApiServer.cs" Link="LocalApiServer.cs" />
     <Compile Include="../../src/AjazzBatteryTray/LocalArtifactVerifier.cs" Link="LocalArtifactVerifier.cs" />

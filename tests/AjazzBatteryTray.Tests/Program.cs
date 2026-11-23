@@ -1706,5 +1706,122 @@ Check("AULA future measurement never becomes fresh",
     AulaSleepView(true, true, true, true, 83, wakeAt.AddSeconds(1), wakeAt) is
     { Status: DeviceDashboardStatus.NoReply, Percent: null });
 
+// HA consumers must explicitly bind to a API activation and a source/slot.
+var haStore = new LocalSnapshotStore();
+haStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 83, snapshotNow) });
+var haSnapshot = haStore.Read(snapshotNow)!;
+var haMapping = HaSessionMapping.Bind(haSnapshot, "apex_receiver", 1);
+Check("HA session-bound fresh reading available", haMapping.Read(haSnapshot, snapshotNow).BatteryPercent == 83);
+Check("HA rejects missing snapshot", !haMapping.Read(null, snapshotNow).Available);
+Check("HA rejects stale reading", !haMapping.Read(haSnapshot, snapshotNow.AddMinutes(6)).Available);
+Check("HA rejects clock rollback", !haMapping.Read(haSnapshot, snapshotNow.AddSeconds(-1)).Available);
+haStore.Publish(snapshotNow.AddSeconds(1), new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 82, snapshotNow.AddSeconds(1)) });
+var haNext = haStore.Read(snapshotNow.AddSeconds(1))!;
+Check("HA session epoch stays unchanged across publication", haNext.SessionEpoch == haSnapshot.SessionEpoch);
+Check("HA existing mapping reads next sample", haMapping.Read(haNext, snapshotNow.AddSeconds(1)).BatteryPercent == 82);
+var haOther = new LocalSnapshotStore();
+haOther.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 50, snapshotNow) });
+Check("HA new API activation cannot inherit prior slot mapping", haMapping.Read(haOther.Read(snapshotNow), snapshotNow).Status == "mapping_required");
+Check("HA rejects missing mapped slot", !haMapping.Read(haSnapshot with { Devices = Array.Empty<LocalBatterySnapshot.Entry>() }, snapshotNow).Available);
+Check("HA rejects ambiguous mapped slot", !haMapping.Read(haSnapshot with { Devices = new[] { haSnapshot.Devices[0], haSnapshot.Devices[0] } }, snapshotNow).Available);
+haStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Cached, 80, snapshotNow) });
+Check("HA does not report cached battery as current", !haMapping.Read(haStore.Read(snapshotNow), snapshotNow).Available);
+bool rejectedHaBind = false;
+try { HaSessionMapping.Bind(haSnapshot with { SessionEpoch = null }, "apex_receiver", 1); }
+catch (InvalidDataException) { rejectedHaBind = true; }
+Check("HA legacy snapshot requires session mapping support", rejectedHaBind);
+Check("HA session epoch serialized without hardware ID",
+    System.Text.Encoding.UTF8.GetString(haSnapshot.Export()).Contains("sessionEpoch"));
+
+Check("One-off snapshot omits session epoch",
+    !System.Text.Encoding.UTF8.GetString(LocalBatterySnapshot.Create(snapshotNow,
+        new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 83, snapshotNow) }).Export()).Contains("sessionEpoch"));
+haStore.Clear();
+Check("HA stopped API has no snapshot", haStore.Read(snapshotNow) is null);
+Check("HA rejects unsupported schema",
+    !haMapping.Read(haSnapshot with { SchemaVersion = 2 }, snapshotNow).Available);
+Check("HA rejects future measurement",
+    !haMapping.Read(haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with
+        { MeasuredAt = snapshotNow.AddSeconds(1) } } }, snapshotNow).Available);
+Check("HA rejects invalid battery percentage",
+    !haMapping.Read(haSnapshot with { Devices = new[] { haSnapshot.Devices[0] with
+        { BatteryPercent = 101 } } }, snapshotNow).Available);
+
+// Strict optional consumer checks against the actual producer serialization.
+var decodedHa = HaSnapshotDecoder.Decode(haSnapshot.Export());
+Check("HA wire round trip retains binding and fresh reading",
+    haMapping.Read(decodedHa, snapshotNow).BatteryPercent == 83);
+string haWire = System.Text.Encoding.UTF8.GetString(haSnapshot.Export());
+bool RejectHaWire(string value)
+{
+    try { HaSnapshotDecoder.Decode(System.Text.Encoding.UTF8.GetBytes(value)); return false; }
+    catch (InvalidDataException) { return true; }
+}
+Check("HA wire rejects duplicate schema property",
+    RejectHaWire(haWire.Replace("\"schemaVersion\":1", "\"schemaVersion\":1,\"schemaVersion\":1")));
+Check("HA wire rejects unsupported schema",
+    RejectHaWire(haWire.Replace("\"schemaVersion\":1", "\"schemaVersion\":2")));
+Check("HA wire rejects missing epoch",
+    RejectHaWire(System.Text.Encoding.UTF8.GetString((haSnapshot with { SessionEpoch = null }).Export())));
+Check("HA wire rejects duplicate rows",
+    RejectHaWire(System.Text.Encoding.UTF8.GetString((haSnapshot with
+        { Devices = new[] { haSnapshot.Devices[0], haSnapshot.Devices[0] } }).Export())));
+Check("HA wire rejects wrong percent type",
+    RejectHaWire(haWire.Replace("\"batteryPercent\":83", "\"batteryPercent\":\"83\"")));
+Check("HA wire rejects contradictory fresh and cached values",
+    RejectHaWire(haWire.Replace("\"lastKnownPercent\":null", "\"lastKnownPercent\":82")));
+Check("HA wire rejects oversized input", RejectHaWire(new string(' ', 65537)));
+Check("HA wire rejects malformed JSON", RejectHaWire("{"));
+Check("HA wire rejects future measurement",
+    RejectHaWire(System.Text.Encoding.UTF8.GetString((haSnapshot with
+        { Devices = new[] { haSnapshot.Devices[0] with
+            { MeasuredAt = snapshotNow.AddSeconds(1) } } }).Export())));
+var haCachedWire = HaSnapshotDecoder.Decode((haSnapshot with
+    { Devices = new[] { haSnapshot.Devices[0] with
+        { Status = "cached", BatteryPercent = null, LastKnownPercent = 83 } } }).Export());
+Check("HA wire cached state never becomes available",
+    !haMapping.Read(haCachedWire, snapshotNow).Available);
+var haOtherWire = HaSnapshotDecoder.Decode(haOther.Read(snapshotNow)!.Export());
+Check("HA wire new activation never inherits old binding",
+    haMapping.Read(haOtherWire, snapshotNow).Status == "mapping_required");
+
+// Actual loopback HTTP producer/consumer interoperability, without external services.
+async Task TestHaLoopback()
+{
+    var store = new LocalSnapshotStore();
+    await using var server = new LocalApiServer(store, 0);
+    Check("HA client handles unavailable server snapshot",
+        await HaLocalClient.ReadAsync(server.Port, server.Token) is null);
+    var now = DateTimeOffset.UtcNow;
+    store.Publish(now, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 71, now) });
+    var snapshot = (await HaLocalClient.ReadAsync(server.Port, server.Token))!;
+    var mapping = HaSessionMapping.Bind(snapshot, "apex_receiver", 1);
+    Check("HA client reads real local API bytes",
+        mapping.Read(snapshot, DateTimeOffset.UtcNow).BatteryPercent == 71);
+    bool wrongToken = false;
+    try { await HaLocalClient.ReadAsync(server.Port, new string('0', 64)); }
+    catch (InvalidDataException) { wrongToken = true; }
+    Check("HA client rejects invalid API authentication", wrongToken);
+    bool invalidEndpoint = false;
+    try { await HaLocalClient.ReadAsync(0, server.Token); }
+    catch (ArgumentException) { invalidEndpoint = true; }
+    Check("HA client rejects invalid endpoint before request", invalidEndpoint);
+    using var cancelled = new CancellationTokenSource();
+    cancelled.Cancel();
+    bool cancelledRead = false;
+    try { await HaLocalClient.ReadAsync(server.Port, server.Token, cancelled.Token); }
+    catch (OperationCanceledException) { cancelledRead = true; }
+    Check("HA client honors cancellation", cancelledRead);
+    await server.DisposeAsync();
+    var replacementStore = new LocalSnapshotStore();
+    await using var replacement = new LocalApiServer(replacementStore, 0);
+    now = DateTimeOffset.UtcNow;
+    replacementStore.Publish(now, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 69, now) });
+    var changed = await HaLocalClient.ReadAsync(replacement.Port, replacement.Token);
+    Check("HA client refuses old mapping after actual API restart",
+        mapping.Read(changed, DateTimeOffset.UtcNow).Status == "mapping_required");
+}
+TestHaLoopback().GetAwaiter().GetResult();
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

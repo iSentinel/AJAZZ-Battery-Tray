@@ -8,6 +8,13 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.52 (2026-11-23)
+- Add a random session epoch to snapshots from the explicitly started local API.
+- One-off snapshots without the API omit the epoch.
+- Isolated optional HA mapping, bounded JSON decoder and one-shot authenticated loopback consumer; test-only links, not bundled.
+- Thirty-five new assertions; initial combined Windows/macOS CI PASS.
+- No MQTT dependency, HA service, auto-start, HID changes or automatic API activation.
+
 ## 0.3.0-beta.51 (2026-11-23)
 - Allocate AULA timer only while automatic monitoring is enabled.
 - Reject stale replies and serialize AULA requests; prompt resampling on re-enable.

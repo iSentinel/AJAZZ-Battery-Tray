@@ -1,16 +1,15 @@
-# Resume — offline resource comparison and AULA acceptance
+# Resume — beta.52 optional API session identity candidate
 
-- beta.51 PR #65 final Windows 45090441648 / macOS 45090441628 PASS;
-  merged a1d9a06e61e11248e69d9746b29bc8699314e2c3.
-  Release workflow 45091032358 started; confirm all six assets.
-- PR #66 test/resource-comparison synced with beta.51 main; RESUME
-  conflict resolved. No runtime, installer, macOS or release code changes.
-  23 offline Python tests PASS on Gateway. Dedicated Python CI pending.
-- Passive AULA sleep/wake acceptance document includes 12 scenarios,
-  no forced refresh during sleep, privacy-safe copied summaries, explicit
-  NOT RUN/NOT OBSERVED rather than fabricated hardware results.
-- Next: verify beta.51 publication and exact PR #66 head CI; merge tools
-  after PASS without unnecessary application version bump. Review other
-  independent roadmap work while awaiting actual Windows measurements.
-- Physical AULA sleep/wake, both AJ159 reports/HAR, multi-BLE and actual
-  Windows resource comparison remain outstanding; HA optional.
+- beta.51 published; workflow 45091032358 PASS, six assets verified.
+- PR #66 merged dca6bee7e2ef79e28e7e093e65e34dc4940660cc;
+  main Python 45092260378 PASS.
+- PR #67 initial Windows 45092378014 / macOS 45092378033 PASS.
+  Combined head d1c056a Windows 45092724526 / macOS 45092724453 PASS.
+  Thirty-five new HA mapping, JSON and loopback assertions.
+- Optional API epoch per activation; one-off inactive copies omit it.
+  HA consumer code is outside tray project. No MQTT or auto-start.
+- beta.52 release metadata prepared; verify final CI before merge.
+- Next: independently runnable optional consumer with explicit
+  interactive mapping, in-memory token, no broker yet, no tray dependency.
+- Actual Windows resources, AULA sleep/wake, AJ159 evidence and multi-BLE
+  acceptance remain open.
