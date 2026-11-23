@@ -3,7 +3,7 @@
 A small, independent battery tray utility for **AJAZZ AJ179 APEX** and
 **AJ159 APEX** mice connected through compatible **2.4 GHz / 8K docks** (`USB VID_3151 / PID_5007`).
 
-**Version:** v0.3.0-beta.53 (AULA API receiver continuity candidate).
+**Version:** v0.3.0-beta.54 (USB discovery allocation candidate).
 
 See [resource optimization and measurement](docs/RESOURCE_OPTIMIZATION.md)
 for the controlled Windows comparison procedure.

@@ -4,6 +4,8 @@ namespace AjazzBatteryTray;
 public sealed class DevicePollSchedule
 {
     private readonly Dictionary<string, long> _lastAttempt = new(StringComparer.Ordinal);
+    private HashSet<string>? _presentScratch;
+    private List<string>? _removedScratch;
 
     public static bool IsValidInterval(int seconds) => seconds is 15 or 30 or 60 or 120;
 
@@ -53,9 +55,23 @@ public sealed class DevicePollSchedule
     /// <summary>Forget absent devices only after successful, complete discovery.</summary>
     public void Reconcile(IEnumerable<string> presentKeys, bool presenceKnown)
     {
-        if (!presenceKnown) return;
-        HashSet<string> present = new(presentKeys, StringComparer.Ordinal);
-        foreach (string key in _lastAttempt.Keys.Where(key => !present.Contains(key)).ToArray())
-            _lastAttempt.Remove(key);
+        if (!presenceKnown || _lastAttempt.Count == 0) return;
+        var present = _presentScratch ??= new(StringComparer.Ordinal);
+        var removed = _removedScratch ??= new();
+        present.Clear();
+        removed.Clear();
+        try
+        {
+            foreach (string key in presentKeys) present.Add(key);
+            foreach (string key in _lastAttempt.Keys)
+                if (!present.Contains(key)) removed.Add(key);
+            foreach (string key in removed) _lastAttempt.Remove(key);
+        }
+        finally
+        {
+            // Never hold a scratch reference to a removed receiver identity.
+            present.Clear();
+            removed.Clear();
+        }
     }
 }

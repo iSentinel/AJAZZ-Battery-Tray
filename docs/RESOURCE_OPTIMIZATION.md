@@ -146,3 +146,16 @@ measurement timestamps and finite calculated metrics. Duplicate paths and
 byte-identical CSVs (SHA-256) are rejected to avoid counting the same run
 twice. A dedicated offline developer-tools workflow runs on tool changes;
 no runtime dependency or additional tray process is introduced.
+
+## USB reconciliation scratch reuse (candidate)
+
+The prior DevicePollSchedule.Reconcile allocated a HashSet plus a filtered
+array after each known USB inventory. The candidate lazily allocates two
+small scratch collections and reuses them across reconciliations, clearing
+all contents after each pass. Unknown discovery still preserves deadlines,
+a known empty inventory removes expired identities, and no poll interval or
+hardware request changes. Ten pure regression assertions cover large
+inventories, repeated discovery, unplug, empty/unknown results and single
+input enumeration. This is an allocation strategy, not a measured reduction
+of Windows CPU/working set or timer wakeups; actual side-by-side Windows
+benchmarks remain required.
