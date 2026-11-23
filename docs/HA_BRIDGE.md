@@ -16,7 +16,7 @@ install an MQTT broker, connect to Home Assistant or publish any state.
 - The projection returns availability, fresh percent and machine-readable
   status only; no commands or requests to hardware.
 
-Seventeen regression assertions; compilation and CI pending.
+Initial seventeen mapping assertions: Windows 45092378014 / macOS 45092378033 PASS.
 
 ## Transport choices and gates
 Prefer a separate opt-in local bridge that reads the existing authenticated
@@ -38,3 +38,23 @@ network worker or background service. The additive epoch is generated
 only when the existing optional API store is instantiated; one-off
 clipboard snapshots lack a bindable epoch. API remains disabled by
 default. This is a protocol foundation, not an installable HA integration.
+
+## Optional consumer wire format and transport foundation
+
+The optional decoder accepts schema 1 with a valid sessionEpoch, rejects
+duplicate JSON properties and source/slot identities, validates UTC timestamps,
+integer percentages, supported statuses and their fresh/cached field invariants.
+Input is limited to 64 KiB and JSON depth 8. Unknown additive fields may be
+ignored; invalid known fields fail closed. Twelve additional wire tests
+exercise producer serialization and malformed inputs.
+
+The optional one-shot client only reads HTTP GET /v1/batteries on 127.0.0.1
+with a supplied port and session bearer token. No proxy, redirects, cookies,
+credential persistence, retry loop or automatic service. A five-second
+deadline includes response reading, and the same 64 KiB limit applies.
+503 returns no snapshot; other failures must be treated as unavailable by
+a future bridge. Six synthetic loopback integration assertions use the
+actual local server, including cancellation and restart mapping invalidation.
+Combined latest CI remains pending. This is not a deployed or installable
+Home Assistant bridge; MQTT, explicit mapping UI and availability policy
+still need independent implementation.
