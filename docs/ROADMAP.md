@@ -761,3 +761,19 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add six synthetic regression tests, 46 offline tools tests PASS.
 - [ ] Complete GitHub Actions and merge offline timeline validation.
 - [ ] Await physical AULA L99 awake/sleep/recovered summaries.
+
+
+## Windows 11 offline F7/05 diagnostic comparison
+- [x] Examine actual beta.57+ bounded diagnostic log format,
+      progress markers, Win32 codes, termination and owner helper.
+- [x] Parse read-only local captures; report receiver enumeration,
+      open failure, SET F7 failure, GET 05 failure, timeout or
+      parser-verified charge without disclosing raw vendor buffers.
+- [x] Support awake / after-sleep plus optional reconnect files;
+      classify PASS / INCONCLUSIVE / FAIL with stable exit codes.
+- [x] Add synthetic safe-log and malformed/tampered-report tests.
+- [x] Fix corrupted PowerShell path escaping in previous docs.
+- [x] Include comparator --help and all tests in offline Python CI.
+- [ ] GitHub CI, review, merge the offline diagnostics PR.
+- [ ] Physical Windows 11 affected mouse awake/after-sleep logs,
+      to be evaluated without guessing battery from network HAR.
