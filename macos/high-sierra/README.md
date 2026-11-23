@@ -38,6 +38,39 @@ Diagnostics:
     "/Applications/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --self-test
     "/Applications/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --diagnose
 
+### High Sierra .5+ — bounded diagnostic output
+
+Previous `--trace-hid` / `--diagnose` could block inside IOKit
+and leave a redirected file empty because stdout was buffered. Both
+commands now use a supervised worker with immediate output and a
+strict timeout (default 20 seconds for trace, 15 for diagnose).
+The parent writes BEGIN before the device call, and TIMEOUT
+if the worker exceeds its limit. Only the worker is terminated.
+
+Run the Intel edition directly on the iMac with the mouse awake:
+
+```bash
+"/Applications/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --trace-hid --timeout 25 --output "$HOME/Desktop/ajazz-hid-trace.txt"
+```
+
+`--output` creates the file with permissions 0600; symbolic
+links are rejected. Each stage is written immediately, so a hung
+HID operation should no longer cause a blank file. The trace
+details appear in the file rather than Terminal. The same
+`--output` flag works with `--diagnose`.
+
+Exit codes: 0 verified battery, 2 inconclusive, 124 timeout,
+1 unexpected failure. No feature-report layout or commands changed.
+
+The tray also detects a stuck background HID read after 20 seconds.
+It does not create additional HID reader threads while the original
+call is blocked. Restart the app if the underlying IOKit call never
+returns. The UI timeout is an indication, not forced cancellation.
+
+This is built with the 10.13 deployment target and smoke-tested on
+an Intel macOS 15 CI runner. Actual High Sierra hardware acceptance
+remains open.
+
 On the CLI, an access failure is reported as a distinct UNKNOWN message.
 A receiver with VID:PID 3151:5007 but without the expected FFFF:0002 HID
 collection is reported as an unsupported interface, not a battery result.
@@ -50,16 +83,11 @@ Owner-reported diagnostic: macOS **10.13.6 (17G14042)**, USB
 collection**, battery state **unknown**. This confirms discovery of the
 interface on the real iMac, but **does not confirm battery telemetry**.
 
-The following optional command prints IOKit statuses for opening the
-receiver interface, sending the **existing F7 battery poll**, and
-requesting feature report **05**. Unlike passive USB inventory, this
-does send the same documented battery telemetry request already used
-by the application. It does not write dock configuration, key
-mapping, display, clock, or firmware settings.
-
-```bash
-"/Applications/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --trace-hid
-```
+The optional diagnostic command above prints IOKit statuses
+for opening the interface, sending the **existing F7 battery poll**,
+and requesting report **05**. Unlike network HAR captures, this
+records operation results from the HID API without sending any new
+firmware, configuration, dock, display or key-mapping command.
 
 The output is limited to return codes, packet lengths and at most the
 first eight bytes of each response. **Inspect even that shortened
@@ -75,8 +103,8 @@ bash macos/high-sierra/acceptance.sh --dry-run --trace
 bash macos/high-sierra/acceptance.sh --trace
 ```
 
-A newer High Sierra build is required
-for this optional command; .1/.2 do not contain it.
+This trace command first appeared in .4; supervised execution,
+persistent output and timeout support require .5 or newer.
 
 If the compatible USB receiver is absent or does not supply a verified
 response, --diagnose prints UNKNOWN and exits 2, not a zero-percent reading.

@@ -27,7 +27,33 @@ jobs:
           bash -n macos/high-sierra/acceptance.sh
           bash macos/high-sierra/acceptance.sh --help
           bash macos/high-sierra/acceptance.sh --dry-run --trace
-          bash macos/high-sierra/acceptance.sh --dry-run --app             "dist/high-sierra/AJAZZ Battery Tray High Sierra.app"
+          bash macos/high-sierra/acceptance.sh --dry-run --app \
+            "dist/high-sierra/AJAZZ Battery Tray High Sierra.app"
+      - name: Watchdog, unbuffered report, and private log safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXE="dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra"
+          REPORT="$RUNNER_TEMP/ajazz-watchdog-test.txt"
+          set +e
+          "$EXE" --self-test-watchdog --output "$REPORT"
+          code=$?
+          set -e
+          test "$code" -eq 124
+          grep -q 'BEGIN: diagnostic=' "$REPORT"
+          grep -q 'TEST: worker started' "$REPORT"
+          grep -q 'TIMEOUT: worker exceeded' "$REPORT"
+          test "$(stat -f %Lp "$REPORT")" = 600
+          ln -s "$REPORT" "$REPORT.symlink"
+          if "$EXE" --self-test-watchdog --output "$REPORT.symlink"; then
+            echo "FAIL: followed diagnostic log symlink"
+            exit 1
+          fi
+          if "$EXE" --trace-hid --timeout invalid; then
+            echo "FAIL: invalid timeout accepted"
+            exit 1
+          fi
+          echo "PASS: 1s worker timeout, diagnostic log and symlink guard"
       - name: Check package target, architecture, and SHA256
         run: |
           set -euo pipefail

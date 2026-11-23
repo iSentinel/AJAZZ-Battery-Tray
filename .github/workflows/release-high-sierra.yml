@@ -20,7 +20,8 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-highsierra\.[0-9]+$ ]]
-          bash macos/high-sierra/build.sh
+          AJAZZ_HIGHSIERRA_BUILD_NUMBER="${GITHUB_REF_NAME##*.}" \
+            bash macos/high-sierra/build.sh
           (cd dist && shasum -a 256 -c AJAZZBatteryTray-macOS-HighSierra-Intel.sha256)
       - name: Publish separate experimental release (not Latest)
         env:
@@ -42,6 +43,9 @@ jobs:
           - No firmware or configuration commands
           - Physical High Sierra device acceptance remains pending
           - Ad-hoc signed, not Apple-notarized; verify the ZIP SHA-256
+          - Bounded IOKit diagnostic processes and private log:
+            --trace-hid --timeout 25 --output PATH
+          - Exit 124 means HID timeout, never 0% battery
 
           See macos/high-sierra/README.md for installation and limitations.
           NOTES

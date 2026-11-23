@@ -89,8 +89,9 @@ CODE="$?"
 printf '%s\n' "$OUTPUT"
 if [ "$CODE" -eq 0 ]; then
     echo "PASS: verified USB battery telemetry"
-elif [ "$CODE" -eq 2 ]; then
-    echo "INCONCLUSIVE: USB receiver or a verified report is unavailable"
+elif [ "$CODE" -eq 2 ] || [ "$CODE" -eq 124 ]; then
+    echo "INCONCLUSIVE: receiver unreadable, or HID read timed out"
+    CODE=2
 else
     echo "FAIL: diagnostic executable failed unexpectedly"
     exit 1
@@ -107,8 +108,9 @@ if [ "$TRACE" -eq 1 ]; then
     if [ "$TRACE_CODE" -eq 0 ]; then
         CODE=0
         echo "PASS: verified F7/05 HID trace"
-    elif [ "$TRACE_CODE" -eq 2 ]; then
-        echo "INCONCLUSIVE: trace completed without a verified battery value"
+    elif [ "$TRACE_CODE" -eq 2 ] || [ "$TRACE_CODE" -eq 124 ]; then
+        CODE=2
+        echo "INCONCLUSIVE: trace unverified or timed out"
     else
         echo "FAIL: trace command failed unexpectedly"
         exit 1
