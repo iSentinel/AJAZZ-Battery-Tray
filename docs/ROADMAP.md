@@ -709,8 +709,27 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Track confirmed receiver identity in memory; reset upon known
       disconnect, different confirmed receiver, or user opt-out.
 - [x] Add pure continuity identity and cache lifecycle assertions.
-- [ ] Pass Windows and universal macOS CI without changing HID I/O.
-- [ ] Publish beta.58 after installer smoke tests and SHA-256 verification.
+- [x] PR #88 Windows CI 45226029316 and universal macOS CI
+      45226028910 PASS; merged 5683dbec13bd4280bf06343d2ac0e68d2c3d15b9.
+- [x] beta.58 release workflow 45226467033 PASS; Windows installer
+      install/uninstall PASS; all six assets published; three binary
+      SHA-256 checks PASS after downloading from GitHub.
 - [ ] Owner AULA L99 beta.58 hardware A01-A14, especially overnight
       sleep and return of the *same* dongle without an immediate reply.
 - [ ] Never claim that all sleep cases are fixed before hardware tests.
+
+
+## beta.58 owner hardware acceptance gate
+- [x] High Sierra .5 stays independent and experimentally accepted
+      at CI level only, not on the owner's macOS 10.13.6 hardware.
+- [x] Windows beta.58 is Latest, with bounded beta.57 diagnostics
+      and AULA unknown-presence cache continuity.
+- [x] Distinct awake/after-sleep diagnostic collector PR #87 merged
+      4d6144d2003a5cd0d42592854145a575ebd3756d.
+- [ ] User to run AULA L99 A01-A14 sleep/restore acceptance;
+      record status, stale/fresh timestamps and presence.
+- [ ] Windows 11 affected-mouse owner to submit redacted
+      F7/05 diagnostic in awake and after-sleep states.
+- [ ] iMac High Sierra 10.13.6 owner to run .5 trace with private
+      --output and confirm actual IOKit status and device framing.
+- [ ] Validate reported hardware outcomes before protocol changes.

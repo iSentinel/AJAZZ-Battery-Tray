@@ -1,3 +1,23 @@
+# Resume — beta.58 published and hardware acceptance pending
+
+- PR #88 merged 5683dbec13bd4280bf06343d2ac0e68d2c3d15b9.
+  Windows 45226029316 PASS and macOS 45226028910 PASS.
+- beta.58 release workflow 45226467033 PASS, Windows installer
+  install/uninstall PASS, universal macOS bundle build 62 PASS.
+- Six published assets; Windows portable, Windows Setup and macOS
+  universal ZIP downloaded and verified against their SHA-256 files.
+  GitHub Latest = v0.3.0-beta.58.
+- AULA L99: unknown USB presence hides value but does not destroy
+  last-good sample. The same verified receiver may recover Cached;
+  a known different receiver or confirmed disconnect resets cache.
+  Hardware acceptance A01-A14 is not yet reported.
+- Diagnostics already available:
+  Windows --hid-diagnose --timeout 40 --output PATH (beta.57+);
+  Windows helper tools/Collect-AjazzHidDiagnostics.ps1;
+  High Sierra .5 --trace-hid --timeout 25 --output PATH.
+- Affected mouse on Windows 11 and real iMac 10.13.6 still need
+  physical device traces before changing protocol byte layout.
+
 # Resume — beta.58 AULA L99 unknown-presence continuity candidate
 
 - Inspected AulaL99Reader / AulaBatteryState / TrayAppContext.
