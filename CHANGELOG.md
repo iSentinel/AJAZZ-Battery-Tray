@@ -8,6 +8,14 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.51 (2026-11-23)
+- Allocate AULA timer only while automatic monitoring is enabled.
+- Reject stale replies and serialize AULA requests; prompt resampling on re-enable.
+- Unify fresh, cached, expired and manual-only dashboard/API states.
+- Twenty-six regression assertions; combined Windows/macOS CI PASS after timer callback compile fix.
+- Physical AULA sleep recovery and Windows resource measurement remain pending.
+- No changes to HID commands or normal polling cadence.
+
 ## 0.3.0-beta.50 (2026-11-23)
 - Replace the opt-in ten-second timer with one-shot update deadlines.
 - Preserve initial 60-second delay, daily success and hourly failure retry.

@@ -1,19 +1,15 @@
-# Resume — AULA lifecycle and sleep state candidate
+# Resume — beta.51 release candidate
 
-- beta.50 release workflow 45088588616 PASS; all six assets verified.
-  PR #64 final Windows 45087837752 / macOS 45087838061 PASS;
-  merged 5fd06ca333bd2e47d881446e822ccdb5fd654c20.
-- PR #65 lazy timer and ticket-based single-flight lifecycle: fourteen
-  assertions, stale replies ignored, prompt 100 ms replacement after
-  re-enable. Previous head 14a16c9 macOS 45088767062 PASS;
-  Windows 45088767013 was running before follow-up edits.
-- Unified AULA dashboard/API state projection (fresh rather than scheduled,
-  cache timestamp, manual-only, invalid/expired values), reset on unexpected
-  failure. Twelve additional synthetic assertions, including 960 no-reply
-  samples over simulated eight-hour sleep, expiry and fresh recovery.
-  26 new assertions total. New head requires full CI. APEX Python 8/8 PASS.
-- Next: verify latest PR #65 Windows/macOS CI, prepare beta.51 metadata
-  and publish only after final CI. Physical AULA sleep/wake and Windows
-  resource comparison still pending. No HID reader/parser changes.
-- HA optional and isolated; both AJ159 reports/HAR, multi-BLE, backup restore
-  and actual API acceptance remain outstanding.
+- beta.50 published; workflow 45088588616 PASS, six assets.
+- PR #65 adds lazy AULA timer, single-flight lifecycle, consistent
+  fresh/cached UI and API state. Twenty-six new assertions.
+- Windows 45088980556: 588 unit assertions and resource sampler PASS;
+  publish failed CS0029 on event parameter named underscore.
+- Fixed in 1ec83dcbfebd2a97362beb2e26e19034af8cd6e8;
+  Windows 45089648620 / macOS 45089648574 PASS.
+- beta.51 release metadata prepared. Final CI and publication pending.
+- Separate test/resource-comparison branch has ten new Python tests,
+  eight APEX tests PASS. Integrate after beta.51 release.
+- Hardware sleep/wake, both AJ159 reports/HAR, multi-BLE and actual
+  Windows resource measurements remain open. No HID reader changes.
+  HA stays optional and isolated.
