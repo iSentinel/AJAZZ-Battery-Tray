@@ -1,17 +1,18 @@
 # Resume — update deadline scheduling candidate
 
-- beta.48 published; workflow 45086004496 PASS; six assets verified.
-- PR #63 initial Windows 45086097090 / macOS 45086097051 PASS.
-  Twelve hot-path assertions including 8192-sample reference comparison.
-  beta.49 candidate 13ef52586c620aaaced397f9edb3042d7224dcde;
-  final Windows 45087023603 / macOS 45087023598 PASS.
-  Merged a4a730c5ef851de934c9957572e1dc8c21a23820; publication pending.
-- perf/update-deadline-timer: one-shot monotonic update deadlines replace
-  10-second repeating timer when opted in; manual dialog and in-flight
-  requests suspend it. Eleven new tests; APEX Python 8/8 PASS.
-  C# CI and physical Windows timer/wakeup acceptance pending.
-- Next: verify published beta.49 assets. Deadline timer branch synced to main;
-  open draft PR and review lifecycle
-  with opt-out/channel change, shutdown, manual-dialog cancellation.
-- Windows actual resource comparison and physical hardware gates remain
-  open. HA optional and isolated. No HID reader/parser or cadence changes.
+- beta.49 PR #63 final Windows 45087023603 / macOS 45087023598 PASS;
+  merged a4a730c5ef851de934c9957572e1dc8c21a23820. Publication workflow
+  45087429858 started; verify assets before calling it published.
+- PR #64 (perf/update-deadline-timer) synced with beta.49 main.
+  One-shot update scheduling, disabled by default; preserve initial
+  60-second delay, 24-hour success and 1-hour retry. No timer during
+  manual dialog or in-flight request.
+- Added stale timer guard, overflow-safe deadlines, lazily initialized
+  shared asynchronous gate to prevent manual/automatic HTTP overlap.
+  Existing 15-second deadline includes queued wait. Sixteen new assertions
+  total; C# CI pending. Gateway Python APEX 8/8 PASS; HID reader diff empty.
+- Next: verify beta.49 release and latest PR #64 CI; prepare beta.50
+  metadata only after PASS. Real Windows UI timer and resource acceptance
+  remain pending; do not claim measured CPU/RAM savings.
+- HA optional and isolated; hardware gates unchanged (two AJ159 reports/HAR,
+  multi-BLE, AULA sleep, backup restore, actual Windows API).
