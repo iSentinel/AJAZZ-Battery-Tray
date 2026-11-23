@@ -62,6 +62,7 @@
              Link="HostMetricsRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ReceiverIdentity.cs"
              Link="ReceiverIdentity.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/InventoryFrameScratch.cs" Link="InventoryFrameScratch.cs" />
     <Compile Include="../../src/AjazzBatteryTray/DiagnosticHidIdentity.cs"
              Link="DiagnosticHidIdentity.cs" />
     <Compile Include="../../src/AjazzBatteryTray/UiText.cs"

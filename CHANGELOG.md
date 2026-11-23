@@ -8,6 +8,14 @@
 - Define capture, readback, source-of-truth and failure-handling gates.
 
 
+## 0.3.0-beta.55 (2026-11-23)
+- Reuse lazily allocated receiver and optional tray-icon identity sets
+  and missing-key lists, clearing temporary references after each pass.
+- Preserve primary receiver selection, known/unknown inventory, icon
+  disposal and polling semantics. No new HID commands or timers.
+- Pure frame regression coverage and combined Windows/macOS CI.
+- No measured CPU/RAM/handle improvement claimed pending owner hardware runs.
+
 ## 0.3.0-beta.54 (2026-11-23)
 - Reuse lazily allocated temporary sets/lists during confirmed USB inventory reconciliation.
 - Avoid per-reconciliation allocation of a HashSet and filtered array.
