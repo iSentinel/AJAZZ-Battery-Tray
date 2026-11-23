@@ -152,9 +152,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v0.3.0-beta.50"
+          TAG="v0.3.0-beta.51"
           cat > notes.md <<'NOTES'
-          ## AJAZZ Battery Tray v0.3.0-beta.50 — Windows and macOS
+          ## AJAZZ Battery Tray v0.3.0-beta.51 — Windows and macOS
+
+          **AULA L99 monitoring (Windows):** lazy optional timer, single-flight
+          reads, stale reply rejection and consistent fresh/cached states.
+          Hardware sleep/wake acceptance remains pending.
 
           **Opt-in update scheduling (Windows):** one-shot deadlines,
           no repeating ten-second timer, and serialized manual/automatic
@@ -436,7 +440,7 @@ jobs:
               dist/release/AJAZZBatteryTray-Setup-win-x64.sha256 \
               dist/release/AJAZZBatteryTray-macOS-universal.zip \
               dist/release/AJAZZBatteryTray-macOS-universal.sha256 \
-              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.50" \
+              --target "$GITHUB_SHA" --title "AJAZZ Battery Tray v0.3.0-beta.51" \
               --notes-file notes.md --latest
           fi
           # A published release must be visible through /releases/latest.
