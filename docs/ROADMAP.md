@@ -558,5 +558,5 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Ten new assertions; initial Windows 45151372157 / macOS 45151372393 PASS.
 - [x] beta.56 Windows 45151826742 / macOS 45151826820 PASS;
   merged d26780312170a71e5c87a7dccd049bbe5fa36da1.
-- [ ] beta.56 release workflow 45152156278 final publication confirmation.
+- [x] beta.56 release 45152156278 PASS; six assets published.
 - [ ] Actual two-device BLE/USB owner acceptance.
