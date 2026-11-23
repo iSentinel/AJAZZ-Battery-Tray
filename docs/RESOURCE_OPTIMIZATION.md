@@ -101,3 +101,12 @@ interval; disable during a pending read; re-enable before completion; exit
 with a pending read. Verify no stale result or automatic polling after opt-out,
 no duplicate workers, unchanged cached readings and normal sleep recovery.
 C# compilation, actual Windows timer lifecycle and hardware acceptance pending.
+
+### AULA single-flight lifecycle
+The UI uses a testable ticket-based lifecycle. A late reply from a disabled
+or replaced session cannot update readings. Re-enable during an existing
+read waits for that read to finish, then schedules a replacement after
+100 ms instead of waiting a complete configured interval. No parallel
+worker or new HID command is introduced. Fourteen assertions exercise
+manual/automatic reads, disabled/idle states, repeated completion, stale
+reply, fast re-enable and shutdown. C# CI and physical acceptance pending.
