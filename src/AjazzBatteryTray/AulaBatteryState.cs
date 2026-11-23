@@ -12,7 +12,8 @@ public sealed class AulaBatteryState
     {
         if (!known)
         {
-            Reset();
+            // Hide cache while presence is uncertain, but retain the last
+            // confirmed sample until the same receiver is seen again.
             return;
         }
         if (!present)

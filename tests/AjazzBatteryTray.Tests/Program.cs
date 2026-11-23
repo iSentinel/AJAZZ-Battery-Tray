@@ -317,8 +317,35 @@ aulaCache.Reset();
 Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
 aulaCache.Observe(true, true, 93, aulaTime);
 aulaCache.Observe(false, false, null, aulaTime.AddSeconds(30));
-Check("AULA uncertain receiver identity invalidates cache",
+Check("AULA uncertain enumeration retains hidden last-good sample",
+    aulaCache.LastGoodPercent == 93 && aulaCache.LastGoodAt == aulaTime &&
+    aulaCache.DisplayPercent(false, false, null, aulaTime.AddSeconds(30)) is null);
+Check("AULA same receiver can reuse cached sample after uncertainty",
+    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(31)) == 93);
+aulaCache.Observe(false, true, null, aulaTime.AddSeconds(32));
+Check("AULA confirmed unplug still invalidates sample",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null);
+
+var aulaIdentity = new AulaReceiverContinuity();
+string knownAula = new string('A', 64);
+string replacementAula = new string('B', 64);
+Check("AULA first confirmed receiver does not clear empty cache",
+    !aulaIdentity.MustReset(true, true, knownAula));
+Check("AULA uncertain enumeration cannot infer a different receiver",
+    !aulaIdentity.MustReset(false, false, null));
+Check("AULA same receiver after uncertainty retains cache",
+    !aulaIdentity.MustReset(true, true, knownAula));
+Check("AULA confirmed different receiver invalidates cache",
+    aulaIdentity.MustReset(true, true, replacementAula));
+Check("AULA confirmed removal invalidates cache",
+    aulaIdentity.MustReset(true, false, null));
+Check("AULA confirmed present without an identity cannot inherit cache",
+    aulaIdentity.MustReset(true, true, null));
+Check("AULA reinsert after confirmed removal starts fresh",
+    !aulaIdentity.MustReset(true, true, knownAula));
+aulaIdentity.Reset();
+Check("AULA explicit reset clears continuity identity",
+    !aulaIdentity.MustReset(true, true, replacementAula));
 
 // Setting a palette changes appearance, not battery status.
 string colorKeyA = new string('A', 64);

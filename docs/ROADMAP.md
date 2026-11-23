@@ -699,3 +699,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Obtain real owner awake/after-sleep/reconnect F7/05 reports.
 - [ ] Confirm USB collection and battery parsing before adjusting
       protocol on the affected Windows 11 hardware.
+
+
+## beta.58 AULA L99 sleep/unknown-presence continuity
+- [x] Identify cache reset on transient HID enumeration failure and
+      second reset when the same receiver returns after unknown state.
+- [x] Preserve the last confirmed sample internally during unknown
+      enumeration while hiding it from dashboard/API current status.
+- [x] Track confirmed receiver identity in memory; reset upon known
+      disconnect, different confirmed receiver, or user opt-out.
+- [x] Add pure continuity identity and cache lifecycle assertions.
+- [ ] Pass Windows and universal macOS CI without changing HID I/O.
+- [ ] Publish beta.58 after installer smoke tests and SHA-256 verification.
+- [ ] Owner AULA L99 beta.58 hardware A01-A14, especially overnight
+      sleep and return of the *same* dongle without an immediate reply.
+- [ ] Never claim that all sleep cases are fixed before hardware tests.

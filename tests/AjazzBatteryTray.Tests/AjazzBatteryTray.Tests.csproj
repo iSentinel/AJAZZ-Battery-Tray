@@ -53,6 +53,7 @@
              Link="PnpNameRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardState.cs"
              Link="DeviceDashboardState.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/AulaReceiverContinuity.cs" Link="AulaReceiverContinuity.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AulaPollLifecycle.cs" Link="AulaPollLifecycle.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AulaBatteryState.cs"
              Link="AulaBatteryState.cs" />

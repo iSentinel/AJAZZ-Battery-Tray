@@ -1,3 +1,18 @@
+# Resume — beta.58 AULA L99 unknown-presence continuity candidate
+
+- Inspected AulaL99Reader / AulaBatteryState / TrayAppContext.
+  Unknown HID enumeration caused cache reset and second reset on
+  same receiver return because previous LocalKey was absent.
+- Candidate change: retain hidden last-known battery on uncertain
+  enumeration; do not display/publish it while presence is unknown.
+  Preserve only after same receiver is confirmed; reset on known
+  absence, different confirmed receiver and opt-out.
+- Added identity continuity test cases; no HID commands or timers
+  modified. beta.58/version 62 candidate. CI and physical AULA
+  acceptance remain pending.
+- beta.57 release and PR #87 owner diagnostic helper already PASS,
+  Latest remained beta.57 before this candidate.
+
 # Resume — beta.57 released; Windows 11 owner diagnostics helper
 
 - PR #86 merged fd9701671f3b3bd002916e7e6400ca554248a3b2.
