@@ -121,6 +121,9 @@ static BatteryReading ReadReceiver(void) {
 @property(nonatomic, assign) BOOL disconnectSent;
 @property(nonatomic, assign) NSInteger absentCount;
 @property(nonatomic, assign) NSUInteger alerted;
+@property(nonatomic, assign) BOOL bluetoothRequested;
+@property(nonatomic, assign) NSUInteger bluetoothRequestGeneration;
+@property(nonatomic, assign) NSUInteger bluetoothAttempt;
 @end
 
 @implementation LegacyTray
@@ -401,14 +404,30 @@ static BatteryReading ReadReceiver(void) {
 }
 
 - (void)checkBluetooth:(id)sender {
+    if (self.selectedPeripheral || self.bluetoothRequested) return;
+    self.bluetoothRequested = YES;
+    NSUInteger generation = ++self.bluetoothRequestGeneration;
     if (!self.central) {
         self.central = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
     } else {
         [self centralManagerDidUpdateState:self.central];
     }
+    // The first radio state callback may never arrive; keep manual retry usable.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC),
+                   dispatch_get_main_queue(), ^{
+        if (!self.bluetoothRequested ||
+            generation != self.bluetoothRequestGeneration) return;
+        self.bluetoothRequested = NO;
+        [self message:@"Bluetooth initialization timed out; try again."];
+    });
 }
 
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central {
+    // Unsolicited radio state changes must not open a modal window.
+    if (!self.bluetoothRequested) return;
+    if (central.state == CBManagerStateUnknown ||
+        central.state == CBManagerStateResetting) return;
+    self.bluetoothRequested = NO;
     if (central.state != CBManagerStatePoweredOn) {
         [self message:[self word:@"Bluetooth is off or unavailable."
                                  ru:@"Bluetooth выключен или недоступен."
@@ -445,12 +464,15 @@ static BatteryReading ReadReceiver(void) {
     NSInteger index = choice.indexOfSelectedItem;
     if (index < 0 || index >= (NSInteger)matching.count) return;
     self.selectedPeripheral = matching[(NSUInteger)index];
+    self.bluetoothAttempt++;
+    NSUInteger attempt = self.bluetoothAttempt;
     self.selectedPeripheral.delegate = self;
     [central connectPeripheral:self.selectedPeripheral options:nil];
     CBPeripheral *pending = self.selectedPeripheral;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC),
                    dispatch_get_main_queue(), ^{
-        if (self.selectedPeripheral == pending) {
+        // A previous attempt must not terminate a newer read of the same mouse.
+        if (self.selectedPeripheral == pending && self.bluetoothAttempt == attempt) {
             [self finishBluetooth:@"Bluetooth Battery Service timed out."];
         }
     });
@@ -469,6 +491,10 @@ static BatteryReading ReadReceiver(void) {
 
 - (void)peripheral:(CBPeripheral *)device didDiscoverServices:(NSError *)error {
     if (device != self.selectedPeripheral) return;
+    if (error) {
+        [self finishBluetooth:@"Bluetooth service discovery failed."];
+        return;
+    }
     for (CBService *service in device.services) {
         if ([service.UUID isEqual:[CBUUID UUIDWithString:@"180F"]]) {
             [device discoverCharacteristics:@[[CBUUID UUIDWithString:@"2A19"]]
@@ -482,6 +508,10 @@ static BatteryReading ReadReceiver(void) {
 - (void)peripheral:(CBPeripheral *)device didDiscoverCharacteristicsForService:
     (CBService *)service error:(NSError *)error {
     if (device != self.selectedPeripheral) return;
+    if (error) {
+        [self finishBluetooth:@"Bluetooth characteristic discovery failed."];
+        return;
+    }
     for (CBCharacteristic *characteristic in service.characteristics) {
         if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:@"2A19"]]) {
             [device readValueForCharacteristic:characteristic];
@@ -503,8 +533,16 @@ static BatteryReading ReadReceiver(void) {
     }
 }
 
+- (void)centralManager:(CBCentralManager *)central
+    didDisconnectPeripheral:(CBPeripheral *)device error:(NSError *)error {
+    if (device == self.selectedPeripheral) {
+        [self finishBluetooth:@"Bluetooth mouse disconnected before the read completed."];
+    }
+}
+
 - (void)finishBluetooth:(NSString *)message {
     if (!self.selectedPeripheral) return;
+    self.selectedPeripheral.delegate = nil;
     [self.central cancelPeripheralConnection:self.selectedPeripheral];
     self.selectedPeripheral = nil;
     [self message:message];
@@ -521,13 +559,23 @@ int main(void) {
             return 0;
         }
         if ([arguments containsObject:@"--self-test"]) {
-            uint8_t report1[] = {5, 0, 0, 83};
-            uint8_t report2[] = {0, 0, 25};
-            uint8_t invalid[] = {5, 0, 0, 0};
-            BOOL pass = ParseBattery(report1, 4) == 83 &&
-                ParseBattery(report2, 3) == 25 &&
-                ParseBattery(invalid, 4) == -1;
-            puts(pass ? "PASS: legacy HID report parser" : "FAIL: legacy HID report parser");
+            uint8_t first[] = {5, 0, 0, 1};
+            uint8_t full[] = {5, 0, 0, 100};
+            uint8_t stripped[] = {0, 0, 25};
+            uint8_t zero[] = {5, 0, 0, 0};
+            uint8_t excess[] = {5, 0, 0, 101};
+            uint8_t wrongID[] = {6, 0, 0, 83};
+            uint8_t malformed[] = {5, 1, 0, 83};
+            uint8_t shortFrame[] = {5, 0};
+            BOOL pass = ParseBattery(first, 4) == 1 &&
+                ParseBattery(full, 4) == 100 &&
+                ParseBattery(stripped, 3) == 25 &&
+                ParseBattery(zero, 4) == -1 &&
+                ParseBattery(excess, 4) == -1 &&
+                ParseBattery(wrongID, 4) == -1 &&
+                ParseBattery(malformed, 4) == -1 &&
+                ParseBattery(shortFrame, 2) == -1;
+            puts(pass ? "PASS: 8 HID parser cases" : "FAIL: HID parser regression");
             return pass ? 0 : 1;
         }
         if ([arguments containsObject:@"--diagnose"]) {
