@@ -4,10 +4,10 @@ set -uo pipefail
 
 usage() {
     cat <<'HELP'
-Usage: bash macos/high-sierra/acceptance.sh [--dry-run] [--app PATH] [-h|--help]
+Usage: bash macos/high-sierra/acceptance.sh [--dry-run] [--trace] [--app PATH] [-h|--help]
 
-Read-only diagnostics of installed High Sierra edition.
-The --diagnose test sends only the app's documented F7/05 telemetry request.
+Read-only-in-purpose battery telemetry; F7 is sent as a HID Feature request.
+The --trace option explicitly runs the same F7/05 query with bounded output.
 No firmware, buttons, dock settings, or other device configuration is changed.
 
 Exit codes: 0 PASS; 1 FAIL; 2 INCONCLUSIVE (device battery unknown).
@@ -17,10 +17,12 @@ HELP
 
 APP="/Applications/AJAZZ Battery Tray High Sierra.app"
 DRY=0
+TRACE=0
 while [ "$#" -gt 0 ]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         --dry-run) DRY=1; shift ;;
+        --trace) TRACE=1; shift ;;
         --app)
             if [ "$#" -lt 2 ] || [ -z "$2" ]; then
                 echo "FAIL: --app requires an application path"
@@ -43,6 +45,9 @@ if [ "$DRY" -eq 1 ]; then
     printf 'App: %s\n' "$APP"
     printf 'Would run: "%s" --self-test\n' "$EXE"
     printf 'Would run: "%s" --diagnose\n' "$EXE"
+    if [ "$TRACE" -eq 1 ]; then
+        printf 'Would run: "%s" --trace-hid\n' "$EXE"
+    fi
     echo "Manual checks: menu bar, USB disconnect/reconnect, sleep/wake, notifications"
     exit 0
 fi
@@ -89,6 +94,26 @@ elif [ "$CODE" -eq 2 ]; then
 else
     echo "FAIL: diagnostic executable failed unexpectedly"
     exit 1
+fi
+
+if [ "$TRACE" -eq 1 ]; then
+    if ! "$EXE" --help | grep -Fq -- '--trace-hid'; then
+        echo "FAIL: this edition has no --trace-hid; install High Sierra .4 or newer"
+        exit 1
+    fi
+    TRACE_OUTPUT="$("$EXE" --trace-hid 2>&1)"
+    TRACE_CODE="$?"
+    printf '%s\n' "$TRACE_OUTPUT"
+    if [ "$TRACE_CODE" -eq 0 ]; then
+        CODE=0
+        echo "PASS: verified F7/05 HID trace"
+    elif [ "$TRACE_CODE" -eq 2 ]; then
+        echo "INCONCLUSIVE: trace completed without a verified battery value"
+    else
+        echo "FAIL: trace command failed unexpectedly"
+        exit 1
+    fi
+    echo "Review response-prefix bytes before sharing this report."
 fi
 
 cat <<'MANUAL'

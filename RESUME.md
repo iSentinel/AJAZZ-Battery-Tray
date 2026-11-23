@@ -1,3 +1,18 @@
+# Resume — iMac High Sierra owner trace pending
+
+- Owner hardware report (Late 2013 iMac, macOS 10.13.6 17G14042):
+  one matching FFFF:0002 HID collection for USB 3151:5007,
+  battery unknown. Owner F7/05 trace not yet provided.
+- PR #82 merged 18510a76e5ee3ba77e7837b1f7174d7d3ac3e879.
+  High Sierra .4 release CI 45187068489 PASS; published ZIP,
+  checksum and trace command reverified after download.
+  Main latest Windows/macOS remains beta.56.
+- PR #81 merged 17c679e18c6821482e92de09a7f2b6fdd5f26583.
+  Hardware acceptance helper is available; next add opt-in
+  --trace with compatible executable check and safe dry-run.
+- Await real High Sierra --trace-hid response before changing
+  HID parser or claiming successful battery monitoring.
+
 # Resume — High Sierra on-device HID trace checkpoint
 
 - Owner iMac Late 2013 / macOS 10.13.6 (17G14042) report:
