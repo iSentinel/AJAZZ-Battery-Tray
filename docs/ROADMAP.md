@@ -565,7 +565,19 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Isolate legacy macOS 10.13 Intel Objective-C AppKit/IOKit implementation.
 - [x] Preserve the existing macOS 13+ Swift app and Windows distribution.
 - [x] Add x86_64 build, checksum, interpreter self-test and separate CI/release workflow.
-- [ ] Pass Intel macOS CI build and publish a separate prerelease asset.
+- [x] Intel CI and prerelease v0.3.0-highsierra.1 published: release workflow 45178458346 PASS; ZIP/SHA-256 downloaded and verified.
 - [ ] Test real iMac Late 2013 with High Sierra 10.13: launch, 3151:5007 HID,
       sleep/reconnect, native notifications, Bluetooth 180F/2A19 as available.
 - [ ] Do not claim device compatibility before physical acceptance.
+
+
+## High Sierra Bluetooth and HID stability follow-up
+- [x] Only present a BLE chooser after an explicit manual request.
+- [x] Wait for initial CoreBluetooth state, bound its timeout, and
+      guard timers by request generation (including same-mouse retries).
+- [x] Handle BLE discovery errors/disconnect; clear the peripheral
+      delegate after finishing a read.
+- [x] Expand native HID parser smoke tests from 3 to 8 cases.
+- [ ] Pass legacy Intel, modern macOS and Windows CI for the changes.
+- [ ] Package follow-up separately as High Sierra experimental prerelease.
+- [ ] Validate real 10.13 Bluetooth prompts and sleep/wake on owner iMac.

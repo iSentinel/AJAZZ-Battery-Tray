@@ -13,6 +13,10 @@ overwriting the existing macOS 13+ application.
 - Opt-in low battery notifications below 50%, 25%, 10%, and receiver removal.
 - Manual selection of already-connected AJAZZ Bluetooth mice exposing GATT
   Battery Service 180F / Battery Level 2A19; no automatic scanning or pairing.
+  Requests wait for Bluetooth initialization with a bounded timeout;
+  unsolicited radio changes never open dialogs. Stale timeouts cannot
+  cancel a newer request; failed service discovery and disconnect are
+  reported without inventing a battery value.
 - English, Russian and Ukrainian menu translations, diagnostic copy action.
 - --help, --self-test, and --diagnose command-line options.
 
