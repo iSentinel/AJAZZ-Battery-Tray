@@ -455,7 +455,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Lazy timer, release on disable, manual reads without timer.
 - [x] Ticket-based stale reply and concurrent read guards, prompt resampling
   after re-enable during an old read, fourteen lifecycle assertions.
-- [x] Unified AULA dashboard/API fresh/cached classification; twelve more\n  assertions including synthetic eight-hour sleep, expiration and recovery.\n- [x] Combined CI after callback compile fix: Windows 45089648620 / macOS 45089648574 PASS.
-- [ ] Final beta.51 CI, release and physical acceptance.
+- [x] Unified AULA dashboard/API fresh/cached classification; twelve more
+  assertions including synthetic eight-hour sleep, expiration and recovery.
+- [x] Combined CI after callback compile fix: Windows 45089648620 / macOS 45089648574 PASS.
+- [x] Final beta.51 Windows 45090441648 / macOS 45090441628 PASS; merged.
+- [ ] beta.51 publication verification (45091032358) and physical acceptance.
 - [ ] Observe prolonged AULA sleep and wake, confirm cached indication and
   fresh reading recovery without extra hardware traffic.
+
+## Offline tools and hardware acceptance
+- [x] Offline CSV comparison and strict validation, fifteen fixture tests;
+  eight APEX tests and fifteen resource tests PASS on Gateway.
+- [x] Dedicated Python developer-tools CI added in PR #66.
+- [x] Passive [AULA sleep/wake acceptance](AULA_SLEEP_ACCEPTANCE.md) matrix.
+- [ ] PR #66 CI and merge; no application artifact version bump required.
+- [ ] Actual owner Windows resource CSVs and hardware acceptance results.
