@@ -58,6 +58,9 @@ jobs:
           if ($LASTEXITCODE -ne 2) { throw 'Published preview invalid port not rejected' }
           $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $app).Hash.ToLowerInvariant()
           Set-Content -LiteralPath "$app.sha256" -Encoding ascii -Value "$hash  AjazzHaPreview.exe"
+          # The expected negative CLI test leaves LASTEXITCODE=2.
+          # Only report success after its assertion and checksum creation.
+          exit 0
       - uses: actions/upload-artifact@v4
         with:
           name: optional-AjazzHaPreview-win-x64
