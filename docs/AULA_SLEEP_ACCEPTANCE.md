@@ -101,7 +101,12 @@ OBSERVED (for example, the keyboard still responds during idle).
 
 The script checks cache/fresh status, measurement timestamps,
 no-reply counts, unknown receiver presence and the 24-hour cache
-boundary. It does **not** demonstrate that the HID protocol is correct
+boundary. All three checkpoints must come from the same application
+version with automatic monitoring enabled throughout. For a genuinely
+fresh AULA reading, the last-successful timestamp must match the
+last-poll timestamp; the sleep and recovery polls must be strictly
+later than the preceding checkpoint. Mixed versions or changed
+monitoring settings yield NOT OBSERVED instead of false PASS. It does **not** demonstrate that the HID protocol is correct
 or that the same physical receiver was used: the clipboard report
 intentionally omits serials and identity keys. Do not infer confirmed
 hardware recovery from synthetic tests or a single PASS.

@@ -102,8 +102,8 @@ def check_awake(value: Summary) -> tuple[str, str]:
         return "NOT OBSERVED", "initial fresh battery reply is unavailable"
     if value.last_good != value.percent or value.last_good_at is None:
         return "FAIL", "fresh battery and last-good cache disagree"
-    if value.last_good_at > value.last_read or value.cache_active:
-        return "FAIL", "inconsistent fresh measurement timestamps/state"
+    if value.last_good_at != value.last_read or value.cache_active:
+        return "FAIL", "fresh measurement must match its last-good timestamp"
     return "PASS", "initial fresh reading and timestamp confirmed"
 
 
@@ -111,8 +111,8 @@ def check_sleep(awake: Summary, value: Summary) -> tuple[str, str]:
     """Never claim standby was observed when the receiver still replies."""
     if value.last_read is None or awake.last_read is None:
         return "NOT OBSERVED", "sleep checkpoint has no poll time"
-    if value.last_read < awake.last_read:
-        return "FAIL", "sleep checkpoint predates the initial reading"
+    if value.last_read <= awake.last_read:
+        return "FAIL", "sleep checkpoint has no newer poll timestamp"
     if value.percent is not None:
         return "NOT OBSERVED", "keyboard still returned a fresh battery reply"
     if value.last_good != awake.last_good or (
@@ -144,11 +144,11 @@ def check_recovery(sleep: Summary, value: Summary) -> tuple[str, str]:
         return "FAIL", "no fresh reply after the keyboard was awakened"
     if value.last_read is None or value.last_good_at is None:
         return "FAIL", "recovered reading has no measurement timestamp"
-    if sleep.last_read is not None and value.last_read < sleep.last_read:
-        return "FAIL", "recovery timestamp predates sleep checkpoint"
-    if value.last_good_at > value.last_read or (
+    if sleep.last_read is not None and value.last_read <= sleep.last_read:
+        return "FAIL", "recovery has no newer poll timestamp"
+    if value.last_good_at != value.last_read or (
             value.last_good != value.percent):
-        return "FAIL", "recovery last-good sample mismatches the fresh reply"
+        return "FAIL", "recovery has no new matching last-good measurement"
     if value.cache_active or value.failures != 0:
         return "FAIL", "recovery retained cached flag or failure counter"
     return "PASS", "a new verified reading and zero failures are visible"
@@ -162,6 +162,12 @@ def analyze(awake: Summary, sleep: Summary,
         ("SLEEP", *check_sleep(awake, sleep)),
         ("RECOVERED", *check_recovery(sleep, recovered)),
     ]
+    if len({awake.version, sleep.version, recovered.version}) != 1:
+        checks.append(("VERSION", "NOT OBSERVED",
+                       "reports from different application versions"))
+    if not all(item.automatic for item in (awake, sleep, recovered)):
+        checks.append(("SETTINGS", "NOT OBSERVED",
+                       "automatic monitoring was not enabled throughout"))
     result = ("FAIL" if any(item[1] == "FAIL" for item in checks) else
               "NOT OBSERVED" if any(item[1] == "NOT OBSERVED" for item in checks)
               else "PASS")
