@@ -745,6 +745,19 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Cover unknown receiver presence, hidden cache, stale/fresh
       transitions, 24-hour expiry, malformed reports and wake failure.
 - [x] Integrate all Python tool regressions and --help into tool CI.
-- [ ] Verify Python GitHub Actions and merge implementation PR.
+- [x] Python, Windows and macOS PR #90 checks PASS;
+      merged 65a5cb729a44ccf36aec2e8f3b1177de49937b58.
 - [ ] Owner: submit AULA L99 real awake/asleep/recovered text reports,
       without paths/serials, before declaring sleep fix accepted.
+
+
+## AULA offline evidence timeline hardening
+- [x] Require strictly increasing poll timestamps across awake,
+      sleeping and recovery screenshots/summaries.
+- [x] Require fresh AULA last-good timestamp to equal the matching
+      successful poll timestamp from TrayAppContext.
+- [x] Treat switched app versions or automatic monitoring changes
+      as NOT OBSERVED instead of a misleading PASS.
+- [x] Add six synthetic regression tests, 46 offline tools tests PASS.
+- [ ] Complete GitHub Actions and merge offline timeline validation.
+- [ ] Await physical AULA L99 awake/sleep/recovered summaries.

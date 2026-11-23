@@ -105,6 +105,46 @@ class AulaOfflineSummaryTests(unittest.TestCase):
         recovered = parse_summary(summary(now=WAKE))
         self.assertEqual(analyze(awake, asleep, recovered)[0], "FAIL")
 
+    def test_mixed_application_versions_are_not_comparable(self):
+        awake, asleep, _ = cases()
+        recovered = parse_summary(summary(now=WAKE, percent=80, good=80,
+                                          last_good=WAKE).replace(
+            "Version: 0.3.0-beta.58", "Version: 0.3.0-beta.57"))
+        status, checks = analyze(awake, asleep, recovered)
+        self.assertEqual(status, "NOT OBSERVED")
+        self.assertTrue(any(check[0] == "VERSION" for check in checks))
+
+    def test_auto_disabled_during_sleep_is_not_comparable(self):
+        awake, _, recovered = cases()
+        asleep = parse_summary(summary(now=SLEEP, percent=None, failures=3,
+                                       cached=True, automatic=False))
+        self.assertEqual(analyze(awake, asleep, recovered)[0], "NOT OBSERVED")
+
+    def test_equal_sleep_timestamp_is_not_new_poll(self):
+        awake, _, recovered = cases()
+        asleep = parse_summary(summary(now=START, percent=None, failures=3,
+                                       cached=True))
+        self.assertEqual(analyze(awake, asleep, recovered)[0], "FAIL")
+
+    def test_equal_wake_timestamp_is_not_new_poll(self):
+        awake, asleep, _ = cases()
+        recovered = parse_summary(summary(now=SLEEP, good=80, percent=80,
+                                          last_good=SLEEP))
+        self.assertEqual(analyze(awake, asleep, recovered)[0], "FAIL")
+
+    def test_initial_fresh_measurement_must_match_poll_time(self):
+        awake, asleep, recovered = cases()
+        older = "2026-11-23T07:58:00+00:00"
+        awake = parse_summary(summary(last_good=older))
+        self.assertEqual(analyze(awake, asleep, recovered)[0], "FAIL")
+
+    def test_recovery_fresh_measurement_cannot_predate_poll_time(self):
+        awake, asleep, _ = cases()
+        midway = "2026-11-23T09:30:00+00:00"
+        recovered = parse_summary(summary(now=WAKE, good=80, percent=80,
+                                          last_good=midway))
+        self.assertEqual(analyze(awake, asleep, recovered)[0], "FAIL")
+
     def test_malformed_summary(self):
         for text in ("", "random network HAR", summary().replace(
                 "Presence known: True", "Presence known: not checked")):

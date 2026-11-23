@@ -1,3 +1,16 @@
+# Resume — AULA offline analyzer timeline validation
+
+- PR #90 merged 65a5cb729a44ccf36aec2e8f3b1177de49937b58;
+  Python, Windows and macOS CI PASS, analyzer shipped in main.
+- Follow-up offline analysis found a false PASS possibility: an
+  old last-good sample could masquerade as newly recovered.
+- Enforce strictly newer poll times, exact fresh/last-good time,
+  consistent app version, and automatic monitoring on all three
+  checkpoints; add six synthetic tests.
+- No HID or application binary changes; current Latest beta.58.
+- Physical receiver identity cannot be proven by these summaries;
+  await owner AULA and Windows/macOS physical diagnostic reports.
+
 # Resume — AULA L99 offline sleep acceptance analyzer
 
 - Latest release v0.3.0-beta.58, six assets and published SHA-256
