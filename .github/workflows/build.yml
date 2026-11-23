@@ -35,10 +35,11 @@ jobs:
         run: |
           $output = Join-Path $env:RUNNER_TEMP ('ajazz-resource-' + [Guid]::NewGuid().ToString('N') + '.csv')
           try {
-            & ./tools/Measure-TrayResources.ps1 -ProcessId $PID -DurationSeconds 30 -IntervalSeconds 10 -OutputPath $output
+            & ./tools/Measure-TrayResources.ps1 -ProcessId $PID -DurationSeconds 30 -IntervalSeconds 10 -IncludeGuiResources -OutputPath $output
             $rows = @(Import-Csv -LiteralPath $output)
             if ($rows.Count -lt 3 -or [double]$rows[-1].elapsed_seconds -lt 29 -or
-                [long]$rows[-1].private_bytes -le 0 -or [int]$rows[-1].threads -le 0) {
+                [long]$rows[-1].private_bytes -le 0 -or [int]$rows[-1].threads -le 0 -or
+                [long]$rows[-1].gdi_objects -lt 0 -or [long]$rows[-1].user_objects -lt 0) {
               throw 'Invalid resource sampler output'
             }
             $rejected = $false

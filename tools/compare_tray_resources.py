@@ -16,6 +16,8 @@ FIELDS = (
     "cpu_one_core_percent", "working_set_bytes", "private_bytes",
     "handles", "threads",
 )
+GUI_FIELDS = ("gdi_objects", "user_objects")
+GUI_METRICS = GUI_FIELDS
 METRICS = (
     "cpu_one_core_percent", "working_set_mib", "private_mib",
     "handles", "threads",
@@ -38,8 +40,10 @@ def read_rows(path):
         raise ValueError(f"{path}: CSV exceeds 2 MiB")
     reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig")),
                             strict=True)
-    if tuple(reader.fieldnames or ()) != FIELDS:
+    header = tuple(reader.fieldnames or ())
+    if header not in (FIELDS, FIELDS + GUI_FIELDS):
         raise ValueError(f"{path}: unexpected CSV header")
+    gui_enabled = header == FIELDS + GUI_FIELDS
     rows = list(reader)
     if not 3 <= len(rows) <= 3601:
         raise ValueError(f"{path}: expected 3–3601 samples")
@@ -52,12 +56,12 @@ def read_rows(path):
             raise ValueError(f"{path}: invalid UTC timestamp") from error
         if stamp.utcoffset() != timedelta(0):
             raise ValueError(f"{path}: invalid UTC timestamp")
-    return rows, hashlib.sha256(raw).hexdigest()
+    return rows, hashlib.sha256(raw).hexdigest(), gui_enabled
 
 
 def read_run(path):
     """Validate and summarize one bounded sampler export."""
-    rows, digest = read_rows(path)
+    rows, digest, gui_enabled = read_rows(path)
     versions = {row["version"] for row in rows}
     if len(versions) != 1 or not next(iter(versions)).strip():
         raise ValueError(f"{path}: inconsistent version")
@@ -71,15 +75,19 @@ def read_run(path):
     if any(b < a for a, b in zip(cpu, cpu[1:])):
         raise ValueError(f"{path}: decreasing CPU counter")
     result = {"version": versions.pop(), "duration": duration,
-              "digest": digest}
+              "digest": digest, "gui_enabled": gui_enabled}
     result["cpu_one_core_percent"] = 100 * (cpu[-1] - cpu[0]) / duration
-    for key in ("working_set_bytes", "private_bytes", "handles", "threads"):
+    fields = ("working_set_bytes", "private_bytes", "handles", "threads")
+    if gui_enabled:
+        fields += GUI_FIELDS
+    for key in fields:
         values = [number(row, key) for row in rows]
         target = key.replace("_bytes", "_mib")
         result[target] = statistics.median(values) / (
             1048576 if key.endswith("_bytes") else 1
         )
-    if not all(math.isfinite(result[key]) for key in METRICS):
+    keys = METRICS + (GUI_METRICS if gui_enabled else ())
+    if not all(math.isfinite(result[key]) for key in keys):
         raise ValueError(f"{path}: nonfinite calculated metric")
     return result
 
@@ -91,11 +99,15 @@ def compare(baseline, candidate):
     for group in (baseline, candidate):
         if len({run["version"] for run in group}) != 1:
             raise ValueError("each group must contain a single version")
+    gui_flags = {run["gui_enabled"] for run in baseline + candidate}
+    if len(gui_flags) != 1:
+        raise ValueError("inconsistent CSV resource schema")
+    keys = METRICS + (GUI_METRICS if True in gui_flags else ())
     durations = [run["duration"] for run in baseline + candidate]
     if max(durations) > min(durations) * 1.10:
         raise ValueError("run durations differ by more than 10%")
     output = []
-    for key in METRICS:
+    for key in keys:
         old = statistics.median(run[key] for run in baseline)
         new = statistics.median(run[key] for run in candidate)
         delta = (new - old) / old * 100 if old else None

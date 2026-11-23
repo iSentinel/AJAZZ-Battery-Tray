@@ -1,17 +1,14 @@
-# Resume — beta.54 USB discovery allocation release candidate
+# Resume — optional GDI/USER resource sampler candidate
 
-- beta.53 published; workflow 45139628072 PASS, all six release assets.
-- PR #70 offline optional HA availability merged 10be9fde200ffd0b7f775ff62763a768c10c7a63.
-- PR #71 acknowledged ordering/non-retained state merged
-  096778a40bc807d83643273a5a0527baea1d2001.
-- PR #72 optional TLS parameter preflight final Windows 45141549065,
-  macOS 45141549003, preview 45141549165 PASS; merged
-  f9498ab953b692cb6d98c72060d38b0c82e06d7d.
-- PR #73 lazy USB reconcile scratch reuse Windows 45142142430 /
-  macOS 45142142117 PASS after main sync. Ten C# assertions.
-- beta.54 version and release metadata prepared. Final exact HEAD CI
-  must PASS before merge and release. HID commands and polling unchanged.
-- No actual Windows resource improvement is claimed; owner measurements
-  and AULA long sleep/wake, affected AJ159 and multi-BLE remain pending.
-- MQTT actual broker TLS, credentials, HA entity mapping and deployment
-  unimplemented. Optional-only policy code is isolated.
+- beta.54 published; release 45142789278 PASS, six assets.
+  Main merge 5d99d10189f6627d918b8c39deb39575849233f1.
+- USB Reconcile scratch allocation optimization shipped in beta.54;
+  real CPU and memory improvement is not yet measured.
+- perf/gui-resource-sampler adds opt-in Windows GDI/USER object counts.
+  Default sampler CSV unchanged, offline comparator accepts base/GUI
+  formats and refuses mixed input. Four fixture tests; CI pending.
+- Only developer tools and docs/workflow modified, no tray, installer
+  or HID changes. No runtime GUI metrics collector added.
+- Next: verify Python and Windows CI, merge after PASS without new app
+  version. Actual device sleep, affected AJ159, multi-BLE and owner
+  Windows benchmarking remain outstanding; no live HA/MQTT broker.
