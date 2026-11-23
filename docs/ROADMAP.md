@@ -478,6 +478,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Seventeen mapping and lifecycle assertions; initial Windows 45092378014 / macOS 45092378033 PASS.
 - [x] Optional bounded JSON decoder and one-shot loopback consumer; 18 more assertions.
 - [x] Combined wire-format and loopback CI: Windows 45092724526 / macOS 45092724453 PASS.
-- [ ] Final beta.52 CI and publication.
+- [x] beta.52 final CI and publication 45093197963 PASS; six assets.
 - [ ] Explicit independently installed bridge transport, credential and availability policy.
 - [ ] Actual Home Assistant acceptance; no automatic service or MQTT startup.
+
+## API continuity before MQTT publication
+- [x] Identify fixed AULA slot reuse risk in beta.52.
+- [x] Allocate non-reused AULA ordinals within optional API activation;
+  reserve non-bindable status placeholder, reject slot exhaustion.
+- [ ] Ten regression assertions, full CI, physical acceptance.
+- [ ] Require opt-in mapping and documented physical identity limitations
+  before external broker publication.
