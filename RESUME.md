@@ -1,5 +1,15 @@
 # Resume — iMac High Sierra owner trace pending
 
+- Owner supplied qmk.top/v4 HAR from the problem mouse. It contains
+  nine successful/cached GETs for frontend assets only (owner-confirmed
+  Windows 11 / Chrome 157; ambiguous NT 10.0 User-Agent); no USB/HID
+  capture, API battery call, model
+  or percent. Raw HAR remains local and is NOT committed.
+- Sanitized evidence: docs/QMK_V4_PROBLEM_MOUSE_HAR_20261123.md.
+  Await actual WebHID console/device trace and owner iMac High Sierra
+  --trace-hid; do not infer telemetry success/failure from HAR.
+
+
 - Owner hardware report (Late 2013 iMac, macOS 10.13.6 17G14042):
   one matching FFFF:0002 HID collection for USB 3151:5007,
   battery unknown. Owner F7/05 trace not yet provided.
