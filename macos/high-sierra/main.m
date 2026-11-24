@@ -28,6 +28,13 @@ typedef struct {
     NSInteger collections;
 } BatteryReading;
 
+/// Historical session observation, not an identity-bound receiver cache.
+static NSDate *SessionVerifiedAt(NSDate *previous, BatteryReading reading, NSDate *now) {
+    if (reading.state == BatteryValid && reading.percent >= 1 && reading.percent <= 100)
+        return now;
+    return reading.state == BatteryAbsent ? nil : previous;
+}
+
 /// Accept only the documented F7/05 telemetry response, not arbitrary bytes.
 static NSInteger ParseBattery(const uint8_t *report, CFIndex length) {
     return length > 0 ? AjazzBatteryPercent(report, (size_t)length) : -1;
@@ -403,6 +410,7 @@ static int TraceReceiver(void) {
 @property(nonatomic, strong) CBPeripheral *selectedPeripheral;
 @property(nonatomic, strong) NSArray<CBPeripheral *> *connectedMice;
 @property(nonatomic, assign) BatteryReading latest;
+@property(nonatomic, strong) NSDate *sessionVerifiedAt;
 @property(nonatomic, assign) BOOL polling;
 @property(nonatomic, assign) BOOL isolatedPolling;
 @property(nonatomic, assign) BOOL closing;
@@ -588,6 +596,15 @@ static int TraceReceiver(void) {
                                        ru:@"Приёмник найден, заряд неизвестен"
                                        uk:@"Приймач знайдено, заряд невідомий"];
     }
+    if (self.sessionVerifiedAt && reading.state != BatteryValid) {
+        NSString *stamp = [NSDateFormatter localizedStringFromDate:self.sessionVerifiedAt
+            dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterMediumStyle];
+        NSString *format = [self word:@"Last verified USB sample (session): %@"
+            ru:@"Последнее подтверждённое USB-измерение (сеанс): %@"
+            uk:@"Останнє підтверджене USB-вимірювання (сеанс): %@"];
+        self.detail.title = [self.detail.title stringByAppendingFormat:@" · %@",
+                            [NSString stringWithFormat:format, stamp]];
+    }
 }
 
 - (void)notify:(NSString *)title message:(NSString *)message {
@@ -654,6 +671,7 @@ static int TraceReceiver(void) {
         @autoreleasepool {
             BatteryReading reading = token
                 ? RunRoutine(@"--internal-routine-read", 8, token) : ReadReceiver();
+            NSDate *observedAt = [NSDate date];
             dispatch_async(dispatch_get_main_queue(), ^{
                 LegacyTray *owner = weakSelf;
                 if (!owner || owner.pollAttempt != attempt) return;
@@ -663,6 +681,8 @@ static int TraceReceiver(void) {
                     [NSApp replyToApplicationShouldTerminate:YES];
                     return;
                 }
+                owner.sessionVerifiedAt = SessionVerifiedAt(owner.sessionVerifiedAt,
+                                                            reading, observedAt);
                 owner.latest = reading;
                 [owner display:reading];
                 [owner evaluateAlerts:reading];
@@ -936,7 +956,13 @@ static int SelfTest(void) {
     [test evaluateAlerts:(BatteryReading){BatteryTimedOut, -1, 0}];
     BOOL safe = !test.everConnected && test.absentCount == 0 &&
         test.alerted == 0;
-    BOOL pass = safe && shared && ParseBattery(first, 4) == 1 &&
+    NSDate *stamp = [NSDate dateWithTimeIntervalSince1970:12345];
+    NSDate *verified = SessionVerifiedAt(nil, (BatteryReading){BatteryValid, 83, 1}, stamp);
+    BOOL provenance = [verified isEqualToDate:stamp] &&
+        [SessionVerifiedAt(verified, (BatteryReading){BatteryTimedOut, -1, 0},
+            [stamp dateByAddingTimeInterval:30]) isEqualToDate:stamp] &&
+        SessionVerifiedAt(verified, (BatteryReading){BatteryAbsent, -1, 0}, stamp) == nil;
+    BOOL pass = provenance && safe && shared && ParseBattery(first, 4) == 1 &&
         ParseBattery(full, 4) == 100 &&
         ParseBattery(stripped, 3) == 25 &&
         ParseBattery(zero, 4) == -1 &&
