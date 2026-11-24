@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/AppIcon.icns'
       - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
       - 'tests/fixtures/apex-f7-v1.csv'
@@ -15,6 +16,7 @@ on:
     branches: [main]
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/AppIcon.icns'
       - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
       - 'tests/fixtures/apex-f7-v1.csv'

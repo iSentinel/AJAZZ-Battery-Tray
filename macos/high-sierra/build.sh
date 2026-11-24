@@ -13,6 +13,10 @@ EXE="$APP/Contents/MacOS/AJAZZBatteryTrayHighSierra"
 ZIP="$ROOT/dist/AJAZZBatteryTray-macOS-HighSierra-Intel.zip"
 mkdir -p "$APP/Contents/MacOS"
 cp "$ROOT/macos/high-sierra/Info.plist" "$APP/Contents/Info.plist"
+mkdir -p "$APP/Contents/Resources"
+cp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cmp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$APP/Contents/Info.plist" | grep -Fxq AppIcon.icns
 if [[ -n "${AJAZZ_HIGHSIERRA_BUILD_NUMBER:-}" ]]; then
   [[ "$AJAZZ_HIGHSIERRA_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || {
     echo "FAIL: expected a positive numeric High Sierra build number"
