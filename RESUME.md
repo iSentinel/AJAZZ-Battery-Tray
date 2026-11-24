@@ -1,3 +1,16 @@
+# Resume — Apple worker startup measurement candidate
+
+- PR #105 Windows/macOS CI PASS; merged into #104 branch at d7cd7e2.
+  The combined #104 still requires CI before merging into draft #99.
+- Add the same synthetic worker sample to both Apple executables,
+  Python measurement helper, six offline tests and CI CSV artifacts.
+  All 65 offline Python tests PASS locally.
+- No default or experimental Apple HID polling changes. Modern and
+  High Sierra measurements run on macOS 15 Intel, not real 10.13 or
+  Apple Silicon hardware. Await both CI results and actual CSV data.
+- Physical Windows isolated polling, AJ159 comparison, iMac
+  acceptance and public release remain open.
+
 # Resume — opt-in isolated Windows tray polling candidate
 
 - On top of PR #104 (vendor gate), add session-only launch flag

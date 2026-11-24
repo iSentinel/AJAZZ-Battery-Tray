@@ -123,3 +123,29 @@ vendor I/O, no false battery sample or disconnect after timeout,
 no orphan child, and comparable idle CPU/RAM. Use the existing
 Measure-TrayResources.ps1 for resource evidence. Do not deliberately
 force a native hardware hang; the CI synthetic hang covers that case.
+
+
+## Apple synthetic startup baseline
+
+The universal Swift app and the separate High Sierra Objective-C app
+expose the same internal synthetic sample. It returns a fixed JSON
+response with unknown presence and null battery, without accessing
+IOKit, modifying device settings, or starting the menu-bar application.
+
+    python3 tools/measure_apple_worker.py --dry-run
+    python3 tools/measure_apple_worker.py --exe "/Applications/AJAZZ Battery Tray.app/Contents/MacOS/AJAZZBatteryTray" --output apple-worker.csv
+
+For High Sierra use the corresponding High Sierra development
+executable and a new CSV path. Python 3.7+ is required for the
+measurement helper, not for the application. This mode is not present
+in the published beta.60 or High Sierra .5 binaries.
+
+The helper runs 20 sequential samples by default, checks exact synthetic
+response content, limits each process to five seconds by default, and
+preserves completed CSV rows if a later sample fails. It reports
+nearest-rank p50/p95 and maximum wall latency. CI uploads separate CSVs
+for both Apple editions using the macOS 15 Intel runner. A successful
+Intel runner measurement of the 10.13-targeted executable is not an
+actual High Sierra test, nor does a universal build establish arm64
+runtime latency. This is a startup lower bound, not HID/CPU/energy
+performance. No regular Apple polling or RTC behavior changes.
