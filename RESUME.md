@@ -1,3 +1,12 @@
+# Resume — AJ179 ordinary/full disagreement
+
+- #134 all three CI PASS, merged 46f3018.
+- Owner power-cycled mouse; ordinary 98 at 23:19:43 UTC, full 100
+  at 23:19:53 UTC (six replies), both unverified. AULA fresh 71.
+- Added offline disagreement warning and INCONCLUSIVE override.
+  Preserve original full matrix result separately. Native CI pending.
+- No runtime changes or promotion of unverified fields.
+
 # Resume — ready-clear evidence chain
 
 - #133 Windows/Universal/Python PASS (89 tests), merged cff8181.

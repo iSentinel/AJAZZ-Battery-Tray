@@ -115,13 +115,53 @@ def collect_attempts(text):
     return entries
 
 
+def ordinary_field(text):
+    """Read only the ordinary summary; never treat its field as fresh capture."""
+    heading = "[AJAZZ last ordinary poll — not a fresh request]"
+    end = "[Independent AJAZZ receivers]"
+    if text.count(heading) != 1 or text.count(end) != 1:
+        return None
+    block = text.split(heading, 1)[1].split(end, 1)[0]
+    lines = [line.strip() for line in block.splitlines()]
+    if any(lines.count(marker) != 1 for marker in (
+            "Receiver present: True; presence known: True",
+            "Matching MI_02 paths: 1", "USB revision: 0x0002",
+            "Interface: 3151:5007 MI_02 COL--", "Feature report size: 65")):
+        return None
+    if not any(line.startswith("Battery: unavailable;") for line in lines):
+        return None
+    values = [line.rsplit("=", 1)[1] for line in lines
+              if line.startswith("unverified mouse field (not telemetry)=")]
+    if len(values) != 1 or not values[0].isdigit():
+        return None
+    value = int(values[0])
+    if not 1 <= value <= 100:
+        return None
+    headers = [SUCCESS.fullmatch(line) for line in lines
+               if line.startswith("SET F7 / GET")]
+    if (len(headers) != 2 or any(match is None for match in headers)
+            or {int(match[1]) for match in headers} != {65, 67}
+            or any(match[2] != f"050000{value:02X}" for match in headers)):
+        return None
+    return value
+
+
+def disagreement(text, matrix):
+    """Keep ordinary and full-capture observations independent."""
+    ordinary = ordinary_field(text)
+    return ordinary, matrix[1] is not None and ordinary is not None and ordinary != matrix[1]
+
+
 def read_report(path):
     """Read bounded local data only."""
     with path.open("rb") as stream:
         raw = stream.read(LIMIT + 1)
     if len(raw) > LIMIT:
         raise ValueError("Report exceeds one MiB")
-    return parse_matrix(raw.decode("utf-8-sig"))
+    text = raw.decode("utf-8-sig")
+    matrix = parse_matrix(text)
+    ordinary, conflict = disagreement(text, matrix)
+    return matrix, ordinary, conflict
 
 
 def compare(first, second):
@@ -140,7 +180,8 @@ def main(argv=None):
     parser.add_argument("--later", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        first, second = read_report(args.earlier), read_report(args.later)
+        first, ordinary_a, conflict_a = read_report(args.earlier)
+        second, ordinary_b, conflict_b = read_report(args.later)
         result = compare(first, second)
     except (OSError, ValueError) as error:
         print(f"FAIL: {error}")
@@ -148,6 +189,15 @@ def main(argv=None):
     for label, (stamp, field) in (("Earlier", first), ("Later", second)):
         value = field if field is not None else "unavailable"
         print(f"{label}: {stamp.isoformat()} unverified field={value}")
+    for label, ordinary, conflict in (("Earlier", ordinary_a, conflict_a),
+                                      ("Later", ordinary_b, conflict_b)):
+        if ordinary is not None:
+            print(f"{label} prior ordinary field={ordinary} (not telemetry)")
+        if conflict:
+            print(f"WARNING: {label} ordinary/full field disagreement")
+    if conflict_a or conflict_b:
+        print(f"Full matrix comparison: {result}")
+        result = "INCONCLUSIVE"
     print(f"SUMMARY: {result}")
     print("Not telemetry. Same physical device and vendor gauge require owner evidence.")
     return 2 if result == "INCONCLUSIVE" else 0

@@ -124,7 +124,7 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   remain owner checks. The selected runtime app icon does not change the
   static signed EXE/Finder icon. No default HID worker activation.
 
-- **Owner AJ179/AULA regression (Nov 24).** See [field evidence](AJ179_READY_CLEAR_20261124.md). #130 merged at 6f165c3, all six audit CI PASS; owner visual acceptance 2/2 PASS (gray 100?, AULA 75% fits). Changed-charge accuracy remains open. #131 explicit diagnostic candidate and agreement labels passed all three CI, merged c467172. #132 Device Manager display-only status aligned, EN/RU/UK smoke tests PASS, merged ef4e3c3. #133 offline ready-clear comparator CI PASS (89 tests), merged cff8181. Next: verify the complete F7/05 request and response chain, not merely presence of RX lines.
+- **Owner AJ179/AULA regression (Nov 24).** See [field evidence](AJ179_READY_CLEAR_20261124.md). #130 merged at 6f165c3, all six audit CI PASS; owner visual acceptance 2/2 PASS (gray 100?, AULA 75% fits). Changed-charge accuracy remains open. #131 explicit diagnostic candidate and agreement labels passed all three CI, merged c467172. #132 Device Manager display-only status aligned, EN/RU/UK smoke tests PASS, merged ef4e3c3. #133 offline ready-clear comparator CI PASS (89 tests), merged cff8181. #134 complete request/response chain CI PASS, merged 46f3018. Owner power-cycle observation ordinary 98 versus full matrix 100 ten seconds later: freshness not established. Flag ordinary/full disagreement in offline comparison.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.
