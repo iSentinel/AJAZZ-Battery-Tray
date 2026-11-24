@@ -1,3 +1,16 @@
+# Resume — opt-in isolated Windows tray polling candidate
+
+- On top of PR #104 (vendor gate), add session-only launch flag
+  --experimental-isolated-polling. No change to normal invocation.
+- Routine AJAZZ battery and existing scheduled RTC sends use separate
+  bounded child processes. Unknown reads cannot create fresh samples,
+  false disconnection or BLE fallback. Preserve manual RTC request
+  on unknown discovery; rate-limit ambiguous writes, do not replay.
+- Test synthetic clock IPC and localized busy/timeout reasons.
+  Await Windows/macOS CI and review. No public release or hardware PASS.
+- Next: owner compare opt-in vs normal CPU/RAM, sleep/replug/exit,
+  AJ159 GET ID diagnostic, and Apple routine polling overhead.
+
 # Resume — AJAZZ cross-process vendor gate candidate
 
 - PR #102 merged 89fe3f60 and PR #103 merged 87b2d4b8 into draft #99.

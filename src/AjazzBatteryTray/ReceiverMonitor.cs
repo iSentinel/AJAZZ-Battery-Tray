@@ -71,8 +71,8 @@ internal sealed class ReceiverMonitor : IDisposable
         if (!batch.Summary.PresenceKnown)
         {
             foreach (State state in _states.Values.Where(s => s.Present))
-                state.Reading = batch.Summary.Issue == UsbReadIssue.Busy
-                    ? UnknownReading with { Issue = UsbReadIssue.Busy } : UnknownReading;
+                state.Reading = batch.Summary.Issue is UsbReadIssue.Busy or UsbReadIssue.Timeout
+                    ? UnknownReading with { Issue = batch.Summary.Issue } : UnknownReading;
             return;
         }
 

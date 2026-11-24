@@ -8,7 +8,7 @@ public enum BatteryTransport
 }
 
 /// <summary>Additional context when the USB reader has no validated charge.</summary>
-public enum UsbReadIssue { None, NotChecked, InterfaceUnavailable, Busy }
+public enum UsbReadIssue { None, NotChecked, InterfaceUnavailable, Busy, Timeout }
 
 public static class UsbTrayStatus
 {
@@ -16,6 +16,7 @@ public static class UsbTrayStatus
     {
         if (issue == UsbReadIssue.NotChecked) return UiText.Get("Not checked");
         if (issue == UsbReadIssue.Busy) return UiText.Get("HID interface busy");
+        if (issue == UsbReadIssue.Timeout) return UiText.Get("HID read timed out");
         if (!presenceKnown) return UiText.Get("Receiver status unknown");
         if (!present) return UiText.Get("Receiver disconnected");
         return UiText.Get(issue == UsbReadIssue.InterfaceUnavailable
