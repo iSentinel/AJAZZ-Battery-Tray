@@ -1,3 +1,10 @@
+# Resume — orange mouse application icon
+
+- Draft #99 4f4b96c all six CI checks PASS before branding changes.
+- Orange-shell mouse artwork now wired into Windows EXE/setup and both
+  macOS bundles. Dynamic tray battery icons unchanged.
+- Native packaging CI pending. Hardware acceptance still open.
+
 # Resume — installer CI and dashboard acceptance
 
 - #124 Windows/Universal/upgrade CI PASS; actual upgrade log

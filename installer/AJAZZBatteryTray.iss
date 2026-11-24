@@ -26,6 +26,7 @@ WizardStyle=modern
 Compression=lzma2
 SolidCompression=yes
 UninstallDisplayName=AJAZZ Battery Tray
+SetupIconFile=..\src\AjazzBatteryTray\Assets\AppIcon.ico
 UninstallDisplayIcon={app}\{#AppExe}
 CloseApplications=yes
 RestartApplications=no

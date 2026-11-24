@@ -9,6 +9,7 @@
     <AssemblyName>AJAZZBatteryTray</AssemblyName>
     <RootNamespace>AjazzBatteryTray</RootNamespace>
     <Version>0.3.0-beta.60</Version>
+    <ApplicationIcon>Assets/AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 </Project>

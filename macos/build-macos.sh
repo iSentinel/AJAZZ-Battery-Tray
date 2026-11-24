@@ -10,6 +10,10 @@ APP="$ROOT/dist/mac/AJAZZ Battery Tray.app"
 OUT="$ROOT/dist/AJAZZBatteryTray-macOS-universal.zip"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$ROOT/macos/Info.plist" "$APP/Contents/Info.plist"
+mkdir -p "$APP/Contents/Resources"
+cp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cmp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$APP/Contents/Info.plist" | grep -Fxq AppIcon.icns
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
 for arch in arm64 x86_64; do
   swiftc -O -import-objc-header "$ROOT/macos/AjazzBatteryReport.h" -sdk "$SDK" -target "${arch}-apple-macos13.0" \
