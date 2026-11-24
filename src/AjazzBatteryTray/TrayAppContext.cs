@@ -719,6 +719,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         ToolStripMenuItem menu = new(UiText.Get("Settings"));
         menu.DropDownItems.Add(BuildAppearanceMenu(true));
+        menu.DropDownItems.Add(UiText.Get("Save selected icon..."), null, (_, _) => ExportApplicationIcon());
         menu.DropDownItems.Add(BuildAppearanceMenu(false));
         menu.DropDownItems.Add(BuildMouseStyleMenu());
         menu.DropDownItems.Add(BuildNotificationsMenu());
@@ -759,6 +760,27 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(new ToolStripSeparator());
         menu.DropDownItems.Add(BuildLanguageMenu());
         return menu;
+    }
+
+    private void ExportApplicationIcon()
+    {
+        if (_closing) return;
+        using var dialog = new SaveFileDialog
+        {
+            Title = UiText.Get("Save selected icon..."),
+            Filter = "Icon (*.ico)|*.ico",
+            DefaultExt = "ico",
+            AddExtension = true,
+            FileName = $"AJAZZ-{_settings.ApplicationIconColor}.ico",
+            OverwritePrompt = true
+        };
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
+        try { ApplicationIconAssets.Export(_settings.ApplicationIconColor, dialog.FileName); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(UiText.Get("Cannot save icon. Choose a new writable file."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private ToolStripMenuItem BuildAppearanceMenu(bool appIcon)

@@ -39,6 +39,10 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 
 [Files]
 Source: "..\dist\app\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\AjazzBatteryTray\Assets\AppIcon.ico"; DestDir: "{app}\Icons"; Flags: ignoreversion
+Source: "..\src\AjazzBatteryTray\Assets\AppIcon-white.ico"; DestDir: "{app}\Icons"; Flags: ignoreversion
+Source: "..\src\AjazzBatteryTray\Assets\AppIcon-black.ico"; DestDir: "{app}\Icons"; Flags: ignoreversion
+Source: "..\src\AjazzBatteryTray\Assets\AppIcon-blue.ico"; DestDir: "{app}\Icons"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\AJAZZ Battery Tray"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
