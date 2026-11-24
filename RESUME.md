@@ -1,3 +1,12 @@
+# Resume — ordinary unverified observation streak
+
+- #135 all three CI PASS (97 Python tests), merged 99a271a.
+- Owner reports normal-use field unchanged; power-cycle-only change.
+- Added session-only per-receiver consecutive ordinary observation
+  count and first/last UTC, reset on changed/missing/unknown/absent.
+  Skips and full captures do not increment it. Native CI pending.
+- No change to HID requests, validated telemetry or public release.
+
 # Resume — AJ179 ordinary/full disagreement
 
 - #134 all three CI PASS, merged 46f3018.
