@@ -56,14 +56,16 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   tests, the C decoder used by both Apple apps, and the Python comparator read
   the same rows. Running the comparator on the owner's 65/67-byte Windows AJ159
   capture at 30/100/250 ms gave six responses and zero current valid readings.
-  BLE zero semantics have independent tests. Fresh-history and notification
-  integration across platforms and the two-level hardware runs remain open.
+  BLE zero semantics have independent tests. A candidate replay extends the
+  20 rows to actual Windows/Universal CSV output and rejection alert-policy
+  checks on all three editions. Native CI and two-level field runs remain open.
 - **Windows AJAZZ tray.** The receiver menu and tray tooltip now explain an
   unknown result and retain each receiver's last successful measurement time
   for the current session. Confirmed absence in the main tray has no implied
   last device identity. The per-receiver menu retains that device's timestamp.
   Apple session-only historical USB timestamps and access classification are
-  implemented in a candidate PR; BLE/AULA presentation parity remains open.
+  merged in #116. BLE/AULA shared status formatting and AULA unknown-state
+  debounce/history correction are in the next candidate.
 - **Windows Device Manager.** Five primary actions replace ten buttons.
   Device settings and Diagnostics group the existing commands. A Windows
   smoke test exercises callbacks, selection changes, removal while a menu

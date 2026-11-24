@@ -200,3 +200,22 @@ the watchdog returns. This is a lifecycle fix to existing explicit
 diagnostics; the menu timer still uses its original in-process reader.
 As with any native worker, an OS-level uninterruptible kernel stall
 cannot be guaranteed to terminate within the requested timeout.
+
+
+## Windows routine reply validation
+
+The supervisor validates decoded batches before tray state, RTC decisions,
+history or notifications see them. Receiver identities must be distinct
+valid local APEX keys, inventory is limited to 128 items, summary presence
+and percentage must agree with inventory, percentages must be in 1..100,
+and a sampled observation requires its measurement time. Deferred entries
+cannot contain a percentage or measurement timestamp. Unknown discovery
+cannot carry inventory or a current charge. A malformed reply is an
+unavailable worker result, not confirmed absence. The serialized reply
+length is checked after stdout collection; this is not a streaming memory
+limit. No new native HID commands or BLE semantics are introduced.
+
+The published-executable synthetic self-test rejects nine malformed
+batches through the same JSON decode path before exercising process
+timeout, cancellation and recovery. This is local IPC integrity checking,
+not cryptographic authentication or hardware acceptance.
