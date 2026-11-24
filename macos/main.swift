@@ -5,7 +5,7 @@ import ServiceManagement
 
 /// Reads battery and can set only the dock's documented on-board clock.
 enum ApexBattery {
-    enum Status {
+    enum Status: Equatable {
         case battery(Int)
         case notConnected
         case unavailable
@@ -626,7 +626,16 @@ final class TrayController: NSObject, NSApplicationDelegate {
     @objc private func quit() { NSApp.terminate(nil) }
 }
 
-if CommandLine.arguments.contains("--internal-poll-sample") {
+if let worker = CommandLine.arguments.dropFirst().first(where: ApexBoundedWorker.isWorker) {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    exit(ApexBoundedWorker.runChild(worker))
+} else if CommandLine.arguments.contains("--self-test-bounded-poll") {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    let passed = ApexBoundedWorker.selfTest()
+    print(passed ? "PASS: bounded worker IPC, rejection, timeout and recovery" :
+        "FAIL: bounded worker self-test")
+    exit(passed ? 0 : 1)
+} else if CommandLine.arguments.contains("--internal-poll-sample") {
     guard CommandLine.arguments.count == 2 else { exit(1) }
     // Fixed synthetic reply, without opening IOKit or starting the tray.
     print("{\"kind\":\"synthetic\",\"percent\":null,\"presence\":\"unknown\"}")

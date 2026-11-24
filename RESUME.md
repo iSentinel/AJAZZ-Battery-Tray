@@ -1,3 +1,16 @@
+# Resume — Universal bounded IOKit-read prototype
+
+- PR #106 merged at 76510ac4; Windows/macOS/High Sierra/Python PASS.
+  Both Apple CSVs verified: universal p50 14.716/p95 20.310 ms,
+  High Sierra target p50 9.669/p95 12.959 ms, 20/20 each on Intel CI.
+- Prototype macOS/ApexBoundedWorker.swift, typed status/percent IPC,
+  in-process exclusion, parent deadline, independent child alarm,
+  simulated overlap, hang and recovery self-test. CI pending.
+- Menu-bar polling, RTC, BLE and legacy app behavior unchanged.
+  Next: gate/shutdown integration and separate High Sierra prototype.
+- Hardware acceptance, actual owner CPU/RAM and AJ159 GET-ID evidence
+  still required. Public beta.60 and High Sierra .5 unchanged.
+
 # Resume — Apple worker startup measurement candidate
 
 - PR #105 Windows/macOS CI PASS; merged into #104 branch at d7cd7e2.
