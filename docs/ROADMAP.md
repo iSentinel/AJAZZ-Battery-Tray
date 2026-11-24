@@ -124,6 +124,8 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   remain owner checks. The selected runtime app icon does not change the
   static signed EXE/Finder icon. No default HID worker activation.
 
+- **Owner AJ179/AULA regression (Nov 24).** See [field evidence](AJ179_READY_CLEAR_20261124.md). Gray unverified field on Windows only, no promotion to telemetry; fit actual glyph ink inside numeric icon. Native CI pending.
+
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.
 

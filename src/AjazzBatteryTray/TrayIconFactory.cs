@@ -10,7 +10,7 @@ public static class TrayIconFactory
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr icon);
 
-    public static Icon Create(int? level, bool connected, bool stale = false, bool neutral = false, string? color = null, bool mouseStyle = false, string? brand = null)
+    public static Icon Create(int? level, bool connected, bool stale = false, bool neutral = false, string? color = null, bool mouseStyle = false, string? brand = null, bool unverified = false)
     {
         if (neutral) return ApplicationIconAssets.Load(brand);
         using Bitmap image = new(64, 64);
@@ -19,10 +19,10 @@ public static class TrayIconFactory
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
             Color background = Color.FromArgb(unchecked((int)0xFF000000) |
-                TrayColorRules.Resolve(level, connected, stale, color));
-            if (TrayColorRules.ShowMouse(level, connected, stale, mouseStyle))
+                TrayColorRules.Resolve(level, connected, stale || unverified, color));
+            if (TrayColorRules.ShowMouse(level, connected, stale || unverified, mouseStyle))
                 DrawMouse(graphics, background);
-            else DrawNumber(graphics, background, TrayColorRules.NumericLevel(level, connected), stale);
+            else DrawNumber(graphics, background, TrayColorRules.NumericLevel(level, connected), stale, unverified);
         }
 
         IntPtr handle = image.GetHicon();
@@ -53,22 +53,29 @@ public static class TrayIconFactory
         graphics.FillRectangle(Brushes.DimGray, 28, 10, 8, 13);
     }
 
-    private static void DrawNumber(Graphics graphics, Color background, int? level, bool stale)
+    private static void DrawNumber(Graphics graphics, Color background, int? level, bool stale, bool unverified)
     {
         using Brush fill = new SolidBrush(background);
         graphics.FillEllipse(fill, 2, 2, 60, 60);
         using var border = new Pen(Color.FromArgb(230, 230, 230), 2);
         graphics.DrawEllipse(border, 2, 2, 60, 60);
-        string text = level is not null ? level.ToString()! + "%" + (stale ? "*" : "") : "?";
-        float size = text.Length >= 5 ? 17 : text.Length >= 4 ? 21 : text.Length >= 3 ? 27 : 33;
-        using Font font = new("Segoe UI", size, FontStyle.Bold, GraphicsUnit.Pixel);
-        using StringFormat alignment = new()
-        {
-            Alignment = StringAlignment.Center,
-            LineAlignment = StringAlignment.Center
-        };
+        string text = level is not null
+            ? level.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                (unverified ? "?" : "%" + (stale ? "*" : ""))
+            : "?";
+        using var font = new FontFamily("Segoe UI");
+        using var glyphs = new GraphicsPath();
+        glyphs.AddString(text, font, (int)FontStyle.Bold, 32, PointF.Empty,
+            StringFormat.GenericTypographic);
+        RectangleF bounds = glyphs.GetBounds();
+        // 44x34 centered rectangle lies strictly inside the 60px circle.
+        float scale = Math.Min(44f / bounds.Width, 34f / bounds.Height);
+        using var transform = new Matrix();
+        transform.Translate(32 - (bounds.X + bounds.Width / 2) * scale,
+            32 - (bounds.Y + bounds.Height / 2) * scale);
+        transform.Scale(scale, scale);
+        glyphs.Transform(transform);
         Brush foreground = background.GetBrightness() > 0.72f ? Brushes.Black : Brushes.White;
-        graphics.DrawString(text, font, foreground,
-            new RectangleF(1, -1, 62, 64), alignment);
+        graphics.FillPath(foreground, glyphs);
     }
 }

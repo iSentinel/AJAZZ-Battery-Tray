@@ -1852,12 +1852,15 @@ public sealed class TrayAppContext : ApplicationContext
         else if (displayConnected && !aulaIsPrimary && receiver?.ScheduledSkip == true)
             value += " (" + UiText.Get("Last scheduled reading") + ")";
         bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary;
+        int? unverified = unknownUsb && receiver is { ScheduledSkip: false } && reading.PresenceKnown
+            ? receiver.Reading.UnverifiedPercent : null;
         if (unknownUsb)
         {
             var usb = receiver?.Reading ?? reading;
             value = UsbTrayStatus.WithLastVerified(
                 UsbTrayStatus.Reason(usb.PresenceKnown, usb.ReceiverPresent, usb.Issue),
                 receiver?.LastVerifiedAt);
+            if (unverified is int raw) value = UsbTrayStatus.UnverifiedField(raw);
         }
         string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
         if (_statusItem.Text != status) _statusItem.Text = status;
@@ -1868,8 +1871,8 @@ public sealed class TrayAppContext : ApplicationContext
         if (unknownUsb) tooltip = $"{source} · {value} — {displayName}";
         tooltip = tooltip[..Math.Min(63, tooltip.Length)];
         if (_tray.Text != tooltip) _tray.Text = tooltip;
-        UpdateIcon(displayPercent, displayConnected, stale, neutral, color,
-            _settings.MouseTrayIcon && !aulaIsPrimary);
+        UpdateIcon(displayPercent ?? unverified, displayConnected || unverified.HasValue, stale, neutral, color,
+            _settings.MouseTrayIcon && !aulaIsPrimary, unverified.HasValue);
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
@@ -1892,13 +1895,13 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     private void UpdateIcon(int? percent, bool connected, bool stale = false,
-        bool neutral = false, string? color = null, bool mouseStyle = false)
+        bool neutral = false, string? color = null, bool mouseStyle = false, bool unverified = false)
     {
         var key = TrayIconRenderKey.Create(percent, connected, stale, neutral, color, mouseStyle,
-            _settings.ApplicationIconColor);
+            _settings.ApplicationIconColor, unverified);
         if (_icon is not null && _iconRenderKey == key) return;
         Icon next = TrayIconFactory.Create(percent, connected, stale, neutral, color, mouseStyle,
-            _settings.ApplicationIconColor);
+            _settings.ApplicationIconColor, unverified);
         try { _tray.Icon = next; }
         catch { next.Dispose(); throw; }
         Icon? previous = _icon;

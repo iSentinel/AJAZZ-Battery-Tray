@@ -108,6 +108,9 @@ internal static class RoutinePollWorker
             Enum.IsDefined(reading.Issue) &&
             (reading.Percent is null || (reading.PresenceKnown && reading.ReceiverPresent &&
                 reading.Percent is >= 1 and <= 100)) &&
+            (reading.UnverifiedPercent is null || (reading.PresenceKnown && reading.ReceiverPresent &&
+                reading.Percent is null && reading.Issue == UsbReadIssue.None &&
+                reading.UnverifiedPercent is >= 1 and <= 100)) &&
             (reading.PresenceKnown || !reading.ReceiverPresent);
 
     private static void ValidateBatch(AjazzHidReader.Batch batch)
@@ -126,12 +129,15 @@ internal static class RoutinePollWorker
                 !DeviceAliasRules.ValidKey(item.Key) || !keys.Add(item.Key) ||
                 !ValidReading(item.Reading) || !item.Reading.PresenceKnown ||
                 !item.Reading.ReceiverPresent ||
+                (item.Reading.UnverifiedPercent is not null && item.Revision != 2) ||
                 (item.Sampled && item.MeasuredAt is null) ||
                 (!item.Sampled && (item.MeasuredAt is not null ||
-                    item.Reading.Percent is not null || item.CompletedTick != 0)))
+                    item.Reading.Percent is not null || item.Reading.UnverifiedPercent is not null || item.CompletedTick != 0)))
                 throw new InvalidDataException("Invalid routine receiver observation");
         }
-        if (batch.Summary.Percent != AjazzHidReader.Primary(batch.Receivers)?.Reading.Percent)
+        var primary = AjazzHidReader.Primary(batch.Receivers)?.Reading;
+        if (batch.Summary.Percent != primary?.Percent ||
+            batch.Summary.UnverifiedPercent != primary?.UnverifiedPercent)
             throw new InvalidDataException("Inconsistent routine summary percentage");
     }
 
@@ -188,6 +194,8 @@ internal static class RoutinePollWorker
         {
             valid with { Summary = valid.Summary with { Percent = 0 } },
             valid with { Summary = valid.Summary with { Percent = 99 } },
+            valid with { Summary = valid.Summary with { UnverifiedPercent = 100 } },
+            valid with { Summary = valid.Summary with { Percent = null, UnverifiedPercent = 101 } },
             valid with { Summary = valid.Summary with { PresenceKnown = false } },
             valid with { Receivers = new[] { first, first } },
             valid with { Receivers = new[] { first with { Key = DeviceAliasRules.AulaSlot } } },

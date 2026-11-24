@@ -89,6 +89,31 @@ malformedMouse[4] = 2;
 Check("Invalid F7 flag cannot fall back to compact mouse parsing",
     BatteryReportParser.ParseWindowsFeature(malformedMouse) is null);
 
+byte[] aj179OwnerNov24 = Convert.FromHexString("05000064010001020000");
+Check("Nov24 AJ179 ready-clear 100 remains unknown telemetry",
+    BatteryReportParser.ParseWindowsFeature(aj179OwnerNov24) is null &&
+    BatteryReportParser.UnverifiedMouseField(aj179OwnerNov24) == 100);
+Check("AJ159 zero never provisional", BatteryReportParser.UnverifiedMouseField(observedAj159F7) is null);
+Check("Ready verified is not provisional", BatteryReportParser.UnverifiedMouseField(syntheticGatedMouse) is null);
+Check("Invalid flags never provisional", BatteryReportParser.UnverifiedMouseField(malformedMouse) is null);
+Check("Keyboard slot never provisional", BatteryReportParser.UnverifiedMouseField(f7KeyboardSlot) is null);
+foreach (int index in new[] { 5, 6, 9 })
+{
+    byte[] bad = (byte[])aj179OwnerNov24.Clone();
+    bad[index] ^= 1;
+    Check($"Provisional rejects invalid link flag {index}", BatteryReportParser.UnverifiedMouseField(bad) is null);
+}
+Check("Provisional needs all attempts and two samples",
+    BatteryReportParser.ConsistentUnverifiedField(100, 2, 2) == 100 &&
+    BatteryReportParser.ConsistentUnverifiedField(100, 1, 2) is null &&
+    BatteryReportParser.ConsistentUnverifiedField(100, 1, 1) is null);
+Check("Unverified 8 is gray not red",
+    TrayIconRenderKey.Create(8, true, false, mouseStyle: true, unverified: true)
+        is { Mouse: false, Background: TrayColorRules.Gray, Unverified: true });
+Check("Unverified and cached render keys distinct",
+    TrayIconRenderKey.Create(100, true, false, unverified: true) !=
+    TrayIconRenderKey.Create(100, true, true));
+
 // The Apple and offline readers replay the same sanitized fixtures in CI.
 string corpus = Path.Combine(AppContext.BaseDirectory, "fixtures", "apex-f7-v1.csv");
 foreach (string row in File.ReadLines(corpus).Skip(1))

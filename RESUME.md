@@ -1,3 +1,11 @@
+# Resume — owner AJ179/AULA regression
+
+- #99 357b967 all six CI PASS. Owner new AJ179 reports show 6/6
+  responses with raw field 100 and ready clear, 0/6 verified.
+- Display-only gray unverified candidate and numeric glyph fitting
+  added for Windows; CI pending. No parser relaxation for telemetry.
+- Owner vendor-display comparison and real tray verification remain open.
+
 # Resume — Windows shortcut icon resources
 
 - #128 all four checks PASS; 36 Apple rendering cases per edition

@@ -36,8 +36,33 @@ internal static class Program
                     pixels.GetPixel(x, y).B == 0x45)),
                 "Critical icon must contain red fill");
         }
+        CheckNumericGlyphBounds();
         CheckIconExport();
         Console.WriteLine("PASS: four embedded app icons and red critical rendering");
+    }
+
+    private static void CheckNumericGlyphBounds()
+    {
+        foreach (int level in new[] { 0, 8, 10, 15, 76, 99, 100 })
+        foreach (bool stale in new[] { false, true })
+        foreach (bool raw in new[] { false, true })
+        {
+            using Icon icon = TrayIconFactory.Create(level, true, stale, color: "black", unverified: raw);
+            using Bitmap pixels = icon.ToBitmap();
+            int ink = 0;
+            for (int y = 5; y < 59; y++)
+            for (int x = 5; x < 59; x++)
+            {
+                if (Math.Pow(x - 31.5, 2) + Math.Pow(y - 31.5, 2) > 27 * 27) continue;
+                Color pixel = pixels.GetPixel(x, y);
+                if (pixel.R < 248 || pixel.G < 248 || pixel.B < 248) continue;
+                ink++;
+                Require(x >= 9 && x <= 54 && y >= 14 && y <= 49,
+                    $"Numeric ink outside safe region: {level}, cached={stale}, raw={raw}");
+            }
+            Require(ink > 0, $"No numeric glyph ink: {level}");
+        }
+        Console.WriteLine("PASS: 28 numeric icon ink bounds including AULA 76% and 100%");
     }
 
     private static void CheckIconExport()

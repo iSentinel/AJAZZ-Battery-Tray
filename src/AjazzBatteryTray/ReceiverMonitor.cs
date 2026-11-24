@@ -187,6 +187,8 @@ internal sealed class ReceiverMonitor : IDisposable
 
     internal static string Status(State state)
         => state.Reading.Percent is int level ? $"{level}%" :
+            state.Reading.UnverifiedPercent is int raw && !state.ScheduledSkip
+                ? UsbTrayStatus.UnverifiedField(raw) :
             UsbTrayStatus.WithLastVerified(
                 UsbTrayStatus.Reason(state.Reading.PresenceKnown, state.Present, state.Reading.Issue),
                 state.LastVerifiedAt);
@@ -259,9 +261,10 @@ internal sealed class ReceiverMonitor : IDisposable
             {
                 if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
-                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
+                int? raw = pair.Value.ScheduledSkip ? null : pair.Value.Reading.UnverifiedPercent;
+                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent ?? raw, menu, refresh,
                     color: color(pair.Key), status: pair.Value.Reading.Percent.HasValue ? null : Status(pair.Value),
-                    mouseStyle: mouseStyle);
+                    mouseStyle: mouseStyle, unverified: raw.HasValue);
             }
             if (showAula && !aulaIsPrimary)
             {
@@ -288,14 +291,14 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private void SetIcon(string key, string name, int? level, ContextMenuStrip menu,
-        Action refresh, bool stale = false, string? color = null, string? status = null, bool mouseStyle = false)
+        Action refresh, bool stale = false, string? color = null, string? status = null, bool mouseStyle = false, bool unverified = false)
     {
         if (!_icons.TryGetValue(key, out ExtraIcon? icon))
         {
             icon = new ExtraIcon(refresh);
             _icons.Add(key, icon);
         }
-        icon.Update(name, level, menu, stale, color, status, mouseStyle);
+        icon.Update(name, level, menu, stale, color, status, mouseStyle, unverified);
     }
 
     public void Dispose()
@@ -314,7 +317,7 @@ internal sealed class ReceiverMonitor : IDisposable
 
         internal ExtraIcon(Action refresh) => _tray.DoubleClick += (_, _) => refresh();
 
-        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color, string? status, bool mouseStyle)
+        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color, string? status, bool mouseStyle, bool unverified)
         {
             if (!ReferenceEquals(_tray.ContextMenuStrip, menu)) _tray.ContextMenuStrip = menu;
             string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} · {UiText.Get("Tray color " + TrayColorRules.Normalize(color))} — {name}";
@@ -322,10 +325,10 @@ internal sealed class ReceiverMonitor : IDisposable
             if (stale) label = UiText.Get("cached") + ": " + label;
             label = label[..Math.Min(63, label.Length)];
             if (_tray.Text != label) _tray.Text = label;
-            var key = TrayIconRenderKey.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle);
+            var key = TrayIconRenderKey.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle, unverified: unverified);
             if (_icon is null || _renderKey != key)
             {
-                Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle);
+                Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle, unverified: unverified);
                 try { _tray.Icon = next; }
                 catch { next.Dispose(); throw; }
                 _icon?.Dispose();
