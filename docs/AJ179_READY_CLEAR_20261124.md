@@ -14,10 +14,28 @@ in every attempted length/delay with at least two replies. Gray 100?
 and explicit unverified tooltip/menu only. Not passed to Percent, history,
 alerts, estimates or HA; clear on failed/inconsistent/unknown/absent
 poll; scheduled skip suppresses it. No GET00 or new vendor writes.
-Owner should record official GearHub percentage at the same time at
-two different levels; if the field remains 100 despite a change it
-must not be promoted. Apple strict decoding unchanged.
+GearHub does not expose a numeric percentage according to the owner.
+Compare the visual gauge and simultaneous raw field at different natural
+charge levels; this is qualitative evidence, not numeric calibration.
+If the field remains 100 despite a gauge change it must not be promoted. Apple strict decoding unchanged.
 
 AULA reported numeric icon text overflowing: use actual glyph ink bounds
 with 44x34 safe rectangle in a 64px circle. Native pixel-boundary tests
 cover 76%, 100%, cached and unverified markers. Real tray DPI still open.
+
+## Owner follow-up and diagnostic visibility
+
+Build 9cd415b is the PR #130 merge test, identical tree to audit 6f165c3.
+The 21:35 UTC report repeated all six ready-clear 100 prefixes and
+AULA returned fresh 75. Owner confirmed GearHub's gauge looked full
+(no numeric display), gray 100? appeared instead of ?, and AULA 75%
+fit fully inside the tray icon. Visual acceptance 2/2 PASS; numeric
+AJ179 accuracy still open. All six audit checks PASS at 6f165c3.
+
+The next diagnostic format retains Battery: unavailable and the
+existing matrix result when charge is unverified. It additionally
+prints unverified mouse field (not telemetry)=100 in the ordinary
+poll, per-receiver and full capture sections, and the agreement count
+for the full matrix. A deferred sample does not expose the candidate
+as current. No raw payloads or device identity are newly exported
+by the extended report. No protocol/alert/history changes.

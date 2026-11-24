@@ -1458,9 +1458,11 @@ public sealed class TrayAppContext : ApplicationContext
             $"Completed UTC: {_latestUsbReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {usb?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {usb?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {usb?.Percent?.ToString() ?? "unavailable"}; status: {usb?.Details ?? "not checked"}\n" +
+            BatteryReportParser.DiagnosticUnverifiedField(usb?.UnverifiedPercent) + "\n" +
             attempts + "\n\n[Independent AJAZZ receivers]\n" +
             string.Join("\n", _receivers.Devices.Select(x =>
-                $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}")) +
+                $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}; " +
+                BatteryReportParser.DiagnosticUnverifiedField(x.Reading.UnverifiedPercent, !x.ScheduledSkip))) +
             $"\nSeparate tray icons: {_settings.MultipleTrayIcons}\n" +
             "\n[AULA L99 last measurement]\n" +
             $"Auto monitoring: {_settings.MonitorAulaL99}; interval={_settings.EffectivePollInterval(DeviceAliasRules.AulaSlot)}s; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
@@ -1764,7 +1766,8 @@ public sealed class TrayAppContext : ApplicationContext
             DateTimeOffset.UtcNow);
         _latestUsbReading = batch.Summary.PresenceKnown && _receivers.SummaryState is { } primary
             ? primary.Reading with { Attempts = batch.Summary.Attempts,
-                Details = primary.ScheduledSkip ? "Last scheduled battery reading" : primary.Reading.Details }
+                Details = primary.ScheduledSkip ? "Last scheduled battery reading" : primary.Reading.Details,
+                UnverifiedPercent = primary.ScheduledSkip ? null : primary.Reading.UnverifiedPercent }
             : batch.Summary;
         UpdateTrayDisplay(_latestUsbReading);
     }

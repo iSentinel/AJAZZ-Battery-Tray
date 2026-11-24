@@ -60,7 +60,8 @@ internal static class FullHidCapture
             var batch = new AjazzHidReader().ReadAll(captureProtocol: true);
             string summary = $"Fresh enumeration known={batch.Summary.PresenceKnown}; " +
                 $"receiver count={batch.Receivers.Count}; first valid battery=" +
-                (batch.Summary.Percent?.ToString() ?? "unavailable");
+                (batch.Summary.Percent?.ToString() ?? "unavailable") + "\n" +
+                BatteryReportParser.DiagnosticUnverifiedField(batch.Summary.UnverifiedPercent);
             string matrix = batch.Summary.Attempts is { } trace ? string.Join("\n", trace) : "No trace";
             JsonSerializer.Serialize(output, new Result(inventory, summary, matrix));
             return 0;

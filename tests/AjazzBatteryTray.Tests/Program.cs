@@ -114,6 +114,14 @@ Check("Unverified and cached render keys distinct",
     TrayIconRenderKey.Create(100, true, false, unverified: true) !=
     TrayIconRenderKey.Create(100, true, true));
 
+Check("Diagnostic candidate label is explicit",
+    BatteryReportParser.DiagnosticUnverifiedField(100) == "unverified mouse field (not telemetry)=100");
+Check("Diagnostic candidate suppressed on scheduled skip",
+    BatteryReportParser.DiagnosticUnverifiedField(100, false) == "unverified mouse field (not telemetry)=unavailable");
+Check("Diagnostic candidate absent or invalid stays unavailable",
+    new int?[] { null, 0, -1, 101 }.All(x =>
+        BatteryReportParser.DiagnosticUnverifiedField(x) == "unverified mouse field (not telemetry)=unavailable"));
+
 // The Apple and offline readers replay the same sanitized fixtures in CI.
 string corpus = Path.Combine(AppContext.BaseDirectory, "fixtures", "apex-f7-v1.csv");
 foreach (string row in File.ReadLines(corpus).Skip(1))
