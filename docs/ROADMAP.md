@@ -120,11 +120,11 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   Windows resource loading, red pixels and preference serialization passed.
   Native Apple appearance resource/pixel regression and color menu previews
   passed all four checks in #128 (72 Apple cases). Merged ca2ffa1.
-  Shortcut ICO packaging and create-new embedded icon export are next under CI. Actual tray appearance, hover and restart persistence
+  Shortcut ICO packaging and create-new embedded icon export passed #129 CI, merged 357b967. Actual tray appearance, hover and restart persistence
   remain owner checks. The selected runtime app icon does not change the
   static signed EXE/Finder icon. No default HID worker activation.
 
-- **Owner AJ179/AULA regression (Nov 24).** See [field evidence](AJ179_READY_CLEAR_20261124.md). #130 merged at 6f165c3, all six audit CI PASS; owner visual acceptance 2/2 PASS (gray 100?, AULA 75% fits). Changed-charge accuracy remains open. Next: explicitly label candidate and agreement in diagnostics without promoting to telemetry; native CI pending.
+- **Owner AJ179/AULA regression (Nov 24).** See [field evidence](AJ179_READY_CLEAR_20261124.md). #130 merged at 6f165c3, all six audit CI PASS; owner visual acceptance 2/2 PASS (gray 100?, AULA 75% fits). Changed-charge accuracy remains open. #131 explicit diagnostic candidate and agreement labels passed all three CI, merged c467172. Next: align Device Manager display-only status with the tray, without changing local API or history; native CI pending.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.
