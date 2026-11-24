@@ -1,3 +1,12 @@
+# Resume — ready-clear matrix comparison
+
+- #132 third CI all three PASS; EN/RU/UK transition tests confirmed
+  in Windows log; merged ef4e3c3, identical tree to 8239df5.
+- Added offline two-report comparator for observed ready-clear rev 0002
+  matrices. Distinct UTC, six consistent pairs, explicit uncertainty.
+  No HID, runtime, history, alerts or local API changes.
+- Changed-charge field evidence remains open; no public release.
+
 # Resume — Device Manager unverified display
 
 - #131 all three CI PASS, merged c467172; identical tree to 265d7be.

@@ -47,3 +47,18 @@ The optional field belongs to the WinForms Entry only, not the shared
 DeviceDashboardState used by the local API. The measurement time remains
 unknown; verified, invalid, absent, unknown or skipped samples suppress the
 candidate. Native EN/RU/UK transition smoke tests pending.
+
+#132 Device Manager EN/RU/UK transition smoke checks PASS after correcting
+the missing linked source and explicit tooltip replacement. Merged ef4e3c3.
+
+For two new full reports from the same owner-confirmed receiver:
+
+    python3 tools/compare_ready_clear.py --earlier earlier.txt --later later.txt
+
+The offline comparator requires one rev 0002 receiver, the 65-byte
+descriptor and all six 65/67-byte responses at 30/100/250 ms. It reports
+CHANGED FIELD or UNCHANGED FIELD only for consistent, unverified matrices,
+INCONCLUSIVE for missing/disagreeing evidence. Exit 0 is complete comparison,
+not hardware validation. Distinct chronological UTC timestamps required.
+It does not identify the physical receiver or validate GearHub's gauge.
+No raw capture is committed or uploaded.
