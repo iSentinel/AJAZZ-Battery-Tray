@@ -39,3 +39,11 @@ poll, per-receiver and full capture sections, and the agreement count
 for the full matrix. A deferred sample does not expose the candidate
 as current. No raw payloads or device identity are newly exported
 by the extended report. No protocol/alert/history changes.
+
+The diagnostic visibility PR #131 passed Windows, Universal and upgrade
+CI and merged at c467172. Device Manager now renders the same display-only
+candidate as the tray (100?, localized unverified status and tooltip).
+The optional field belongs to the WinForms Entry only, not the shared
+DeviceDashboardState used by the local API. The measurement time remains
+unknown; verified, invalid, absent, unknown or skipped samples suppress the
+candidate. Native EN/RU/UK transition smoke tests pending.

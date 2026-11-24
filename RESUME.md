@@ -1,3 +1,12 @@
+# Resume — Device Manager unverified display
+
+- #131 all three CI PASS, merged c467172; identical tree to 265d7be.
+- Device Manager Entry-only display candidate, localized status and tooltip.
+  No changes to shared dashboard state, local snapshot, history or alerts.
+  Native EN/RU/UK transition smoke checks pending.
+- Owner accepted tray 100? and AULA 75% on 9cd415b.
+  Actual changed-charge accuracy remains unverified.
+
 # Resume — explicit unverified diagnostic fields
 
 - Audit 6f165c3 all six CI PASS. Owner accepted gray AJ179 100? and

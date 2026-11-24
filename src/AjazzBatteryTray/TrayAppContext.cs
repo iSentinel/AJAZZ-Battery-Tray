@@ -317,7 +317,8 @@ public sealed class TrayAppContext : ApplicationContext
                 () => ToggleTrayVisibility(receiver.Key),
                 () => EditTrayColor(receiver.Key, receiver.DisplayLabel),
                 () => EditDeviceAlerts(receiver.Key, receiver.DisplayLabel),
-                () => EditDeviceInterval(receiver.Key, receiver.DisplayLabel)));
+                () => EditDeviceInterval(receiver.Key, receiver.DisplayLabel),
+                UnverifiedPercent: receiver.ScheduledSkip ? null : reading.UnverifiedPercent));
         }
         if (entries.Count == 0)
         {

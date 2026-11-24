@@ -9,7 +9,7 @@ internal sealed class DeviceDashboardForm : Form
     internal sealed record Entry(DeviceDashboardState State, Action? ShowHistory = null,
         string? Key = null, Action? EditName = null, bool? TrayVisible = null,
         Action? ToggleTray = null, Action? EditColor = null, Action? EditAlerts = null,
-        Action? EditInterval = null);
+        Action? EditInterval = null, int? UnverifiedPercent = null);
 
     private readonly DataGridView _grid = new();
     private readonly Button _refresh = new();
@@ -173,10 +173,13 @@ internal sealed class DeviceDashboardForm : Form
             {
                 var state = entry.State;
                 int row = _grid.Rows.Add(state.Name, state.Transport,
-                    state.StatusText(), FormatBattery(state),
+                    EntryStatus(entry), FormatBattery(entry),
                     entry.TrayVisible is bool visible ? UiText.Get(visible ? "Allowed" : "Hidden") : "—",
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
+                if (HasUnverifiedField(entry))
+                    _grid.Rows[row].Cells["Battery"].ToolTipText =
+                        UsbTrayStatus.UnverifiedField(entry.UnverifiedPercent!.Value);
                 if (previous is not null && (previous.Key is not null
                     ? previous.Key == entry.Key
                     : entry.Key is null && previous.State.Name == state.Name &&
@@ -193,10 +196,17 @@ internal sealed class DeviceDashboardForm : Form
         UpdateSelection();
     }
 
-    private static string FormatBattery(DeviceDashboardState state)
-        => state.Percent is int level
-            ? $"{level}%" + (state.Status == DeviceDashboardStatus.Cached ? "*" : "")
-            : "—";
+    private static bool HasUnverifiedField(Entry entry)
+        => entry.State.Status == DeviceDashboardStatus.NoReply &&
+            entry.State.Percent is null && entry.UnverifiedPercent is >= 1 and <= 100;
+
+    private static string EntryStatus(Entry entry)
+        => HasUnverifiedField(entry) ? UiText.Get("Unverified charge field") : entry.State.StatusText();
+
+    private static string FormatBattery(Entry entry)
+        => entry.State.Percent is int level
+            ? $"{level}%" + (entry.State.Status == DeviceDashboardStatus.Cached ? "*" : "")
+            : HasUnverifiedField(entry) ? $"{entry.UnverifiedPercent}?" : "—";
 
     private Entry? CurrentEntry() => _grid.CurrentRow?.Tag as Entry;
 
@@ -214,6 +224,6 @@ internal sealed class DeviceDashboardForm : Form
             _alerts.Enabled || _interval.Enabled;
         _visibility.Text = UiText.Get(entry?.TrayVisible == true ? "Hide device in tray" : "Show device in tray");
         _detail.Text = entry is null ? UiText.Get("No device readings yet") :
-            $"{entry.State.Name} — {entry.State.StatusText()}";
+            $"{entry.State.Name} — {EntryStatus(entry)}";
     }
 }

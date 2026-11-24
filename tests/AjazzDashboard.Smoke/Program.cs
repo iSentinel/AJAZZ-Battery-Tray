@@ -14,6 +14,7 @@ internal static class Program
         {
             UiText.SetLanguage(language);
             CheckDashboard();
+            CheckDashboardUnverifiedField(language);
             Console.WriteLine($"PASS: {language} minimum-size layout and device actions");
             foreach (float factor in new[] { 1.25f, 1.5f, 2f })
                 CheckScaledLayout(language, factor);
@@ -86,6 +87,37 @@ internal static class Program
         }
         finally { Directory.Delete(directory, true); }
         Console.WriteLine("PASS: four ICO exports and existing-file protection");
+    }
+
+    private static void CheckDashboardUnverifiedField(string language)
+    {
+        using var form = new DeviceDashboardForm(() => { }, () => { }, () => { });
+        var state = new DeviceDashboardState("AJ179", "2.4 GHz", DeviceDashboardStatus.NoReply, null, null);
+        var entry = new DeviceDashboardForm.Entry(state, Key: "usb", UnverifiedPercent: 100);
+        var grid = form.Controls.OfType<TableLayoutPanel>().Single().Controls.OfType<DataGridView>().Single();
+        form.SetEntries(new[] { entry });
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "100?", "Missing display-only field");
+        Require((string?)grid.Rows[0].Cells["Status"].Value == UiText.Get("Unverified charge field"),
+            "Unverified status missing");
+        Require(grid.Rows[0].Cells["Battery"].ToolTipText == UsbTrayStatus.UnverifiedField(100),
+            "Unverified tooltip missing");
+        Require((string?)grid.Rows[0].Cells["Last measurement"].Value == "—",
+            "Unverified charge must not acquire measurement timestamp");
+        foreach (var next in new[] { entry with { UnverifiedPercent = null },
+            entry with { UnverifiedPercent = 101 }, entry with { UnverifiedPercent = 0 },
+            entry with { State = state with { Status = DeviceDashboardStatus.Disconnected } },
+            entry with { State = state with { Status = DeviceDashboardStatus.PresenceUnknown } } })
+        {
+            form.SetEntries(new[] { next });
+            Require((string?)grid.Rows[0].Cells["Battery"].Value == "—", "Invalid or missing field displayed");
+            Require(string.IsNullOrEmpty(grid.Rows[0].Cells["Battery"].ToolTipText), "Stale candidate tooltip");
+        }
+        form.SetEntries(new[] { entry with { State = state with { Status = DeviceDashboardStatus.Fresh,
+            Percent = 98, MeasuredAt = DateTimeOffset.UtcNow } } });
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "98%", "Verified value must win");
+        Require((string?)grid.Rows[0].Cells["Status"].Value == UiText.Get("Fresh reading"),
+            "Fresh status must win");
+        Console.WriteLine($"PASS: {language} dashboard unverified field and state transitions");
     }
 
     private static void CheckDashboard()
