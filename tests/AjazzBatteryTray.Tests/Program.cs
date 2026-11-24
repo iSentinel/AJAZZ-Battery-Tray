@@ -80,6 +80,15 @@ f7KeyboardSlot[7] = 1;
 Check("F7 keyboard-only reply cannot be mistaken for mouse battery",
     BatteryReportParser.ParseWindowsFeature(f7KeyboardSlot) is null);
 
+f7KeyboardSlot[1] = 0;
+Check("Unreadable keyboard slot cannot fall back to compact mouse parsing",
+    BatteryReportParser.ParseWindowsFeature(f7KeyboardSlot) is null &&
+    BatteryReportParser.DescribeWindowsFeature(f7KeyboardSlot).Contains("keyboard-only"));
+var malformedMouse = (byte[])f7Unreadable.Clone();
+malformedMouse[4] = 2;
+Check("Invalid F7 flag cannot fall back to compact mouse parsing",
+    BatteryReportParser.ParseWindowsFeature(malformedMouse) is null);
+
 // Diagnostic classification must not broaden the valid battery format.
 Check("Protocol reason: empty", BatteryReportParser.DescribeWindowsFeature(Array.Empty<byte>()) == "short buffer");
 Check("Protocol reason: wrong ID", BatteryReportParser.DescribeWindowsFeature(new byte[] { 4, 0, 0, 50 }) == "unexpected report ID");

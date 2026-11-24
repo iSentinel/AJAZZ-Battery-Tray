@@ -9,6 +9,16 @@ enum ApexBattery {
         case battery(Int)
         case notConnected
         case unavailable
+        case accessUnknown
+        case unsupportedCollection
+
+        var compatibleReceiverPresent: Bool? {
+            switch self {
+            case .battery, .unavailable: return true
+            case .notConnected: return false
+            case .accessUnknown, .unsupportedCollection: return nil
+            }
+        }
     }
 
     private static let vendorID = 0x3151
@@ -18,17 +28,10 @@ enum ApexBattery {
 
     /// Decode a feature report returned for report ID 0x05.
     static func parse(_ report: [UInt8]) -> Int? {
-        // macOS may return the report ID or strip it from an unnumbered reply.
-        if report.count >= 4 && report[0] == 0x05 &&
-           report[1] == 0 && report[2] == 0 &&
-           (1...100).contains(Int(report[3])) {
-            return Int(report[3])
+        let value = report.withUnsafeBufferPointer {
+            AjazzBatteryPercent($0.baseAddress, $0.count)
         }
-        if report.count >= 3 && report[0] == 0 && report[1] == 0 &&
-           (1...100).contains(Int(report[2])) {
-            return Int(report[2])
-        }
-        return nil
+        return value < 0 ? nil : Int(value)
     }
 
     static func read() -> Status {
@@ -39,7 +42,7 @@ enum ApexBattery {
         ]
         IOHIDManagerSetDeviceMatching(manager, criteria as CFDictionary)
         guard IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
-            return .unavailable
+            return .accessUnknown
         }
         defer { IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone)) }
 
@@ -52,7 +55,7 @@ enum ApexBattery {
             attempted = true
             if let value = poll(device) { return .battery(value) }
         }
-        return attempted ? .unavailable : .notConnected
+        return attempted ? .unavailable : .unsupportedCollection
     }
 
     /// Builds the documented 64-byte macOS feature payload for dock RTC updates.
@@ -190,7 +193,7 @@ enum ApexBattery {
             let read = reply.withUnsafeMutableBufferPointer { data in
                 IOHIDDeviceGetReport(device, kIOHIDReportTypeFeature, 5, data.baseAddress!, &actualLength)
             }
-            if read == kIOReturnSuccess && actualLength >= 3,
+            if read == kIOReturnSuccess && (3...count).contains(actualLength),
                let percent = parse(Array(reply.prefix(Int(actualLength)))) {
                 return percent
             }
@@ -216,7 +219,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var bluetoothWindow: BluetoothBatteryWindowController?
     private var startupMenuItem: NSMenuItem?
     private var intervalItems = [NSMenuItem]()
-    private var displayedStatus = ApexBattery.Status.unavailable
+    private var displayedStatus = ApexBattery.Status.accessUnknown
     private var lastClockSent: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -518,18 +521,14 @@ final class TrayController: NSObject, NSApplicationDelegate {
         let previouslyPresent = receiverWasPresent
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let value = ApexBattery.read()
-            let present: Bool
-            switch value {
-            case .notConnected: present = false
-            default: present = true
-            }
-            let due = Date().timeIntervalSince(lastAttempt) >= 300
-            let shouldSync = present && (manual ||
+            let elapsed = Date().timeIntervalSince(lastAttempt)
+            let due = elapsed < 0 || elapsed >= 300
+            let shouldSync = value.compatibleReceiverPresent == true && (manual ||
                 (automatic && (due || !previouslyPresent)))
             let sent = shouldSync ? ApexBattery.syncClock() : false
             DispatchQueue.main.async {
-                self?.update(value)
                 if shouldSync { self?.recordClockResult(sent) }
+                self?.update(value)
             }
         }
     }
@@ -560,13 +559,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
             thresholds: selectedBatteryThresholds) {
             BatteryLocalNotifications.deliver(event)
         }
-        switch status {
-        case .notConnected: receiverWasPresent = false
-        default: receiverWasPresent = true
-        }
+        if let present = status.compatibleReceiverPresent { receiverWasPresent = present }
         polling = false
         displayedStatus = status
         renderStatus(status)
+        if manualClockSync { refresh() }
     }
 
     private func renderStatus(_ status: ApexBattery.Status) {
@@ -577,6 +574,12 @@ final class TrayController: NSObject, NSApplicationDelegate {
         case .notConnected:
             statusItem.button?.title = "🔋—"
             detailItem.title = AppText.text("AJAZZ APEX receiver not found")
+        case .accessUnknown:
+            statusItem.button?.title = "🔋?"
+            detailItem.title = AppText.text("Cannot check USB receiver access")
+        case .unsupportedCollection:
+            statusItem.button?.title = "🔋?"
+            detailItem.title = AppText.text("Receiver HID collection not supported")
         case .unavailable:
             statusItem.button?.title = "🔋?"
             detailItem.title = AppText.text(
@@ -740,7 +743,15 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         BluetoothBatteryPayload.likelyAjazz("AJ179 APEX") &&
         BluetoothBatteryPayload.likelyAjazz("Ajazz mouse") &&
         !BluetoothBatteryPayload.likelyAjazz("Keyboard")
-    let valid = localizationValid && bluetoothValid && alertTests &&
+    let sharedFrameValid = ApexBattery.parse([5, 1, 0, 83, 1, 0, 1, 2, 0, 0]) == 83 &&
+        ApexBattery.parse([1, 0, 83, 1, 0, 1, 3, 0, 0]) == 83 &&
+        ApexBattery.parse([5, 0, 0, 83, 1, 0, 1, 2, 0, 0]) == nil &&
+        ApexBattery.parse([0, 0, 83, 1, 0, 1, 1, 0, 0]) == nil
+    let presenceValid = ApexBattery.Status.accessUnknown.compatibleReceiverPresent == nil &&
+        ApexBattery.Status.unsupportedCollection.compatibleReceiverPresent == nil &&
+        ApexBattery.Status.unavailable.compatibleReceiverPresent == true &&
+        ApexBattery.Status.notConnected.compatibleReceiverPresent == false
+    let valid = sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests &&
                 selectedTests && jumpTests &&
                 chartValid && historyValid &&
                 clockValid && guardValid &&
@@ -755,6 +766,8 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
     switch ApexBattery.read() {
     case .battery(let level): print("PASS: battery \(level)%")
     case .notConnected: print("UNKNOWN: compatible receiver not found")
+    case .accessUnknown: print("UNKNOWN: cannot access HID manager")
+    case .unsupportedCollection: print("UNKNOWN: receiver HID collection not supported")
     case .unavailable: print("UNKNOWN: receiver found, no valid battery report")
     }
 } else {

@@ -94,12 +94,13 @@ final class BatteryHistoryChart: NSView {
     }
 
     private func drawSeries(_ plot: NSRect) {
-        if samples.isEmpty {
+        if !samples.contains(where: { $0.percent != nil }) {
             let style: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: 13),
                 .foregroundColor: NSColor.secondaryLabelColor
             ]
-            (AppText.text("No observations for the selected period") as NSString).draw(
+            (AppText.text(samples.isEmpty ? "No observations for the selected period" :
+                "No charge readings in this period") as NSString).draw(
                 at: NSPoint(x: plot.minX + 12, y: plot.midY),
                 withAttributes: style)
             return

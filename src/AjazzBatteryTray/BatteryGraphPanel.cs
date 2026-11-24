@@ -10,6 +10,9 @@ public sealed class BatteryGraphPanel : Panel
     public IReadOnlyList<BatterySample> Samples { get; set; } =
         Array.Empty<BatterySample>();
 
+    internal DateTimeOffset PeriodEnd { get; set; } = DateTimeOffset.UtcNow;
+    internal DateTimeOffset PeriodStart { get; set; } = DateTimeOffset.UtcNow.AddDays(-7);
+
     public BatteryGraphPanel()
     {
         DoubleBuffered = true;
@@ -43,17 +46,17 @@ public sealed class BatteryGraphPanel : Panel
 
     private void DrawSeries(Graphics graphics, Rectangle area)
     {
-        if (Samples.Count == 0)
+        DrawTimeLabels(graphics, area, PeriodStart, PeriodEnd);
+        if (!Samples.Any(sample => sample.Percent.HasValue))
         {
             using Font font = new("Segoe UI", 11);
-            graphics.DrawString(UiText.Get("No battery observations yet"), font,
+            graphics.DrawString(UiText.Get(Samples.Count == 0
+                ? "No battery observations yet" : "No charge readings in this period"), font,
                 Brushes.Gray, area.Left + 16, area.Top + 30);
             return;
         }
 
-        DateTimeOffset start = Samples[0].Timestamp;
-        DateTimeOffset end = Samples[^1].Timestamp;
-        double span = Math.Max(1, (end - start).TotalSeconds);
+        double span = Math.Max(1, (PeriodEnd - PeriodStart).TotalSeconds);
         using Pen curve = new(Color.FromArgb(22, 127, 89), 2.4f);
         using Brush marker = new SolidBrush(Color.FromArgb(22, 127, 89));
         PointF? previous = null;
@@ -67,7 +70,7 @@ public sealed class BatteryGraphPanel : Panel
             }
 
             float x = area.Left + (float)(
-                (sample.Timestamp - start).TotalSeconds / span * area.Width);
+                (sample.Timestamp - PeriodStart).TotalSeconds / span * area.Width);
             float y = area.Bottom - sample.Percent.Value / 100f * area.Height;
             PointF point = new(x, y);
             if (previous.HasValue &&
@@ -79,10 +82,9 @@ public sealed class BatteryGraphPanel : Panel
             previousTime = sample.Timestamp;
         }
 
-        DrawTimeLabels(graphics, area, start, end);
     }
 
-    private static void DrawTimeLabels(Graphics graphics, Rectangle area,
+    private void DrawTimeLabels(Graphics graphics, Rectangle area,
         DateTimeOffset start, DateTimeOffset end)
     {
         using Font font = new("Segoe UI", 9);
@@ -93,7 +95,9 @@ public sealed class BatteryGraphPanel : Panel
             DateTimeOffset moment = start.AddSeconds(span * step / 4);
             float x = area.Left + area.Width * step / 4f;
             string text = moment.LocalDateTime.ToString("dd MMM HH:mm");
-            graphics.DrawString(text, font, brush, x - 27, area.Bottom + 12);
+            float width = graphics.MeasureString(text, font).Width;
+            float left = Math.Clamp(x - width / 2, 0, Math.Max(0, ClientSize.Width - width));
+            graphics.DrawString(text, font, brush, left, area.Bottom + 12);
         }
     }
 }

@@ -12,7 +12,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$ROOT/macos/Info.plist" "$APP/Contents/Info.plist"
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
 for arch in arm64 x86_64; do
-  swiftc -O -sdk "$SDK" -target "${arch}-apple-macos13.0" \
+  swiftc -O -import-objc-header "$ROOT/macos/AjazzBatteryReport.h" -sdk "$SDK" -target "${arch}-apple-macos13.0" \
     -framework AppKit -framework IOKit -framework UserNotifications -framework ServiceManagement -framework CoreBluetooth \
     "$ROOT/macos/main.swift" "$ROOT/macos/AppText.swift" \
     "$ROOT/macos/BatteryHistory.swift" \

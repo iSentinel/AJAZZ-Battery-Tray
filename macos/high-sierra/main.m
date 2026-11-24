@@ -1,5 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #import "diagnostic_runner.h"
+#import "../AjazzBatteryReport.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -15,7 +16,8 @@ typedef NS_ENUM(NSInteger, BatteryState) {
     BatteryValid = 2,
     BatteryAccessError = 3,
     BatteryUnexpectedUsage = 4,
-    BatteryTimedOut = 5
+    BatteryTimedOut = 5,
+    BatteryChecking = 6
 };
 
 typedef struct {
@@ -26,15 +28,7 @@ typedef struct {
 
 /// Accept only the documented F7/05 telemetry response, not arbitrary bytes.
 static NSInteger ParseBattery(const uint8_t *report, CFIndex length) {
-    if (length >= 4 && report[0] == 5 && report[1] == 0 &&
-        report[2] == 0 && report[3] >= 1 && report[3] <= 100) {
-        return report[3];
-    }
-    if (length >= 3 && report[0] == 0 && report[1] == 0 &&
-        report[2] >= 1 && report[2] <= 100) {
-        return report[2];
-    }
-    return -1;
+    return length > 0 ? AjazzBatteryPercent(report, (size_t)length) : -1;
 }
 
 static BOOL MatchesVendorCollection(IOHIDDeviceRef device) {
@@ -68,7 +62,7 @@ static NSInteger ReadFeature(IOHIDDeviceRef device, BOOL *accessFailed) {
         CFIndex length = count;
         IOReturn result = IOHIDDeviceGetReport(device, kIOHIDReportTypeFeature,
                                                 5, reply, &length);
-        if (result == kIOReturnSuccess) {
+        if (result == kIOReturnSuccess && length >= 3 && length <= count) {
             percent = ParseBattery(reply, length);
             if (percent >= 0) break;
         }
@@ -269,7 +263,7 @@ static int TraceReceiver(void) {
     [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
     self.tray = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     self.tray.button.title = @"AJAZZ ?";
-    self.latest = (BatteryReading){BatteryUnknown, -1, 0};
+    self.latest = (BatteryReading){BatteryChecking, -1, 0};
     [self buildMenu];
     [self scheduleTimer];
     [self refresh:nil];
@@ -381,6 +375,11 @@ static int TraceReceiver(void) {
                                  (long)reading.percent];
         self.detail.title = [NSString stringWithFormat:@"AJAZZ APEX: %ld%%",
                              (long)reading.percent];
+    } else if (reading.state == BatteryChecking) {
+        self.tray.button.title = @"AJAZZ ?";
+        self.detail.title = [self word:@"Checking USB receiver…"
+                                    ru:@"Проверка USB-приёмника…"
+                                    uk:@"Перевірка USB-приймача…"];
     } else if (reading.state == BatteryAbsent) {
         self.tray.button.title = @"AJAZZ —";
         self.detail.title = [self word:@"Compatible receiver not found"
@@ -437,28 +436,20 @@ static int TraceReceiver(void) {
     self.everConnected = YES;
     self.absentCount = 0;
     self.disconnectSent = NO;
-    NSUInteger mask = [self thresholdMask];
-    for (NSInteger threshold = 50; threshold >= 10;
-         threshold = threshold == 50 ? 25 : 10) {
-        NSUInteger bit = threshold == 50 ? 1 : (threshold == 25 ? 2 : 4);
-        if (reading.percent >= threshold + 5) self.alerted &= ~bit;
-        if (threshold == 10) break;
+    const NSInteger levels[] = {50, 25, 10};
+    NSUInteger crossed = 0;
+    for (NSUInteger i = 0; i < 3; i++) {
+        NSUInteger bit = 1U << i;
+        if (reading.percent >= levels[i] + 5) self.alerted &= ~bit;
+        if (reading.percent < levels[i]) crossed |= bit;
     }
-    NSUInteger newlyCrossed = 0;
-    for (NSInteger threshold = 50; threshold >= 10;
-         threshold = threshold == 50 ? 25 : 10) {
-        NSUInteger bit = threshold == 50 ? 1 : (threshold == 25 ? 2 : 4);
-        if (reading.percent < threshold && !(self.alerted & bit) && (mask & bit))
-            newlyCrossed = bit;
-        if (reading.percent < threshold) self.alerted |= bit;
-        if (threshold == 10) break;
-    }
-    if (newlyCrossed && [self setting:@"LegacyNotifyLow"]) {
-        [self notify:@"AJAZZ APEX" message:
-            [NSString stringWithFormat:
-             [self word:@"Low battery: %ld%%" ru:@"Низкий заряд: %ld%%"
-                         uk:@"Низький заряд: %ld%%"], (long)reading.percent]];
-    }
+    if (![self setting:@"LegacyNotifyLow"] ||
+        !(crossed & [self thresholdMask] & ~self.alerted)) return;
+    self.alerted |= crossed;
+    [self notify:@"AJAZZ APEX" message:
+        [NSString stringWithFormat:
+         [self word:@"Low battery: %ld%%" ru:@"Низкий заряд: %ld%%"
+                     uk:@"Низький заряд: %ld%%"], (long)reading.percent]];
 }
 
 - (void)refresh:(id)sender {
@@ -524,7 +515,8 @@ static int TraceReceiver(void) {
 
 - (NSString *)diagnostics {
     NSString *state = self.latest.state == BatteryValid ? @"valid" :
-        (self.latest.state == BatteryAbsent ? @"not connected" :
+        (self.latest.state == BatteryChecking ? @"not checked yet" :
+         self.latest.state == BatteryAbsent ? @"not connected" :
          self.latest.state == BatteryAccessError ? @"access error" :
          self.latest.state == BatteryUnexpectedUsage ? @"HID usage mismatch" :
          self.latest.state == BatteryTimedOut ? @"HID read stalled" :
@@ -731,6 +723,13 @@ static int SelfTest(void) {
     uint8_t wrongID[] = {6, 0, 0, 83};
     uint8_t malformed[] = {5, 1, 0, 83};
     uint8_t shortFrame[] = {5, 0};
+    uint8_t mouse[] = {5, 1, 0, 83, 1, 0, 1, 2, 0, 0};
+    BOOL shared = ParseBattery(mouse, sizeof mouse) == 83 &&
+        ParseBattery(mouse + 1, sizeof mouse - 1) == 83;
+    mouse[1] = 0;
+    shared = shared && ParseBattery(mouse, sizeof mouse) == -1;
+    mouse[7] = 1;
+    shared = shared && ParseBattery(mouse + 1, sizeof mouse - 1) == -1;
     LegacyTray *test = [[LegacyTray alloc] init];
     [test evaluateAlerts:(BatteryReading){BatteryAccessError, -1, 0}];
     [test evaluateAlerts:(BatteryReading){BatteryUnexpectedUsage, -1, 0}];
@@ -738,7 +737,7 @@ static int SelfTest(void) {
     [test evaluateAlerts:(BatteryReading){BatteryTimedOut, -1, 0}];
     BOOL safe = !test.everConnected && test.absentCount == 0 &&
         test.alerted == 0;
-    BOOL pass = safe && ParseBattery(first, 4) == 1 &&
+    BOOL pass = safe && shared && ParseBattery(first, 4) == 1 &&
         ParseBattery(full, 4) == 100 &&
         ParseBattery(stripped, 3) == 25 &&
         ParseBattery(zero, 4) == -1 &&
@@ -746,7 +745,7 @@ static int SelfTest(void) {
         ParseBattery(wrongID, 4) == -1 &&
         ParseBattery(malformed, 4) == -1 &&
         ParseBattery(shortFrame, 2) == -1;
-    puts(pass ? "PASS: 8 parser and 4 unverified-state cases"
+    puts(pass ? "PASS: compact and shared HID reports, unverified states"
               : "FAIL: HID parser/notification-state regression");
     return pass ? 0 : 1;
 }

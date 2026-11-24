@@ -10,6 +10,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _timer;
     private System.Windows.Forms.Timer? _aulaTimer;
+    private readonly CancellationTokenSource _captureClosing = new();
     private readonly DevicePollSchedule _usbSchedule = new();
     private LocalSnapshotStore? _localSnapshot;
     private LocalApiForm? _localApiWindow;
@@ -1290,36 +1291,32 @@ public sealed class TrayAppContext : ApplicationContext
         _busy = true;
         _diagnosticsBusy = true;
         _timer.Stop();
+        string report;
+        _statusItem.Text = UiText.Format("Capturing HID report (up to {0} s)…", FullHidCapture.TimeoutSeconds);
         try
         {
-            var capture = await Task.Run(() =>
-            {
-                string inventory = ExtendedDeviceDiagnostics.ReadInventory();
-                var batch = _reader.ReadAll(captureProtocol: true);
-                return (Inventory: inventory, Batch: batch);
-            });
+            var capture = await FullHidCapture.ReadAsync(_captureClosing.Token);
             if (_closing) return;
-            var batch = capture.Batch;
-            string report = "AJAZZ APEX full comparison report (one capture)\n" +
+            report = "AJAZZ APEX full comparison report (one capture)\n" +
                 $"Version: {Application.ProductVersion}\nUTC: {DateTimeOffset.UtcNow:O}\n" +
                 "Model labels are provisional. USB feature buffers are not USB wire captures.\n" +
                 "Only the existing F7/05 query; no RTC or configuration writes.\n" +
                 "Raw vendor bytes may contain undocumented data. Review before sharing.\n" +
                 "Official application traffic is NOT acquired by this report.\n" +
                 "All existing valid length/delay combinations attempted, including after success.\n" +
-                $"Fresh enumeration known={batch.Summary.PresenceKnown}; receiver count={batch.Receivers.Count}; first valid battery={batch.Summary.Percent?.ToString() ?? "unavailable"}\n\n" +
+                capture.Summary + "\n\n" +
                 BuildExtendedReport(capture.Inventory) +
                 "\n\n[Fresh APEX protocol matrix — full vendor buffers]\n" +
-                (batch.Summary.Attempts is { } trace ? string.Join("\n", trace) : "No trace");
-            using DiagnosticReportForm review = new(report);
-            review.ShowDialog();
+                capture.Matrix;
+        }
+        catch (TimeoutException)
+        {
+            report = UiText.Get("HID capture timed out. No battery reading was verified.");
         }
         catch (Exception error)
         {
-            if (!_closing)
-                MessageBox.Show(UiText.Get("Unable to collect diagnostic report.") +
-                    " (" + error.GetType().Name + ")", "AJAZZ Battery Tray",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            if (_closing) return;
+            report = UiText.Get("Unable to collect diagnostic report.") + " (" + error.GetType().Name + ")";
         }
         finally
         {
@@ -1329,8 +1326,12 @@ public sealed class TrayAppContext : ApplicationContext
             {
                 _timer.Interval = _forcePoll ? 100 : DiscoveryInterval();
                 _timer.Start();
+                RefreshDeviceDisplay();
             }
         }
+        if (_closing) return;
+        using DiagnosticReportForm review = new(report);
+        review.ShowDialog();
     }
 
     private async Task ShowExtendedDiagnosticsAsync()
@@ -1385,8 +1386,8 @@ public sealed class TrayAppContext : ApplicationContext
             "[Bluetooth fallback state]\n" +
             $"Enabled: {BleEnabled}; displayed device: {_lastDevice}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
             $"Opted-in BLE devices: {_bleSlots.Count}; request pending: {_ble.IsBusy}\n" + BleDiagnosticSummary() + "\n" +
-            "\nNo device paths, serial numbers, Bluetooth addresses, usernames, or raw report payloads are included.\n" +
-            "Collection does not issue additional HID commands or scan Bluetooth devices.";
+            "\nThe extended monitoring section excludes device paths, serial numbers, Bluetooth addresses, usernames and raw payloads.\n" +
+            "Collecting this section does not issue additional HID commands or scan Bluetooth devices.";
     }
 
 
@@ -1771,6 +1772,8 @@ public sealed class TrayAppContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         _closing = true;
+        _captureClosing.Cancel();
+        _captureClosing.Dispose();
         _localApiWindow?.Close();
         _localSnapshot?.Clear();
         _localSnapshot = null;

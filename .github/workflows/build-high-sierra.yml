@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/build-high-sierra.yml'
       - '.github/workflows/release-high-sierra.yml'
   push:
     branches: [main]
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/build-high-sierra.yml'
   workflow_dispatch:
 

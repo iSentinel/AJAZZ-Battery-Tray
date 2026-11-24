@@ -82,6 +82,14 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $report -ErrorAction SilentlyContinue
           }
+      - name: Verify full GUI capture watchdog without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $timer = [Diagnostics.Stopwatch]::StartNew()
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test-full-hid-watchdog' -PassThru
+          if (-not $p.WaitForExit(15000)) { $p.Kill($true); throw 'Capture worker hung' }
+          if ($p.ExitCode -ne 124 -or $timer.Elapsed.TotalSeconds -lt 1) { throw 'Expected a bounded timeout' }
       - name: Validate owner HID acceptance helper
         shell: pwsh
         run: |

@@ -40,9 +40,7 @@ public sealed class BatteryHistoryForm : Form
         };
         _range.DropDownStyle = ComboBoxStyle.DropDownList;
         _range.Width = 135;
-        _range.Items.AddRange(new object[] { "Last 24 hours", "Last 7 days", "Last 30 days" });
-        _range.SelectedIndex = 1;
-        _range.SelectedIndexChanged += (_, _) => RefreshData();
+        _range.SelectionChangeCommitted += (_, _) => RefreshData();
 
         _refresh.Width = 115;
         _refresh.Click += (_, _) => RefreshData();
@@ -88,8 +86,11 @@ public sealed class BatteryHistoryForm : Form
     public void RefreshData()
     {
         int days = _range.SelectedIndex switch { 0 => 1, 1 => 7, _ => 30 };
-        DateTimeOffset cutoff = DateTimeOffset.UtcNow.AddDays(-days);
-        _visible = _history.ReadRecent().Where(x => x.Timestamp >= cutoff).ToArray();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        DateTimeOffset cutoff = now.AddDays(-days);
+        _visible = _history.ReadRecent().Where(x => x.Timestamp >= cutoff && x.Timestamp <= now).ToArray();
+        _graph.PeriodStart = cutoff;
+        _graph.PeriodEnd = now;
         _graph.Samples = _visible;
         _graph.Invalidate();
         UpdateSummary();
@@ -109,7 +110,8 @@ public sealed class BatteryHistoryForm : Form
         int unavailable = _visible.Count(x => x.State == "unavailable");
         int? min = _visible.Where(x => x.Percent.HasValue)
                            .Select(x => x.Percent).Min();
-        string value = latest.Percent.HasValue ? $"{latest.Percent}%" : latest.State;
+        string value = latest.Percent.HasValue ? $"{latest.Percent}%" :
+            UiText.Get(latest.State == "disconnected" ? "Disconnected" : "unavailable");
         string minimum = min.HasValue ? $"{min}%" : "—";
         _summary.Text = UiText.Format(
             "Latest: {0}  |  Minimum: {1}  |  Absent: {2}  |  Unavailable: {3}",

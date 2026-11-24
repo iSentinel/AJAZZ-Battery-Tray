@@ -64,6 +64,15 @@ enum AppText {
         "AJAZZ APEX receiver not found": [
             "ru": "Приёмник AJAZZ APEX не найден",
             "uk": "Приймач AJAZZ APEX не знайдено"],
+        "No charge readings in this period": [
+            "ru": "За этот период нет измерений заряда",
+            "uk": "За цей період немає вимірювань заряду"],
+        "Cannot check USB receiver access": [
+            "ru": "Не удалось проверить доступ к USB-приёмнику",
+            "uk": "Не вдалося перевірити доступ до USB-приймача"],
+        "Receiver HID collection not supported": [
+            "ru": "HID-интерфейс приёмника не поддерживается",
+            "uk": "HID-інтерфейс приймача не підтримується"],
         "Receiver found; battery status unavailable": [
             "ru": "Приёмник найден, заряд неизвестен",
             "uk": "Приймач знайдено, заряд невідомий"],

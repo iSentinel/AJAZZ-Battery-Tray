@@ -13,7 +13,7 @@ SECTION = "[Fresh APEX protocol matrix — full vendor buffers]"
 
 
 def legacy_percent(data):
-    """Mirror the existing Windows parser; zero remains unavailable."""
+    """Decode the historical compact layout used before beta.60."""
     if len(data) >= 4 and data[:3] == b"\x05\x00\x00":
         if 1 <= data[3] <= 100:
             return data[3]

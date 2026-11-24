@@ -5,6 +5,9 @@ public static class UiText
 {
     private static readonly Dictionary<string, (string Ru, string Uk)> Messages = new()
     {
+        ["No charge readings in this period"] = ("За этот период нет измерений заряда", "За цей період немає вимірювань заряду"),
+        ["Capturing HID report (up to {0} s)…"] = ("Сбор отчёта HID (до {0} с)…", "Збирання звіту HID (до {0} с)…"),
+        ["HID capture timed out. No battery reading was verified."] = ("Время сбора отчёта HID истекло. Получить достоверный заряд не удалось.", "Час збирання звіту HID вичерпано. Отримати достовірний рівень заряду не вдалося."),
         ["Device Manager"] = ("Управление устройствами", "Керування пристроями"),
         ["Live monitor — existing readings only; cached values are marked."] = ("Мониторинг устройств — только полученные данные; кэш отмечен звёздочкой.", "Моніторинг пристроїв — лише отримані дані; кеш позначено зірочкою."),
         ["Device"] = ("Устройство", "Пристрій"),
