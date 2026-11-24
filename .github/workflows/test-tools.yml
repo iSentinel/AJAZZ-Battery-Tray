@@ -33,5 +33,6 @@ jobs:
         run: |
           python tools/compare_apex_reports.py --help
           python tools/compare_tray_resources.py --help
+          python tools/compare_job_cpu.py --help
           python tools/analyze_aula_sleep.py --help
           python tools/compare_windows_hid_logs.py --help
