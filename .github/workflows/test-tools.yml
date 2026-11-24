@@ -37,3 +37,4 @@ jobs:
           python tools/analyze_aula_sleep.py --help
           python tools/compare_windows_hid_logs.py --help
           python tools/compare_get_ids.py --help
+          python tools/compare_ready_clear.py --help

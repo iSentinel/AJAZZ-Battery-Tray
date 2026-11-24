@@ -22,7 +22,10 @@ def report(field=100, time="21:22:33", omit=None, altered=None):
                 prefix = bytes([5, 0, 0, 99, 1, 0, 1, 2, 0, 0])
             tx = bytes([0, 247]).ljust(length, bytes(1)).hex().upper()
             rx = prefix.ljust(length, bytes(1)).hex().upper()
-            lines.append(f"Attempt UTC=example; delay={delay}ms; TX[{length}]={tx}")
+            lines.append(f"Attempt UTC=2026-11-24T{time}+00:00; delay={delay}ms; TX[{length}]={tx}")
+            lines.append(f"GET request buffer[{length}]=" +
+                         bytes([5]).ljust(length, bytes(1)).hex().upper())
+            lines.append(f"SET F7 / GET 05 ({length} bytes): OK; header={rx[:8]}; no valid battery")
             if omit != (delay, length):
                 lines.append(f"RX buffer[{length}]={rx}")
     lines.append("Matrix result: 0/6 valid replies; first valid=unavailable")
@@ -76,6 +79,37 @@ class ReadyClearTests(unittest.TestCase):
             compare(first, first)
         self.assertEqual(compare(first, parse_matrix(report(time="21:35:12",
                                  omit=(30, 65)))), "INCONCLUSIVE")
+
+    def test_wrong_request_and_header(self):
+        text = report()
+        for old, new in (("TX[65]=00F7", "TX[65]=00F6"),
+                         ("GET request buffer[65]=05", "GET request buffer[65]=00"),
+                         ("header=05000064", "header=05000063")):
+            with self.subTest(old=old), self.assertRaises(ValueError):
+                parse_matrix(text.replace(old, new, 1))
+
+    def test_failed_or_missing_get(self):
+        text = report()
+        self.assertIsNone(parse_matrix(text.replace("): OK; header=", "): FAILED; header=", 1))[1])
+        lines = [line for line in text.splitlines()
+                 if not line.startswith("GET request buffer")]
+        self.assertIsNone(parse_matrix(chr(10).join(lines))[1])
+
+    def test_wrong_order_and_orphan(self):
+        lines = report().splitlines()
+        index = next(i for i, line in enumerate(lines) if line.startswith("RX buffer"))
+        lines[index], lines[index - 1] = lines[index - 1], lines[index]
+        self.assertIsNone(parse_matrix(chr(10).join(lines))[1])
+        lines.insert(8, lines[index - 1])
+        with self.assertRaises(ValueError):
+            parse_matrix(chr(10).join(lines))
+
+    def test_owner_prefix_replay(self):
+        # Sanitized reconstruction of the two reported times and identical
+        # ten-byte prefixes; no claim of independently read device data.
+        first = parse_matrix(report(100, "21:22:33"))
+        second = parse_matrix(report(100, "21:35:12"))
+        self.assertEqual(compare(first, second), "UNCHANGED FIELD")
 
     def test_size_guard(self):
         with tempfile.TemporaryDirectory() as directory:

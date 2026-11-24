@@ -62,3 +62,11 @@ INCONCLUSIVE for missing/disagreeing evidence. Exit 0 is complete comparison,
 not hardware validation. Distinct chronological UTC timestamps required.
 It does not identify the physical receiver or validate GearHub's gauge.
 No raw capture is committed or uploaded.
+
+#133 passed Windows, Universal and Python checks (89 tests), merged
+cff8181. The comparison now checks exact allowlisted F7 TX, GET 05
+zero-filled request, successful response marker, matching header/length,
+and ordering of each probe. An offline reconstruction of the two owner
+report times and six identical status prefixes yields UNCHANGED FIELD.
+This is replay of the visible sanitized evidence, not a new measurement or
+an independent calibration. No physical proof of charge accuracy.

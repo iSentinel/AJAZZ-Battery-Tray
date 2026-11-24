@@ -1,3 +1,11 @@
+# Resume — ready-clear evidence chain
+
+- #133 Windows/Universal/Python PASS (89 tests), merged cff8181.
+- Hardened offline comparison with exact TX and GET buffers, successful
+  status markers, lengths, header and ordering. Added CLI help CI and
+  sanitized replay of both known report prefixes. CI pending.
+- No new hardware evidence; no change to runtime or public release.
+
 # Resume — ready-clear matrix comparison
 
 - #132 third CI all three PASS; EN/RU/UK transition tests confirmed
