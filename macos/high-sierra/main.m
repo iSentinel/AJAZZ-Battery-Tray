@@ -131,6 +131,118 @@ static BatteryReading ReadReceiver(void) {
     return result;
 }
 
+/// Local fixed-size IPC for a same-binary worker; no raw HID or identity.
+static BOOL DecodeRoutineReply(NSData *data, BatteryReading *reading) {
+    int32_t fields[3];
+    if (data.length != sizeof(fields)) return NO;
+    [data getBytes:fields length:sizeof(fields)];
+    int32_t state = fields[0], percent = fields[1], count = fields[2];
+    if (state < BatteryAbsent || state > BatteryUnexpectedUsage ||
+        count < 0 || count > 4096) return NO;
+    if (state == BatteryValid) {
+        if (percent < 1 || percent > 100 || count == 0) return NO;
+    } else if (percent != -1) return NO;
+    if (state == BatteryAbsent && count != 0) return NO;
+    *reading = (BatteryReading){state, percent, count};
+    return YES;
+}
+
+static int RoutineChild(const char *mode) {
+    signal(SIGALRM, SIG_DFL);
+    alarm(12);
+    if (!strcmp(mode, "--internal-routine-hang")) {
+        sleep(30);
+        return 1;
+    }
+    BatteryReading reading = !strcmp(mode, "--internal-routine-sample")
+        ? (BatteryReading){BatteryAccessError, -1, 0} : ReadReceiver();
+    int32_t fields[] = {(int32_t)reading.state, (int32_t)reading.percent,
+                        (int32_t)reading.collections};
+    int result = fwrite(fields, sizeof(fields), 1, stdout) == 1 ? 0 : 1;
+    alarm(0);
+    return result;
+}
+
+static NSLock *RoutineGate(void) {
+    static NSLock *gate;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ gate = [[NSLock alloc] init]; });
+    return gate;
+}
+
+/// Keep the in-process gate until NSTask confirms child exit.
+static BatteryReading RunRoutineUnlocked(NSString *mode, NSTimeInterval timeout) {
+    BatteryReading result = {BatteryAccessError, -1, 0};
+    NSString *path = [[NSBundle mainBundle] executablePath];
+    if (!path.length) return result;
+    NSTask *child = [[NSTask alloc] init];
+    NSPipe *pipe = [NSPipe pipe];
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    child.launchPath = path;
+    child.arguments = @[mode];
+    child.standardOutput = pipe;
+    child.standardError = [NSFileHandle fileHandleWithNullDevice];
+    child.terminationHandler = ^(NSTask *task) {
+        (void)task;
+        dispatch_semaphore_signal(done);
+    };
+    @try { [child launch]; }
+    @catch (NSException *error) { (void)error; return result; }
+    // NSTask closes the parent's writing end when given an NSPipe.
+    if (dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW,
+            (int64_t)(timeout * NSEC_PER_SEC))) != 0) {
+        if (child.running) kill(child.processIdentifier, SIGKILL);
+        [child waitUntilExit];
+        return (BatteryReading){BatteryTimedOut, -1, 0};
+    }
+    [child waitUntilExit];
+    if (child.terminationReason == NSTaskTerminationReasonExit &&
+        child.terminationStatus == 0) {
+        NSData *data = [pipe.fileHandleForReading readDataToEndOfFile];
+        DecodeRoutineReply(data, &result);
+    }
+    return result;
+}
+
+static BatteryReading RunRoutine(NSString *mode, NSTimeInterval timeout) {
+    NSLock *gate = RoutineGate();
+    if (![gate tryLock]) return (BatteryReading){BatteryAccessError, -1, 0};
+    @try { return RunRoutineUnlocked(mode, timeout); }
+    @finally { [gate unlock]; }
+}
+
+static int RoutineSelfTest(void) {
+    const int32_t samples[][3] = {
+        {BatteryValid, 83, 1}, {BatteryAbsent, -1, 0},
+        {BatteryUnknown, -1, 1}, {BatteryAccessError, -1, 0},
+        {BatteryUnexpectedUsage, -1, 0}
+    };
+    BatteryReading reading;
+    for (size_t i = 0; i < sizeof(samples) / sizeof(samples[0]); i++) {
+        NSData *data = [NSData dataWithBytes:samples[i] length:sizeof(samples[i])];
+        if (!DecodeRoutineReply(data, &reading) || reading.state != samples[i][0] ||
+            reading.percent != samples[i][1] || reading.collections != samples[i][2]) return 1;
+    }
+    const int32_t invalid[][3] = {
+        {BatteryValid, 0, 1}, {BatteryValid, 101, 1},
+        {BatteryAbsent, 83, 0}, {BatteryValid, 83, 0},
+        {BatteryTimedOut, -1, 0}, {BatteryUnknown, -1, -1}
+    };
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++) {
+        if (DecodeRoutineReply([NSData dataWithBytes:invalid[i]
+                length:sizeof(invalid[i])], &reading)) return 1;
+    }
+    [RoutineGate() lock];
+    reading = RunRoutine(@"--internal-routine-sample", 1);
+    [RoutineGate() unlock];
+    if (reading.state != BatteryAccessError) return 1;
+    if (RunRoutine(@"--internal-routine-sample", 8).state != BatteryAccessError ||
+        RunRoutine(@"--internal-routine-hang", 1).state != BatteryTimedOut ||
+        RunRoutine(@"--internal-routine-sample", 8).state != BatteryAccessError) return 1;
+    puts("PASS: legacy routine IPC, overlap, timeout and recovery (no HID)");
+    return 0;
+}
+
 /// Emit only the first eight bytes, never a complete vendor HID packet.
 static void PrintHIDPrefix(const uint8_t *reply, CFIndex length) {
     CFIndex prefix = length < 8 ? length : 8;
@@ -828,6 +940,10 @@ int main(int argc, char *argv[]) {
                        !strcmp(argv[i], "--internal-diagnose") ||
                        !strcmp(argv[i], "--internal-poll-sample") ||
                        !strcmp(argv[i], "--internal-test-io-lease") ||
+                       !strcmp(argv[i], "--self-test-routine-poll") ||
+                       !strcmp(argv[i], "--internal-routine-read") ||
+                       !strcmp(argv[i], "--internal-routine-sample") ||
+                       !strcmp(argv[i], "--internal-routine-hang") ||
                        !strcmp(argv[i], "--internal-test-sleep"))) {
                 mode = argv[i];
             } else {
@@ -856,6 +972,10 @@ int main(int argc, char *argv[]) {
             Help();
             return 0;
         }
+        if (!strcmp(mode, "--self-test-routine-poll")) return RoutineSelfTest();
+        if (!strcmp(mode, "--internal-routine-read") ||
+            !strcmp(mode, "--internal-routine-sample") ||
+            !strcmp(mode, "--internal-routine-hang")) return RoutineChild(mode);
         if (!strcmp(mode, "--internal-test-io-lease")) {
             int lease = AjazzAcquireIoLease();
             if (lease < 0) return 2;
