@@ -122,7 +122,7 @@ Close AJAZZ Battery Tray, GearHub and other mouse utilities completely;
 wake the mouse. Use a development executable containing the new mode,
 not the published beta.60 executable:
 
-    $exe = "$env:ProgramFiles\AJAZZ Battery Tray\AJAZZBatteryTray.exe"
+    $exe = (Resolve-Path ".\AJAZZBatteryTray.exe").Path
     $log = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) ('aj159-get-ids-' + [Guid]::NewGuid().ToString('N') + '.txt')
     $p = Start-Process -FilePath $exe -ArgumentList ('--hid-compare-get-ids --timeout 40 --output "' + $log + '"') -Wait -PassThru
     Get-Content -LiteralPath $log
@@ -139,3 +139,18 @@ timeout, and 1 means an error or a refused concurrent tray session.
 The log is created with CreateNew and never overwrites an old capture.
 Review the log before sharing. Compare with the vendor application's
 displayed numeric charge in a separate session on the same mouse.
+
+
+For a completed, single-receiver GET-ID report, use the separate offline
+pair analyzer (do not use the ordinary F7/05 log comparator):
+
+    python tools/compare_get_ids.py --log aj159-get-ids-example.txt
+
+Exit 0 means the full experimental matrix contains both observations
+for every pair, not verified battery support. Exit 2 indicates incomplete
+or inconclusive evidence; 1 means malformed input or error. The tool
+compares bytes 1–9 of the logged ten-byte prefix, reports the original
+returned-ID prefix and existing-parser candidate separately, and never
+normalizes a GET 00 response into a fresh 05 reading. Multiple matching
+receivers are deliberately inconclusive. Compare actual official
+displayed charge separately and preserve the original reviewed report.

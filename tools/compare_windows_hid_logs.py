@@ -34,6 +34,8 @@ class Capture:
 def parse_log(data: str) -> Capture:
     """Parse only stage markers from beta.57+ redacted CLI output."""
     lines = data.splitlines()
+    if any(line.startswith("MODE: experimental GET") for line in lines):
+        raise ValueError("Use compare_get_ids.py for an experimental GET-ID log")
     if sum(line.startswith("BEGIN: UTC=") for line in lines) != 1:
         raise ValueError("missing or duplicate BEGIN marker")
     values = {"open_ok": 0, "open_failed": 0, "set_ok": 0,
