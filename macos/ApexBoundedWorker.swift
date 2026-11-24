@@ -12,6 +12,7 @@ struct ApexWorkerReply: Codable {
         case .notConnected: state = "absent"; percent = nil
         case .unavailable: state = "unavailable"; percent = nil
         case .accessUnknown: state = "unknown"; percent = nil
+        case .timedOut: state = "timeout"; percent = nil
         case .unsupportedCollection: state = "unsupported"; percent = nil
         }
     }
@@ -25,6 +26,7 @@ struct ApexWorkerReply: Codable {
         case "absent": return .notConnected
         case "unavailable": return .unavailable
         case "unknown": return .accessUnknown
+        case "timeout": return .timedOut
         case "unsupported": return .unsupportedCollection
         default: return nil
         }
@@ -49,15 +51,18 @@ final class ApexWorkerCancellation {
     }
 }
 
-/// Prototype only. The regular menu-bar timer does not call this supervisor.
+/// Supervisor for the explicit experimental menu mode.
 enum ApexBoundedWorker {
     static let readMode = "--internal-bounded-apex-read"
     static let sampleMode = "--internal-bounded-apex-sample"
     static let hangMode = "--internal-bounded-apex-hang"
+    static let clockMode = "--internal-bounded-apex-clock"
+    static let clockSampleMode = "--internal-bounded-apex-clock-sample"
     private static let gate = NSLock()
 
     enum Result: Equatable {
         case reply(ApexBattery.Status)
+        case clock(Bool)
         case timeout
         case cancelled
         case busy
@@ -65,7 +70,7 @@ enum ApexBoundedWorker {
     }
 
     static func isWorker(_ mode: String) -> Bool {
-        [readMode, sampleMode, hangMode].contains(mode)
+        [readMode, sampleMode, hangMode, clockMode, clockSampleMode].contains(mode)
     }
 
     static func runChild(_ mode: String) -> Int32 {
@@ -77,9 +82,14 @@ enum ApexBoundedWorker {
             sleep(30)
             return 1
         }
-        let value: ApexBattery.Status = mode == sampleMode ? .accessUnknown : ApexBattery.read()
         do {
-            let data = try JSONEncoder().encode(ApexWorkerReply(value))
+            let data: Data
+            if mode == clockMode || mode == clockSampleMode {
+                data = try JSONEncoder().encode(mode == clockSampleMode || ApexBattery.syncClock())
+            } else {
+                let value: ApexBattery.Status = mode == sampleMode ? .accessUnknown : ApexBattery.read()
+                data = try JSONEncoder().encode(ApexWorkerReply(value))
+            }
             FileHandle.standardOutput.write(data)
             return 0
         } catch { return 1 }
@@ -128,7 +138,14 @@ enum ApexBoundedWorker {
         guard child.terminationReason == .exit, child.terminationStatus == 0 else {
             return .failed
         }
-        return decode(pipe.fileHandleForReading.readDataToEndOfFile())
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        if mode == clockMode || mode == clockSampleMode {
+            guard data.count <= 1024,
+                  let sent = try? JSONDecoder().decode(Bool.self, from: data)
+            else { return .failed }
+            return .clock(sent)
+        }
+        return decode(data)
     }
 
     private static func stopAndWait(_ child: Process) {
@@ -140,7 +157,7 @@ enum ApexBoundedWorker {
     static func selfTest() -> Bool {
         let states: [ApexBattery.Status] = [
             .battery(1), .battery(83), .battery(100), .notConnected,
-            .unavailable, .accessUnknown, .unsupportedCollection
+            .unavailable, .accessUnknown, .unsupportedCollection, .timedOut
         ]
         for status in states {
             guard let data = try? JSONEncoder().encode(ApexWorkerReply(status)),
@@ -172,6 +189,7 @@ enum ApexBoundedWorker {
         }
         guard read(mode: hangMode, timeout: 4, cancellation: during) == .cancelled
         else { return false }
-        return read(mode: sampleMode) == .reply(.accessUnknown)
+        return read(mode: sampleMode) == .reply(.accessUnknown) &&
+            read(mode: clockSampleMode) == .clock(true)
     }
 }

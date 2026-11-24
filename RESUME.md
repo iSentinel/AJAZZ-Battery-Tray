@@ -1,3 +1,14 @@
+# Resume — opt-in Universal Apple menu candidate
+
+- PR #108 merged fbeeccf; #109 merged 859093c; #110 merged 63563a7.
+  All their required CI checks PASS before merging.
+- Universal session-only --experimental-isolated-polling integrates
+  bounded battery and RTC workers, deferred quit/cancellation, unknown
+  presence and localized timeout reason. No default worker activation.
+- Synthetic timeout alert and clock IPC tests added. CI pending.
+- Next: legacy High Sierra regular read prototype; owner field test
+  and final combined branch CI. Public beta.60 / High Sierra .5 unchanged.
+
 # Resume — Universal bounded IOKit-read prototype
 
 - PR #106 merged at 76510ac4; Windows/macOS/High Sierra/Python PASS.

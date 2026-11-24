@@ -33,7 +33,7 @@ final class BatteryHistoryWriter {
         case .notConnected:
             value = ""
             state = "disconnected"
-        case .unavailable, .accessUnknown, .unsupportedCollection:
+        case .unavailable, .accessUnknown, .unsupportedCollection, .timedOut:
             value = ""
             state = "unavailable"
         }
