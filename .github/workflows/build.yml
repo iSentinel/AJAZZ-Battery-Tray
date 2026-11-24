@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'tools/Measure-TrayResources.ps1'
+      - 'tools/Measure-PollWorker.ps1'
       - '.github/workflows/build.yml'
   pull_request:
   workflow_dispatch:
@@ -59,6 +60,32 @@ jobs:
             -p:PublishSingleFile=true -p:PublishTrimmed=false `
             -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Windows publish failed' }
+      - name: Measure synthetic worker startup baseline
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $output = Join-Path $env:RUNNER_TEMP 'ajazz-worker-baseline.csv'
+          $dry = & ./tools/Measure-PollWorker.ps1 -ExePath $exe -OutputPath $output -DryRun
+          if ($dry -notmatch 'DRY-RUN' -or (Test-Path -LiteralPath $output)) {
+            throw 'Worker benchmark dry-run had a side effect'
+          }
+          & ./tools/Measure-PollWorker.ps1 -ExePath $exe -OutputPath $output -Iterations 20
+          $rows = @(Import-Csv -LiteralPath $output)
+          if ($rows.Count -ne 20 -or @($rows | Where-Object {
+              [double]$_.elapsed_ms -le 0 -or [int]$_.stdout_bytes -le 0
+          }).Count -ne 0) { throw 'Invalid worker baseline' }
+          $before = (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash
+          $refused = $false
+          try { & ./tools/Measure-PollWorker.ps1 -ExePath $exe -OutputPath $output -Iterations 5 }
+          catch { $refused = $_.Exception.Message -like '*Output already exists*' }
+          if (-not $refused -or (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash -ne $before) {
+            throw 'Existing benchmark report was modified'
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-worker-startup-baseline
+          path: ${{ runner.temp }}/ajazz-worker-baseline.csv
+          if-no-files-found: error
       - name: Verify opt-in Windows HID diagnostic watchdog
         shell: pwsh
         run: |
