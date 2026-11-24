@@ -8,3 +8,6 @@ dist/
 # Python diagnostic tool caches
 __pycache__/
 *.py[cod]
+
+# Private QA evidence (never commit raw results)
+/artifacts/

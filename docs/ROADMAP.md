@@ -22,6 +22,24 @@
 - Track confirmed vs unverified behavior in
   [Hardware Validation Matrix](VALIDATION_MATRIX.md).
 
+## Engineering policy adoption — 2026-11-25
+
+See [standard](engineering-standards.md), [audit and exception register](ENGINEERING_ADOPTION_AUDIT.md),
+and [AGENTS](../AGENTS.md). Priority order:
+- [ ] ENG-01/02: adopt standards and hold unsafe release workflows; review CI.
+- [ ] ENG-03: exact Python source-only audit, reviewed debt baseline, no-new-debt gate; native equivalent.
+- [ ] ENG-04/08/16: portable offline QA, JUnit/JSON, private immutable evidence and catalog.
+- [ ] ENG-05/15: safe logging and external transport security review.
+- [ ] ENG-06/12: pin and review dependencies/actions, upstream inventory, SBOM/license/advisories.
+- [ ] ENG-07/14: CLI contracts, bounded inputs, installer dry-run and rollback.
+- [ ] ENG-09/11: real hardware, DPI, worker recovery and sleep acceptance.
+- [ ] ENG-10: exact candidate release admission, reproducibility/signature status, separate approval. BLOCKED.
+- [ ] ENG-13: other CI providers / Confluence only if explicitly selected and qualified.
+
+No automatic release publication during adoption. Preserve existing hardware
+roadmap and continue independent work. AJ179 99 appeared spontaneously; no
+automatic reset, no promotion to telemetry. #136 merged c416b3f; all six CI PASS.
+
 ## Active work after the 24 November 2026 audit
 
 Baseline: Windows beta.60, universal macOS 13+, and High Sierra Intel .5.

@@ -1,13 +1,6 @@
 name: Publish cross-platform beta release
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'macos/**'
-      - '!macos/high-sierra/**'
-      - 'installer/**'
   workflow_dispatch:
 
 concurrency:
@@ -17,9 +10,14 @@ concurrency:
 jobs:
   verify-version:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
+      - name: Require qualified candidate admission
+        run: |
+          echo 'BLOCKED: release admission not yet qualified (ENG-10).'
+          exit 1
       - uses: actions/checkout@v4
       - name: Validate package versions and release tag
         env:
@@ -140,7 +138,7 @@ jobs:
     needs: [windows, macos]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/download-artifact@v4
         with:
