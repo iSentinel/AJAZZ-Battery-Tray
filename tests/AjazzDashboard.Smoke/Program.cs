@@ -36,7 +36,31 @@ internal static class Program
                     pixels.GetPixel(x, y).B == 0x45)),
                 "Critical icon must contain red fill");
         }
+        CheckIconExport();
         Console.WriteLine("PASS: four embedded app icons and red critical rendering");
+    }
+
+    private static void CheckIconExport()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "ajazz-icon-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            foreach (string color in TrayColorRules.AppIcons)
+            {
+                string path = Path.Combine(directory, color + ".ico");
+                ApplicationIconAssets.Export(color, path);
+                byte[] data = File.ReadAllBytes(path);
+                using var loaded = new Icon(path);
+                Require(loaded.Width > 0 && data.Length > 4, "Exported ICO invalid");
+                bool rejected = false;
+                try { ApplicationIconAssets.Export(color, path); }
+                catch (IOException) { rejected = true; }
+                Require(rejected && File.ReadAllBytes(path).SequenceEqual(data), "Icon export clobbered file");
+            }
+        }
+        finally { Directory.Delete(directory, true); }
+        Console.WriteLine("PASS: four ICO exports and existing-file protection");
     }
 
     private static void CheckDashboard()

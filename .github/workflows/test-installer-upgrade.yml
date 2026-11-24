@@ -77,6 +77,15 @@ jobs:
             $historyHash = (Get-FileHash $history).Hash
             $candidate = (Resolve-Path 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe').Path
             Install-Checked $candidate '0.3.0-beta.61'
+            $iconNames = @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')
+            foreach ($name in $iconNames) {
+              $expectedIcon = Join-Path 'src/AjazzBatteryTray/Assets' $name
+              $installedIcon = Join-Path (Join-Path $dir 'Icons') $name
+              if (!(Test-Path -LiteralPath $installedIcon) -or
+                  (Get-FileHash $installedIcon).Hash -ne (Get-FileHash $expectedIcon).Hash) {
+                throw "Missing or invalid shortcut icon: $name"
+              }
+            }
             $actualHash = (Get-FileHash $installed).Hash
             $expectedHash = (Get-FileHash 'dist/app/AJAZZBatteryTray.exe').Hash
             if ($actualHash -eq $oldHash -or $actualHash -ne $expectedHash) { throw 'Upgrade did not install candidate binary' }
@@ -86,6 +95,12 @@ jobs:
             $p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
             if ($p.ExitCode -ne 0 -or (Test-Path $installed) -or (Test-Path $key)) { throw 'Uninstall failed' }
             if ((Get-FileHash $settings).Hash -ne $settingsHash -or (Get-FileHash $history).Hash -ne $historyHash) { throw 'Uninstall changed user data' }
+            foreach ($name in $iconNames) {
+              if (Test-Path -LiteralPath (Join-Path (Join-Path $dir 'Icons') $name)) {
+                throw "Installed icon remains after uninstall: $name"
+              }
+            }
+            Write-Host 'PASS: four installed shortcut ICO resources and uninstall cleanup'
             Write-Host 'PASS: pinned beta.60 -> unpublished beta.61 -> uninstall, settings/history preserved; no tray launch or HID'
           } finally {
             if (Test-Path $uninstaller) {

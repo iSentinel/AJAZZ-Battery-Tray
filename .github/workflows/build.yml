@@ -222,6 +222,19 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
           }
+      - name: Package shortcut icon choices
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/app/Icons | Out-Null
+          foreach ($name in @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')) {
+            $source = Join-Path 'src/AjazzBatteryTray/Assets' $name
+            $target = Join-Path 'dist/app/Icons' $name
+            Copy-Item -LiteralPath $source -Destination $target
+            if ((Get-FileHash $source).Hash -ne (Get-FileHash $target).Hash) {
+              throw "Icon copy mismatch: $name"
+            }
+          }
+          echo 'PASS: four shortcut ICO files packaged'
       # upload-artifact already delivers a ZIP download. Upload the executable
       # directory, not a pre-zipped archive, to avoid nested ZIP files.
       - uses: actions/upload-artifact@v4

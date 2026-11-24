@@ -1,3 +1,12 @@
+# Resume — Windows shortcut icon resources
+
+- #128 all four checks PASS; 36 Apple rendering cases per edition
+  confirmed in native logs. Merged ca2ffa1 into draft #99.
+- Added four installer/portable ICO files and explicit no-clobber
+  resource export for single-file Windows EXE; new CI pending.
+- No shortcut is rewritten automatically; actual Properties/hover/restart
+  acceptance and hardware gates remain open. No public release.
+
 # Resume — appearance acceptance
 
 - #127 exact head 077e693 all four CI PASS; merged 9dabf9a into #99,

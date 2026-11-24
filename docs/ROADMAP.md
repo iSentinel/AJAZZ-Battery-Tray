@@ -119,7 +119,8 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   <=10% red numeric override, 11–20% amber, unavailable gray.
   Windows resource loading, red pixels and preference serialization passed.
   Native Apple appearance resource/pixel regression and color menu previews
-  are now under CI. Actual tray appearance, hover and restart persistence
+  passed all four checks in #128 (72 Apple cases). Merged ca2ffa1.
+  Shortcut ICO packaging and create-new embedded icon export are next under CI. Actual tray appearance, hover and restart persistence
   remain owner checks. The selected runtime app icon does not change the
   static signed EXE/Finder icon. No default HID worker activation.
 

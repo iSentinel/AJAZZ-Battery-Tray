@@ -46,3 +46,17 @@ native resource/rendering smoke and JSON preference round trip.
 Owner: verify all four colors, independent tray setting, selection after
 restart, hover text, actual 100/125/150/200% DPI and light/dark shell.
 Unknown or cached readings must not be treated as fresh critical telemetry.
+
+## Windows shortcut Properties
+
+The installed candidate includes all four ICO files in its Icons directory,
+normally C:/Program Files/AJAZZ Battery Tray/Icons. The Windows CI portable
+artifact includes the same files in Icons next to the EXE. For the standalone
+single-file EXE, Settings -> Save selected icon... exports the original
+multi-size resource to a new user-chosen .ico file; existing files are
+not overwritten. To customize a Windows shortcut, open its Properties ->
+Shortcut -> Change Icon -> Browse and select one of these files. Keep the
+ICO in a stable location. This changes only the chosen shortcut; the EXE
+icon remains orange. The application does not rewrite shortcuts, registry
+icon caches or signed executables. Candidate CI verifies installation,
+uninstall cleanup, export readability and no-clobber.
