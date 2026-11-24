@@ -1652,7 +1652,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_closing) return;
         UpdateTrayDisplay(_latestUsbReading ??
-            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false));
+            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false, Issue: UsbReadIssue.NotChecked));
     }
 
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
@@ -1716,9 +1716,18 @@ public sealed class TrayAppContext : ApplicationContext
         if (stale) value += " (" + UiText.Get("cached") + ")";
         else if (displayConnected && !aulaIsPrimary && receiver?.ScheduledSkip == true)
             value += " (" + UiText.Get("Last scheduled reading") + ")";
+        bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary;
+        if (unknownUsb)
+        {
+            var usb = receiver?.Reading ?? reading;
+            value = UsbTrayStatus.WithLastVerified(
+                UsbTrayStatus.Reason(usb.PresenceKnown, usb.ReceiverPresent, usb.Issue),
+                receiver?.LastVerifiedAt);
+        }
         string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
         if (_statusItem.Text != status) _statusItem.Text = status;
         string tooltip = neutral ? UiText.Get("Device Manager") : $"{value} — {displayName} ({source})";
+        if (unknownUsb) tooltip = $"{source} · {value} — {displayName}";
         tooltip = tooltip[..Math.Min(63, tooltip.Length)];
         if (_tray.Text != tooltip) _tray.Text = tooltip;
         string color = aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :

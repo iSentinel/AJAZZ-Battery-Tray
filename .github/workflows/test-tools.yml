@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths:
       - 'tools/**'
+      - 'tests/fixtures/**'
+      - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/test-tools.yml'
   pull_request:
     paths:
       - 'tools/**'
+      - 'tests/fixtures/**'
+      - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/test-tools.yml'
   workflow_dispatch:
 
@@ -27,6 +31,7 @@ jobs:
         run: python -m unittest discover -s tools -p 'test_*.py' -v
       - name: Validate help
         run: |
+          python tools/compare_apex_reports.py --help
           python tools/compare_tray_resources.py --help
           python tools/analyze_aula_sleep.py --help
           python tools/compare_windows_hid_logs.py --help

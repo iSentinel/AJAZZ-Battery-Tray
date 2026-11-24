@@ -10,7 +10,7 @@ public sealed class AjazzHidReader
     /// <summary>PresenceKnown is false when Windows could not enumerate USB.</summary>
     public sealed record Reading(bool ReceiverPresent, int? Percent,
         string Details, bool PresenceKnown = true,
-        IReadOnlyList<string>? Attempts = null);
+        IReadOnlyList<string>? Attempts = null, UsbReadIssue Issue = UsbReadIssue.None);
 
     /// <summary>One receiver, identified locally; never export Key.</summary>
     public sealed record ReceiverReading(string Key, ushort? Revision, Reading Reading,
@@ -57,7 +57,8 @@ public sealed class AjazzHidReader
                     trace.Add("  Receiver poll exception: " + error.GetType().Name);
                     reading = null;
                 }
-                reading ??= new Reading(true, null, "HID collection unavailable");
+                reading ??= new Reading(true, null, "HID collection unavailable",
+                    Issue: UsbReadIssue.InterfaceUnavailable);
                 receivers.Add(new ReceiverReading(key,
                     revision, reading with { Attempts = trace.ToArray() },
                     MeasuredAt: DateTimeOffset.UtcNow, CompletedTick: Environment.TickCount64));

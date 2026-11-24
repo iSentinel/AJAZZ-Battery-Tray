@@ -7,6 +7,26 @@ public enum BatteryTransport
     Bluetooth
 }
 
+/// <summary>Additional context when the USB reader has no validated charge.</summary>
+public enum UsbReadIssue { None, NotChecked, InterfaceUnavailable }
+
+public static class UsbTrayStatus
+{
+    public static string Reason(bool presenceKnown, bool present, UsbReadIssue issue)
+    {
+        if (issue == UsbReadIssue.NotChecked) return UiText.Get("Not checked");
+        if (!presenceKnown) return UiText.Get("Receiver status unknown");
+        if (!present) return UiText.Get("Receiver disconnected");
+        return UiText.Get(issue == UsbReadIssue.InterfaceUnavailable
+            ? "HID interface unavailable" : "Receiver present, no fresh charge");
+    }
+
+    public static string WithLastVerified(string status, DateTimeOffset? lastVerified)
+        => lastVerified is { } stamp
+            ? status + " · " + UiText.Format("Last verified {0}", stamp.ToLocalTime().ToString("g"))
+            : status;
+}
+
 /// <summary>Selects a battery source without merging distinct transports.</summary>
 public sealed record BatteryDisplayState(BatteryTransport Source, int? Percent)
 {

@@ -89,6 +89,37 @@ malformedMouse[4] = 2;
 Check("Invalid F7 flag cannot fall back to compact mouse parsing",
     BatteryReportParser.ParseWindowsFeature(malformedMouse) is null);
 
+// The Apple and offline readers replay the same sanitized fixtures in CI.
+string corpus = Path.Combine(AppContext.BaseDirectory, "fixtures", "apex-f7-v1.csv");
+foreach (string row in File.ReadLines(corpus).Skip(1))
+{
+    string[] fields = row.Split(',');
+    int? expected = fields[3] == "unknown" ? null : int.Parse(fields[3]);
+    int? actual = BatteryReportParser.ParseWindowsFeature(Convert.FromHexString(fields[2]));
+    Check($"Shared F7 corpus {fields[0]}", actual == expected);
+}
+
+string previousTrayLanguage = UiText.Language;
+foreach (string lang in new[] { "en", "ru", "uk" })
+{
+    UiText.SetLanguage(lang);
+    Check($"Unknown charge distinguishes startup, enumeration, absence, access and reply ({lang})",
+        new[] {
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.NotChecked),
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.None),
+            UsbTrayStatus.Reason(true, false, UsbReadIssue.None),
+            UsbTrayStatus.Reason(true, true, UsbReadIssue.InterfaceUnavailable),
+            UsbTrayStatus.Reason(true, true, UsbReadIssue.None)
+        }.Distinct().Count() == 5);
+    string noReply = UsbTrayStatus.Reason(true, true, UsbReadIssue.None);
+    Check($"Unknown charge without previous reading has no historical time ({lang})",
+        UsbTrayStatus.WithLastVerified(noReply, null) == noReply);
+    DateTimeOffset stamp = DateTimeOffset.Parse("2026-11-23T18:32:52Z");
+    Check($"Unknown charge displays time of last verified sample ({lang})",
+        UsbTrayStatus.WithLastVerified(noReply, stamp).Contains(stamp.ToLocalTime().ToString("g")));
+}
+UiText.SetLanguage(previousTrayLanguage);
+
 // Diagnostic classification must not broaden the valid battery format.
 Check("Protocol reason: empty", BatteryReportParser.DescribeWindowsFeature(Array.Empty<byte>()) == "short buffer");
 Check("Protocol reason: wrong ID", BatteryReportParser.DescribeWindowsFeature(new byte[] { 4, 0, 0, 50 }) == "unexpected report ID");

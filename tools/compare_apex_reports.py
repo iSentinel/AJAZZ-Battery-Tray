@@ -20,6 +20,16 @@ def legacy_percent(data):
     return None
 
 
+def current_percent(data):
+    """Replay the current Windows parser on a numbered HID response."""
+    if len(data) < 10 or data[0] != 5 or data[7] not in (1, 2, 3):
+        return legacy_percent(data)
+    if (data[7] == 1 or data[4] > 1 or data[1] != 1
+            or data[5] != 0 or data[6] != 1 or data[9] != 0):
+        return None
+    return data[3] if 1 <= data[3] <= 100 else None
+
+
 def vendor_candidate(data):
     """Hypothetical Windows alignment of GearHub F7 fields, not live parser."""
     if len(data) < 10 or data[0] != 5:
@@ -63,6 +73,7 @@ def inspect(path):
     """Summarize each returned buffer and distinguish no-RX attempts."""
     attempts = Counter()
     received = Counter()
+    valid = 0
     print(f"\n=== {path.name} ===")
     for receiver, delay, length, data in read_attempts(
             path.read_text(encoding="utf-8-sig")):
@@ -71,15 +82,18 @@ def inspect(path):
             attempts[key] += 1
             continue
         received[key] += 1
+        current = current_percent(data)
+        valid += current is not None
         state, candidate = vendor_candidate(data)
         print(f"receiver={receiver} delay={delay}ms bytes={length} "
+              f"current={current if current is not None else 'unknown'} "
               f"legacy={legacy_percent(data)} vendor={candidate} state={state}")
     if not attempts:
         print("No eligible query attempts; inspect descriptor inventory.")
     for (receiver, delay, length), count in (attempts - received).items():
         print(f"receiver={receiver} delay={delay}ms bytes={length} "
               f"no RX ({count} attempts)")
-    print(f"Attempts={sum(attempts.values())}; RX={sum(received.values())}")
+    print(f"Attempts={sum(attempts.values())}; RX={sum(received.values())}; current valid={valid}")
 
 
 def main():

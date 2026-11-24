@@ -19,6 +19,7 @@ internal sealed class ReceiverMonitor : IDisposable
         internal AjazzHidReader.Reading Reading { get; set; }
         internal bool Present { get; set; } = true;
         internal DateTimeOffset? MeasuredAt { get; set; }
+        internal DateTimeOffset? LastVerifiedAt { get; set; }
         internal bool ScheduledSkip { get; set; }
         internal BatteryHistoryForm? Window { get; set; }
 
@@ -88,6 +89,7 @@ internal sealed class ReceiverMonitor : IDisposable
                 if (!item.Sampled) continue;
                 state.Reading = item.Reading;
                 state.MeasuredAt = item.MeasuredAt ?? now;
+                if (item.Reading.Percent.HasValue) state.LastVerifiedAt = state.MeasuredAt;
                 Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
             }
 
@@ -169,8 +171,10 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     internal static string Status(State state)
-        => !state.Present ? UiText.Get("unavailable") :
-            state.Reading.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
+        => state.Reading.Percent is int level ? $"{level}%" :
+            UsbTrayStatus.WithLastVerified(
+                UsbTrayStatus.Reason(state.Reading.PresenceKnown, state.Present, state.Reading.Issue),
+                state.LastVerifiedAt);
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
         Func<string, bool> visible, Action<string> toggle,
@@ -241,7 +245,7 @@ internal sealed class ReceiverMonitor : IDisposable
                 if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
                 SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
-                    color: color(pair.Key));
+                    color: color(pair.Key), status: pair.Value.Reading.Percent.HasValue ? null : Status(pair.Value));
             }
             if (showAula && !aulaIsPrimary)
             {
@@ -268,14 +272,14 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private void SetIcon(string key, string name, int? level, ContextMenuStrip menu,
-        Action refresh, bool stale = false, string? color = null)
+        Action refresh, bool stale = false, string? color = null, string? status = null)
     {
         if (!_icons.TryGetValue(key, out ExtraIcon? icon))
         {
             icon = new ExtraIcon(refresh);
             _icons.Add(key, icon);
         }
-        icon.Update(name, level, menu, stale, color);
+        icon.Update(name, level, menu, stale, color, status);
     }
 
     public void Dispose()
@@ -294,10 +298,11 @@ internal sealed class ReceiverMonitor : IDisposable
 
         internal ExtraIcon(Action refresh) => _tray.DoubleClick += (_, _) => refresh();
 
-        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color)
+        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color, string? status)
         {
             if (!ReferenceEquals(_tray.ContextMenuStrip, menu)) _tray.ContextMenuStrip = menu;
             string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} — {name}";
+            if (status is not null) label = $"2.4 GHz · {status} — {name}";
             if (stale) label = UiText.Get("cached") + ": " + label;
             label = label[..Math.Min(63, label.Length)];
             if (_tray.Text != label) _tray.Text = label;

@@ -1,3 +1,20 @@
+# Resume — 24 November audit and roadmap work in draft PR 99
+
+The current software work is on `fix/battery-audit-20261124`; the released
+baseline is beta.60, with High Sierra .5 distributed separately.
+[Active roadmap and acceptance criteria](docs/ROADMAP.md#active-work-after-the-24-november-2026-audit).
+
+- The first audit commit 09a1950 passed all four PR workflows, including
+  Windows raw-capture timeout and both native Apple builds.
+- Follow-up changes add one field/synthetic HID corpus, the offline current
+  parser result, per-receiver Windows tray explanations and a compact Device
+  Manager. The full comparison report from the affected AJ159 replayed 6/6
+  responses and 0 verified percentages.
+- Open field work: compare AJ159 and AJ179 with the manufacturer's display
+  at two levels and test the Intel iMac. Check desktop DPI, keyboard navigation
+  and installer upgrade. For regular polling stalls, start with a worker-cost
+  baseline. Refer to the roadmap for software vs field status.
+
 # Resume — beta.60 released; AJ159 physical battery acceptance open
 
 - PR #97 merged e9c1f21acee64e51b7b064a97492e434ad41b52f.

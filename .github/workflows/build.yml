@@ -30,6 +30,8 @@ jobs:
         run: |
           dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
           if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
+      - name: Smoke-test localized Device Manager controls
+        run: dotnet run -c Release --project tests/AjazzDashboard.Smoke
       - name: Smoke-test resource sampler
         shell: pwsh
         run: |

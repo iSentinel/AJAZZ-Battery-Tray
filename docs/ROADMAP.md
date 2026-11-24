@@ -22,6 +22,59 @@
 - Track confirmed vs unverified behavior in
   [Hardware Validation Matrix](VALIDATION_MATRIX.md).
 
+## Active work after the 24 November 2026 audit
+
+Baseline: Windows beta.60, universal macOS 13+, and High Sierra Intel .5.
+[Draft PR 99](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/99)
+contains the software changes below. See the [audit](BATTERY_TRAY_AUDIT_20261124.md)
+for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field evidence.
+
+### Fixes already in the draft
+
+| Area | Implemented scope | Verification |
+| --- | --- | --- |
+| Windows diagnostics | Isolate explicit full F7 capture in a child with a 40 s deadline. Resume polling before reviewing the report. | Published EXE round trip and simulated hang |
+| HID parsing | Reserve known F7 slots for gated decoding. Share one decoder between both Apple apps, including stripped report IDs. | Windows parser tests and both native Mac self-tests |
+| macOS presence and RTC | Distinguish access and collection errors from absence. Service manual clock requests queued during polling. | Universal build and state self-tests |
+| High Sierra | Show checking at startup. Consume a low-battery threshold only when an enabled warning is eligible. | Intel build and self-tests; physical notification still pending |
+| History and preferences | Use the selected Windows time window, explain a period containing only gaps on both charting apps, and show effective inherited alert settings. | Windows and Mac builds; visual and upgrade acceptance pending |
+
+### Work queue and completion criteria
+
+| Order | Work | Completion criteria and outstanding evidence |
+| --- | --- | --- |
+| 1 | AJ159/AJ179 receiver matrix and replay | Compare official display, report field, ready flag and tray result at two charge levels per mouse after wake, sleep and replug. Repeat on the Intel iMac. The affected AJ159 Windows capture yielded 0/6 valid replies. The AJ179 reference contains 100 with ready=0. Both use 3151:5007 rev 0002. Keep uncertain results unknown and label any historical field shown separately. Physical acceptance is open in [#53](https://github.com/iSentinel/AJAZZ-Battery-Tray/issues/53). |
+| 2 | Explain unknown charge in the tray | Show transport, a short localized reason, and the last successful measurement time for the same receiver when available. Check access failure, confirmed absence, no reply, scheduled skip and multiple receivers. Historical values must never trigger low-battery alerts or feed estimates as fresh. |
+| 3 | Simplify Windows Device Manager | Retain direct Refresh and History actions, group per-device commands, and place telemetry under Diagnostics. Verify keyboard use, action availability after selection changes and EN/RU/UK labels at 125%, 150% and 200% scaling at minimum size. |
+| 4 | Bound routine HID polling | Measure worker overhead for ordinary Windows/IOKit polling before selecting an isolation strategy. Exercise blocked reads, exit, sleep/wake and device removal. Verify no overlapping attempts and recovery after a timeout. Track full-capture field and installer-upgrade acceptance separately in [#93](https://github.com/iSentinel/AJAZZ-Battery-Tray/issues/93). |
+| 5 | Share parser regressions | Replay a versioned, sanitized field/synthetic corpus through Windows C#, the Apple decoder and offline comparison. Cover compact/shared frames, stripped Apple framing, validation flags, and HID versus BLE zero semantics. Verify rejected readings cannot enter fresh history or notifications. |
+
+### Current implementation checkpoint
+
+- **Receiver matrix and fixtures.** The [20-case v1 CSV](../tests/fixtures/apex-f7-v1.csv)
+  records sanitized field prefixes and synthetic cases separately. The Windows
+  tests, the C decoder used by both Apple apps, and the Python comparator read
+  the same rows. Running the comparator on the owner's 65/67-byte Windows AJ159
+  capture at 30/100/250 ms gave six responses and zero current valid readings.
+  BLE zero semantics have independent tests. Fresh-history and notification
+  integration across platforms and the two-level hardware runs remain open.
+- **Windows AJAZZ tray.** The receiver menu and tray tooltip now explain an
+  unknown result and retain each receiver's last successful measurement time
+  for the current session. Confirmed absence in the main tray has no implied
+  last device identity. The per-receiver menu retains that device's timestamp.
+  Further work covers the Apple status menus and BLE/AULA presentation parity.
+- **Windows Device Manager.** Five primary actions replace ten buttons.
+  Device settings and Diagnostics group the existing commands. A Windows
+  smoke test exercises callbacks, selection changes, removal while a menu
+  is open and minimum-size EN/RU/UK layout. Interactive keyboard and
+  125%/150%/200% DPI acceptance remain open.
+- **Routine polling.** Next engineering step: benchmark normal per-poll worker
+  overhead and compare against the existing polling budget before extending
+  the explicit-capture watchdog.
+
+Hardware collection and visual acceptance may run alongside software changes.
+Promote a stage to hardware-verified only after recording the corresponding device and observation.
+
 ## Device Manager expansion — approved 2026-11-22
 
 Goal: one lightweight AJAZZ/AULA application for AJ159, AJ179 and L99,
