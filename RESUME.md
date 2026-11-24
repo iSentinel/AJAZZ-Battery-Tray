@@ -1,3 +1,13 @@
+# Resume — installer CI and dashboard acceptance
+
+- #124 Windows/Universal/upgrade CI PASS; actual upgrade log
+  45426251349 confirms beta.60 -> CI-only beta.61 -> uninstall
+  preserved synthetic user files. Merged into #99 as 59dbf62.
+- Dashboard candidate explicitly orders keyboard actions, adds Escape
+  close and synthetic font/window scaling at 125/150/200% in EN/RU/UK.
+  Native CI pending; not real monitor DPI or interactive keyboard evidence.
+- Real hardware and owner upgrade remain open. No public release.
+
 # Resume — installer upgrade acceptance
 
 - Draft #99 ff37a72: all five final checks PASS; 81 offline regressions.
