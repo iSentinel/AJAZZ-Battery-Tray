@@ -1,3 +1,14 @@
+# Resume — follow-up GET ID differential on top of draft PR 99
+
+- Baseline for this change: draft PR 99 at 697daca, all four CI checks PASS.
+- Add explicit Windows --hid-compare-get-ids with paired existing F7/GET
+  05 and 00 requests, same lengths and delays, bounded worker, immediate
+  ten-byte status prefix and refusal while the tray singleton exists.
+- The experiment never publishes a battery value. Default polling is
+  unchanged. Separate hardware evidence for AJ159 issue #53 is required.
+- Pending: Windows CI for this follow-up, development build acceptance,
+  then the routine poll worker-overhead benchmark in the active roadmap.
+
 # Resume — 24 November audit and roadmap work in draft PR 99
 
 The current software work is on `fix/battery-audit-20261124`; the released

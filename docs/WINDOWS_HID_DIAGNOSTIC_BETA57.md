@@ -108,3 +108,34 @@ once after long idle and after reconnect. Compare the error stage and
 the short received prefix with the known-working receiver only when
 both devices are available. Do not change the F7/05 parser based on HAR
 or unvalidated HID packets.
+
+
+## Experimental AJ159 GET ID comparison (development build only)
+
+The GearHub bridge requests GET feature report ID 00 while the ordinary
+tray requests 05. This diagnostic compares the two request IDs at the
+same lengths and delays, with a fresh existing F7 request before each
+GET. The experiment does not add any SET opcode, write configuration,
+or change normal polling, history, notifications or API telemetry.
+
+Close AJAZZ Battery Tray, GearHub and other mouse utilities completely;
+wake the mouse. Use a development executable containing the new mode,
+not the published beta.60 executable:
+
+    $exe = "$env:ProgramFiles\AJAZZ Battery Tray\AJAZZBatteryTray.exe"
+    $log = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) ('aj159-get-ids-' + [Guid]::NewGuid().ToString('N') + '.txt')
+    $p = Start-Process -FilePath $exe -ArgumentList ('--hid-compare-get-ids --timeout 40 --output "' + $log + '"') -Wait -PassThru
+    Get-Content -LiteralPath $log
+    Write-Host "Exit: $($p.ExitCode)"
+
+The common 65-byte descriptor yields twelve probes (65/67 bytes,
+30/100/250 ms, GET 05 and GET 00). Each successful GET emits an
+OBSERVED line immediately, containing request and returned IDs, a
+ten-byte status prefix, and the existing parser candidate, if any.
+No full HID report or private receiver identity is exported.
+The candidate is an observation only, not a confirmed battery value.
+A completed experiment returns 2 (inconclusive by design), 124 means
+timeout, and 1 means an error or a refused concurrent tray session.
+The log is created with CreateNew and never overwrites an old capture.
+Review the log before sharing. Compare with the vendor application's
+displayed numeric charge in a separate session on the same mouse.
