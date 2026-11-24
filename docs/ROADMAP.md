@@ -91,8 +91,10 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   Prototype #107, legacy watchdog #108, shared I/O gate #109 and
   cancellation #110 passed CI and merged. Universal session-only
   --experimental-isolated-polling candidate adds bounded read/RTC and
-  deferred quit. CI and owner acceptance pending. Separate High Sierra
-  routine prototype remains next; default worker activation is gated.
+  deferred quit (#111 CI PASS, merged). Legacy routine prototype #112
+  also passed CI and merged. High Sierra opt-in menu integration adds
+  cancellable reads and deferred quit; CI pending. Default worker
+  activation remains gated on owner field acceptance for all editions.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.

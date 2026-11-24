@@ -1,3 +1,14 @@
+# Resume — High Sierra opt-in isolated polling
+
+- Universal opt-in PR #111 merged 68576f0; legacy prototype #112 merged
+  95be0b9. All associated CI checks PASS.
+- High Sierra session-only --experimental-isolated-polling candidate:
+  cancellation, child reaping, deferred AppKit quit, timeout status and
+  stronger synthetic IPC/recovery tests. CI pending.
+- Next: one owner acceptance matrix, combined CI, development artifacts
+  and field verification. Default polling remains unchanged; no release.
+- Published beta.60 / High Sierra .5; AJ159 charge still unverified.
+
 # Resume — opt-in Universal Apple menu candidate
 
 - PR #108 merged fbeeccf; #109 merged 859093c; #110 merged 63563a7.
