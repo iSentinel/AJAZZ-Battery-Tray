@@ -97,6 +97,25 @@ foreach (string row in File.ReadLines(corpus).Skip(1))
     int? expected = fields[3] == "unknown" ? null : int.Parse(fields[3]);
     int? actual = BatteryReportParser.ParseWindowsFeature(Convert.FromHexString(fields[2]));
     Check($"Shared F7 corpus {fields[0]}", actual == expected);
+    string directory = Path.Combine(Path.GetTempPath(), "ajazz-corpus-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        var history = new BatteryHistory("test.csv", directory);
+        history.Record(DateTimeOffset.UtcNow, actual, receiverPresent: true);
+        var sample = history.ReadRecent().SingleOrDefault();
+        Check($"Shared F7 history {fields[0]}", sample is not null &&
+            sample.Percent == expected && sample.State == (expected is null ? "unavailable" : "online"));
+        if (expected is null)
+        {
+            var connection = new ConnectionAlertPolicy();
+            connection.Evaluate(true, true);
+            bool first = connection.Evaluate(false, false);
+            bool unknown = connection.Evaluate(actual.HasValue, true);
+            bool next = connection.Evaluate(false, false);
+            Check($"Shared F7 unknown does not trigger disconnect {fields[0]}", !first && !unknown && !next);
+        }
+    }
+    finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 }
 
 string previousTrayLanguage = UiText.Language;

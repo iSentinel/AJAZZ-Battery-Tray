@@ -1,3 +1,13 @@
+# Resume — shared corpus observation regression
+
+- #117 Windows/Universal/HA PASS after formatter separation; #118
+  Windows/Universal PASS and merged 6c81320 into #117.
+- Candidate extends 20-row corpus into actual temporary Windows and
+  Universal history CSVs and rejected-frame disconnect alert checks on
+  all three editions. No actual notification delivery or HID in fixture run.
+- Next: native CI, consolidate #117 -> #113 -> #104 -> draft #99.
+  Hardware acceptance remains open; published beta.60 / High Sierra .5.
+
 # Resume — BLE/AULA status parity
 
 - #116 passed Windows/Universal/High Sierra and merged 98708ee.
