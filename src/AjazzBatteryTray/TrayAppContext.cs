@@ -597,26 +597,11 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void UpdateAulaStatus()
     {
-        if (_aulaPoll.IsBusy)
-            _aulaStatus.Text = UiText.Get("AULA L99: checking battery...");
-        else if (_aulaLatest is null)
-            _aulaStatus.Text = UiText.Get("AULA L99: not checked");
-        else if (!_aulaLatest.PresenceKnown)
-            _aulaStatus.Text = UiText.Get("AULA L99: HID status unknown");
-        else if (!_aulaLatest.ReceiverPresent)
-            _aulaStatus.Text = UiText.Get("AULA L99: dongle not found");
-        else if (_aulaLatest.Percent is int level)
-            _aulaStatus.Text = UiText.Format(
-                "AULA L99: last {0}% at {1} (unverified)", level,
-                _aulaLastReadAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
-        else if (AulaDisplayPercent() is int cached)
-            _aulaStatus.Text = UiText.Format(
-                "AULA L99: cached {0}% at {1}; no fresh reply", cached,
-                _aulaBattery.LastGoodAt?.ToLocalTime().ToString("g") ?? "—");
-        else
-            _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
-        if (_settings.DeviceAliases.TryGetValue(DeviceAliasRules.AulaSlot, out string? alias))
-            _aulaStatus.Text = alias + " — " + _aulaStatus.Text;
+        var state = AulaDashboardState();
+        string value = _aulaPoll.IsBusy
+            ? UiText.Get("AULA L99: checking battery...")
+            : $"{state.Name} · {state.Transport}: {state.MenuStatus(_aulaBattery.LastGoodAt)}";
+        _aulaStatus.Text = value;
     }
 
     private int? AulaDisplayPercent()
@@ -674,6 +659,7 @@ public sealed class TrayAppContext : ApplicationContext
                     result.ReceiverPresent || !result.PresenceKnown);
             if (_settings.MonitorAulaL99)
             {
+                if (!result.PresenceKnown) _aulaConnection.ObserveUnknown();
                 if (result.PresenceKnown && _aulaConnection.Evaluate(
                         result.Percent.HasValue, result.ReceiverPresent) &&
                     _settings.EffectiveDisconnectAlert(DeviceAliasRules.AulaSlot))
@@ -693,6 +679,9 @@ public sealed class TrayAppContext : ApplicationContext
                 // the receiver changed or was physically disconnected.
                 _aulaLatest = new(false, null, "Unexpected read error", PresenceKnown: false);
                 _aulaLastReadAt = DateTimeOffset.UtcNow;
+                _aulaConnection.ObserveUnknown();
+                if (_settings.RecordBatteryHistory)
+                    _aulaHistory.Record(_aulaLastReadAt.Value, null, receiverPresent: true);
             }
         }
         finally
@@ -1221,7 +1210,7 @@ public sealed class TrayAppContext : ApplicationContext
         {
             string key = pair.Key;
             var state = BluetoothDashboardState(key, pair.Value);
-            string value = state.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
+            string value = state.MenuStatus(_ble.LastSuccess(key));
             var item = new ToolStripMenuItem($"{BleDisplayLabel(pair.Value)}: {value}");
             var read = new ToolStripMenuItem(UiText.Get("Refresh Bluetooth battery now"))
             {

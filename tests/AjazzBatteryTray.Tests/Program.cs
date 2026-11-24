@@ -609,6 +609,32 @@ Check("Dashboard rejects invalid out-of-range values",
     Dashboard(fresh: 101, cached: -1) is
         { Status: DeviceDashboardStatus.NoReply, Percent: null });
 
+string statusLanguage = UiText.Language;
+foreach (string language in new[] { "en", "ru", "uk" })
+{
+    UiText.SetLanguage(language);
+    Check($"AULA cached menu retains original time ({language})",
+        cachedDashboard.MenuStatus().Contains("98%") &&
+        cachedDashboard.MenuStatus().Contains(UiText.Get("Cached reading")) &&
+        cachedDashboard.MenuStatus().Contains(cachedDashboard.MeasuredAt!.Value.ToLocalTime().ToString("g")));
+    Check($"Manual and fresh status remain distinct ({language})",
+        (Dashboard(fresh: 97) with { Status = DeviceDashboardStatus.ManualReading })
+            .MenuStatus().Contains(UiText.Get("Manual reading")) &&
+        Dashboard(fresh: 97).MenuStatus().Contains(UiText.Get("Fresh reading")));
+    Check($"Unknown presence hides numbers and timestamps ({language})",
+        Dashboard(known: false, fresh: 98, cached: 98).MenuStatus(dashboardAt) ==
+            UiText.Get("Receiver status unknown"));
+    Check($"BLE standby hides historical values ({language})",
+        new DeviceDashboardState("BLE", "Bluetooth", DeviceDashboardStatus.Standby, null, null)
+            .MenuStatus(dashboardAt) == UiText.Get("Standby (USB priority)"));
+    Check($"No reply preserves only historical time ({language})",
+        Dashboard().MenuStatus(dashboardAt) ==
+            UsbTrayStatus.WithLastVerified(UiText.Get("No valid reply"), dashboardAt));
+    Check($"BLE zero is valid numeric sample ({language})",
+        Dashboard(fresh: 0).MenuStatus().StartsWith("0%"));
+}
+UiText.SetLanguage(statusLanguage);
+
 // AULA's shared dongle must never be probed unless manually requested/opted in.
 Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);
 Check("AULA separate history CSV",

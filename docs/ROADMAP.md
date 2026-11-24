@@ -63,7 +63,8 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   for the current session. Confirmed absence in the main tray has no implied
   last device identity. The per-receiver menu retains that device's timestamp.
   Apple session-only historical USB timestamps and access classification are
-  implemented in a candidate PR; BLE/AULA presentation parity remains open.
+  merged in #116. BLE/AULA shared status formatting and AULA unknown-state
+  debounce/history correction are in the next candidate.
 - **Windows Device Manager.** Five primary actions replace ten buttons.
   Device settings and Diagnostics group the existing commands. A Windows
   smoke test exercises callbacks, selection changes, removal while a menu

@@ -1,3 +1,12 @@
+# Resume — BLE/AULA status parity
+
+- #116 passed Windows/Universal/High Sierra and merged 98708ee.
+- Shared dashboard and menu status labels for BLE/AULA; timestamp
+  provenance, no stale numeric value on unknown/standby. AULA unknown
+  polls interrupt disconnect debounce and unexpected errors record gaps.
+- CI pending; consolidate #113 and #104 into draft #99 after checks.
+- Actual device tests and resource acceptance remain open. No release.
+
 # Resume — Apple observation parity
 
 - PR #114 merged 1f9f74a, all three platform development artifacts

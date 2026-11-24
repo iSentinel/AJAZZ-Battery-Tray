@@ -18,6 +18,33 @@ public enum DeviceDashboardStatus
 public sealed record DeviceDashboardState(string Name, string Transport,
     DeviceDashboardStatus Status, int? Percent, DateTimeOffset? MeasuredAt)
 {
+    public string StatusText => UiText.Get(Status switch
+    {
+        DeviceDashboardStatus.NotChecked => "Not checked",
+        DeviceDashboardStatus.Disabled => "Monitoring disabled",
+        DeviceDashboardStatus.Standby => "Standby (USB priority)",
+        DeviceDashboardStatus.PresenceUnknown => "Receiver status unknown",
+        DeviceDashboardStatus.Disconnected => "Disconnected",
+        DeviceDashboardStatus.NoReply => "No valid reply",
+        DeviceDashboardStatus.Fresh => "Fresh reading",
+        DeviceDashboardStatus.ManualReading => "Manual reading",
+        DeviceDashboardStatus.Cached => "Cached reading",
+        DeviceDashboardStatus.Scheduled => "Last scheduled reading",
+        _ => "unavailable"
+    });
+
+    /// <summary>Show measurement provenance without inventing a current sample.</summary>
+    public string MenuStatus(DateTimeOffset? lastVerified = null)
+    {
+        string text = StatusText;
+        if (Percent is int level && MeasuredAt is { } stamp &&
+            Status is DeviceDashboardStatus.Fresh or DeviceDashboardStatus.ManualReading
+                or DeviceDashboardStatus.Cached or DeviceDashboardStatus.Scheduled)
+            return $"{level}% · {text} · {stamp.ToLocalTime():g}";
+        return Status == DeviceDashboardStatus.NoReply
+            ? UsbTrayStatus.WithLastVerified(text, lastVerified) : text;
+    }
+
     public static DeviceDashboardState FromPoll(string name, string transport,
         bool checkedOnce, bool presenceKnown, bool present, int? fresh,
         DateTimeOffset? measuredAt, int? cached = null,

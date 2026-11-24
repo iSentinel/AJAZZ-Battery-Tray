@@ -170,7 +170,7 @@ internal sealed class DeviceDashboardForm : Form
             {
                 var state = entry.State;
                 int row = _grid.Rows.Add(state.Name, state.Transport,
-                    StatusText(state.Status), FormatBattery(state),
+                    state.StatusText, FormatBattery(state),
                     entry.TrayVisible is bool visible ? UiText.Get(visible ? "Allowed" : "Hidden") : "—",
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
@@ -195,21 +195,6 @@ internal sealed class DeviceDashboardForm : Form
             ? $"{level}%" + (state.Status == DeviceDashboardStatus.Cached ? "*" : "")
             : "—";
 
-    private static string StatusText(DeviceDashboardStatus status) => UiText.Get(status switch
-    {
-        DeviceDashboardStatus.NotChecked => "Not checked",
-        DeviceDashboardStatus.Disabled => "Monitoring disabled",
-        DeviceDashboardStatus.Standby => "Standby (USB priority)",
-        DeviceDashboardStatus.PresenceUnknown => "Receiver status unknown",
-        DeviceDashboardStatus.Disconnected => "Disconnected",
-        DeviceDashboardStatus.NoReply => "No valid reply",
-        DeviceDashboardStatus.Fresh => "Fresh reading",
-        DeviceDashboardStatus.ManualReading => "Manual reading",
-        DeviceDashboardStatus.Cached => "Cached reading",
-        DeviceDashboardStatus.Scheduled => "Last scheduled reading",
-        _ => "unavailable"
-    });
-
     private Entry? CurrentEntry() => _grid.CurrentRow?.Tag as Entry;
 
     private void UpdateSelection()
@@ -226,6 +211,6 @@ internal sealed class DeviceDashboardForm : Form
             _alerts.Enabled || _interval.Enabled;
         _visibility.Text = UiText.Get(entry?.TrayVisible == true ? "Hide device in tray" : "Show device in tray");
         _detail.Text = entry is null ? UiText.Get("No device readings yet") :
-            $"{entry.State.Name} — {StatusText(entry.State.Status)}";
+            $"{entry.State.Name} — {entry.State.StatusText}";
     }
 }
