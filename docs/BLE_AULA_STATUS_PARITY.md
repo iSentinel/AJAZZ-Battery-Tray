@@ -15,3 +15,7 @@ history gap when history is enabled, without altering the last verified
 sample or emitting an alert. This does not change device requests,
 freshness limits, receiver identity or BLE priority. CI checks shared
 EN/RU/UK labels and timestamp provenance. Hardware evidence is separate.
+
+The localized formatter lives in DeviceDashboardText.cs, separate from
+DeviceDashboardState.cs, which is also compiled by the headless HA preview.
+The Windows smoke and pure test projects explicitly link the UI formatter.

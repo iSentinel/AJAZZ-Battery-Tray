@@ -170,7 +170,7 @@ internal sealed class DeviceDashboardForm : Form
             {
                 var state = entry.State;
                 int row = _grid.Rows.Add(state.Name, state.Transport,
-                    state.StatusText, FormatBattery(state),
+                    state.StatusText(), FormatBattery(state),
                     entry.TrayVisible is bool visible ? UiText.Get(visible ? "Allowed" : "Hidden") : "—",
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
@@ -211,6 +211,6 @@ internal sealed class DeviceDashboardForm : Form
             _alerts.Enabled || _interval.Enabled;
         _visibility.Text = UiText.Get(entry?.TrayVisible == true ? "Hide device in tray" : "Show device in tray");
         _detail.Text = entry is null ? UiText.Get("No device readings yet") :
-            $"{entry.State.Name} — {entry.State.StatusText}";
+            $"{entry.State.Name} — {entry.State.StatusText()}";
     }
 }

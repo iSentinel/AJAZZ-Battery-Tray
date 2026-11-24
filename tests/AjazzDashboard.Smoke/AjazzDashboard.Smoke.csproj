@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardForm.cs" Link="DeviceDashboardForm.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardText.cs" Link="DeviceDashboardText.cs" />
     <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardState.cs" Link="DeviceDashboardState.cs" />
     <Compile Include="../../src/AjazzBatteryTray/UiText.cs" Link="UiText.cs" />
   </ItemGroup>
