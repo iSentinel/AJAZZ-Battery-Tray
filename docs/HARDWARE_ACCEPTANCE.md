@@ -4,6 +4,9 @@ The [Hardware Validation Matrix](VALIDATION_MATRIX.md) distinguishes
 features verified on real hardware from CI-only implementation. Start there
 before marking a scenario as physically validated.
 
+For the development-only isolated polling modes, use the separate
+[Isolated Polling Acceptance](ISOLATED_POLLING_ACCEPTANCE.md) matrix.
+
 This checklist records tests of **physical AJAZZ APEX hardware** separately
 from the GitHub Actions compile, packaging, and unit-test results.
 
@@ -131,7 +134,10 @@ drivers just to reproduce the scenario.
 
 - CI passing **does not** prove USB reports, clock writes, notification
   permission, or login item registration work on a particular real Mac.
-- AJ159 APEX has not yet been tested on this project's hardware.
+- Historical AJ159 Windows readings exist (including rev 0300), but
+  the affected AJ159 rev 0002 returned 0/6 validated battery replies in
+  the November 23 evidence. Current candidate compatibility is not
+  established; do not infer model identity from receiver revision.
 - Charging detection, automatic persistent Bluetooth device selection,
   RGB, GIF uploads and device configuration are not enabled.
 - If the receiver is present while the mouse sleeps, that is not counted

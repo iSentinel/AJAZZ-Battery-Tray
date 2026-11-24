@@ -54,12 +54,20 @@ enum ApexBattery {
               !found.isEmpty else {
             return .notConnected
         }
-        var attempted = false
+        var matched = false
+        var opened = false
         for device in found where matchesVendorUsage(device) {
-            attempted = true
-            if let value = poll(device) { return .battery(value) }
+            matched = true
+            let result = poll(device)
+            opened = opened || result.opened
+            if let value = result.percent { return .battery(value) }
         }
-        return attempted ? .unavailable : .unsupportedCollection
+        return noSampleStatus(matched: matched, opened: opened)
+    }
+
+    static func noSampleStatus(matched: Bool, opened: Bool) -> Status {
+        if !matched { return .unsupportedCollection }
+        return opened ? .unavailable : .accessUnknown
     }
 
     /// Builds the documented 64-byte macOS feature payload for dock RTC updates.
@@ -179,9 +187,9 @@ enum ApexBattery {
         return page == usagePage && item == usage
     }
 
-    private static func poll(_ device: IOHIDDevice) -> Int? {
+    private static func poll(_ device: IOHIDDevice) -> (opened: Bool, percent: Int?) {
         guard IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
-            return nil
+            return (false, nil)
         }
         defer { IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone)) }
         // Match the receiver's Windows request: report ID 0, first payload byte 0xF7.
@@ -202,10 +210,23 @@ enum ApexBattery {
             }
             if read == kIOReturnSuccess && (3...count).contains(actualLength),
                let percent = parse(Array(reply.prefix(Int(actualLength)))) {
-                return percent
+                return (true, percent)
             }
         }
-        return nil
+        return (true, nil)
+    }
+}
+
+/// Session provenance only: the Apple reader has no stable receiver identity.
+struct ApexSessionObservation {
+    private(set) var lastVerified: Date?
+
+    mutating func observe(_ status: ApexBattery.Status, at time: Date) {
+        if case .battery(let value) = status, (1...100).contains(value) {
+            lastVerified = time
+        } else if status == .notConnected {
+            lastVerified = nil
+        }
     }
 }
 
@@ -232,6 +253,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var startupMenuItem: NSMenuItem?
     private var intervalItems = [NSMenuItem]()
     private var displayedStatus = ApexBattery.Status.accessUnknown
+    private var sessionObservation = ApexSessionObservation()
     private var lastClockSent: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -535,6 +557,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         let previouslyPresent = receiverWasPresent
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let value = Self.readForPoll(token)
+            let observedAt = Date()
             let elapsed = Date().timeIntervalSince(lastAttempt)
             let due = elapsed < 0 || elapsed >= 300
             let shouldSync = token?.isCancelled != true &&
@@ -542,7 +565,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
                 (automatic && (due || !previouslyPresent)))
             let sent = shouldSync ? Self.clockForPoll(token) : false
             DispatchQueue.main.async {
-                self?.completePoll(value, manual: manual, attempted: shouldSync, sent: sent)
+                self?.completePoll(value, observedAt: observedAt, manual: manual,
+                                   attempted: shouldSync, sent: sent)
             }
         }
     }
@@ -563,7 +587,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         return false
     }
 
-    private func completePoll(_ value: ApexBattery.Status, manual: Bool,
+    private func completePoll(_ value: ApexBattery.Status, observedAt: Date, manual: Bool,
                               attempted: Bool, sent: Bool) {
         activeCancellation = nil
         if closing {
@@ -576,6 +600,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         let queued = manualClockSync
         if manual && value.compatibleReceiverPresent == nil { manualClockSync = true }
         if attempted { recordClockResult(sent) }
+        sessionObservation.observe(value, at: observedAt)
         update(value)
         if queued { refresh() }
     }
@@ -634,6 +659,13 @@ final class TrayController: NSObject, NSApplicationDelegate {
             detailItem.title = AppText.text(
                 "Receiver found; battery status unavailable")
         }
+        if let stamp = sessionObservation.lastVerified {
+            if case .battery = status { } else {
+                let text = DateFormatter.localizedString(from: stamp,
+                    dateStyle: .short, timeStyle: .medium)
+                detailItem.title += " · " + AppText.format("Last verified USB sample (session): %@", text)
+            }
+        }
         statusItem.button?.toolTip = detailItem.title
     }
 
@@ -681,6 +713,45 @@ final class TrayController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
+}
+
+/// Replay the shared sanitized fixture through the decoder and actual history writer.
+private func verifyObservationCorpus(_ path: String) -> Bool {
+    guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return false }
+    let rows = text.split(whereSeparator: \.isNewline).dropFirst()
+    guard rows.count == 20 else { return false }
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    for (index, row) in rows.enumerated() {
+        let fields = row.split(separator: ",", omittingEmptySubsequences: false)
+        guard fields.count == 5, fields[2].count.isMultiple(of: 2) else { return false }
+        let hex = Array(fields[2])
+        var bytes: [UInt8] = []
+        for offset in stride(from: 0, to: hex.count, by: 2) {
+            guard let byte = UInt8(String(hex[offset...offset + 1]), radix: 16) else { return false }
+            bytes.append(byte)
+        }
+        let percent = ApexBattery.parse(bytes)
+        guard (percent.map { String($0) } ?? "unknown") == String(fields[4]) else { return false }
+        let value = percent.map(ApexBattery.Status.battery) ?? .unavailable
+        let writer = BatteryHistoryWriter(directory: root.appendingPathComponent(String(index)))
+        writer.record(value)
+        guard let csv = try? String(contentsOf: writer.file, encoding: .utf8),
+              let line = csv.split(whereSeparator: \.isNewline).last,
+              let sample = BatteryHistoryReader.parse(String(line)),
+              sample.percent == percent,
+              sample.state == (percent == nil ? "unavailable" : "online") else { return false }
+        if percent == nil {
+            let alerts = BatteryAlertPolicy()
+            guard alerts.evaluate(.battery(83), notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(value, notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil
+            else { return false }
+        }
+    }
+    print("PASS: 20 shared F7 observations, CSV and alert policy")
+    return true
 }
 
 if CommandLine.arguments.contains("--internal-test-io-lease") {
@@ -835,7 +906,18 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
         ApexBattery.Status.unsupportedCollection.compatibleReceiverPresent == nil &&
         ApexBattery.Status.unavailable.compatibleReceiverPresent == true &&
         ApexBattery.Status.notConnected.compatibleReceiverPresent == false
-    let valid = sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests && timeoutValid &&
+    var observation = ApexSessionObservation()
+    observation.observe(.battery(83), at: testDate)
+    observation.observe(.timedOut, at: testDate.addingTimeInterval(30))
+    let preserved = observation.lastVerified == testDate
+    observation.observe(.notConnected, at: testDate.addingTimeInterval(60))
+    let provenanceValid = preserved && observation.lastVerified == nil &&
+        ApexBattery.noSampleStatus(matched: true, opened: false) == .accessUnknown &&
+        ApexBattery.noSampleStatus(matched: true, opened: true) == .unavailable &&
+        ApexBattery.noSampleStatus(matched: false, opened: false) == .unsupportedCollection
+    let corpusValid = ProcessInfo.processInfo.environment["AJAZZ_TEST_CORPUS"]
+        .map(verifyObservationCorpus) ?? true
+    let valid = corpusValid && provenanceValid && sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests && timeoutValid &&
                 selectedTests && jumpTests &&
                 chartValid && historyValid &&
                 clockValid && guardValid &&
@@ -850,7 +932,7 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
     switch ApexBattery.read() {
     case .battery(let level): print("PASS: battery \(level)%")
     case .notConnected: print("UNKNOWN: compatible receiver not found")
-    case .accessUnknown: print("UNKNOWN: cannot access HID manager")
+    case .accessUnknown: print("UNKNOWN: cannot access HID manager/device")
     case .timedOut: print("UNKNOWN: HID read timed out")
     case .unsupportedCollection: print("UNKNOWN: receiver HID collection not supported")
     case .unavailable: print("UNKNOWN: receiver found, no valid battery report")

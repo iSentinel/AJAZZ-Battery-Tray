@@ -97,6 +97,25 @@ foreach (string row in File.ReadLines(corpus).Skip(1))
     int? expected = fields[3] == "unknown" ? null : int.Parse(fields[3]);
     int? actual = BatteryReportParser.ParseWindowsFeature(Convert.FromHexString(fields[2]));
     Check($"Shared F7 corpus {fields[0]}", actual == expected);
+    string directory = Path.Combine(Path.GetTempPath(), "ajazz-corpus-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        var history = new BatteryHistory("test.csv", directory);
+        history.Record(DateTimeOffset.UtcNow, actual, receiverPresent: true);
+        var sample = history.ReadRecent().SingleOrDefault();
+        Check($"Shared F7 history {fields[0]}", sample is not null &&
+            sample.Percent == expected && sample.State == (expected is null ? "unavailable" : "online"));
+        if (expected is null)
+        {
+            var connection = new ConnectionAlertPolicy();
+            connection.Evaluate(true, true);
+            bool first = connection.Evaluate(false, false);
+            bool unknown = connection.Evaluate(actual.HasValue, true);
+            bool next = connection.Evaluate(false, false);
+            Check($"Shared F7 unknown does not trigger disconnect {fields[0]}", !first && !unknown && !next);
+        }
+    }
+    finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 }
 
 string previousTrayLanguage = UiText.Language;
@@ -609,6 +628,32 @@ Check("Dashboard rejects invalid out-of-range values",
     Dashboard(fresh: 101, cached: -1) is
         { Status: DeviceDashboardStatus.NoReply, Percent: null });
 
+string statusLanguage = UiText.Language;
+foreach (string language in new[] { "en", "ru", "uk" })
+{
+    UiText.SetLanguage(language);
+    Check($"AULA cached menu retains original time ({language})",
+        cachedDashboard.MenuStatus().Contains("98%") &&
+        cachedDashboard.MenuStatus().Contains(UiText.Get("Cached reading")) &&
+        cachedDashboard.MenuStatus().Contains(cachedDashboard.MeasuredAt!.Value.ToLocalTime().ToString("g")));
+    Check($"Manual and fresh status remain distinct ({language})",
+        (Dashboard(fresh: 97) with { Status = DeviceDashboardStatus.ManualReading })
+            .MenuStatus().Contains(UiText.Get("Manual reading")) &&
+        Dashboard(fresh: 97).MenuStatus().Contains(UiText.Get("Fresh reading")));
+    Check($"Unknown presence hides numbers and timestamps ({language})",
+        Dashboard(known: false, fresh: 98, cached: 98).MenuStatus(dashboardAt) ==
+            UiText.Get("Receiver status unknown"));
+    Check($"BLE standby hides historical values ({language})",
+        new DeviceDashboardState("BLE", "Bluetooth", DeviceDashboardStatus.Standby, null, null)
+            .MenuStatus(dashboardAt) == UiText.Get("Standby (USB priority)"));
+    Check($"No reply preserves only historical time ({language})",
+        Dashboard().MenuStatus(dashboardAt) ==
+            UsbTrayStatus.WithLastVerified(UiText.Get("No valid reply"), dashboardAt));
+    Check($"BLE zero is valid numeric sample ({language})",
+        Dashboard(fresh: 0).MenuStatus().StartsWith("0%"));
+}
+UiText.SetLanguage(statusLanguage);
+
 // AULA's shared dongle must never be probed unless manually requested/opted in.
 Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);
 Check("AULA separate history CSV",
@@ -1060,6 +1105,19 @@ Check("first confirmed missing poll after error ignored",
     !transientError.Evaluate(false, false));
 Check("second confirmed missing poll raises warning",
     transientError.Evaluate(false, false));
+
+ConnectionAlertPolicy interruptedAbsence = new();
+interruptedAbsence.Evaluate(true, true);
+Check("first absent poll is debounced", !interruptedAbsence.Evaluate(false, false));
+interruptedAbsence.ObserveUnknown();
+Check("unknown between absent polls interrupts the sequence",
+    !interruptedAbsence.Evaluate(false, false));
+Check("two consecutive confirmed absences still notify",
+    interruptedAbsence.Evaluate(false, false));
+interruptedAbsence.ObserveUnknown();
+Check("unknown does not reset a delivered disconnect alert",
+    !interruptedAbsence.Evaluate(false, false) &&
+    !interruptedAbsence.Evaluate(false, false));
 
 Check("USB disconnect alert preserved without BLE",
     BatteryDisplayState.NotifyReceiverDisconnect(true, false));
@@ -1685,6 +1743,15 @@ try
     Check("History new sample written and retained", lazyHistory.ReadRecent().LastOrDefault()?.Percent == 69);
     lazyHistory.Record(historyNow.AddSeconds(1), 69, true);
     Check("History repeated sample does not append", File.ReadAllLines(lazyHistoryPath).Length == 3);
+    // Unknown enumeration is a history gap, including when the same level returns.
+    lazyHistory.Record(historyNow.AddSeconds(2), null, receiverPresent: true);
+    lazyHistory.Record(historyNow.AddSeconds(3), 69, receiverPresent: true);
+    var gapRows = File.ReadAllLines(lazyHistoryPath).Skip(1)
+        .Select(BatteryHistoryCsv.Parse).OfType<BatterySample>().ToArray();
+    Check("Unknown history gap contains no charge or disconnected state",
+        gapRows.Length == 4 && gapRows[2].Percent is null &&
+        gapRows[2].State == "unavailable" && gapRows[3].Percent == 69 &&
+        gapRows[3].State == "online");
 }
 finally { Directory.Delete(lazyHistoryDir, true); }
 

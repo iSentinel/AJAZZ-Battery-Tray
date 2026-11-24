@@ -1,3 +1,55 @@
+# Resume — consolidation and field acceptance readiness
+
+- #119 all three platform CI PASS, merged eef78f5 into #117; #118
+  already merged 6c81320. Combined branch CI remains the merge gate.
+- Shared fixture now triggers Apple CI on fixture-only changes.
+- Validation matrix distinguishes historical AJ159 rev 0300 successes
+  from current affected rev 0002 (0/6 validated); no new hardware PASS.
+- Next: consolidate tested branches #117 -> #113 -> #104 -> draft #99,
+  verify artifacts for final SHA, field acceptance and resource evidence.
+- Public beta.60 / High Sierra .5 unchanged.
+
+# Resume — shared corpus observation regression
+
+- #117 Windows/Universal/HA PASS after formatter separation; #118
+  Windows/Universal PASS and merged 6c81320 into #117.
+- Candidate extends 20-row corpus into actual temporary Windows and
+  Universal history CSVs and rejected-frame disconnect alert checks on
+  all three editions. No actual notification delivery or HID in fixture run.
+- Next: native CI, consolidate #117 -> #113 -> #104 -> draft #99.
+  Hardware acceptance remains open; published beta.60 / High Sierra .5.
+
+# Resume — BLE/AULA status parity
+
+- #116 passed Windows/Universal/High Sierra and merged 98708ee.
+- Shared dashboard and menu status labels for BLE/AULA; timestamp
+  provenance, no stale numeric value on unknown/standby. AULA unknown
+  polls interrupt disconnect debounce and unexpected errors record gaps.
+- CI pending; consolidate #113 and #104 into draft #99 after checks.
+- Actual device tests and resource acceptance remain open. No release.
+
+# Resume — Apple observation parity
+
+- PR #114 merged 1f9f74a, all three platform development artifacts
+  verified on that SHA. PR #115 merged ed25a4f after Windows/macOS PASS.
+  Combined #113 checks pending before consolidation into #104/#99.
+- Apple candidate: separate HID open failure from no validated charge,
+  localized session-only last verified USB timestamp, cleared on confirmed
+  absence; no identity-bound cache or new device traffic.
+- Next: candidate native CI, consolidate branches, remaining field gates
+  and BLE/AULA presentation. No public release or new hardware evidence.
+
+# Resume — High Sierra opt-in isolated polling
+
+- Universal opt-in PR #111 merged 68576f0; legacy prototype #112 merged
+  95be0b9. All associated CI checks PASS.
+- High Sierra session-only --experimental-isolated-polling candidate:
+  cancellation, child reaping, deferred AppKit quit, timeout status and
+  stronger synthetic IPC/recovery tests. CI pending.
+- Next: one owner acceptance matrix, combined CI, development artifacts
+  and field verification. Default polling remains unchanged; no release.
+- Published beta.60 / High Sierra .5; AJ159 charge still unverified.
+
 # Resume — opt-in Universal Apple menu candidate
 
 - PR #108 merged fbeeccf; #109 merged 859093c; #110 merged 63563a7.

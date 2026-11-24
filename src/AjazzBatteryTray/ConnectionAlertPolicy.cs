@@ -7,6 +7,9 @@ public sealed class ConnectionAlertPolicy
     private bool _alerted;
     private int _missingPolls;
 
+    /// <summary>Unknown discovery interrupts consecutive absence, not connection history.</summary>
+    public void ObserveUnknown() => _missingPolls = 0;
+
     public bool Evaluate(bool connected, bool receiverPresent)
     {
         if (connected)

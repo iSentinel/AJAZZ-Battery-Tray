@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Prototype for routine AJAZZ reads; not wired into the tray timer.</summary>
+/// <summary>Supervisor for the opt-in routine AJAZZ read and clock workers.</summary>
 internal static class RoutinePollWorker
 {
     private const string ReadMode = "--internal-routine-hid-worker";
@@ -13,6 +13,7 @@ internal static class RoutinePollWorker
     private const string SampleMode = "--internal-routine-hid-sample";
     private const string HangMode = "--internal-routine-hid-hang";
     private const int MaxKeys = 128;
+    private const int MaxReplyChars = 2 * 1024 * 1024;
     private const int ChildLimitSeconds = 12;
     private static int _active;
 
@@ -94,9 +95,44 @@ internal static class RoutinePollWorker
         closing.ThrowIfCancellationRequested();
         if (deadline.IsCancellationRequested || code == 124) throw new TimeoutException();
         if (code != 0) throw new IOException("Routine HID worker failed");
+        if (body.Length > MaxReplyChars)
+            throw new InvalidDataException("Oversized routine worker reply");
         T? result = JsonSerializer.Deserialize<T>(body);
         if (result is null) throw new InvalidDataException("Missing routine worker response");
+        if (result is AjazzHidReader.Batch batch) ValidateBatch(batch);
         return result;
+    }
+
+    private static bool ValidReading(AjazzHidReader.Reading? reading)
+        => reading is not null && reading.Details is not null &&
+            Enum.IsDefined(reading.Issue) &&
+            (reading.Percent is null || (reading.PresenceKnown && reading.ReceiverPresent &&
+                reading.Percent is >= 1 and <= 100)) &&
+            (reading.PresenceKnown || !reading.ReceiverPresent);
+
+    private static void ValidateBatch(AjazzHidReader.Batch batch)
+    {
+        if (!ValidReading(batch.Summary) || batch.Receivers is null ||
+            batch.Receivers.Count > MaxKeys)
+            throw new InvalidDataException("Invalid routine worker inventory");
+        if (batch.Summary.ReceiverPresent != (batch.Receivers.Count > 0) ||
+            (!batch.Summary.PresenceKnown && batch.Receivers.Count != 0))
+            throw new InvalidDataException("Inconsistent routine worker presence");
+
+        HashSet<string> keys = new(StringComparer.Ordinal);
+        foreach (var item in batch.Receivers)
+        {
+            if (item is null || item.Key == DeviceAliasRules.AulaSlot ||
+                !DeviceAliasRules.ValidKey(item.Key) || !keys.Add(item.Key) ||
+                !ValidReading(item.Reading) || !item.Reading.PresenceKnown ||
+                !item.Reading.ReceiverPresent ||
+                (item.Sampled && item.MeasuredAt is null) ||
+                (!item.Sampled && (item.MeasuredAt is not null ||
+                    item.Reading.Percent is not null || item.CompletedTick != 0)))
+                throw new InvalidDataException("Invalid routine receiver observation");
+        }
+        if (batch.Summary.Percent != AjazzHidReader.Primary(batch.Receivers)?.Reading.Percent)
+            throw new InvalidDataException("Inconsistent routine summary percentage");
     }
 
     internal static int RunWorker(string mode)
@@ -143,8 +179,37 @@ internal static class RoutinePollWorker
         return new AjazzHidReader.Batch(AjazzHidReader.Primary(items)!.Reading, items);
     }
 
+    private static void VerifyReplyValidation()
+    {
+        var valid = Sample(Array.Empty<string>());
+        ValidateBatch(valid);
+        var first = valid.Receivers[0];
+        var invalid = new[]
+        {
+            valid with { Summary = valid.Summary with { Percent = 0 } },
+            valid with { Summary = valid.Summary with { Percent = 99 } },
+            valid with { Summary = valid.Summary with { PresenceKnown = false } },
+            valid with { Receivers = new[] { first, first } },
+            valid with { Receivers = new[] { first with { Key = DeviceAliasRules.AulaSlot } } },
+            valid with { Receivers = new[] { first with { MeasuredAt = null } } },
+            valid with { Receivers = new[] { first with { Sampled = false } } },
+            valid with { Receivers = new[] { first with { Reading = first.Reading with { Percent = 101 } } } },
+            valid with { Receivers = new[] { first with { Reading = first.Reading with { ReceiverPresent = false } } } }
+        };
+        using var deadline = new CancellationTokenSource();
+        foreach (var batch in invalid)
+        {
+            bool rejected = false;
+            try { Decode<AjazzHidReader.Batch>(JsonSerializer.Serialize(batch), 0,
+                    deadline, CancellationToken.None); }
+            catch (InvalidDataException) { rejected = true; }
+            if (!rejected) throw new InvalidDataException("Malformed routine reply accepted");
+        }
+    }
+
     private static async Task VerifyAsync()
     {
+        VerifyReplyValidation();
         string first = new('A', 64), second = new('B', 64);
         var sample = await ReadAsync(new[] { second }, CancellationToken.None, SampleMode);
         if (sample.Summary.Percent != 83 || sample.Receivers.Count != 2 ||

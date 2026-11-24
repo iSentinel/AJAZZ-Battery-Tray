@@ -52,6 +52,7 @@
              Link="DeviceAliasRules.cs" />
     <Compile Include="../../src/AjazzBatteryTray/PnpNameRules.cs"
              Link="PnpNameRules.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardText.cs" Link="DeviceDashboardText.cs" />
     <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardState.cs"
              Link="DeviceDashboardState.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AulaReceiverContinuity.cs" Link="AulaReceiverContinuity.cs" />
