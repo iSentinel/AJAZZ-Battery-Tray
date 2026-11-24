@@ -120,7 +120,7 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   Windows resource loading, red pixels and preference serialization passed.
   Native Apple appearance resource/pixel regression and color menu previews
   passed all four checks in #128 (72 Apple cases). Merged ca2ffa1.
-  Shortcut ICO packaging and create-new embedded icon export are next under CI. Actual tray appearance, hover and restart persistence
+  Shortcut ICO packaging and create-new embedded icon export passed #129 CI, merged 357b967. Actual tray appearance, hover and restart persistence
   remain owner checks. The selected runtime app icon does not change the
   static signed EXE/Finder icon. No default HID worker activation.
 
