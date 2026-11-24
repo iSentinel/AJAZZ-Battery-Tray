@@ -84,6 +84,12 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   --experimental-isolated-polling; default invocation is unchanged.
   CI and field resource/sleep/wake/shutdown evidence remain required
   before any default activation. AULA/BLE native paths are unchanged.
+- **Apple polling.** PR #106 benchmark: Universal p95 20.310 ms,
+  High Sierra target p95 12.959 ms, 20/20 each on macOS 15 Intel.
+  Universal bounded-read prototype adds typed IPC and simulated
+  overlap/timeout/recovery tests without changing the menu timer.
+  CI pending; shared I/O exclusion, shutdown, RTC and separate
+  High Sierra prototype precede opt-in integration.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.

@@ -151,6 +151,41 @@ runtime latency. This is a startup lower bound, not HID/CPU/energy
 performance. No regular Apple polling or RTC behavior changes.
 
 
+## Apple CI results, 2026-11-24
+
+PR #106 passed Windows, Python, macOS Universal and High Sierra CI.
+The two 20-row CSV artifacts were downloaded and independently checked.
+
+| Target on macOS 15 Intel | Min ms | p50 ms | p95 ms | Max ms |
+| --- | ---: | ---: | ---: | ---: |
+| Universal Swift | 11.856 | 14.716 | 20.310 | 33.708 |
+| High Sierra Objective-C | 7.306 | 9.669 | 12.959 | 13.837 |
+
+Universal: workflow 45329966717, artifact 14891985387.
+High Sierra: workflow 45329966716, artifact 14891970336.
+These are not physical macOS 10.13 or Apple Silicon results.
+
+## Universal bounded-read prototype
+
+ApexBoundedWorker.swift supervises a separate instance of the same
+binary with an eight-second parent deadline and a 12-second child
+alarm. It keeps the local gate until process exit, and distinguishes
+timeout, busy and failed IPC from actual absence. The small JSON
+reply carries only the existing receiver status and a 1..100 battery
+value if verified. It contains no HID paths, raw frames or serials.
+The regular menu timer, RTC, history and BLE remain unchanged.
+The synthetic self-test covers all existing statuses, invalid frames,
+overlap rejection, a simulated hang and recovery without HID:
+
+    "/Applications/AJAZZ Battery Tray.app/Contents/MacOS/AJAZZBatteryTray" --self-test-bounded-poll
+
+Use a development build containing the prototype, not beta.60.
+CI must run this test after building. Before integrating the supervisor
+into the menu timer, implement shared I/O exclusion, cancellation on
+quit, and preserve uncertain USB presence and RTC scheduling. A
+separate High Sierra implementation and physical validation remain
+open. No public release is implied.
+
 ## High Sierra diagnostic worker lifecycle prerequisite
 
 The legacy diagnostic watchdog previously returned 124 after SIGKILL
