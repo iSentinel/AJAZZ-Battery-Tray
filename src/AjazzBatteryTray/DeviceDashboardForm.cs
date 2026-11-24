@@ -50,6 +50,7 @@ internal sealed class DeviceDashboardForm : Form
         _alerts.Click += (_, _) => CurrentEntry()?.EditAlerts?.Invoke();
         _interval.Click += (_, _) => CurrentEntry()?.EditInterval?.Invoke();
         _close.Click += (_, _) => Close();
+        CancelButton = _close;
         _grid.SelectionChanged += (_, _) => UpdateSelection();
         _grid.CellDoubleClick += (_, e) =>
         {
@@ -96,13 +97,15 @@ internal sealed class DeviceDashboardForm : Form
         _detail.AutoSize = true;
         _detail.Margin = new Padding(3, 10, 3, 6);
         ConfigureGrid();
+        _grid.TabIndex = 0;
         FlowLayoutPanel actions = new()
         {
-            Dock = DockStyle.Fill, AutoSize = true, WrapContents = true
+            Dock = DockStyle.Fill, AutoSize = true, WrapContents = true, TabIndex = 1
         };
         foreach (Button button in new[] { _refresh, _history, _settings, _diagnostics, _close })
         {
             button.AutoSize = true;
+            button.TabIndex = actions.Controls.Count;
             button.Padding = new Padding(6, 3, 6, 3);
             actions.Controls.Add(button);
         }

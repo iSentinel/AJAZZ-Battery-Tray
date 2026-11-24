@@ -71,7 +71,9 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   Device settings and Diagnostics group the existing commands. A Windows
   smoke test exercises callbacks, selection changes, removal while a menu
   is open and minimum-size EN/RU/UK layout. Interactive keyboard and
-  125%/150%/200% DPI acceptance remain open.
+  125%/150%/200% DPI acceptance remain open. A candidate smoke extension
+  checks keyboard focus order and synthetic font/window scaling separately
+  from actual monitor DPI; native CI pending.
 - **AJ159 GET ID differential.** An explicit Windows diagnostic compares GET
   05 and 00 in pairs after the existing allowlisted F7 request. The normal
   polling path is unchanged. Experimental results are never promoted to
@@ -108,7 +110,8 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   public beta.60 setup and an unpublished beta.61 test package, compares
   installed binary and registry version, and checks that synthetic
   per-user preferences/history survive upgrade and uninstall. No tray
-  launch or HID access. CI pending; actual owner upgrade remains open.
+  launch or HID access. #124 upgrade CI 45426251349 PASS; actual owner
+  upgrade remains open.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.

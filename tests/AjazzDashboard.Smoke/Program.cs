@@ -14,6 +14,8 @@ internal static class Program
             UiText.SetLanguage(language);
             CheckDashboard();
             Console.WriteLine($"PASS: {language} minimum-size layout and device actions");
+            foreach (float factor in new[] { 1.25f, 1.5f, 2f })
+                CheckScaledLayout(language, factor);
         }
     }
 
@@ -40,6 +42,8 @@ internal static class Program
         Require(buttons.All(b => form.ClientRectangle.Contains(form.RectangleToClient(
             b.RectangleToScreen(b.ClientRectangle)))), "An action extends outside the window");
         Button Find(string key) => buttons.Single(b => b.Text.StartsWith(UiText.Get(key)));
+        Require(form.CancelButton == Find("Close"), "Escape action must close the dashboard");
+        CheckTabOrder(form, grid, buttons, hasDeviceActions: true);
         Find("Refresh now").PerformClick();
         Require(action == "refresh", "Refresh unavailable");
         Find("Battery history...").PerformClick();
@@ -58,12 +62,57 @@ internal static class Program
         form.SetEntries(new[] { bluetooth });
         Require(!menu.Visible && !settings.Enabled && !Find("Battery history...").Enabled,
             "Removed device still actionable");
+        CheckTabOrder(form, grid, buttons, hasDeviceActions: false);
         var diagnostics = Find("Diagnostics");
         diagnostics.PerformClick();
         var diagnosticMenu = diagnostics.ContextMenuStrip!;
         diagnosticMenu.Items[1].PerformClick();
         Require(action == "telemetry", "Telemetry command missing");
         diagnosticMenu.Close();
+    }
+
+    private static void CheckTabOrder(Form form, DataGridView grid, Button[] buttons,
+        bool hasDeviceActions)
+    {
+        var expected = hasDeviceActions ? buttons : new[] { buttons[0], buttons[3], buttons[4] };
+        Control current = grid;
+        grid.Select();
+        foreach (Button next in expected)
+        {
+            Require(form.SelectNextControl(current, true, true, true, false),
+                "Could not select next action");
+            Require(form.ActiveControl == next, $"Incorrect keyboard order at {next.Text}");
+            current = next;
+        }
+    }
+
+    // Font and logical window scale stress, not a physical monitor DPI change.
+    private static void CheckScaledLayout(string language, float factor)
+    {
+        using var form = new DeviceDashboardForm(() => { }, () => { }, () => { });
+        using var font = new Font(form.Font.FontFamily, form.Font.Size * factor, form.Font.Style);
+        var minimum = form.MinimumSize;
+        form.Font = font;
+        form.MinimumSize = new Size((int)Math.Ceiling(minimum.Width * factor),
+            (int)Math.Ceiling(minimum.Height * factor));
+        form.Size = form.MinimumSize;
+        form.SetEntries(new[]
+        {
+            new DeviceDashboardForm.Entry(new("AJAZZ APEX", "2.4 GHz",
+                DeviceDashboardStatus.Fresh, 72, DateTimeOffset.Now), () => { }, "usb", () => { }),
+            new DeviceDashboardForm.Entry(new("AULA L99", "2.4 GHz",
+                DeviceDashboardStatus.Cached, 93, DateTimeOffset.Now), Key: "aula")
+        });
+        form.Show();
+        Application.DoEvents();
+        var layout = form.Controls.OfType<TableLayoutPanel>().Single();
+        var panel = layout.Controls.OfType<FlowLayoutPanel>().Single();
+        var grid = layout.Controls.OfType<DataGridView>().Single();
+        Require(panel.Controls.OfType<Button>().All(b => panel.ClientRectangle.Contains(b.Bounds)),
+            $"Scaled actions clipped: {language} {factor}");
+        Require(grid.ClientSize.Height >= grid.ColumnHeadersHeight + grid.Rows[0].Height,
+            $"Scaled grid cannot display first row: {language} {factor}");
+        Console.WriteLine($"PASS: {language} synthetic font/window scale {factor:P0}; not real DPI");
     }
 
     private static void Require(bool valid, string message)
