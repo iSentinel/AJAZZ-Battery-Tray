@@ -34,6 +34,16 @@ public static class BatteryReportParser
         return "accepted by gated F7 mouse parser";
     }
 
+    /// <summary>Display-only field for the observed ready-clear rev. 0002 mouse slot.
+    /// Never use as validated charge, history, alerts, or external telemetry.</summary>
+    public static int? UnverifiedMouseField(ReadOnlySpan<byte> report)
+        => IsSharedF7Status(report) && report[7] == 2 && report[1] == 0 &&
+            report[4] <= 1 && report[5] == 0 && report[6] == 1 && report[9] == 0 &&
+            report[3] is >= 1 and <= 100 ? report[3] : null;
+
+    public static int? ConsistentUnverifiedField(int? first, int matching, int total)
+        => total >= 2 && matching == total ? first : null;
+
     /// <summary>Explain rejection without changing the legacy format.</summary>
     public static string DescribeWindowsFeature(ReadOnlySpan<byte> report)
     {

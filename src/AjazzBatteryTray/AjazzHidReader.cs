@@ -10,7 +10,8 @@ public sealed class AjazzHidReader
     /// <summary>PresenceKnown is false when Windows could not enumerate USB.</summary>
     public sealed record Reading(bool ReceiverPresent, int? Percent,
         string Details, bool PresenceKnown = true,
-        IReadOnlyList<string>? Attempts = null, UsbReadIssue Issue = UsbReadIssue.None);
+        IReadOnlyList<string>? Attempts = null, UsbReadIssue Issue = UsbReadIssue.None,
+        int? UnverifiedPercent = null);
 
     /// <summary>One receiver, identified locally; never export Key.</summary>
     public sealed record ReceiverReading(string Key, ushort? Revision, Reading Reading,
@@ -179,12 +180,18 @@ public sealed class AjazzHidReader
             return CompareGetIds(handle, caps.FeatureReportByteLength, attempts, progress);
         // Normal polling retains the original order and timing.
         int? firstValid = null;
-        int validAttempts = 0, totalAttempts = 0;
+        int validAttempts = 0, totalAttempts = 0, matching = 0;
+        int? firstUnverified = null;
         foreach (var (length, delay) in ApexProtocolMatrix.Build(caps.FeatureReportByteLength, captureProtocol))
         {
             int? percent = PollBattery(handle, length, attempts, delay,
-                captureProtocol, progress, redactRaw);
+                captureProtocol, progress, redactRaw, out int? candidate);
             totalAttempts++;
+            if (candidate.HasValue)
+            {
+                firstUnverified ??= candidate;
+                if (candidate == firstUnverified) matching++;
+            }
             if (percent.HasValue)
             {
                 if (!captureProtocol)
@@ -195,8 +202,11 @@ public sealed class AjazzHidReader
         }
         if (captureProtocol)
             attempts.Add($"  Matrix result: {validAttempts}/{totalAttempts} valid replies; first valid={firstValid?.ToString() ?? "unavailable"}");
+        int? unverified = revision == 2
+            ? BatteryReportParser.ConsistentUnverifiedField(firstUnverified, matching, totalAttempts)
+            : null;
         return firstValid.HasValue ? new Reading(true, firstValid, "2.4 GHz / 8K") :
-            new Reading(true, null, "No valid battery status report");
+            new Reading(true, null, "No valid battery status report", UnverifiedPercent: unverified);
     }
 
     /// <summary>Never publish an experimental comparison as battery telemetry.</summary>
@@ -206,15 +216,16 @@ public sealed class AjazzHidReader
         foreach (var (length, delay, id) in ApexProtocolMatrix.CompareGetIds(descriptorLength))
         {
             progress?.Invoke($"PAIR: delay={delay}ms length={length} request={id:X2}");
-            PollBattery(handle, length, attempts, delay, true, progress, true, id, true);
+            PollBattery(handle, length, attempts, delay, true, progress, true, out _, id, true);
         }
         return new Reading(true, null, "Experimental GET ID comparison; no battery claimed");
     }
 
     private static int? PollBattery(SafeFileHandle handle, int length,
         List<string> attempts, int delayMs, bool captureProtocol,
-        Action<string>? progress, bool redactRaw, byte reportId = 0x05, bool comparison = false)
+        Action<string>? progress, bool redactRaw, out int? candidate, byte reportId = 0x05, bool comparison = false)
     {
+        candidate = null;
         // Only the existing allowlisted zero-payload telemetry request.
         byte[] poll = new byte[length];
         poll[1] = 0xF7;
@@ -260,6 +271,8 @@ public sealed class AjazzHidReader
         }
 
         int? percent = BatteryReportParser.ParseWindowsFeature(response);
+        if (!comparison && reportId == 0x05 && percent is null)
+            candidate = BatteryReportParser.UnverifiedMouseField(response);
         if (comparison)
         {
             string observed = $"OBSERVED: request={getId} returned={response[0]:X2} " +

@@ -23,6 +23,8 @@ public static class UsbTrayStatus
             ? "HID interface unavailable" : "Receiver present, no fresh charge");
     }
 
+    public static string UnverifiedField(int percent) => UiText.Format("{0}% (unverified)", percent);
+
     public static string WithLastVerified(string status, DateTimeOffset? lastVerified)
         => lastVerified is { } stamp
             ? status + " · " + UiText.Format("Last verified {0}", stamp.ToLocalTime().ToString("g"))
