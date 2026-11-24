@@ -1,3 +1,14 @@
+# Resume — consolidation and field acceptance readiness
+
+- #119 all three platform CI PASS, merged eef78f5 into #117; #118
+  already merged 6c81320. Combined branch CI remains the merge gate.
+- Shared fixture now triggers Apple CI on fixture-only changes.
+- Validation matrix distinguishes historical AJ159 rev 0300 successes
+  from current affected rev 0002 (0/6 validated); no new hardware PASS.
+- Next: consolidate tested branches #117 -> #113 -> #104 -> draft #99,
+  verify artifacts for final SHA, field acceptance and resource evidence.
+- Public beta.60 / High Sierra .5 unchanged.
+
 # Resume — shared corpus observation regression
 
 - #117 Windows/Universal/HA PASS after formatter separation; #118

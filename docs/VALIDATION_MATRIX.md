@@ -218,3 +218,28 @@ battery or clock problem.
 - Final combined candidate CI and physical two-device BLE acceptance pending.
 - Affected AJ159 and working AJ159 full captures and HAR remain outstanding.
   No change to live AJAZZ HID parser.
+
+
+## November 24 audit candidate — current evidence, not new hardware results
+
+Historical readings above remain unchanged. The current candidate is
+not a public release. The affected AJ159 owner report uses 3151:5007
+MI_02 FFFF:0002, rev 0002, and has six successful HID transactions with
+zero validated battery samples. This is a distinct observation from
+historical AJ159 rev 0300 readings. The AJ179 reference includes a 100
+field with the readiness flag clear; the conservative current shared
+decoder rejects that field as fresh. Do not identify either mouse from
+receiver revision, and do not infer physical compatibility from CI.
+
+| Candidate capability | Software evidence | Outstanding field evidence |
+| --- | --- | --- |
+| Shared F7 decoder and downstream history/alerts | PR #119 Windows 45372850872, Universal 45372851026, High Sierra 45372850906 PASS (20 fixture rows) | Two actual charge levels per mouse, wake/sleep/replug |
+| Isolated routine polling on three platforms | Session-only flag, synthetic watchdog/cancellation and exclusion tests | Normal vs isolated P01–P13, resource cost including children |
+| AULA sleep continuity and presentation | Cached/unknown states, 24-hour display-only cache, policy tests | Awake/sleep/recovered A01–A14 evidence |
+| AJ179 BLE and USB priority | Historical manual fresh 83% GATT read; automatic policy tests | Actual automatic handover, expiry, recovery |
+| Windows Device Manager | Localized minimum-size smoke tests | Keyboard and interactive DPI 125/150/200% |
+| High Sierra | Intel 10.13-targeted build exercised on macOS 15 Intel CI | Actual 10.13 iMac acceptance |
+
+See ISOLATED_POLLING_ACCEPTANCE.md and
+AJ159_APEX_F7_HAR_FORENSICS_20261123.md. All field items are pending
+for the current candidate unless a separately labeled observation exists.

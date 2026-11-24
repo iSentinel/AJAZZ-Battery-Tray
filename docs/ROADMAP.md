@@ -58,14 +58,15 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   capture at 30/100/250 ms gave six responses and zero current valid readings.
   BLE zero semantics have independent tests. A candidate replay extends the
   20 rows to actual Windows/Universal CSV output and rejection alert-policy
-  checks on all three editions. Native CI and two-level field runs remain open.
+  checks on all three editions (#119 all three native CI PASS). Two-level
+  field runs remain open.
 - **Windows AJAZZ tray.** The receiver menu and tray tooltip now explain an
   unknown result and retain each receiver's last successful measurement time
   for the current session. Confirmed absence in the main tray has no implied
   last device identity. The per-receiver menu retains that device's timestamp.
   Apple session-only historical USB timestamps and access classification are
   merged in #116. BLE/AULA shared status formatting and AULA unknown-state
-  debounce/history correction are in the next candidate.
+  debounce/history correction passed Windows/Universal/HA CI (#117).
 - **Windows Device Manager.** Five primary actions replace ten buttons.
   Device settings and Diagnostics group the existing commands. A Windows
   smoke test exercises callbacks, selection changes, removal while a menu
@@ -100,6 +101,8 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   gap/debounce fix #115 was merged). See ISOLATED_POLLING_ACCEPTANCE.md.
   Default worker
   activation remains gated on owner field acceptance for all editions.
+  #118 validates routine Windows replies before state application; CI PASS.
+  #119 extends shared corpus to downstream history/alert checks; CI PASS.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.
