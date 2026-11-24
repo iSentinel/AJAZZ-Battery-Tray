@@ -805,6 +805,7 @@ int main(int argc, char *argv[]) {
                        !strcmp(argv[i], "--self-test-watchdog") ||
                        !strcmp(argv[i], "--internal-trace-hid") ||
                        !strcmp(argv[i], "--internal-diagnose") ||
+                       !strcmp(argv[i], "--internal-poll-sample") ||
                        !strcmp(argv[i], "--internal-test-sleep"))) {
                 mode = argv[i];
             } else {
@@ -831,6 +832,10 @@ int main(int argc, char *argv[]) {
         }
         if (!strcmp(mode, "--help") || !strcmp(mode, "-h")) {
             Help();
+            return 0;
+        }
+        if (!strcmp(mode, "--internal-poll-sample")) {
+            puts("{\"kind\":\"synthetic\",\"percent\":null,\"presence\":\"unknown\"}");
             return 0;
         }
         if (!strcmp(mode, "--internal-test-sleep")) {

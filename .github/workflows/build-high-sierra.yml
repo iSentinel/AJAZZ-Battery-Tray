@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'macos/high-sierra/**'
+      - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/build-high-sierra.yml'
       - '.github/workflows/release-high-sierra.yml'
@@ -11,6 +12,7 @@ on:
     branches: [main]
     paths:
       - 'macos/high-sierra/**'
+      - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/build-high-sierra.yml'
   workflow_dispatch:
@@ -24,6 +26,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build native Intel app and run parser tests
         run: bash macos/high-sierra/build.sh
+      - name: Measure synthetic worker startup without HID
+        run: |
+          python3 tools/measure_apple_worker.py --dry-run
+          python3 tools/measure_apple_worker.py --exe "dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --output "$RUNNER_TEMP/macos-high-sierra-intel-worker.csv"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-high-sierra-intel-worker-startup-baseline
+          path: ${{ runner.temp }}/macos-high-sierra-intel-worker.csv
+          if-no-files-found: error
       - name: Validate hardware acceptance helper without USB traffic
         run: |
           bash -n macos/high-sierra/acceptance.sh

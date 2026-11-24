@@ -626,7 +626,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
     @objc private func quit() { NSApp.terminate(nil) }
 }
 
-if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-h") {
+if CommandLine.arguments.contains("--internal-poll-sample") {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    // Fixed synthetic reply, without opening IOKit or starting the tray.
+    print("{\"kind\":\"synthetic\",\"percent\":null,\"presence\":\"unknown\"}")
+} else if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-h") {
     print("AJAZZ Battery Tray for macOS (experimental 2.4 GHz/8K HID)")
     print("Usage: AJAZZBatteryTray [--help] [--diagnose] [--self-test]")
     print("Tray menu: sync dock time now or every five minutes.")
