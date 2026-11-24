@@ -4,6 +4,9 @@ The [Hardware Validation Matrix](VALIDATION_MATRIX.md) distinguishes
 features verified on real hardware from CI-only implementation. Start there
 before marking a scenario as physically validated.
 
+For the development-only isolated polling modes, use the separate
+[Isolated Polling Acceptance](ISOLATED_POLLING_ACCEPTANCE.md) matrix.
+
 This checklist records tests of **physical AJAZZ APEX hardware** separately
 from the GitHub Actions compile, packaging, and unit-test results.
 
