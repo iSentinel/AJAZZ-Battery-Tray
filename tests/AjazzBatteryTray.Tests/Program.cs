@@ -1288,6 +1288,18 @@ Check("Distinct descriptor length first at each delay", ApexProtocolMatrix.Build
 Check("Invalid descriptor sizes filtered", ApexProtocolMatrix.Build(257, true).SequenceEqual(fullApexPlan) &&
     ApexProtocolMatrix.Build(0, true).SequenceEqual(fullApexPlan));
 
+var comparisonPlan = ApexProtocolMatrix.CompareGetIds(65);
+Check("GET comparison uses 12 paired probes", comparisonPlan.Count == 12);
+Check("GET comparison uses only the existing lengths and delays",
+    comparisonPlan.Where(x => x.ReportId == 0x05)
+        .Select(x => (x.Length, x.DelayMs)).SequenceEqual(fullApexPlan));
+Check("GET comparison alternates 05 and 00 for each probe",
+    comparisonPlan.Chunk(2).All(pair => pair.Length == 2 &&
+        pair[0].ReportId == 0x05 && pair[1].ReportId == 0x00 &&
+        pair[0].Length == pair[1].Length && pair[0].DelayMs == pair[1].DelayMs));
+Check("GET comparison filters invalid descriptor lengths",
+    ApexProtocolMatrix.CompareGetIds(257).SequenceEqual(comparisonPlan));
+
 // Local verification uses synthetic files only; no network or executable launch.
 string verifyDirectory = Path.Combine(Path.GetTempPath(), "ajazz-verify-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(verifyDirectory);

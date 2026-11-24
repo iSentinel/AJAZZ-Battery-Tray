@@ -5,6 +5,8 @@ namespace AjazzBatteryTray;
 
 internal static class Program
 {
+    internal const string TrayMutexName = "Local\\AJAZZBatteryTray_AJ179_APEX";
+
     [STAThread]
     private static void Main(string[] args)
     {
@@ -13,7 +15,7 @@ internal static class Program
             Environment.ExitCode = WindowsHidDiagnostics.Run(args);
             return;
         }
-        using Mutex singleInstance = new(true, "Local\\AJAZZBatteryTray_AJ179_APEX", out bool first);
+        using Mutex singleInstance = new(true, TrayMutexName, out bool first);
         if (!first)
         {
             MessageBox.Show("AJAZZ Battery Tray is already running.",

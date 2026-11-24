@@ -68,6 +68,10 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   smoke test exercises callbacks, selection changes, removal while a menu
   is open and minimum-size EN/RU/UK layout. Interactive keyboard and
   125%/150%/200% DPI acceptance remain open.
+- **AJ159 GET ID differential.** An explicit Windows diagnostic compares GET
+  05 and 00 in pairs after the existing allowlisted F7 request. The normal
+  polling path is unchanged. Experimental results are never promoted to
+  battery telemetry. CI and real owner captures are separate gates.
 - **Routine polling.** Next engineering step: benchmark normal per-poll worker
   overhead and compare against the existing polling budget before extending
   the explicit-capture watchdog.

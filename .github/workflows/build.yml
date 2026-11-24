@@ -84,6 +84,25 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $report -ErrorAction SilentlyContinue
           }
+      - name: GET ID comparison refuses active tray without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $log = Join-Path $env:RUNNER_TEMP ('ajazz-get-id-' + [Guid]::NewGuid().ToString('N') + '.txt')
+          $guard = [Threading.Mutex]::new($true, 'Local\AJAZZBatteryTray_AJ179_APEX')
+          try {
+            $arguments = '--hid-compare-get-ids --timeout 40 --output "' + $log + '"'
+            $p = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru
+            if (-not $p.WaitForExit(10000)) { $p.Kill($true); throw 'Comparison guard hung' }
+            if ($p.ExitCode -ne 1) { throw "Expected refusal, got $($p.ExitCode)" }
+            if ((Get-Content -LiteralPath $log -Raw) -notmatch 'close AJAZZ Battery Tray') {
+              throw 'Missing explicit refusal marker'
+            }
+            echo 'PASS: experimental comparison refuses active tray'
+          } finally {
+            $guard.Dispose()
+            Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
+          }
       - name: Verify full GUI capture watchdog without HID
         shell: pwsh
         run: |
