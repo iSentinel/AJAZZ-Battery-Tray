@@ -243,7 +243,7 @@ internal sealed class ReceiverMonitor : IDisposable
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
         string? visiblePrimaryKey, IReadOnlySet<string> hidden,
         Func<string, string> color,
-        IReadOnlyList<(string Key, string Name, int? Percent)> bluetooth)
+        IReadOnlyList<(string Key, string Name, int? Percent)> bluetooth, bool mouseStyle = false)
     {
         if (!enabled)
         {
@@ -260,7 +260,8 @@ internal sealed class ReceiverMonitor : IDisposable
                 if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
                 SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
-                    color: color(pair.Key), status: pair.Value.Reading.Percent.HasValue ? null : Status(pair.Value));
+                    color: color(pair.Key), status: pair.Value.Reading.Percent.HasValue ? null : Status(pair.Value),
+                    mouseStyle: mouseStyle);
             }
             if (showAula && !aulaIsPrimary)
             {
@@ -271,7 +272,7 @@ internal sealed class ReceiverMonitor : IDisposable
             foreach (var item in bluetooth)
             {
                 wanted.Add(item.Key);
-                SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
+                SetIcon(item.Key, item.Name, item.Percent, menu, refresh, color: color(item.Key), mouseStyle: mouseStyle);
             }
 
             foreach (string key in wanted.Missing(_icons.Keys))
@@ -287,14 +288,14 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private void SetIcon(string key, string name, int? level, ContextMenuStrip menu,
-        Action refresh, bool stale = false, string? color = null, string? status = null)
+        Action refresh, bool stale = false, string? color = null, string? status = null, bool mouseStyle = false)
     {
         if (!_icons.TryGetValue(key, out ExtraIcon? icon))
         {
             icon = new ExtraIcon(refresh);
             _icons.Add(key, icon);
         }
-        icon.Update(name, level, menu, stale, color, status);
+        icon.Update(name, level, menu, stale, color, status, mouseStyle);
     }
 
     public void Dispose()
@@ -313,18 +314,18 @@ internal sealed class ReceiverMonitor : IDisposable
 
         internal ExtraIcon(Action refresh) => _tray.DoubleClick += (_, _) => refresh();
 
-        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color, string? status)
+        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color, string? status, bool mouseStyle)
         {
             if (!ReferenceEquals(_tray.ContextMenuStrip, menu)) _tray.ContextMenuStrip = menu;
-            string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} — {name}";
+            string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} · {UiText.Get("Tray color " + TrayColorRules.Normalize(color))} — {name}";
             if (status is not null) label = $"2.4 GHz · {status} — {name}";
             if (stale) label = UiText.Get("cached") + ": " + label;
             label = label[..Math.Min(63, label.Length)];
             if (_tray.Text != label) _tray.Text = label;
-            var key = TrayIconRenderKey.Create(level, level.HasValue, stale, color: color);
+            var key = TrayIconRenderKey.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle);
             if (_icon is null || _renderKey != key)
             {
-                Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color);
+                Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle);
                 try { _tray.Icon = next; }
                 catch { next.Dispose(); throw; }
                 _icon?.Dispose();

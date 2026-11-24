@@ -520,12 +520,40 @@ var colors = TrayColorRules.Clean(new Dictionary<string, string>
     [DeviceAliasRules.AulaSlot] = "green", ["path"] = "pink"
 });
 Check("Tray palettes preserve independent valid preferences",
-    colors.Count == 2 && colors[colorKeyA] == "blue" && colors[colorKeyB] == "purple");
+    colors.Count == 3 && colors[colorKeyA] == "blue" && colors[colorKeyB] == "purple" &&
+    colors[DeviceAliasRules.AulaSlot] == "green");
 Check("Tray palette null settings safe", TrayColorRules.Clean(null).Count == 0);
 Check("Tray colors survive settings round trip",
     System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
         System.Text.Json.JsonSerializer.Serialize(new AppSettings { DeviceTrayColors = colors }))
         ?.DeviceTrayColors[colorKeyB] == "purple");
+
+foreach (string theme in TrayColorRules.AppIcons)
+{
+    Check($"App icon choice {theme} recognized", TrayColorRules.NormalizeAppIcon(theme) == theme);
+    Check($"Critical {theme} is red", TrayColorRules.Resolve(10, true, false, theme) == TrayColorRules.Red);
+    Check($"Fresh {theme} normal mouse", TrayColorRules.ShowMouse(21, true, false, true));
+}
+Check("Unknown icon choice defaults orange", TrayColorRules.NormalizeAppIcon("../bad") == "orange");
+Check("Inherit global color", TrayColorRules.EffectiveColor(null, "orange") == "orange");
+Check("Explicit green overrides global", TrayColorRules.EffectiveColor("green", "orange") == "green");
+Check("Critical always numeric", !TrayColorRules.ShowMouse(10, true, false, true));
+Check("Amber warning numeric", !TrayColorRules.ShowMouse(20, true, false, true));
+Check("Stale always numeric", !TrayColorRules.ShowMouse(80, true, true, true));
+Check("Mouse icon unchanged across normal levels",
+    TrayIconRenderKey.Create(80, true, false, color: "orange", mouseStyle: true) ==
+    TrayIconRenderKey.Create(79, true, false, color: "orange", mouseStyle: true));
+Check("Neutral icon changes with branding",
+    TrayIconRenderKey.Create(null, false, false, true, brand: "white") !=
+    TrayIconRenderKey.Create(null, false, false, true, brand: "black"));
+Check("Critical redraws on percentage change",
+    TrayIconRenderKey.Create(8, true, false, color: "orange", mouseStyle: true) !=
+    TrayIconRenderKey.Create(7, true, false, color: "orange", mouseStyle: true));
+Check("Appearance preferences round trip",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(new AppSettings
+        { ApplicationIconColor = "blue", DefaultTrayColor = "white", MouseTrayIcon = false }))
+        is { ApplicationIconColor: "blue", DefaultTrayColor: "white", MouseTrayIcon: false });
 
 // Tray visibility must not alter receiver measurement identity.
 string trayKeyA = new string('A', 64);

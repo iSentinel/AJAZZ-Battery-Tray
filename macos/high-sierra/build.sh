@@ -16,6 +16,10 @@ cp "$ROOT/macos/high-sierra/Info.plist" "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources"
 cp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 cmp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+for color in white black blue; do
+  cp "$ROOT/macos/AppIcon-$color.icns" "$APP/Contents/Resources/AppIcon-$color.icns"
+  cmp "$ROOT/macos/AppIcon-$color.icns" "$APP/Contents/Resources/AppIcon-$color.icns"
+done
 /usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$APP/Contents/Info.plist" | grep -Fxq AppIcon.icns
 if [[ -n "${AJAZZ_HIGHSIERRA_BUILD_NUMBER:-}" ]]; then
   [[ "$AJAZZ_HIGHSIERRA_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || {

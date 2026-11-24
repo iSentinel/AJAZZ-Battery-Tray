@@ -1,3 +1,11 @@
+# Resume — mouse color themes
+
+- #126 all four CI PASS, merged fcda8dd into draft #99.
+- Four official-color inspired app resources bundled; Windows appearance
+  and independent tray palette implemented, critical <=10% red numeric.
+- Windows CI pending; Apple resource selection UI is next.
+- Hardware acceptance still open; no release.
+
 # Resume — orange mouse application icon
 
 - Draft #99 4f4b96c all six CI checks PASS before branding changes.

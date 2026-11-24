@@ -12,4 +12,7 @@
     <ApplicationIcon>Assets/AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets/AppIcon*.ico" LogicalName="AjazzBatteryTray.Assets.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

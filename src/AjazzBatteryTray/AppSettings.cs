@@ -17,6 +17,9 @@ public sealed class AppSettings
     public bool NotifyOnDisconnect { get; set; } = false;
     public bool AutomaticDockClockSync { get; set; } = true;
     public bool MonitorAulaL99 { get; set; } = false;
+    public string ApplicationIconColor { get; set; } = "orange";
+    public string DefaultTrayColor { get; set; } = TrayColorRules.Default;
+    public bool MouseTrayIcon { get; set; } = true;
     public bool MultipleTrayIcons { get; set; } = true;
     // Absent key inherits the global sampling interval.
     public Dictionary<string, int> DevicePollIntervals { get; set; } = new(StringComparer.Ordinal);
@@ -49,6 +52,8 @@ public sealed class AppSettings
                     result.DeviceAlertMasks = CleanDeviceAlertMasks(result.DeviceAlertMasks);
                     result.DeviceDisconnectAlerts =
                         CleanDeviceDisconnectAlerts(result.DeviceDisconnectAlerts);
+                    result.ApplicationIconColor = TrayColorRules.NormalizeAppIcon(result.ApplicationIconColor);
+                    result.DefaultTrayColor = TrayColorRules.Normalize(result.DefaultTrayColor);
                     result.DeviceTrayColors = TrayColorRules.Clean(result.DeviceTrayColors);
                     result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
                     result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
