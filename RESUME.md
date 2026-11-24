@@ -1,3 +1,14 @@
+# Resume — explicit unverified diagnostic fields
+
+- Audit 6f165c3 all six CI PASS. Owner accepted gray AJ179 100? and
+  AULA 75% fit on Windows 9cd415b (identical tree).
+- 21:35 UTC report again showed six ready-clear 100 fields.
+  GearHub full-looking gauge only, no numeric reference.
+- Ordinary, per-receiver and full capture reports now label candidate
+  separately from verified telemetry; scheduled skip suppresses candidate.
+  Native CI pending. No poll/alert/history changes.
+- Changed-charge and other physical acceptance gates remain open.
+
 # Resume — owner AJ179/AULA regression
 
 - #99 357b967 all six CI PASS. Owner new AJ179 reports show 6/6

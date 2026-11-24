@@ -77,7 +77,10 @@ public sealed class AjazzHidReader
                     revision, reading with { Attempts = trace.ToArray() },
                     MeasuredAt: DateTimeOffset.UtcNow, CompletedTick: Environment.TickCount64));
                 if (captureProtocol)
+                {
                     trace.Add($"  Receiver result: {reading.Percent?.ToString() ?? "unavailable"}; {reading.Details}");
+                    trace.Add("  " + BatteryReportParser.DiagnosticUnverifiedField(reading.UnverifiedPercent));
+                }
                 attempts.AddRange(trace);
             }
 
@@ -200,11 +203,15 @@ public sealed class AjazzHidReader
                 validAttempts++;
             }
         }
-        if (captureProtocol)
-            attempts.Add($"  Matrix result: {validAttempts}/{totalAttempts} valid replies; first valid={firstValid?.ToString() ?? "unavailable"}");
-        int? unverified = revision == 2
+        int? unverified = revision == 2 && !firstValid.HasValue
             ? BatteryReportParser.ConsistentUnverifiedField(firstUnverified, matching, totalAttempts)
             : null;
+        if (captureProtocol)
+        {
+            attempts.Add($"  Matrix result: {validAttempts}/{totalAttempts} valid replies; first valid={firstValid?.ToString() ?? "unavailable"}");
+            attempts.Add($"  Ready-clear field agreement: {matching}/{totalAttempts}; " +
+                BatteryReportParser.DiagnosticUnverifiedField(unverified));
+        }
         return firstValid.HasValue ? new Reading(true, firstValid, "2.4 GHz / 8K") :
             new Reading(true, null, "No valid battery status report", UnverifiedPercent: unverified);
     }

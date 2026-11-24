@@ -44,6 +44,13 @@ public static class BatteryReportParser
     public static int? ConsistentUnverifiedField(int? first, int matching, int total)
         => total >= 2 && matching == total ? first : null;
 
+    /// <summary>Stable diagnostic label; never imply a verified measurement.</summary>
+    public static string DiagnosticUnverifiedField(int? value, bool sampled = true)
+        => "unverified mouse field (not telemetry)=" +
+            (sampled && value is >= 1 and <= 100
+                ? value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "unavailable");
+
     /// <summary>Explain rejection without changing the legacy format.</summary>
     public static string DescribeWindowsFeature(ReadOnlySpan<byte> report)
     {
