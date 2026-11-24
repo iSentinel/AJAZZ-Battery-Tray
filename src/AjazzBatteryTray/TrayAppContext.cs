@@ -768,6 +768,11 @@ public sealed class TrayAppContext : ApplicationContext
         foreach (string choice in choices)
         {
             var item = new ToolStripMenuItem(UiText.Get("Tray color " + choice));
+            using Icon preview = appIcon ? ApplicationIconAssets.Load(choice) :
+                TrayIconFactory.Create(83, true, color: choice, mouseStyle: true);
+            Image swatch = preview.ToBitmap();
+            item.Image = swatch;
+            item.Disposed += (_, _) => swatch.Dispose();
             item.Checked = choice == (appIcon ? _settings.ApplicationIconColor : _settings.DefaultTrayColor);
             item.Click += (_, _) =>
             {

@@ -1,3 +1,12 @@
+# Resume — appearance acceptance
+
+- #127 exact head 077e693 all four CI PASS; merged 9dabf9a into #99,
+  identical source tree. Windows log confirms resource load, red
+  critical pixels, palette precedence and preference JSON round trip.
+- Added native Apple resource/pixel boundary tests and actual menu previews.
+  Native CI pending. Owner hover, restart and actual display checks remain.
+- Hardware gates and public release unchanged.
+
 # Resume — mouse color themes
 
 - #126 all four CI PASS, merged fcda8dd into draft #99.

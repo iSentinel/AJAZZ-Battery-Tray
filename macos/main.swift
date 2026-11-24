@@ -326,6 +326,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
             if key == "ApplicationIconColor", let image = TrayAppearance.appIcon(color) {
                 image.size = NSSize(width: 16, height: 16)
                 item.image = image
+            } else if key == "TrayIconColor" {
+                item.image = TrayAppearance.image(level: 83, choice: color, mouseStyle: true)
             }
             menu.addItem(item)
         }
@@ -827,6 +829,11 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
     print("Tray menu: sync dock time now or every five minutes.")
     print("Requires macOS 13+ and a compatible VID_3151:PID_5007 receiver.")
 } else if CommandLine.arguments.contains("--self-test") {
+    guard TrayAppearance.selfTest() else {
+        print("FAIL: bundled appearance resources or rendered critical state")
+        exit(1)
+    }
+    print("PASS: four bundled app icons and 36 appearance rendering cases")
     let originalLanguage = AppText.language
     AppText.choose("ru")
     let russianValid = AppText.text("Settings") == "Настройки" &&
