@@ -7,6 +7,8 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'tools/Measure-TrayResources.ps1'
+      - 'tools/Measure-TrayJobCpu.ps1'
+      - 'tools/TrayJobAccounting.cs'
       - 'tools/Measure-PollWorker.ps1'
       - '.github/workflows/build.yml'
   pull_request:
@@ -33,6 +35,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
       - name: Smoke-test localized Device Manager controls
         run: dotnet run -c Release --project tests/AjazzDashboard.Smoke
+      - name: Smoke-test cumulative process-tree CPU accounting
+        shell: pwsh
+        run: ./tools/Measure-TrayJobCpu.ps1 -SelfTest
       - name: Smoke-test resource sampler
         shell: pwsh
         run: |
@@ -60,6 +65,27 @@ jobs:
             -p:PublishSingleFile=true -p:PublishTrimmed=false `
             -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Windows publish failed' }
+      - name: Verify job CPU sampler preflight
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $path = Join-Path $env:RUNNER_TEMP ('ajazz-job-dry-' + [Guid]::NewGuid().ToString('N') + '.csv')
+          $dry = & ./tools/Measure-TrayJobCpu.ps1 -ExePath $exe -OutputPath $path -Mode Isolated -DryRun -DurationSeconds 30 -IntervalSeconds 15
+          if ($dry -notmatch 'DRY-RUN' -or (Test-Path -LiteralPath $path)) {
+            throw 'Preflight did not remain side-effect free'
+          }
+          if (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) {
+            throw 'Preflight started tray'
+          }
+          $rejected = $false
+          try {
+            & ./tools/Measure-TrayJobCpu.ps1 -ExePath $exe -OutputPath $path -DryRun -DurationSeconds 30 -IntervalSeconds 16
+          } catch {
+            $rejected = $_.Exception.Message -like '*half the duration*'
+          }
+          if (-not $rejected -or (Test-Path -LiteralPath $path)) {
+            throw 'Invalid sample interval was not rejected'
+          }
       - name: Measure synthetic worker startup baseline
         shell: pwsh
         run: |

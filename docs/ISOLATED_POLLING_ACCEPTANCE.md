@@ -104,6 +104,34 @@ includes child start/exit and cumulative CPU; report the collection
 method, parent and child totals separately. A task-manager snapshot
 cannot capture all brief children.
 
+For Windows process-tree CPU, the new optional Job Object sampler launches
+the chosen candidate suspended, assigns it to a fresh job, then resumes.
+It counts cumulative CPU for all job processes including exited workers.
+It fails before resuming if the host cannot assign a nested job. It never
+attaches to an already running tray or terminates a running tray on
+completion. Close the tray normally between runs. From a directory with
+the tools and unpacked candidate:
+
+    .\tools\Measure-TrayJobCpu.ps1 -ExePath .\AJAZZBatteryTray.exe -Mode Normal -OutputPath .\normal-tree.csv
+    .\tools\Measure-TrayJobCpu.ps1 -ExePath .\AJAZZBatteryTray.exe -Mode Isolated -OutputPath .\isolated-tree.csv
+
+Both default to 300 seconds. The interval must not exceed half the duration;
+if the tray exits or fewer than three samples are collected, no complete
+report is written. They record the executable SHA256, explicit
+mode, elapsed time, job CPU and process counts. The CSV is distinct from
+the parent sampler and cannot be passed to compare_tray_resources.py.
+Compare matching reports with:
+
+    python tools/compare_job_cpu.py --normal normal-tree.csv --isolated isolated-tree.csv
+
+The comparator checks exact executable hash, mode, monotonic counters,
+comparable durations and distinct CSVs. PASS means input validation,
+not acceptable performance. Record settings and hardware separately. Job accounting covers the
+launched process tree, not external services or system-wide CPU cost.
+It does not measure total memory, wakeups or energy. Use -DryRun for a
+side-effect-free preflight and -SelfTest for a synthetic two-process
+tree (no HID). The native CI test verifies exited child accounting.
+
 On macOS use Activity Monitor for visual observations and a process
 lifetime profiler if available for total child cost; report the method.
 For startup-only measurements use tools/measure_apple_worker.py.

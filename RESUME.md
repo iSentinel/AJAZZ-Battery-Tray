@@ -1,3 +1,20 @@
+# Resume — field evidence tools
+
+- #121 merged 942dd31 and #122 merged 574d390 into #120 after
+  Windows/Universal/Python CI PASS. Combined #120 CI pending.
+- Single-receiver GET-ID offline analyzer candidate: no battery promotion,
+  no HID access; explicit pairing and incomplete/malformed detection.
+- Next: native/offline CI, integrate into draft #99 and collect actual
+  AJ159/AJ179/AULA and resource evidence. No public release.
+
+# Resume — final audit CI and resource measurement
+
+- Draft #99 head ceb4cfc: all five final CI checks PASS. No main merge.
+- New candidate Windows Job Object sampler measures cumulative CPU
+  including exited children; synthetic no-HID test added to CI.
+- No physical resource or device observations have been collected.
+  Current published beta.60 / High Sierra .5 remain unchanged.
+
 # Resume — consolidation and field acceptance readiness
 
 - #119 all three platform CI PASS, merged eef78f5 into #117; #118
