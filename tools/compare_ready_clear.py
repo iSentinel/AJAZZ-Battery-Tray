@@ -6,12 +6,16 @@ from datetime import datetime
 from pathlib import Path
 import re
 
-from compare_apex_reports import SECTION, read_attempts, current_percent
+from compare_apex_reports import SECTION, current_percent
 
 LIMIT = 1024 * 1024
 EXPECTED = {(delay, length) for delay in (30, 100, 250)
             for length in (65, 67)}
 MARKER = re.compile(r"^UTC: (.+)$", re.MULTILINE)
+TX = re.compile(r"Attempt UTC=(.+); delay=(30|100|250)ms; TX\[(65|67)\]=([0-9A-F]+)")
+GET = re.compile(r"GET request buffer\[(65|67)\]=([0-9A-F]+)")
+RX = re.compile(r"RX buffer\[(65|67)\]=([0-9A-F]+)")
+SUCCESS = re.compile(r"SET F7 / GET 05 \((65|67) bytes\): OK; header=([0-9A-F]{8}); no valid battery")
 
 
 def ready_clear(data):
@@ -56,23 +60,58 @@ def parse_matrix(text):
     return stamp, levels.pop()
 
 
+def parse_probe(lines, length):
+    """Require the exact GET buffer, successful chain and response in order."""
+    relevant = [line for line in lines if line.startswith(
+        ("GET request buffer", "SET F7 / GET", "RX buffer"))]
+    if len(relevant) < 3:
+        return None
+    if len(relevant) != 3:
+        raise ValueError("Duplicate probe evidence")
+    request = GET.fullmatch(relevant[0])
+    success = SUCCESS.fullmatch(relevant[1])
+    response = RX.fullmatch(relevant[2])
+    if not request or not success or not response:
+        return None
+    if any(int(marker[1]) != length for marker in (request, success, response)):
+        raise ValueError("Probe length mismatch")
+    if bytes.fromhex(request[2]) != bytes([5]).ljust(length, bytes(1)):
+        raise ValueError("Unexpected GET request buffer")
+    data = bytes.fromhex(response[2])
+    if len(data) != length or data[:4].hex().upper() != success[2]:
+        raise ValueError("Response length/header mismatch")
+    return data
+
+
 def collect_attempts(text):
-    """Reject repeated attempts, orphan responses and duplicate responses."""
+    """Reject orphan evidence, duplicate probes and non-F7 requests."""
     entries = {}
     active = None
-    for receiver, delay, length, data in read_attempts(text):
-        key = (delay, length)
-        if receiver != "1" or key not in EXPECTED:
-            raise ValueError("Unexpected receiver or matrix key")
-        if data is None:
-            if key in entries:
-                raise ValueError("Duplicate attempt")
-            entries[key] = None
-            active = key
-        else:
-            if active != key or entries[key] is not None:
-                raise ValueError("Duplicate or orphan response")
-            entries[key] = data
+    block = []
+    for line in text.split(SECTION, 1)[1].splitlines():
+        line = line.strip()
+        if line.startswith("Attempt UTC="):
+            if active is not None:
+                entries[active] = parse_probe(block, active[1])
+            match = TX.fullmatch(line)
+            if not match:
+                raise ValueError("Malformed attempt marker")
+            timestamp = datetime.fromisoformat(match[1])
+            if timestamp.utcoffset() is None:
+                raise ValueError("Attempt timestamp needs timezone")
+            active = (int(match[2]), int(match[3]))
+            if active not in EXPECTED or active in entries:
+                raise ValueError("Duplicate or invalid attempt")
+            if bytes.fromhex(match[4]) != bytes([0, 247]).ljust(active[1], bytes(1)):
+                raise ValueError("Unexpected SET request buffer")
+            entries[active] = None
+            block = []
+        elif active is not None:
+            block.append(line)
+        elif line.startswith(("GET request buffer", "SET F7 / GET", "RX buffer")):
+            raise ValueError("Orphan probe evidence")
+    if active is not None:
+        entries[active] = parse_probe(block, active[1])
     return entries
 
 
