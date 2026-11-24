@@ -118,8 +118,13 @@ the tools and unpacked candidate:
 Both default to 300 seconds and record the executable SHA256, explicit
 mode, elapsed time, job CPU and process counts. The CSV is distinct from
 the parent sampler and cannot be passed to compare_tray_resources.py.
-Report CPU delta divided by elapsed time, as one-core percent; record
-matching settings and hardware separately. Job accounting covers the
+Compare matching reports with:
+
+    python tools/compare_job_cpu.py --normal normal-tree.csv --isolated isolated-tree.csv
+
+The comparator checks exact executable hash, mode, monotonic counters,
+comparable durations and distinct CSVs. PASS means input validation,
+not acceptable performance. Record settings and hardware separately. Job accounting covers the
 launched process tree, not external services or system-wide CPU cost.
 It does not measure total memory, wakeups or energy. Use -DryRun for a
 side-effect-free preflight and -SelfTest for a synthetic two-process
