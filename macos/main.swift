@@ -5,18 +5,19 @@ import ServiceManagement
 
 /// Reads battery and can set only the dock's documented on-board clock.
 enum ApexBattery {
-    enum Status {
+    enum Status: Equatable {
         case battery(Int)
         case notConnected
         case unavailable
         case accessUnknown
+        case timedOut
         case unsupportedCollection
 
         var compatibleReceiverPresent: Bool? {
             switch self {
             case .battery, .unavailable: return true
             case .notConnected: return false
-            case .accessUnknown, .unsupportedCollection: return nil
+            case .accessUnknown, .unsupportedCollection, .timedOut: return nil
             }
         }
     }
@@ -35,6 +36,9 @@ enum ApexBattery {
     }
 
     static func read() -> Status {
+        let lease = AjazzAcquireIoLease()
+        guard lease >= 0 else { return .accessUnknown }
+        defer { AjazzReleaseIoLease(lease) }
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         let criteria: [String: Any] = [
             kIOHIDVendorIDKey as String: vendorID,
@@ -50,12 +54,20 @@ enum ApexBattery {
               !found.isEmpty else {
             return .notConnected
         }
-        var attempted = false
+        var matched = false
+        var opened = false
         for device in found where matchesVendorUsage(device) {
-            attempted = true
-            if let value = poll(device) { return .battery(value) }
+            matched = true
+            let result = poll(device)
+            opened = opened || result.opened
+            if let value = result.percent { return .battery(value) }
         }
-        return attempted ? .unavailable : .unsupportedCollection
+        return noSampleStatus(matched: matched, opened: opened)
+    }
+
+    static func noSampleStatus(matched: Bool, opened: Bool) -> Status {
+        if !matched { return .unsupportedCollection }
+        return opened ? .unavailable : .accessUnknown
     }
 
     /// Builds the documented 64-byte macOS feature payload for dock RTC updates.
@@ -78,6 +90,9 @@ enum ApexBattery {
 
     /// Transfers local wall-clock time to the same vendor HID collection.
     static func syncClock() -> Bool {
+        let lease = AjazzAcquireIoLease()
+        guard lease >= 0 else { return false }
+        defer { AjazzReleaseIoLease(lease) }
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         let criteria: [String: Any] = [
             kIOHIDVendorIDKey as String: vendorID,
@@ -172,9 +187,9 @@ enum ApexBattery {
         return page == usagePage && item == usage
     }
 
-    private static func poll(_ device: IOHIDDevice) -> Int? {
+    private static func poll(_ device: IOHIDDevice) -> (opened: Bool, percent: Int?) {
         guard IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
-            return nil
+            return (false, nil)
         }
         defer { IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone)) }
         // Match the receiver's Windows request: report ID 0, first payload byte 0xF7.
@@ -195,10 +210,23 @@ enum ApexBattery {
             }
             if read == kIOReturnSuccess && (3...count).contains(actualLength),
                let percent = parse(Array(reply.prefix(Int(actualLength)))) {
-                return percent
+                return (true, percent)
             }
         }
-        return nil
+        return (true, nil)
+    }
+}
+
+/// Session provenance only: the Apple reader has no stable receiver identity.
+struct ApexSessionObservation {
+    private(set) var lastVerified: Date?
+
+    mutating func observe(_ status: ApexBattery.Status, at time: Date) {
+        if case .battery(let value) = status, (1...100).contains(value) {
+            lastVerified = time
+        } else if status == .notConnected {
+            lastVerified = nil
+        }
     }
 }
 
@@ -213,6 +241,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var manualClockSync = false
     private var timer: Timer?
     private var polling = false
+    private var closing = false
+    private var activeCancellation: ApexWorkerCancellation?
+    private let isolatedPolling = CommandLine.arguments == [
+        CommandLine.arguments[0], "--experimental-isolated-polling"
+    ]
     private let batteryHistory = BatteryHistoryWriter()
     private let batteryAlerts = BatteryAlertPolicy()
     private var historyWindow: BatteryHistoryWindowController?
@@ -220,6 +253,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var startupMenuItem: NSMenuItem?
     private var intervalItems = [NSMenuItem]()
     private var displayedStatus = ApexBattery.Status.accessUnknown
+    private var sessionObservation = ApexSessionObservation()
     private var lastClockSent: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -512,25 +546,63 @@ final class TrayController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func refresh() {
-        guard !polling else { return }
+        guard !polling, !closing else { return }
         polling = true
+        let token = isolatedPolling ? ApexWorkerCancellation() : nil
+        activeCancellation = token
         let manual = manualClockSync
         manualClockSync = false
         let automatic = autoClockEnabled
         let lastAttempt = lastClockAttempt
         let previouslyPresent = receiverWasPresent
         DispatchQueue.global(qos: .utility).async { [weak self] in
-            let value = ApexBattery.read()
+            let value = Self.readForPoll(token)
+            let observedAt = Date()
             let elapsed = Date().timeIntervalSince(lastAttempt)
             let due = elapsed < 0 || elapsed >= 300
-            let shouldSync = value.compatibleReceiverPresent == true && (manual ||
+            let shouldSync = token?.isCancelled != true &&
+                value.compatibleReceiverPresent == true && (manual ||
                 (automatic && (due || !previouslyPresent)))
-            let sent = shouldSync ? ApexBattery.syncClock() : false
+            let sent = shouldSync ? Self.clockForPoll(token) : false
             DispatchQueue.main.async {
-                if shouldSync { self?.recordClockResult(sent) }
-                self?.update(value)
+                self?.completePoll(value, observedAt: observedAt, manual: manual,
+                                   attempted: shouldSync, sent: sent)
             }
         }
+    }
+
+    private static func readForPoll(_ token: ApexWorkerCancellation?) -> ApexBattery.Status {
+        guard let token = token else { return ApexBattery.read() }
+        switch ApexBoundedWorker.read(cancellation: token) {
+        case .reply(let value): return value
+        case .timeout: return .timedOut
+        default: return .accessUnknown
+        }
+    }
+
+    private static func clockForPoll(_ token: ApexWorkerCancellation?) -> Bool {
+        guard let token = token else { return ApexBattery.syncClock() }
+        if case .clock(let sent) = ApexBoundedWorker.read(
+            mode: ApexBoundedWorker.clockMode, cancellation: token) { return sent }
+        return false
+    }
+
+    private func completePoll(_ value: ApexBattery.Status, observedAt: Date, manual: Bool,
+                              attempted: Bool, sent: Bool) {
+        activeCancellation = nil
+        if closing {
+            polling = false
+            NSApp.reply(toApplicationShouldTerminate: true)
+            return
+        }
+        // Retain an unserved explicit request after unknown discovery, but do
+        // not create an immediate retry loop. Only a new queued request does so.
+        let queued = manualClockSync
+        if manual && value.compatibleReceiverPresent == nil { manualClockSync = true }
+        if attempted { recordClockResult(sent) }
+        sessionObservation.observe(value, at: observedAt)
+        update(value)
+        if queued { refresh() }
     }
 
     private func recordClockResult(_ sent: Bool) {
@@ -563,7 +635,6 @@ final class TrayController: NSObject, NSApplicationDelegate {
         polling = false
         displayedStatus = status
         renderStatus(status)
-        if manualClockSync { refresh() }
     }
 
     private func renderStatus(_ status: ApexBattery.Status) {
@@ -574,6 +645,9 @@ final class TrayController: NSObject, NSApplicationDelegate {
         case .notConnected:
             statusItem.button?.title = "🔋—"
             detailItem.title = AppText.text("AJAZZ APEX receiver not found")
+        case .timedOut:
+            statusItem.button?.title = "🔋?"
+            detailItem.title = AppText.text("HID read timed out")
         case .accessUnknown:
             statusItem.button?.title = "🔋?"
             detailItem.title = AppText.text("Cannot check USB receiver access")
@@ -584,6 +658,13 @@ final class TrayController: NSObject, NSApplicationDelegate {
             statusItem.button?.title = "🔋?"
             detailItem.title = AppText.text(
                 "Receiver found; battery status unavailable")
+        }
+        if let stamp = sessionObservation.lastVerified {
+            if case .battery = status { } else {
+                let text = DateFormatter.localizedString(from: stamp,
+                    dateStyle: .short, timeStyle: .medium)
+                detailItem.title += " · " + AppText.format("Last verified USB sample (session): %@", text)
+            }
         }
         statusItem.button?.toolTip = detailItem.title
     }
@@ -623,12 +704,79 @@ final class TrayController: NSObject, NSApplicationDelegate {
         refreshStartupMenu()
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard isolatedPolling, polling else { return .terminateNow }
+        closing = true
+        timer?.invalidate()
+        activeCancellation?.cancel()
+        return .terminateLater
+    }
+
     @objc private func quit() { NSApp.terminate(nil) }
 }
 
-if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-h") {
+/// Replay the shared sanitized fixture through the decoder and actual history writer.
+private func verifyObservationCorpus(_ path: String) -> Bool {
+    guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return false }
+    let rows = text.split(whereSeparator: \.isNewline).dropFirst()
+    guard rows.count == 20 else { return false }
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    for (index, row) in rows.enumerated() {
+        let fields = row.split(separator: ",", omittingEmptySubsequences: false)
+        guard fields.count == 5, fields[2].count.isMultiple(of: 2) else { return false }
+        let hex = Array(fields[2])
+        var bytes: [UInt8] = []
+        for offset in stride(from: 0, to: hex.count, by: 2) {
+            guard let byte = UInt8(String(hex[offset...offset + 1]), radix: 16) else { return false }
+            bytes.append(byte)
+        }
+        let percent = ApexBattery.parse(bytes)
+        guard (percent.map { String($0) } ?? "unknown") == String(fields[4]) else { return false }
+        let value = percent.map(ApexBattery.Status.battery) ?? .unavailable
+        let writer = BatteryHistoryWriter(directory: root.appendingPathComponent(String(index)))
+        writer.record(value)
+        guard let csv = try? String(contentsOf: writer.file, encoding: .utf8),
+              let line = csv.split(whereSeparator: \.isNewline).last,
+              let sample = BatteryHistoryReader.parse(String(line)),
+              sample.percent == percent,
+              sample.state == (percent == nil ? "unavailable" : "online") else { return false }
+        if percent == nil {
+            let alerts = BatteryAlertPolicy()
+            guard alerts.evaluate(.battery(83), notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(value, notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil
+            else { return false }
+        }
+    }
+    print("PASS: 20 shared F7 observations, CSV and alert policy")
+    return true
+}
+
+if CommandLine.arguments.contains("--internal-test-io-lease") {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    let lease = AjazzAcquireIoLease()
+    guard lease >= 0 else { exit(2) }
+    AjazzReleaseIoLease(lease)
+    exit(0)
+} else if let worker = CommandLine.arguments.dropFirst().first(where: ApexBoundedWorker.isWorker) {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    exit(ApexBoundedWorker.runChild(worker))
+} else if CommandLine.arguments.contains("--self-test-bounded-poll") {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    let passed = ApexBoundedWorker.selfTest()
+    print(passed ? "PASS: bounded worker IPC, rejection, timeout, cancellation and recovery" :
+        "FAIL: bounded worker self-test")
+    exit(passed ? 0 : 1)
+} else if CommandLine.arguments.contains("--internal-poll-sample") {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    // Fixed synthetic reply, without opening IOKit or starting the tray.
+    print("{\"kind\":\"synthetic\",\"percent\":null,\"presence\":\"unknown\"}")
+} else if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-h") {
     print("AJAZZ Battery Tray for macOS (experimental 2.4 GHz/8K HID)")
     print("Usage: AJAZZBatteryTray [--help] [--diagnose] [--self-test]")
+    print("Optional: --experimental-isolated-polling (session only).")
     print("Tray menu: sync dock time now or every five minutes.")
     print("Requires macOS 13+ and a compatible VID_3151:PID_5007 receiver.")
 } else if CommandLine.arguments.contains("--self-test") {
@@ -709,6 +857,13 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
             .notConnected, notifyLow: true, notifyDisconnect: true) == nil &&
         alerts.evaluate(
             .notConnected, notifyLow: true, notifyDisconnect: true) == .receiverDisconnected
+    let timeoutAlerts = BatteryAlertPolicy()
+    let timeoutValid = ApexBattery.Status.timedOut.compatibleReceiverPresent == nil &&
+        timeoutAlerts.evaluate(.battery(80), notifyLow: true, notifyDisconnect: true) == nil &&
+        timeoutAlerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil &&
+        timeoutAlerts.evaluate(.timedOut, notifyLow: true, notifyDisconnect: true) == nil &&
+        timeoutAlerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil &&
+        timeoutAlerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == .receiverDisconnected
     let selectedAlerts = BatteryAlertPolicy()
     let selectedTests = selectedAlerts.evaluate(
         .battery(75), notifyLow: true, notifyDisconnect: true,
@@ -751,7 +906,18 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
         ApexBattery.Status.unsupportedCollection.compatibleReceiverPresent == nil &&
         ApexBattery.Status.unavailable.compatibleReceiverPresent == true &&
         ApexBattery.Status.notConnected.compatibleReceiverPresent == false
-    let valid = sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests &&
+    var observation = ApexSessionObservation()
+    observation.observe(.battery(83), at: testDate)
+    observation.observe(.timedOut, at: testDate.addingTimeInterval(30))
+    let preserved = observation.lastVerified == testDate
+    observation.observe(.notConnected, at: testDate.addingTimeInterval(60))
+    let provenanceValid = preserved && observation.lastVerified == nil &&
+        ApexBattery.noSampleStatus(matched: true, opened: false) == .accessUnknown &&
+        ApexBattery.noSampleStatus(matched: true, opened: true) == .unavailable &&
+        ApexBattery.noSampleStatus(matched: false, opened: false) == .unsupportedCollection
+    let corpusValid = ProcessInfo.processInfo.environment["AJAZZ_TEST_CORPUS"]
+        .map(verifyObservationCorpus) ?? true
+    let valid = corpusValid && provenanceValid && sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests && timeoutValid &&
                 selectedTests && jumpTests &&
                 chartValid && historyValid &&
                 clockValid && guardValid &&
@@ -766,11 +932,13 @@ if CommandLine.arguments.contains("--help") || CommandLine.arguments.contains("-
     switch ApexBattery.read() {
     case .battery(let level): print("PASS: battery \(level)%")
     case .notConnected: print("UNKNOWN: compatible receiver not found")
-    case .accessUnknown: print("UNKNOWN: cannot access HID manager")
+    case .accessUnknown: print("UNKNOWN: cannot access HID manager/device")
+    case .timedOut: print("UNKNOWN: HID read timed out")
     case .unsupportedCollection: print("UNKNOWN: receiver HID collection not supported")
     case .unavailable: print("UNKNOWN: receiver found, no valid battery report")
     }
 } else {
+    if CommandLine.arguments.contains("--experimental-isolated-polling") && CommandLine.arguments.count != 2 { exit(1) }
     let application = NSApplication.shared
     let delegate = TrayController()
     application.delegate = delegate

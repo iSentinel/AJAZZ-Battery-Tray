@@ -54,6 +54,22 @@ static int WorkerResult(int status, double elapsed) {
     return 1;
 }
 
+/// Do not report a timeout as complete until the child is reaped.
+static BOOL StopAndReap(pid_t child) {
+    if (kill(child, SIGKILL) < 0 && errno != ESRCH) {
+        printf("FAIL: cannot stop worker errno=%d\n", errno);
+        return NO;
+    }
+    int status = 0;
+    pid_t observed;
+    do {
+        observed = waitpid(child, &status, 0);
+    } while (observed < 0 && errno == EINTR);
+    if (observed == child || (observed < 0 && errno == ECHILD)) return YES;
+    printf("FAIL: cannot reap worker errno=%d\n", errno);
+    return NO;
+}
+
 int LegacyRunBoundedWorker(const char *worker, int timeoutSeconds) {
     NSString *path = [[NSBundle mainBundle] executablePath];
     if (!path.length) {
@@ -77,13 +93,13 @@ int LegacyRunBoundedWorker(const char *worker, int timeoutSeconds) {
         double elapsed = MonotonicSeconds() - start;
         if (observed == child) return WorkerResult(status, elapsed);
         if (observed < 0 && errno != EINTR) {
-            printf("FAIL: waitpid error=%d\n", errno);
-            kill(child, SIGKILL);
+            int waitError = errno;
+            printf("FAIL: waitpid error=%d\n", waitError);
+            if (waitError != ECHILD) StopAndReap(child);
             return 1;
         }
         if (elapsed >= (double)timeoutSeconds) {
-            kill(child, SIGKILL);
-            waitpid(child, &status, WNOHANG);
+            if (!StopAndReap(child)) return 1;
             printf("TIMEOUT: worker exceeded %d seconds; no battery "
                    "value is claimed\n", timeoutSeconds);
             return 124;

@@ -4,14 +4,22 @@ on:
   pull_request:
     paths:
       - 'macos/high-sierra/**'
+      - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
+      - 'tests/fixtures/apex-f7-v1.csv'
+      - 'macos/AjazzIoLease.h'
+      - 'tools/check_apple_io_lease.py'
       - '.github/workflows/build-high-sierra.yml'
       - '.github/workflows/release-high-sierra.yml'
   push:
     branches: [main]
     paths:
       - 'macos/high-sierra/**'
+      - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
+      - 'tests/fixtures/apex-f7-v1.csv'
+      - 'macos/AjazzIoLease.h'
+      - 'tools/check_apple_io_lease.py'
       - '.github/workflows/build-high-sierra.yml'
   workflow_dispatch:
 
@@ -24,6 +32,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build native Intel app and run parser tests
         run: bash macos/high-sierra/build.sh
+      - name: Verify shared vendor I/O gate without HID
+        run: |
+          python3 tools/check_apple_io_lease.py --exe "dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra"
+      - name: Measure synthetic worker startup without HID
+        run: |
+          python3 tools/measure_apple_worker.py --dry-run
+          python3 tools/measure_apple_worker.py --exe "dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --output "$RUNNER_TEMP/macos-high-sierra-intel-worker.csv"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-high-sierra-intel-worker-startup-baseline
+          path: ${{ runner.temp }}/macos-high-sierra-intel-worker.csv
+          if-no-files-found: error
       - name: Validate hardware acceptance helper without USB traffic
         run: |
           bash -n macos/high-sierra/acceptance.sh
@@ -45,6 +65,13 @@ jobs:
           grep -q 'BEGIN: diagnostic=' "$REPORT"
           grep -q 'TEST: worker started' "$REPORT"
           grep -q 'TIMEOUT: worker exceeded' "$REPORT"
+          CHILD_PID="$(sed -n 's/^TEST: worker started; pid=\([0-9][0-9]*\);.*/\1/p' "$REPORT")"
+          test -n "$CHILD_PID"
+          if kill -0 "$CHILD_PID" 2>/dev/null; then
+            echo "FAIL: timed-out worker still exists"
+            exit 1
+          fi
+          echo "PASS: timed-out worker exited before return"
           test "$(stat -f %Lp "$REPORT")" = 600
           ln -s "$REPORT" "$REPORT.symlink"
           if "$EXE" --self-test-watchdog --output "$REPORT.symlink"; then

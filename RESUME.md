@@ -1,3 +1,115 @@
+# Resume — consolidation and field acceptance readiness
+
+- #119 all three platform CI PASS, merged eef78f5 into #117; #118
+  already merged 6c81320. Combined branch CI remains the merge gate.
+- Shared fixture now triggers Apple CI on fixture-only changes.
+- Validation matrix distinguishes historical AJ159 rev 0300 successes
+  from current affected rev 0002 (0/6 validated); no new hardware PASS.
+- Next: consolidate tested branches #117 -> #113 -> #104 -> draft #99,
+  verify artifacts for final SHA, field acceptance and resource evidence.
+- Public beta.60 / High Sierra .5 unchanged.
+
+# Resume — shared corpus observation regression
+
+- #117 Windows/Universal/HA PASS after formatter separation; #118
+  Windows/Universal PASS and merged 6c81320 into #117.
+- Candidate extends 20-row corpus into actual temporary Windows and
+  Universal history CSVs and rejected-frame disconnect alert checks on
+  all three editions. No actual notification delivery or HID in fixture run.
+- Next: native CI, consolidate #117 -> #113 -> #104 -> draft #99.
+  Hardware acceptance remains open; published beta.60 / High Sierra .5.
+
+# Resume — BLE/AULA status parity
+
+- #116 passed Windows/Universal/High Sierra and merged 98708ee.
+- Shared dashboard and menu status labels for BLE/AULA; timestamp
+  provenance, no stale numeric value on unknown/standby. AULA unknown
+  polls interrupt disconnect debounce and unexpected errors record gaps.
+- CI pending; consolidate #113 and #104 into draft #99 after checks.
+- Actual device tests and resource acceptance remain open. No release.
+
+# Resume — Apple observation parity
+
+- PR #114 merged 1f9f74a, all three platform development artifacts
+  verified on that SHA. PR #115 merged ed25a4f after Windows/macOS PASS.
+  Combined #113 checks pending before consolidation into #104/#99.
+- Apple candidate: separate HID open failure from no validated charge,
+  localized session-only last verified USB timestamp, cleared on confirmed
+  absence; no identity-bound cache or new device traffic.
+- Next: candidate native CI, consolidate branches, remaining field gates
+  and BLE/AULA presentation. No public release or new hardware evidence.
+
+# Resume — High Sierra opt-in isolated polling
+
+- Universal opt-in PR #111 merged 68576f0; legacy prototype #112 merged
+  95be0b9. All associated CI checks PASS.
+- High Sierra session-only --experimental-isolated-polling candidate:
+  cancellation, child reaping, deferred AppKit quit, timeout status and
+  stronger synthetic IPC/recovery tests. CI pending.
+- Next: one owner acceptance matrix, combined CI, development artifacts
+  and field verification. Default polling remains unchanged; no release.
+- Published beta.60 / High Sierra .5; AJ159 charge still unverified.
+
+# Resume — opt-in Universal Apple menu candidate
+
+- PR #108 merged fbeeccf; #109 merged 859093c; #110 merged 63563a7.
+  All their required CI checks PASS before merging.
+- Universal session-only --experimental-isolated-polling integrates
+  bounded battery and RTC workers, deferred quit/cancellation, unknown
+  presence and localized timeout reason. No default worker activation.
+- Synthetic timeout alert and clock IPC tests added. CI pending.
+- Next: legacy High Sierra regular read prototype; owner field test
+  and final combined branch CI. Public beta.60 / High Sierra .5 unchanged.
+
+# Resume — Universal bounded IOKit-read prototype
+
+- PR #106 merged at 76510ac4; Windows/macOS/High Sierra/Python PASS.
+  Both Apple CSVs verified: universal p50 14.716/p95 20.310 ms,
+  High Sierra target p50 9.669/p95 12.959 ms, 20/20 each on Intel CI.
+- Prototype macOS/ApexBoundedWorker.swift, typed status/percent IPC,
+  in-process exclusion, parent deadline, independent child alarm,
+  simulated overlap, hang and recovery self-test. CI pending.
+- Menu-bar polling, RTC, BLE and legacy app behavior unchanged.
+  Next: gate/shutdown integration and separate High Sierra prototype.
+- Hardware acceptance, actual owner CPU/RAM and AJ159 GET-ID evidence
+  still required. Public beta.60 and High Sierra .5 unchanged.
+
+# Resume — Apple worker startup measurement candidate
+
+- PR #105 Windows/macOS CI PASS; merged into #104 branch at d7cd7e2.
+  The combined #104 still requires CI before merging into draft #99.
+- Add the same synthetic worker sample to both Apple executables,
+  Python measurement helper, six offline tests and CI CSV artifacts.
+  All 65 offline Python tests PASS locally.
+- No default or experimental Apple HID polling changes. Modern and
+  High Sierra measurements run on macOS 15 Intel, not real 10.13 or
+  Apple Silicon hardware. Await both CI results and actual CSV data.
+- Physical Windows isolated polling, AJ159 comparison, iMac
+  acceptance and public release remain open.
+
+# Resume — opt-in isolated Windows tray polling candidate
+
+- On top of PR #104 (vendor gate), add session-only launch flag
+  --experimental-isolated-polling. No change to normal invocation.
+- Routine AJAZZ battery and existing scheduled RTC sends use separate
+  bounded child processes. Unknown reads cannot create fresh samples,
+  false disconnection or BLE fallback. Preserve manual RTC request
+  on unknown discovery; rate-limit ambiguous writes, do not replay.
+- Test synthetic clock IPC and localized busy/timeout reasons.
+  Await Windows/macOS CI and review. No public release or hardware PASS.
+- Next: owner compare opt-in vs normal CPU/RAM, sleep/replug/exit,
+  AJ159 GET ID diagnostic, and Apple routine polling overhead.
+
+# Resume — AJAZZ cross-process vendor gate candidate
+
+- PR #102 merged 89fe3f60 and PR #103 merged 87b2d4b8 into draft #99.
+  Both Windows/macOS checks PASS. Prototype routine self-test passed.
+- New session-local named mutex for AjazzHidReader.ReadAll and
+  TrySyncDockClock. Busy read maps to unknown, not physical removal.
+- Separate-process Windows CI gate fixture; no real HID access.
+- Routine timer still uses original reader; opt-in integration next
+  after gate CI. Published beta.60 unchanged.
+
 # Resume — routine HID worker prototype after benchmark
 
 - PR #101 merged into draft PR #99 at 4155c1c; Windows/macOS/Python PASS.

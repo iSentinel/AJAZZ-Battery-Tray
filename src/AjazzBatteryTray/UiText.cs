@@ -8,6 +8,8 @@ public static class UiText
         ["No charge readings in this period"] = ("За этот период нет измерений заряда", "За цей період немає вимірювань заряду"),
         ["Capturing HID report (up to {0} s)…"] = ("Сбор отчёта HID (до {0} с)…", "Збирання звіту HID (до {0} с)…"),
         ["HID capture timed out. No battery reading was verified."] = ("Время сбора отчёта HID истекло. Получить достоверный заряд не удалось.", "Час збирання звіту HID вичерпано. Отримати достовірний рівень заряду не вдалося."),
+        ["HID read timed out"] = ("Тайм-аут чтения HID", "Час очікування читання HID вичерпано"),
+        ["HID interface busy"] = ("HID-интерфейс занят", "HID-інтерфейс зайнятий"),
         ["HID interface unavailable"] = ("HID-интерфейс недоступен", "HID-інтерфейс недоступний"),
         ["Receiver disconnected"] = ("Приёмник отключён", "Приймач відключено"),
         ["Receiver present, no fresh charge"] = ("Приёмник подключён, свежих данных нет", "Приймач підключено, свіжих даних немає"),

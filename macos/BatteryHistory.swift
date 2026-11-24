@@ -9,8 +9,8 @@ final class BatteryHistoryWriter {
     private var lastWrite = Date.distantPast
     private var lastPrune = Date.distantPast
 
-    init() {
-        directory = FileManager.default.urls(
+    init(directory override: URL? = nil) {
+        directory = override ?? FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("AJAZZBatteryTray", isDirectory: true)
         file = directory.appendingPathComponent("battery-history.csv")
@@ -33,7 +33,7 @@ final class BatteryHistoryWriter {
         case .notConnected:
             value = ""
             state = "disconnected"
-        case .unavailable, .accessUnknown, .unsupportedCollection:
+        case .unavailable, .accessUnknown, .unsupportedCollection, .timedOut:
             value = ""
             state = "unavailable"
         }

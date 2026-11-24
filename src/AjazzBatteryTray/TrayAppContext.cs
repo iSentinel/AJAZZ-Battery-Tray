@@ -22,6 +22,7 @@ public sealed class TrayAppContext : ApplicationContext
     private bool _automaticUpdateBusy;
     private bool _forcePoll;
     private readonly AjazzHidReader _reader = new();
+    private readonly bool _isolatedPolling;
     private readonly AulaL99Reader _aulaReader = new();
     private readonly AlertPolicy _aulaAlerts = new();
     private readonly BatteryHistory _aulaHistory = new("aula-l99-history.csv");
@@ -90,8 +91,10 @@ public sealed class TrayAppContext : ApplicationContext
     private bool _busy;
     private bool _closing;
 
-    public TrayAppContext()
+    public TrayAppContext(bool isolatedPolling = false)
     {
+        _isolatedPolling = isolatedPolling;
+        if (isolatedPolling) FileLog.Write("INFO", "Experimental isolated AJAZZ polling enabled");
         _aulaPoll.Configure(_settings.MonitorAulaL99);
         UiText.SetLanguage(_settings.Language);
         _tray = new NotifyIcon { Text = "AJAZZ APEX: " + UiText.Get("Connecting...") };
@@ -594,26 +597,11 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void UpdateAulaStatus()
     {
-        if (_aulaPoll.IsBusy)
-            _aulaStatus.Text = UiText.Get("AULA L99: checking battery...");
-        else if (_aulaLatest is null)
-            _aulaStatus.Text = UiText.Get("AULA L99: not checked");
-        else if (!_aulaLatest.PresenceKnown)
-            _aulaStatus.Text = UiText.Get("AULA L99: HID status unknown");
-        else if (!_aulaLatest.ReceiverPresent)
-            _aulaStatus.Text = UiText.Get("AULA L99: dongle not found");
-        else if (_aulaLatest.Percent is int level)
-            _aulaStatus.Text = UiText.Format(
-                "AULA L99: last {0}% at {1} (unverified)", level,
-                _aulaLastReadAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
-        else if (AulaDisplayPercent() is int cached)
-            _aulaStatus.Text = UiText.Format(
-                "AULA L99: cached {0}% at {1}; no fresh reply", cached,
-                _aulaBattery.LastGoodAt?.ToLocalTime().ToString("g") ?? "—");
-        else
-            _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
-        if (_settings.DeviceAliases.TryGetValue(DeviceAliasRules.AulaSlot, out string? alias))
-            _aulaStatus.Text = alias + " — " + _aulaStatus.Text;
+        var state = AulaDashboardState();
+        string value = _aulaPoll.IsBusy
+            ? UiText.Get("AULA L99: checking battery...")
+            : $"{state.Name} · {state.Transport}: {state.MenuStatus(_aulaBattery.LastGoodAt)}";
+        _aulaStatus.Text = value;
     }
 
     private int? AulaDisplayPercent()
@@ -671,6 +659,7 @@ public sealed class TrayAppContext : ApplicationContext
                     result.ReceiverPresent || !result.PresenceKnown);
             if (_settings.MonitorAulaL99)
             {
+                if (!result.PresenceKnown) _aulaConnection.ObserveUnknown();
                 if (result.PresenceKnown && _aulaConnection.Evaluate(
                         result.Percent.HasValue, result.ReceiverPresent) &&
                     _settings.EffectiveDisconnectAlert(DeviceAliasRules.AulaSlot))
@@ -690,6 +679,9 @@ public sealed class TrayAppContext : ApplicationContext
                 // the receiver changed or was physically disconnected.
                 _aulaLatest = new(false, null, "Unexpected read error", PresenceKnown: false);
                 _aulaLastReadAt = DateTimeOffset.UtcNow;
+                _aulaConnection.ObserveUnknown();
+                if (_settings.RecordBatteryHistory)
+                    _aulaHistory.Record(_aulaLastReadAt.Value, null, receiverPresent: true);
             }
         }
         finally
@@ -1218,7 +1210,7 @@ public sealed class TrayAppContext : ApplicationContext
         {
             string key = pair.Key;
             var state = BluetoothDashboardState(key, pair.Value);
-            string value = state.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
+            string value = state.MenuStatus(_ble.LastSuccess(key));
             var item = new ToolStripMenuItem($"{BleDisplayLabel(pair.Value)}: {value}");
             var read = new ToolStripMenuItem(UiText.Get("Refresh Bluetooth battery now"))
             {
@@ -1503,7 +1495,9 @@ public sealed class TrayAppContext : ApplicationContext
             bool manualClock = _manualClockSync;
             _manualClockSync = false;
             bool autoClock = _settings.AutomaticDockClockSync;
-            var result = await Task.Run(() => QueryAndSync(deferred, manualClock, autoClock));
+            CancellationToken closing = _captureClosing.Token;
+            var result = await Task.Run(() => QueryAndSyncAsync(
+                deferred, manualClock, autoClock, closing));
             if (!_closing)
             {
                 _usbSchedule.Reconcile(result.Batch.Receivers.Select(x => x.Key),
@@ -1519,6 +1513,7 @@ public sealed class TrayAppContext : ApplicationContext
                 if (force && _settings.MonitorAulaL99) _ = PollAulaAsync(manual: true);
             }
         }
+        catch (OperationCanceledException) when (_closing) { }
         catch (Exception error)
         {
             FileLog.Write("ERROR", "Unexpected poll failure", error);
@@ -1542,10 +1537,12 @@ public sealed class TrayAppContext : ApplicationContext
         }
     }
 
-    private (AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded,
-        bool DeferredManualClock) QueryAndSync(IReadOnlySet<string> deferred, bool manual, bool autoClock)
+    private async Task<(AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded,
+        bool DeferredManualClock)> QueryAndSyncAsync(IReadOnlySet<string> deferred,
+        bool manual, bool autoClock, CancellationToken closing)
     {
-        AjazzHidReader.Batch batch = _reader.ReadAll(shouldSample: key => !deferred.Contains(key));
+        AjazzHidReader.Batch batch = await ReadRoutineBatchAsync(deferred, closing)
+            .ConfigureAwait(false);
         AjazzHidReader.Reading reading = batch.Summary;
         DateTimeOffset now = DateTimeOffset.UtcNow;
         bool automatic = _clockSchedule.ShouldAttempt(
@@ -1563,9 +1560,50 @@ public sealed class TrayAppContext : ApplicationContext
             return (batch, true, false, false);
         }
 
-        bool sent = _reader.TrySyncDockClock(DateTime.Now);
+        closing.ThrowIfCancellationRequested();
+        // Record before starting: a timed-out write may have reached the device.
         _clockSchedule.RecordAttempt(now);
+        bool sent = await SyncRoutineClockAsync(closing).ConfigureAwait(false);
         return (batch, true, sent, false);
+    }
+
+    private async Task<AjazzHidReader.Batch> ReadRoutineBatchAsync(
+        IReadOnlySet<string> deferred, CancellationToken closing)
+    {
+        if (!_isolatedPolling)
+            return _reader.ReadAll(shouldSample: key => !deferred.Contains(key));
+        try
+        {
+            return await RoutinePollWorker.ReadAsync(deferred.ToArray(), closing)
+                .ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            FileLog.Write("WARN", "Isolated AJAZZ battery poll timed out");
+            return new AjazzHidReader.Batch(
+                new AjazzHidReader.Reading(false, null, "HID read timed out",
+                    PresenceKnown: false, Issue: UsbReadIssue.Timeout),
+                Array.Empty<AjazzHidReader.ReceiverReading>());
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            FileLog.Write("WARN", "Isolated AJAZZ poll unavailable: " + error.GetType().Name);
+            return new AjazzHidReader.Batch(
+                new AjazzHidReader.Reading(false, null, "HID worker unavailable",
+                    PresenceKnown: false), Array.Empty<AjazzHidReader.ReceiverReading>());
+        }
+    }
+
+    private async Task<bool> SyncRoutineClockAsync(CancellationToken closing)
+    {
+        if (!_isolatedPolling) return _reader.TrySyncDockClock(DateTime.Now);
+        try { return await RoutinePollWorker.SyncClockAsync(closing).ConfigureAwait(false); }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // Never automatically replay an uncertain RTC transfer.
+            FileLog.Write("WARN", "Isolated dock clock send unavailable: " + error.GetType().Name);
+            return false;
+        }
     }
 
     private void StartBluetoothPoll(bool receiverPresent, bool force = false, string? key = null)

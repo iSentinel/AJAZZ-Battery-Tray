@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <string.h>
 #include <unistd.h>
 #import <CoreBluetooth/CoreBluetooth.h>
@@ -17,7 +18,8 @@ typedef NS_ENUM(NSInteger, BatteryState) {
     BatteryAccessError = 3,
     BatteryUnexpectedUsage = 4,
     BatteryTimedOut = 5,
-    BatteryChecking = 6
+    BatteryChecking = 6,
+    BatteryCancelled = 7
 };
 
 typedef struct {
@@ -25,6 +27,13 @@ typedef struct {
     NSInteger percent;
     NSInteger collections;
 } BatteryReading;
+
+/// Historical session observation, not an identity-bound receiver cache.
+static NSDate *SessionVerifiedAt(NSDate *previous, BatteryReading reading, NSDate *now) {
+    if (reading.state == BatteryValid && reading.percent >= 1 && reading.percent <= 100)
+        return now;
+    return reading.state == BatteryAbsent ? nil : previous;
+}
 
 /// Accept only the documented F7/05 telemetry response, not arbitrary bytes.
 static NSInteger ParseBattery(const uint8_t *report, CFIndex length) {
@@ -72,7 +81,7 @@ static NSInteger ReadFeature(IOHIDDeviceRef device, BOOL *accessFailed) {
 }
 
 /// The only USB query is the original, read-only-in-purpose F7/05 protocol.
-static BatteryReading ReadReceiver(void) {
+static BatteryReading ReadReceiverUnlocked(void) {
     BatteryReading reading = {BatteryAccessError, -1, 0};
     IOHIDManagerRef manager = IOHIDManagerCreate(kCFAllocatorDefault, 0);
     if (!manager) return reading;
@@ -120,6 +129,167 @@ static BatteryReading ReadReceiver(void) {
     return reading;
 }
 
+
+/// A busy or unsafe gate is unknown presence, never confirmed removal.
+static BatteryReading ReadReceiver(void) {
+    int lease = AjazzAcquireIoLease();
+    if (lease < 0) return (BatteryReading){BatteryAccessError, -1, 0};
+    BatteryReading result = ReadReceiverUnlocked();
+    AjazzReleaseIoLease(lease);
+    return result;
+}
+
+/// Local fixed-size IPC for a same-binary worker; no raw HID or identity.
+static BOOL DecodeRoutineReply(NSData *data, BatteryReading *reading) {
+    int32_t fields[3];
+    if (data.length != sizeof(fields)) return NO;
+    [data getBytes:fields length:sizeof(fields)];
+    int32_t state = fields[0], percent = fields[1], count = fields[2];
+    if (state < BatteryAbsent || state > BatteryUnexpectedUsage ||
+        count < 0 || count > 4096) return NO;
+    if (state == BatteryValid) {
+        if (percent < 1 || percent > 100 || count == 0) return NO;
+    } else if (percent != -1) return NO;
+    if (state == BatteryAbsent && count != 0) return NO;
+    *reading = (BatteryReading){state, percent, count};
+    return YES;
+}
+
+static int RoutineChild(const char *mode) {
+    signal(SIGALRM, SIG_DFL);
+    alarm(12);
+    if (!strcmp(mode, "--internal-routine-hang")) {
+        sleep(30);
+        return 1;
+    }
+    BatteryReading reading = !strcmp(mode, "--internal-routine-sample")
+        ? (BatteryReading){BatteryUnknown, -1, 1} : ReadReceiver();
+    int32_t fields[] = {(int32_t)reading.state, (int32_t)reading.percent,
+                        (int32_t)reading.collections};
+    int result = fwrite(fields, sizeof(fields), 1, stdout) == 1 ? 0 : 1;
+    alarm(0);
+    return result;
+}
+
+static NSLock *RoutineGate(void) {
+    static NSLock *gate;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ gate = [[NSLock alloc] init]; });
+    return gate;
+}
+
+/// Only the supervisor signals its child; the UI sets a thread-safe flag.
+@interface LegacyPollCancellation : NSObject
+@property(atomic, assign, getter=isCancelled) BOOL cancelled;
+@end
+@implementation LegacyPollCancellation
+@end
+
+static void StopRoutineChild(NSTask *child) {
+    if (child.running) kill(child.processIdentifier, SIGKILL);
+    [child waitUntilExit];
+}
+
+/// Keep the in-process gate until NSTask confirms child exit.
+static BatteryReading RunRoutineUnlocked(NSString *mode, NSTimeInterval timeout,
+                                         LegacyPollCancellation *token) {
+    BatteryReading result = {BatteryAccessError, -1, 0};
+    if (token.isCancelled) return (BatteryReading){BatteryCancelled, -1, 0};
+    NSString *path = [[NSBundle mainBundle] executablePath];
+    if (!path.length) return result;
+    NSTask *child = [[NSTask alloc] init];
+    NSPipe *pipe = [NSPipe pipe];
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    child.launchPath = path;
+    child.arguments = @[mode];
+    child.standardOutput = pipe;
+    child.standardError = [NSFileHandle fileHandleWithNullDevice];
+    child.terminationHandler = ^(NSTask *task) {
+        (void)task;
+        dispatch_semaphore_signal(done);
+    };
+    @try { [child launch]; }
+    @catch (NSException *error) { (void)error; return result; }
+    // NSTask closes the parent's writing end when given an NSPipe.
+    uint64_t deadline = dispatch_time(DISPATCH_TIME_NOW,
+        (int64_t)(timeout * NSEC_PER_SEC));
+    for (;;) {
+        if (token.isCancelled) {
+            StopRoutineChild(child);
+            return (BatteryReading){BatteryCancelled, -1, 0};
+        }
+        uint64_t now = dispatch_time(DISPATCH_TIME_NOW, 0);
+        if (now >= deadline) {
+            StopRoutineChild(child);
+            return (BatteryReading){BatteryTimedOut, -1, 0};
+        }
+        uint64_t next = dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_MSEC);
+        if (dispatch_semaphore_wait(done, MIN(next, deadline)) == 0) break;
+    }
+    [child waitUntilExit];
+    if (token.isCancelled) return (BatteryReading){BatteryCancelled, -1, 0};
+    if (child.terminationReason == NSTaskTerminationReasonExit &&
+        child.terminationStatus == 0) {
+        NSData *data = [pipe.fileHandleForReading readDataToEndOfFile];
+        DecodeRoutineReply(data, &result);
+    }
+    return result;
+}
+
+static BatteryReading RunRoutine(NSString *mode, NSTimeInterval timeout,
+                                 LegacyPollCancellation *token) {
+    if (token.isCancelled) return (BatteryReading){BatteryCancelled, -1, 0};
+    NSLock *gate = RoutineGate();
+    if (![gate tryLock]) return (BatteryReading){BatteryAccessError, -1, 0};
+    @try { return RunRoutineUnlocked(mode, timeout, token); }
+    @finally { [gate unlock]; }
+}
+
+static int RoutineSelfTest(void) {
+    const int32_t samples[][3] = {
+        {BatteryValid, 83, 1}, {BatteryAbsent, -1, 0},
+        {BatteryUnknown, -1, 1}, {BatteryAccessError, -1, 0},
+        {BatteryUnexpectedUsage, -1, 0}
+    };
+    BatteryReading reading;
+    for (size_t i = 0; i < sizeof(samples) / sizeof(samples[0]); i++) {
+        NSData *data = [NSData dataWithBytes:samples[i] length:sizeof(samples[i])];
+        if (!DecodeRoutineReply(data, &reading) || reading.state != samples[i][0] ||
+            reading.percent != samples[i][1] || reading.collections != samples[i][2]) return 1;
+    }
+    const int32_t invalid[][3] = {
+        {BatteryValid, 0, 1}, {BatteryValid, 101, 1},
+        {BatteryAbsent, 83, 0}, {BatteryValid, 83, 0},
+        {BatteryTimedOut, -1, 0}, {BatteryUnknown, -1, -1}
+    };
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++) {
+        if (DecodeRoutineReply([NSData dataWithBytes:invalid[i]
+                length:sizeof(invalid[i])], &reading)) return 1;
+    }
+    [RoutineGate() lock];
+    reading = RunRoutine(@"--internal-routine-sample", 1, nil);
+    [RoutineGate() unlock];
+    if (reading.state != BatteryAccessError) return 1;
+    if (RunRoutine(@"--internal-routine-sample", 8, nil).state != BatteryUnknown ||
+        RunRoutine(@"--internal-routine-hang", 1, nil).state != BatteryTimedOut)
+        return 1;
+    LegacyPollCancellation *before = [[LegacyPollCancellation alloc] init];
+    before.cancelled = YES;
+    if (RunRoutine(@"--internal-routine-sample", 8, before).state != BatteryCancelled)
+        return 1;
+    LegacyPollCancellation *during = [[LegacyPollCancellation alloc] init];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250 * NSEC_PER_MSEC),
+                   dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        during.cancelled = YES;
+    });
+    if (RunRoutine(@"--internal-routine-hang", 4, during).state != BatteryCancelled)
+        return 1;
+    reading = RunRoutine(@"--internal-routine-sample", 8, nil);
+    if (reading.state != BatteryUnknown || reading.percent != -1 ||
+        reading.collections != 1) return 1;
+    puts("PASS: legacy routine IPC, overlap, timeout, cancellation and recovery (no HID)");
+    return 0;
+}
 
 /// Emit only the first eight bytes, never a complete vendor HID packet.
 static void PrintHIDPrefix(const uint8_t *reply, CFIndex length) {
@@ -179,7 +349,7 @@ static NSInteger TraceCollections(const void **list, CFIndex count,
 }
 
 /// Explicit diagnostic; outputs only operation status and bounded prefix.
-static int TraceReceiver(void) {
+static int TraceReceiverUnlocked(void) {
     puts("AJAZZ High Sierra HID telemetry trace (no serial numbers)");
     puts("VID:PID=3151:5007 expected usage=FFFF:0002");
     IOHIDManagerRef manager = IOHIDManagerCreate(kCFAllocatorDefault, 0);
@@ -220,6 +390,17 @@ static int TraceReceiver(void) {
     return 0;
 }
 
+static int TraceReceiver(void) {
+    int lease = AjazzAcquireIoLease();
+    if (lease < 0) {
+        puts("INCONCLUSIVE: vendor I/O gate unavailable; no HID request");
+        return 2;
+    }
+    int result = TraceReceiverUnlocked();
+    AjazzReleaseIoLease(lease);
+    return result;
+}
+
 @interface LegacyTray : NSObject <NSApplicationDelegate, CBCentralManagerDelegate,
                                    CBPeripheralDelegate>
 @property(nonatomic, strong) NSStatusItem *tray;
@@ -229,7 +410,11 @@ static int TraceReceiver(void) {
 @property(nonatomic, strong) CBPeripheral *selectedPeripheral;
 @property(nonatomic, strong) NSArray<CBPeripheral *> *connectedMice;
 @property(nonatomic, assign) BatteryReading latest;
+@property(nonatomic, strong) NSDate *sessionVerifiedAt;
 @property(nonatomic, assign) BOOL polling;
+@property(nonatomic, assign) BOOL isolatedPolling;
+@property(nonatomic, assign) BOOL closing;
+@property(nonatomic, strong) LegacyPollCancellation *activeCancellation;
 @property(nonatomic, assign) NSUInteger pollAttempt;
 @property(nonatomic, assign) BOOL everConnected;
 @property(nonatomic, assign) BOOL disconnectSent;
@@ -365,6 +550,7 @@ static int TraceReceiver(void) {
 
 - (void)scheduleTimer {
     [self.timer invalidate];
+    if (self.closing) return;
     self.timer = [NSTimer scheduledTimerWithTimeInterval:(NSTimeInterval)[self interval]
         target:self selector:@selector(refresh:) userInfo:nil repeats:YES];
 }
@@ -392,9 +578,13 @@ static int TraceReceiver(void) {
                                        uk:@"Немає доступу до HID-інтерфейсу"];
     } else if (reading.state == BatteryTimedOut) {
         self.tray.button.title = @"AJAZZ !";
-        self.detail.title = [self word:@"HID read stalled; restart app if persistent"
-                                       ru:@"Чтение HID зависло; перезапустите приложение"
-                                       uk:@"Читання HID зависло; перезапустіть застосунок"];
+        self.detail.title = self.isolatedPolling
+            ? [self word:@"HID read timed out"
+                      ru:@"Тайм-аут чтения HID"
+                      uk:@"Час очікування читання HID вичерпано"]
+            : [self word:@"HID read stalled; restart app if persistent"
+                      ru:@"Чтение HID зависло; перезапустите приложение"
+                      uk:@"Читання HID зависло; перезапустіть застосунок"];
     } else if (reading.state == BatteryUnexpectedUsage) {
         self.tray.button.title = @"AJAZZ ?";
         self.detail.title = [self word:@"Receiver HID collection not supported"
@@ -405,6 +595,15 @@ static int TraceReceiver(void) {
         self.detail.title = [self word:@"Receiver present; battery unknown"
                                        ru:@"Приёмник найден, заряд неизвестен"
                                        uk:@"Приймач знайдено, заряд невідомий"];
+    }
+    if (self.sessionVerifiedAt && reading.state != BatteryValid) {
+        NSString *stamp = [NSDateFormatter localizedStringFromDate:self.sessionVerifiedAt
+            dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterMediumStyle];
+        NSString *format = [self word:@"Last verified USB sample (session): %@"
+            ru:@"Последнее подтверждённое USB-измерение (сеанс): %@"
+            uk:@"Останнє підтверджене USB-вимірювання (сеанс): %@"];
+        self.detail.title = [self.detail.title stringByAppendingFormat:@" · %@",
+                            [NSString stringWithFormat:format, stamp]];
     }
 }
 
@@ -453,11 +652,14 @@ static int TraceReceiver(void) {
 }
 
 - (void)refresh:(id)sender {
-    if (self.polling) return; // Never accumulate blocked HID threads.
+    if (self.polling || self.closing) return; // Never accumulate blocked HID threads.
     self.polling = YES;
+    LegacyPollCancellation *token = self.isolatedPolling
+        ? [[LegacyPollCancellation alloc] init] : nil;
+    self.activeCancellation = token;
     NSUInteger attempt = ++self.pollAttempt;
     __weak LegacyTray *weakSelf = self;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 20 * NSEC_PER_SEC),
+    if (!token) dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 20 * NSEC_PER_SEC),
                    dispatch_get_main_queue(), ^{
         LegacyTray *owner = weakSelf;
         if (!owner || !owner.polling || owner.pollAttempt != attempt) return;
@@ -467,12 +669,21 @@ static int TraceReceiver(void) {
     });
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @autoreleasepool {
-            BatteryReading reading = ReadReceiver();
+            BatteryReading reading = token
+                ? RunRoutine(@"--internal-routine-read", 8, token) : ReadReceiver();
+            NSDate *observedAt = [NSDate date];
             dispatch_async(dispatch_get_main_queue(), ^{
                 LegacyTray *owner = weakSelf;
                 if (!owner || owner.pollAttempt != attempt) return;
-                owner.latest = reading;
                 owner.polling = NO;
+                owner.activeCancellation = nil;
+                if (owner.closing) {
+                    [NSApp replyToApplicationShouldTerminate:YES];
+                    return;
+                }
+                owner.sessionVerifiedAt = SessionVerifiedAt(owner.sessionVerifiedAt,
+                                                            reading, observedAt);
+                owner.latest = reading;
                 [owner display:reading];
                 [owner evaluateAlerts:reading];
             });
@@ -689,6 +900,14 @@ static int TraceReceiver(void) {
     [self message:message];
 }
 
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    if (!self.isolatedPolling || !self.polling) return NSTerminateNow;
+    self.closing = YES;
+    [self.timer invalidate];
+    self.activeCancellation.cancelled = YES;
+    return NSTerminateLater;
+}
+
 - (void)quit:(id)sender { [NSApp terminate:nil]; }
 @end
 
@@ -714,6 +933,53 @@ static int DiagnoseReceiver(void) {
     return 2;
 }
 
+@interface CorpusTray : LegacyTray
+@property(nonatomic, assign) NSUInteger notifications;
+@end
+@implementation CorpusTray
+- (BOOL)setting:(NSString *)key { (void)key; return YES; }
+- (void)notify:(NSString *)title message:(NSString *)message {
+    (void)title; (void)message;
+    self.notifications++;
+}
+@end
+
+static BOOL VerifyObservationCorpus(NSString *path) {
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+    if (!text) return NO;
+    NSArray *rows = [text componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    NSUInteger count = 0;
+    for (NSUInteger i = 1; i < rows.count; i++) {
+        if (![rows[i] length]) continue;
+        NSArray<NSString *> *fields = [rows[i] componentsSeparatedByString:@","];
+        if (fields.count != 5 || fields[2].length % 2) return NO;
+        NSMutableData *data = [NSMutableData data];
+        for (NSUInteger j = 0; j < fields[2].length; j += 2) {
+            NSString *pair = [fields[2] substringWithRange:NSMakeRange(j, 2)];
+            NSScanner *scanner = [NSScanner scannerWithString:pair];
+            unsigned int value = 0;
+            if (![scanner scanHexInt:&value] || !scanner.isAtEnd || value > 255) return NO;
+            uint8_t byte = (uint8_t)value;
+            [data appendBytes:&byte length:1];
+        }
+        NSInteger percent = ParseBattery(data.bytes, data.length);
+        NSString *result = percent < 0 ? @"unknown" : [NSString stringWithFormat:@"%ld", (long)percent];
+        if (![result isEqualToString:fields[4]]) return NO;
+        if (percent < 0) {
+            CorpusTray *tray = [[CorpusTray alloc] init];
+            [tray evaluateAlerts:(BatteryReading){BatteryValid, 83, 1}];
+            [tray evaluateAlerts:(BatteryReading){BatteryAbsent, -1, 0}];
+            [tray evaluateAlerts:(BatteryReading){BatteryUnknown, -1, 1}];
+            [tray evaluateAlerts:(BatteryReading){BatteryAbsent, -1, 0}];
+            if (tray.notifications != 0 || tray.absentCount != 1) return NO;
+        }
+        count++;
+    }
+    if (count != 20) return NO;
+    puts("PASS: 20 shared F7 observations and alert policy (no notifications delivered)");
+    return YES;
+}
+
 static int SelfTest(void) {
     uint8_t first[] = {5, 0, 0, 1};
     uint8_t full[] = {5, 0, 0, 100};
@@ -737,7 +1003,14 @@ static int SelfTest(void) {
     [test evaluateAlerts:(BatteryReading){BatteryTimedOut, -1, 0}];
     BOOL safe = !test.everConnected && test.absentCount == 0 &&
         test.alerted == 0;
-    BOOL pass = safe && shared && ParseBattery(first, 4) == 1 &&
+    NSDate *stamp = [NSDate dateWithTimeIntervalSince1970:12345];
+    NSDate *verified = SessionVerifiedAt(nil, (BatteryReading){BatteryValid, 83, 1}, stamp);
+    BOOL provenance = [verified isEqualToDate:stamp] &&
+        [SessionVerifiedAt(verified, (BatteryReading){BatteryTimedOut, -1, 0},
+            [stamp dateByAddingTimeInterval:30]) isEqualToDate:stamp] &&
+        SessionVerifiedAt(verified, (BatteryReading){BatteryAbsent, -1, 0}, stamp) == nil;
+    NSString *corpus = [NSProcessInfo processInfo].environment[@"AJAZZ_TEST_CORPUS"];
+    BOOL pass = (!corpus || VerifyObservationCorpus(corpus)) && provenance && safe && shared && ParseBattery(first, 4) == 1 &&
         ParseBattery(full, 4) == 100 &&
         ParseBattery(stripped, 3) == 25 &&
         ParseBattery(zero, 4) == -1 &&
@@ -763,6 +1036,7 @@ static void Help(void) {
     puts("Usage: AJAZZBatteryTrayHighSierra "
          "[--help|--self-test|--diagnose|--trace-hid] "
          "[--timeout 3..90] [--output PATH]");
+    puts("Optional: --experimental-isolated-polling (session only).");
     puts("Exit: 0 verified; 2 unknown; 124 HID timeout; 1 error.");
     puts("--output creates a private 0600 log, writes every step immediately.");
     puts("The F7/05 battery query is the only vendor feature report sent.");
@@ -805,6 +1079,13 @@ int main(int argc, char *argv[]) {
                        !strcmp(argv[i], "--self-test-watchdog") ||
                        !strcmp(argv[i], "--internal-trace-hid") ||
                        !strcmp(argv[i], "--internal-diagnose") ||
+                       !strcmp(argv[i], "--internal-poll-sample") ||
+                       !strcmp(argv[i], "--internal-test-io-lease") ||
+                       !strcmp(argv[i], "--experimental-isolated-polling") ||
+                       !strcmp(argv[i], "--self-test-routine-poll") ||
+                       !strcmp(argv[i], "--internal-routine-read") ||
+                       !strcmp(argv[i], "--internal-routine-sample") ||
+                       !strcmp(argv[i], "--internal-routine-hang") ||
                        !strcmp(argv[i], "--internal-test-sleep"))) {
                 mode = argv[i];
             } else {
@@ -822,9 +1103,11 @@ int main(int argc, char *argv[]) {
             fputs("FAIL: unsupported diagnostic options for this mode\n", stderr);
             return 1;
         }
-        if (!mode) {
+        BOOL isolated = mode && !strcmp(mode, "--experimental-isolated-polling");
+        if (!mode || isolated) {
             NSApplication *app = [NSApplication sharedApplication];
             LegacyTray *delegate = [[LegacyTray alloc] init];
+            delegate.isolatedPolling = isolated;
             app.delegate = delegate;
             [app run];
             return 0;
@@ -833,13 +1116,36 @@ int main(int argc, char *argv[]) {
             Help();
             return 0;
         }
+        if (!strcmp(mode, "--self-test-routine-poll")) return RoutineSelfTest();
+        if (!strcmp(mode, "--internal-routine-read") ||
+            !strcmp(mode, "--internal-routine-sample") ||
+            !strcmp(mode, "--internal-routine-hang")) return RoutineChild(mode);
+        if (!strcmp(mode, "--internal-test-io-lease")) {
+            int lease = AjazzAcquireIoLease();
+            if (lease < 0) return 2;
+            AjazzReleaseIoLease(lease);
+            return 0;
+        }
+        if (!strcmp(mode, "--internal-poll-sample")) {
+            puts("{\"kind\":\"synthetic\",\"percent\":null,\"presence\":\"unknown\"}");
+            return 0;
+        }
         if (!strcmp(mode, "--internal-test-sleep")) {
-            puts("TEST: worker started; verifying bounded watchdog");
+            printf("TEST: worker started; pid=%ld; verifying bounded watchdog\n",
+                   (long)getpid());
             sleep(6);
             return 0;
         }
-        if (!strcmp(mode, "--internal-trace-hid")) return TraceReceiver();
-        if (!strcmp(mode, "--internal-diagnose")) return DiagnoseReceiver();
+        // A diagnostic child must not keep I/O alive indefinitely after parent exit.
+        if (!strcmp(mode, "--internal-trace-hid") ||
+            !strcmp(mode, "--internal-diagnose")) {
+            signal(SIGALRM, SIG_DFL);
+            alarm(92); // maximum public diagnostic deadline is 90 seconds
+            int result = !strcmp(mode, "--internal-trace-hid")
+                ? TraceReceiver() : DiagnoseReceiver();
+            alarm(0);
+            return result;
+        }
         if (!strcmp(mode, "--self-test")) return SelfTest();
         return RunMode(mode, timeout, output);
     }

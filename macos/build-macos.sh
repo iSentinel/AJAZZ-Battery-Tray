@@ -14,7 +14,7 @@ SDK="$(xcrun --sdk macosx --show-sdk-path)"
 for arch in arm64 x86_64; do
   swiftc -O -import-objc-header "$ROOT/macos/AjazzBatteryReport.h" -sdk "$SDK" -target "${arch}-apple-macos13.0" \
     -framework AppKit -framework IOKit -framework UserNotifications -framework ServiceManagement -framework CoreBluetooth \
-    "$ROOT/macos/main.swift" "$ROOT/macos/AppText.swift" \
+    "$ROOT/macos/main.swift" "$ROOT/macos/AppText.swift" "$ROOT/macos/ApexBoundedWorker.swift" \
     "$ROOT/macos/BatteryHistory.swift" \
     "$ROOT/macos/BatteryHistoryWindow.swift" \
     "$ROOT/macos/BatteryNotifications.swift" \
@@ -27,7 +27,8 @@ codesign --force --deep --sign - "$APP"
 plutil -lint "$APP/Contents/Info.plist"
 codesign --verify --verbose "$APP"
 "$APP/Contents/MacOS/AJAZZBatteryTray" --help
-"$APP/Contents/MacOS/AJAZZBatteryTray" --self-test
+AJAZZ_TEST_CORPUS="$ROOT/tests/fixtures/apex-f7-v1.csv" "$APP/Contents/MacOS/AJAZZBatteryTray" --self-test
+"$APP/Contents/MacOS/AJAZZBatteryTray" --self-test-bounded-poll
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$OUT"
 shasum -a 256 "$OUT" | sed "s|$ROOT/dist/||" > "$ROOT/dist/AJAZZBatteryTray-macOS-universal.sha256"
 echo "PASS: $OUT"

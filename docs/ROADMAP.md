@@ -56,13 +56,17 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   tests, the C decoder used by both Apple apps, and the Python comparator read
   the same rows. Running the comparator on the owner's 65/67-byte Windows AJ159
   capture at 30/100/250 ms gave six responses and zero current valid readings.
-  BLE zero semantics have independent tests. Fresh-history and notification
-  integration across platforms and the two-level hardware runs remain open.
+  BLE zero semantics have independent tests. A candidate replay extends the
+  20 rows to actual Windows/Universal CSV output and rejection alert-policy
+  checks on all three editions (#119 all three native CI PASS). Two-level
+  field runs remain open.
 - **Windows AJAZZ tray.** The receiver menu and tray tooltip now explain an
   unknown result and retain each receiver's last successful measurement time
   for the current session. Confirmed absence in the main tray has no implied
   last device identity. The per-receiver menu retains that device's timestamp.
-  Further work covers the Apple status menus and BLE/AULA presentation parity.
+  Apple session-only historical USB timestamps and access classification are
+  merged in #116. BLE/AULA shared status formatting and AULA unknown-state
+  debounce/history correction passed Windows/Universal/HA CI (#117).
 - **Windows Device Manager.** Five primary actions replace ten buttons.
   Device settings and Diagnostics group the existing commands. A Windows
   smoke test exercises callbacks, selection changes, removal while a menu
@@ -78,9 +82,27 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   [baseline](POLL_WORKER_BASELINE.md). A separate internal routine-read
   prototype preserves deferred receiver keys and supervises child exit;
   its self-test covers overlapping calls, timeout, cancellation and
-  recovery. CI pending. Default polling, RTC, AULA and BLE are unchanged.
-  Cross-process exclusion, presence mapping, shutdown and hardware
-  acceptance remain prerequisites for activation.
+  recovery. Prototype PR #102 and RTC fix #103 passed CI and merged.
+  PR #104 adds session-local exclusion for AJAZZ vendor I/O. The next
+  opt-in integration adds bounded routine battery and RTC workers via
+  --experimental-isolated-polling; default invocation is unchanged.
+  CI and field resource/sleep/wake/shutdown evidence remain required
+  before any default activation. AULA/BLE native paths are unchanged.
+- **Apple polling.** PR #106 benchmark: Universal p95 20.310 ms,
+  High Sierra target p95 12.959 ms, 20/20 each on macOS 15 Intel.
+  Universal bounded-read prototype adds typed IPC and simulated
+  overlap/timeout/recovery tests without changing the menu timer.
+  Prototype #107, legacy watchdog #108, shared I/O gate #109 and
+  cancellation #110 passed CI and merged. Universal session-only
+  --experimental-isolated-polling candidate adds bounded read/RTC and
+  deferred quit (#111 CI PASS, merged). Legacy routine prototype #112
+  also passed CI and merged. High Sierra opt-in menu integration adds
+  cancellable reads and deferred quit (#113 CI PASS before the Windows
+  gap/debounce fix #115 was merged). See ISOLATED_POLLING_ACCEPTANCE.md.
+  Default worker
+  activation remains gated on owner field acceptance for all editions.
+  #118 validates routine Windows replies before state application; CI PASS.
+  #119 extends shared corpus to downstream history/alert checks; CI PASS.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.

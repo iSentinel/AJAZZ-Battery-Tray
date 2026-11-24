@@ -7,12 +7,14 @@ on:
       - 'integrations/home-assistant/**'
       - 'src/AjazzBatteryTray/LocalBatterySnapshot.cs'
       - 'src/AjazzBatteryTray/DeviceDashboardState.cs'
+      - 'src/AjazzBatteryTray/DeviceDashboardText.cs'
       - '.github/workflows/test-ha-preview.yml'
   pull_request:
     paths:
       - 'integrations/home-assistant/**'
       - 'src/AjazzBatteryTray/LocalBatterySnapshot.cs'
       - 'src/AjazzBatteryTray/DeviceDashboardState.cs'
+      - 'src/AjazzBatteryTray/DeviceDashboardText.cs'
       - '.github/workflows/test-ha-preview.yml'
   workflow_dispatch:
 

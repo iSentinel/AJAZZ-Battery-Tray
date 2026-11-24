@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'macos/**'
+      - 'tests/fixtures/apex-f7-v1.csv'
+      - 'tools/check_apple_io_lease.py'
+      - 'tools/measure_apple_worker.py'
       - '.github/workflows/build-macos.yml'
       - 'src/AjazzBatteryTray/**'
   pull_request:
@@ -24,6 +27,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build universal menu-bar app
         run: bash macos/build-macos.sh
+      - name: Verify shared vendor I/O gate without HID
+        run: |
+          python3 tools/check_apple_io_lease.py --exe "dist/mac/AJAZZ Battery Tray.app/Contents/MacOS/AJAZZBatteryTray"
+      - name: Measure synthetic worker startup without HID
+        run: |
+          python3 tools/measure_apple_worker.py --dry-run
+          python3 tools/measure_apple_worker.py --exe "dist/mac/AJAZZ Battery Tray.app/Contents/MacOS/AJAZZBatteryTray" --output "$RUNNER_TEMP/macos-universal-worker.csv"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal-worker-startup-baseline
+          path: ${{ runner.temp }}/macos-universal-worker.csv
+          if-no-files-found: error
       - name: Upload macOS ZIP (one extraction)
         uses: actions/upload-artifact@v4
         with:

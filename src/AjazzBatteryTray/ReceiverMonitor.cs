@@ -70,8 +70,7 @@ internal sealed class ReceiverMonitor : IDisposable
     {
         if (!batch.Summary.PresenceKnown)
         {
-            foreach (State state in _states.Values.Where(s => s.Present))
-                state.Reading = UnknownReading;
+            ApplyUnknown(batch.Summary.Issue, settings.RecordBatteryHistory, now);
             return;
         }
 
@@ -118,6 +117,22 @@ internal sealed class ReceiverMonitor : IDisposable
         finally
         {
             seen.End();
+        }
+    }
+
+    private void ApplyUnknown(UsbReadIssue issue, bool historyEnabled, DateTimeOffset now)
+    {
+        foreach (State state in _states.Values)
+        {
+            // A missing/unknown/missing sequence is not two consecutive absences.
+            state.Connection.ObserveUnknown();
+            if (!state.Present) continue;
+            state.Reading = issue is UsbReadIssue.Busy or UsbReadIssue.Timeout
+                ? UnknownReading with { Issue = issue } : UnknownReading;
+            state.ScheduledSkip = false;
+            state.MeasuredAt = null;
+            // Preserve LastVerifiedAt, but never append a stale percentage.
+            if (historyEnabled) state.History.Record(now, null, receiverPresent: true);
         }
     }
 

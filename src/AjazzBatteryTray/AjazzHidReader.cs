@@ -32,6 +32,14 @@ public sealed class AjazzHidReader
         List<ReceiverReading> receivers = new();
         try
         {
+            using var lease = AjazzIoLease.TryAcquire();
+            if (lease is null)
+            {
+                progress?.Invoke("STEP: AJAZZ vendor I/O busy; no HID request");
+                return new Batch(new Reading(false, null, "AJAZZ vendor I/O busy",
+                    PresenceKnown: false, Issue: UsbReadIssue.Busy),
+                    Array.Empty<ReceiverReading>());
+            }
             progress?.Invoke("STEP: enumerating receiver HID paths");
             IReadOnlyList<string> paths = HidNative.FindAjazzPaths();
             attempts.Add($"Matching MI_02 paths: {paths.Count}");
@@ -91,6 +99,8 @@ public sealed class AjazzHidReader
     {
         try
         {
+            using var lease = AjazzIoLease.TryAcquire();
+            if (lease is null) return false;
             foreach (string path in HidNative.FindAjazzPaths())
             {
                 using SafeFileHandle handle = HidNative.Open(path);

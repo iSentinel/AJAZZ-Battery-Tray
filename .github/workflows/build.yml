@@ -130,6 +130,29 @@ jobs:
             $guard.Dispose()
             Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
           }
+      - name: Verify cross-process AJAZZ vendor I/O exclusion without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $log = Join-Path $env:RUNNER_TEMP ('ajazz-busy-' + [Guid]::NewGuid().ToString('N') + '.txt')
+          $gate = [Threading.Mutex]::new($false, 'Local\AJAZZBatteryTray_ApexVendorIo_v1')
+          $held = $gate.WaitOne(0)
+          try {
+            if (-not $held) { throw 'Fixture could not acquire gate' }
+            $arguments = '--hid-diagnose --timeout 8 --output "' + $log + '"'
+            $p = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru
+            if (-not $p.WaitForExit(12000)) { $p.Kill($true); throw 'Busy check hung' }
+            $body = Get-Content -LiteralPath $log -Raw
+            if ($p.ExitCode -ne 2 -or $body -notmatch 'vendor I/O busy' -or
+                $body -match 'enumerating receiver HID paths|SET F7 begin') {
+              throw 'Busy worker attempted HID or misclassified presence'
+            }
+            echo 'PASS: busy gate prevents HID and returns unknown'
+          } finally {
+            if ($held) { $gate.ReleaseMutex() }
+            $gate.Dispose()
+            Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
+          }
       - name: Verify prototype routine worker timeout and recovery without HID
         shell: pwsh
         run: |

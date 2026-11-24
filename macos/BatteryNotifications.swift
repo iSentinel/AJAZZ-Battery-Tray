@@ -39,7 +39,7 @@ final class BatteryAlertPolicy {
             }
             return .lowBattery(percent)
 
-        case .unavailable, .accessUnknown, .unsupportedCollection:
+        case .unavailable, .accessUnknown, .unsupportedCollection, .timedOut:
             // Only consecutive confirmed absences can trigger a disconnect.
             consecutiveMissing = 0
             return nil

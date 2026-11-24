@@ -4,17 +4,20 @@ using System.Text.Json;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Prototype for routine AJAZZ reads; not wired into the tray timer.</summary>
+/// <summary>Supervisor for the opt-in routine AJAZZ read and clock workers.</summary>
 internal static class RoutinePollWorker
 {
     private const string ReadMode = "--internal-routine-hid-worker";
+    private const string ClockMode = "--internal-routine-clock-worker";
+    private const string ClockSampleMode = "--internal-routine-clock-sample";
     private const string SampleMode = "--internal-routine-hid-sample";
     private const string HangMode = "--internal-routine-hid-hang";
     private const int MaxKeys = 128;
+    private const int MaxReplyChars = 2 * 1024 * 1024;
     private const int ChildLimitSeconds = 12;
     private static int _active;
 
-    internal static bool IsWorker(string mode) => mode is ReadMode or SampleMode or HangMode;
+    internal static bool IsWorker(string mode) => mode is ReadMode or SampleMode or HangMode or ClockMode or ClockSampleMode;
 
     private static string[] ValidateKeys(string[]? keys)
     {
@@ -32,18 +35,25 @@ internal static class RoutinePollWorker
         catch (System.ComponentModel.Win32Exception) { /* Child watchdog remains active. */ }
     }
 
-    internal static async Task<AjazzHidReader.Batch> ReadAsync(
+    internal static Task<AjazzHidReader.Batch> ReadAsync(
         string[] deferred, CancellationToken closing, string mode = ReadMode)
+        => InvokeAsync<AjazzHidReader.Batch>(deferred, closing, mode);
+
+    internal static Task<bool> SyncClockAsync(CancellationToken closing)
+        => InvokeAsync<bool>(Array.Empty<string>(), closing, ClockMode);
+
+    private static async Task<T> InvokeAsync<T>(
+        string[] deferred, CancellationToken closing, string mode)
     {
         ValidateKeys(deferred);
         closing.ThrowIfCancellationRequested();
         if (Interlocked.CompareExchange(ref _active, 1, 0) != 0)
             throw new InvalidOperationException("Routine HID worker already active");
-        try { return await ExchangeAsync(deferred, closing, mode).ConfigureAwait(false); }
+        try { return await ExchangeAsync<T>(deferred, closing, mode).ConfigureAwait(false); }
         finally { Volatile.Write(ref _active, 0); }
     }
 
-    private static async Task<AjazzHidReader.Batch> ExchangeAsync(
+    private static async Task<T> ExchangeAsync<T>(
         string[] deferred, CancellationToken closing, string mode)
     {
         ProcessStartInfo start = new(Environment.ProcessPath!)
@@ -64,7 +74,7 @@ internal static class RoutinePollWorker
                 .ConfigureAwait(false);
             child.StandardInput.Close();
             await child.WaitForExitAsync().ConfigureAwait(false);
-            return Decode(await output.ConfigureAwait(false), child.ExitCode, deadline, closing);
+            return Decode<T>(await output.ConfigureAwait(false), child.ExitCode, deadline, closing);
         }
         catch (IOException) when (deadline.IsCancellationRequested)
         {
@@ -79,14 +89,50 @@ internal static class RoutinePollWorker
         }
     }
 
-    private static AjazzHidReader.Batch Decode(string body, int code,
+    private static T Decode<T>(string body, int code,
         CancellationTokenSource deadline, CancellationToken closing)
     {
         closing.ThrowIfCancellationRequested();
         if (deadline.IsCancellationRequested || code == 124) throw new TimeoutException();
         if (code != 0) throw new IOException("Routine HID worker failed");
-        return JsonSerializer.Deserialize<AjazzHidReader.Batch>(body)
-            ?? throw new InvalidDataException("Missing routine worker response");
+        if (body.Length > MaxReplyChars)
+            throw new InvalidDataException("Oversized routine worker reply");
+        T? result = JsonSerializer.Deserialize<T>(body);
+        if (result is null) throw new InvalidDataException("Missing routine worker response");
+        if (result is AjazzHidReader.Batch batch) ValidateBatch(batch);
+        return result;
+    }
+
+    private static bool ValidReading(AjazzHidReader.Reading? reading)
+        => reading is not null && reading.Details is not null &&
+            Enum.IsDefined(reading.Issue) &&
+            (reading.Percent is null || (reading.PresenceKnown && reading.ReceiverPresent &&
+                reading.Percent is >= 1 and <= 100)) &&
+            (reading.PresenceKnown || !reading.ReceiverPresent);
+
+    private static void ValidateBatch(AjazzHidReader.Batch batch)
+    {
+        if (!ValidReading(batch.Summary) || batch.Receivers is null ||
+            batch.Receivers.Count > MaxKeys)
+            throw new InvalidDataException("Invalid routine worker inventory");
+        if (batch.Summary.ReceiverPresent != (batch.Receivers.Count > 0) ||
+            (!batch.Summary.PresenceKnown && batch.Receivers.Count != 0))
+            throw new InvalidDataException("Inconsistent routine worker presence");
+
+        HashSet<string> keys = new(StringComparer.Ordinal);
+        foreach (var item in batch.Receivers)
+        {
+            if (item is null || item.Key == DeviceAliasRules.AulaSlot ||
+                !DeviceAliasRules.ValidKey(item.Key) || !keys.Add(item.Key) ||
+                !ValidReading(item.Reading) || !item.Reading.PresenceKnown ||
+                !item.Reading.ReceiverPresent ||
+                (item.Sampled && item.MeasuredAt is null) ||
+                (!item.Sampled && (item.MeasuredAt is not null ||
+                    item.Reading.Percent is not null || item.CompletedTick != 0)))
+                throw new InvalidDataException("Invalid routine receiver observation");
+        }
+        if (batch.Summary.Percent != AjazzHidReader.Primary(batch.Receivers)?.Reading.Percent)
+            throw new InvalidDataException("Inconsistent routine summary percentage");
     }
 
     internal static int RunWorker(string mode)
@@ -100,10 +146,20 @@ internal static class RoutinePollWorker
             if (line is null || line.Length > 10000) return 1;
             string[] deferred = ValidateKeys(JsonSerializer.Deserialize<string[]>(line));
             if (mode == HangMode) Thread.Sleep(Timeout.Infinite);
-            AjazzHidReader.Batch batch = mode == SampleMode ? Sample(deferred) :
-                new AjazzHidReader().ReadAll(shouldSample: key => !deferred.Contains(key));
             using Stream output = Console.OpenStandardOutput();
-            JsonSerializer.Serialize(output, batch);
+            if (mode is ClockMode or ClockSampleMode)
+            {
+                if (deferred.Length != 0) return 1;
+                bool sent = mode == ClockSampleMode ||
+                    new AjazzHidReader().TrySyncDockClock(DateTime.Now);
+                JsonSerializer.Serialize(output, sent);
+            }
+            else
+            {
+                AjazzHidReader.Batch batch = mode == SampleMode ? Sample(deferred) :
+                    new AjazzHidReader().ReadAll(shouldSample: key => !deferred.Contains(key));
+                JsonSerializer.Serialize(output, batch);
+            }
             return 0;
         }
         catch (Exception) { return 1; }
@@ -123,8 +179,37 @@ internal static class RoutinePollWorker
         return new AjazzHidReader.Batch(AjazzHidReader.Primary(items)!.Reading, items);
     }
 
+    private static void VerifyReplyValidation()
+    {
+        var valid = Sample(Array.Empty<string>());
+        ValidateBatch(valid);
+        var first = valid.Receivers[0];
+        var invalid = new[]
+        {
+            valid with { Summary = valid.Summary with { Percent = 0 } },
+            valid with { Summary = valid.Summary with { Percent = 99 } },
+            valid with { Summary = valid.Summary with { PresenceKnown = false } },
+            valid with { Receivers = new[] { first, first } },
+            valid with { Receivers = new[] { first with { Key = DeviceAliasRules.AulaSlot } } },
+            valid with { Receivers = new[] { first with { MeasuredAt = null } } },
+            valid with { Receivers = new[] { first with { Sampled = false } } },
+            valid with { Receivers = new[] { first with { Reading = first.Reading with { Percent = 101 } } } },
+            valid with { Receivers = new[] { first with { Reading = first.Reading with { ReceiverPresent = false } } } }
+        };
+        using var deadline = new CancellationTokenSource();
+        foreach (var batch in invalid)
+        {
+            bool rejected = false;
+            try { Decode<AjazzHidReader.Batch>(JsonSerializer.Serialize(batch), 0,
+                    deadline, CancellationToken.None); }
+            catch (InvalidDataException) { rejected = true; }
+            if (!rejected) throw new InvalidDataException("Malformed routine reply accepted");
+        }
+    }
+
     private static async Task VerifyAsync()
     {
+        VerifyReplyValidation();
         string first = new('A', 64), second = new('B', 64);
         var sample = await ReadAsync(new[] { second }, CancellationToken.None, SampleMode);
         if (sample.Summary.Percent != 83 || sample.Receivers.Count != 2 ||
@@ -148,6 +233,9 @@ internal static class RoutinePollWorker
         try { await ReadAsync(Array.Empty<string>(), closing.Token, HangMode); }
         catch (OperationCanceledException) { cancelled = true; }
         if (!cancelled) throw new InvalidDataException("Expected cancellation");
+
+        if (!await InvokeAsync<bool>(Array.Empty<string>(), CancellationToken.None, ClockSampleMode))
+            throw new InvalidDataException("Synthetic clock result failed");
 
         var recovery = await ReadAsync(new[] { first }, CancellationToken.None, SampleMode);
         if (recovery.Receivers[0].Sampled || !recovery.Receivers[1].Sampled ||
