@@ -72,9 +72,15 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   05 and 00 in pairs after the existing allowlisted F7 request. The normal
   polling path is unchanged. Experimental results are never promoted to
   battery telemetry. CI and real owner captures are separate gates.
-- **Routine polling.** Next engineering step: benchmark normal per-poll worker
-  overhead and compare against the existing polling budget before extending
-  the explicit-capture watchdog.
+- **Routine polling.** PR #101 benchmark merged into the audit branch
+  (4155c1c). Windows CI 20/20 samples: p50 112.419 ms, p95 148.834 ms,
+  max 304.940 ms; p95 is 0.992% of the 15 s interval. See
+  [baseline](POLL_WORKER_BASELINE.md). A separate internal routine-read
+  prototype preserves deferred receiver keys and supervises child exit;
+  its self-test covers overlapping calls, timeout, cancellation and
+  recovery. CI pending. Default polling, RTC, AULA and BLE are unchanged.
+  Cross-process exclusion, presence mapping, shutdown and hardware
+  acceptance remain prerequisites for activation.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.

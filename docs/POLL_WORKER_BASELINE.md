@@ -29,3 +29,44 @@ measure steady-state application resources using Measure-TrayResources.ps1.
 Compare a supervised process with a persistent worker before changing
 default polling. Repeat on macOS separately. No runtime polling
 strategy has been changed by this tool.
+
+
+## Windows CI results, 2026-11-24
+
+PR #101, workflow 45327594576, artifact 14890313646. Independently
+recomputed from all 20 CSV rows (nearest-rank p50/p95):
+
+| Metric | Result |
+| --- | ---: |
+| Completed | 20/20 |
+| Minimum | 99.293 ms |
+| p50 | 112.419 ms |
+| p95 | 148.834 ms |
+| Maximum | 304.940 ms |
+| Mean | 126.497 ms |
+| p95 share of 15 s | 0.992% |
+
+This supports prototyping a supervised subprocess, but does not
+establish energy, CPU, HID latency or owner-hardware performance.
+
+## Routine read prototype
+
+The new internal RoutinePollWorker is not connected to the tray timer.
+It accepts deferred receiver keys over local stdin and returns a
+normal Batch over stdout. The keys are local identifiers, not for
+export, logging or public artifacts. No additional feature command
+is introduced. The parent rejects a second concurrent invocation,
+kills the child at the deadline and awaits process exit before releasing
+the gate. An independent child watchdog limits an abandoned child.
+A simulated self-test covers valid/unavailable data, scheduled skip,
+overlap, timeout, shutdown cancellation and a subsequent fresh worker.
+The self-test never accesses HID:
+
+    Start-Process -FilePath .\AJAZZBatteryTray.exe -ArgumentList '--self-test-routine-poll-worker' -Wait -PassThru
+
+The prototype does not include dock clock synchronization, AULA, BLE,
+cross-process coordination with other HID tools or UI integration.
+Before production activation, define shared device-I/O exclusion,
+unknown-presence mapping, orderly shutdown and RTC scheduling; test
+actual hardware and resources. The regular tray polling path remains
+unchanged.

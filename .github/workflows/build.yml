@@ -130,6 +130,14 @@ jobs:
             $guard.Dispose()
             Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
           }
+      - name: Verify prototype routine worker timeout and recovery without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test-routine-poll-worker' -PassThru
+          if (-not $p.WaitForExit(25000)) { $p.Kill($true); throw 'Routine worker self-test hung' }
+          if ($p.ExitCode -ne 0) { throw "Routine worker self-test failed: $($p.ExitCode)" }
+          echo 'PASS: deferred keys, overlap rejection, timeout, shutdown cancellation, recovery'
       - name: Verify full GUI capture watchdog without HID
         shell: pwsh
         run: |

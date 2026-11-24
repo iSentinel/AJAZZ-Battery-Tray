@@ -10,6 +10,10 @@ internal static class WindowsHidDiagnostics
 
     internal static int Run(string[] args)
     {
+        if (args.Length == 1 && RoutinePollWorker.IsWorker(args[0]))
+            return RoutinePollWorker.RunWorker(args[0]);
+        if (args.Length == 1 && args[0] == "--self-test-routine-poll-worker")
+            return RoutinePollWorker.SelfTest();
         if (args.Length == 1 && FullHidCapture.IsWorker(args[0]))
             return FullHidCapture.RunWorker(args[0]);
         if (args.Length == 1 && args[0] == "--self-test-full-hid-watchdog")
