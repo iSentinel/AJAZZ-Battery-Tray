@@ -9,6 +9,7 @@ internal static class Program
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
+        CheckAppearanceResources();
         foreach (string language in new[] { "en", "ru", "uk" })
         {
             UiText.SetLanguage(language);
@@ -17,6 +18,25 @@ internal static class Program
             foreach (float factor in new[] { 1.25f, 1.5f, 2f })
                 CheckScaledLayout(language, factor);
         }
+    }
+
+    private static void CheckAppearanceResources()
+    {
+        foreach (string color in TrayColorRules.AppIcons)
+        {
+            using Icon asset = ApplicationIconAssets.Load(color);
+            using Icon normal = TrayIconFactory.Create(83, true, color: color, mouseStyle: true);
+            using Icon critical = TrayIconFactory.Create(8, true, color: color, mouseStyle: true);
+            using Bitmap pixels = critical.ToBitmap();
+            Require(asset.Width > 0 && normal.Width == 64 && critical.Width == 64,
+                "Missing appearance resource or incorrect icon size");
+            Require(Enumerable.Range(0, pixels.Width).Any(x =>
+                Enumerable.Range(0, pixels.Height).Any(y =>
+                    pixels.GetPixel(x, y).R == 0xDC && pixels.GetPixel(x, y).G == 0x35 &&
+                    pixels.GetPixel(x, y).B == 0x45)),
+                "Critical icon must contain red fill");
+        }
+        Console.WriteLine("PASS: four embedded app icons and red critical rendering");
     }
 
     private static void CheckDashboard()

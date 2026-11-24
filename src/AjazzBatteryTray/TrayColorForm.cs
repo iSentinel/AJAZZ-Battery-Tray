@@ -10,9 +10,16 @@ internal sealed class TrayColorForm : Form
     private readonly FlowLayoutPanel _preview = new();
     internal string Choice { get; private set; }
 
-    internal TrayColorForm(string name, string current)
+    private readonly string[] _options;
+    private readonly string _inherited;
+    private readonly bool _mouseStyle;
+
+    internal TrayColorForm(string name, string? current, string inherited, bool mouseStyle)
     {
-        Choice = TrayColorRules.Normalize(current);
+        _options = new[] { "inherit" }.Concat(TrayColorRules.Choices).ToArray();
+        _inherited = inherited;
+        _mouseStyle = mouseStyle;
+        Choice = current is null ? "inherit" : TrayColorRules.Normalize(current);
         Text = UiText.Get("Tray icon color...");
         ClientSize = new Size(510, 225);
         MinimumSize = new Size(440, 260);
@@ -30,9 +37,9 @@ internal sealed class TrayColorForm : Form
         layout.Controls.Add(new Label { Text = name, AutoSize = true }, 0, 0);
         _choices.DropDownStyle = ComboBoxStyle.DropDownList;
         _choices.Dock = DockStyle.Top;
-        foreach (string color in TrayColorRules.Choices)
+        foreach (string color in _options)
             _choices.Items.Add(UiText.Get("Tray color " + color));
-        _choices.SelectedIndex = Array.IndexOf(TrayColorRules.Choices.ToArray(), Choice);
+        _choices.SelectedIndex = Array.IndexOf(_options, Choice);
         layout.Controls.Add(_choices, 0, 1);
         _preview.Dock = DockStyle.Fill;
         _preview.WrapContents = false;
@@ -54,7 +61,7 @@ internal sealed class TrayColorForm : Form
         _choices.SelectedIndexChanged += (_, _) =>
         {
             if (_choices.SelectedIndex < 0) return;
-            Choice = TrayColorRules.Choices[_choices.SelectedIndex];
+            Choice = _options[_choices.SelectedIndex];
             RefreshPreview();
         };
         RefreshPreview();
@@ -70,7 +77,7 @@ internal sealed class TrayColorForm : Form
         _preview.Controls.Clear();
         foreach (var sample in new[] { (80, false), (15, false), (8, false), (80, true) })
         {
-            using Icon icon = TrayIconFactory.Create(sample.Item1, true, sample.Item2, color: Choice);
+            using Icon icon = TrayIconFactory.Create(sample.Item1, true, sample.Item2, color: Choice == "inherit" ? _inherited : Choice, mouseStyle: _mouseStyle);
             _preview.Controls.Add(new PictureBox
             {
                 Width = 52, Height = 52, SizeMode = PictureBoxSizeMode.Zoom,

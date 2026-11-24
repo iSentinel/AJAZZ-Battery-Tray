@@ -1,3 +1,4 @@
+#import "TrayAppearance.h"
 #import <Cocoa/Cocoa.h>
 #import "diagnostic_runner.h"
 #import "../AjazzBatteryReport.h"
@@ -449,9 +450,50 @@ static int TraceReceiver(void) {
     self.tray = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     self.tray.button.title = @"AJAZZ ?";
     self.latest = (BatteryReading){BatteryChecking, -1, 0};
+    NSApp.applicationIconImage = AppearanceAppIcon(AppearanceChoice(@"ApplicationIconColor"));
     [self buildMenu];
     [self scheduleTimer];
     [self refresh:nil];
+}
+
+- (NSString *)appearanceLabel:(NSString *)color {
+    if ([color isEqualToString:@"white"]) return [self word:@"White" ru:@"Белый" uk:@"Білий"];
+    if ([color isEqualToString:@"black"]) return [self word:@"Black" ru:@"Чёрный" uk:@"Чорний"];
+    if ([color isEqualToString:@"blue"]) return [self word:@"Blue" ru:@"Синий" uk:@"Синій"];
+    return [self word:@"Orange" ru:@"Оранжевый" uk:@"Помаранчевий"];
+}
+
+- (NSMenuItem *)appearanceMenu:(NSString *)title key:(NSString *)key {
+    NSMenuItem *parent = [[NSMenuItem alloc] initWithTitle:title action:NULL keyEquivalent:@""];
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:title];
+    for (NSString *color in AppearanceChoices()) {
+        NSMenuItem *item = [self item:menu title:[self appearanceLabel:color] action:@selector(selectAppearance:)];
+        item.representedObject = @[key, color];
+        item.state = [AppearanceChoice(key) isEqualToString:color] ? NSControlStateValueOn : NSControlStateValueOff;
+        if ([key isEqualToString:@"ApplicationIconColor"]) {
+            NSImage *image = AppearanceAppIcon(color);
+            image.size = NSMakeSize(16, 16);
+            item.image = image;
+        }
+    }
+    parent.submenu = menu;
+    return parent;
+}
+
+- (void)selectAppearance:(NSMenuItem *)sender {
+    NSArray *value = sender.representedObject;
+    if (![value isKindOfClass:NSArray.class] || value.count != 2 ||
+        ![@[@"ApplicationIconColor", @"TrayIconColor"] containsObject:value[0]] ||
+        ![AppearanceChoices() containsObject:value[1]]) return;
+    [[NSUserDefaults standardUserDefaults] setObject:value[1] forKey:value[0]];
+    if ([value[0] isEqualToString:@"ApplicationIconColor"])
+        NSApp.applicationIconImage = AppearanceAppIcon(value[1]);
+    [self buildMenu];
+}
+
+- (void)toggleTrayStyle:(id)sender {
+    [[NSUserDefaults standardUserDefaults] setBool:!AppearanceMouseStyle() forKey:@"MouseTrayIcon"];
+    [self buildMenu];
 }
 
 - (void)buildMenu {
@@ -470,6 +512,13 @@ static int TraceReceiver(void) {
     [menu addItem:[NSMenuItem separatorItem]];
 
     NSMenu *settings = [[NSMenu alloc] initWithTitle:@"Settings"];
+    [settings addItem:[self appearanceMenu:[self word:@"Application icon" ru:@"Иконка приложения" uk:@"Значок застосунку"]
+        key:@"ApplicationIconColor"]];
+    [settings addItem:[self appearanceMenu:[self word:@"Tray icon color" ru:@"Цвет иконки" uk:@"Колір значка"]
+        key:@"TrayIconColor"]];
+    NSMenuItem *style = [self item:settings title:[self word:@"Mouse-shaped tray icon" ru:@"Значок мыши" uk:@"Значок миші"]
+        action:@selector(toggleTrayStyle:)];
+    style.state = AppearanceMouseStyle() ? NSControlStateValueOn : NSControlStateValueOff;
     NSMenuItem *low = [self item:settings
         title:[self word:@"Low-battery notifications" ru:@"Уведомления о заряде"
                          uk:@"Сповіщення про заряд"]
@@ -605,6 +654,11 @@ static int TraceReceiver(void) {
         self.detail.title = [self.detail.title stringByAppendingFormat:@" · %@",
                             [NSString stringWithFormat:format, stamp]];
     }
+    NSString *color = AppearanceChoice(@"TrayIconColor");
+    self.tray.button.title = @"";
+    self.tray.button.image = AppearanceTrayImage(
+        reading.state == BatteryValid ? reading.percent : -1, color, AppearanceMouseStyle());
+    self.tray.button.toolTip = [self.detail.title stringByAppendingFormat:@" · %@", [self appearanceLabel:color]];
 }
 
 - (void)notify:(NSString *)title message:(NSString *)message {

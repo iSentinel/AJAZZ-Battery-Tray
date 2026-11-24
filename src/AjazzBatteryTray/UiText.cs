@@ -57,7 +57,14 @@ public static class UiText
         ["Unable to save device preference."] = ("Не удалось сохранить настройку устройства.", "Не вдалося зберегти налаштування пристрою."),
         ["Tray icon color..."] = ("Цвет иконки в трее...", "Колір значка в треї..."),
         ["Warning and cached colors are unchanged."] = ("Цвета предупреждений и кэша не изменяются.", "Кольори попереджень і кешу не змінюються."),
-        ["Tray color green"] = ("Зелёный (по умолчанию)", "Зелений (за замовчуванням)"),
+        ["Tray color green"] = ("Зелёный", "Зелений"),
+        ["Tray color orange"] = ("Оранжевый", "Помаранчевий"),
+        ["Tray color white"] = ("Белый", "Білий"),
+        ["Tray color black"] = ("Чёрный", "Чорний"),
+        ["Tray color inherit"] = ("Общий цвет", "Загальний колір"),
+        ["Application icon"] = ("Иконка приложения", "Значок застосунку"),
+        ["Default tray color"] = ("Общий цвет трея", "Загальний колір трею"),
+        ["Mouse-shaped tray icon"] = ("Значок мыши в трее", "Значок миші в треї"),
         ["Tray color blue"] = ("Синий", "Синій"),
         ["Tray color purple"] = ("Фиолетовый", "Фіолетовий"),
         ["Tray color teal"] = ("Бирюзовый", "Бірюзовий"),
@@ -339,6 +346,12 @@ public static class UiText
 
     public static string Get(string english)
     {
+        if (Language == "en" && english.StartsWith("Tray color ", StringComparison.Ordinal))
+        {
+            string color = english["Tray color ".Length..];
+            if (color == "inherit") return "Global color";
+            if (color.Length > 0) return char.ToUpperInvariant(color[0]) + color[1..];
+        }
         if (!Messages.TryGetValue(english, out var translated)) return english;
         return Language switch
         {

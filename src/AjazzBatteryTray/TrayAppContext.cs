@@ -85,6 +85,7 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem _startupItem = new();
     private Icon? _icon;
     private TrayIconRenderKey? _iconRenderKey;
+    private Icon? _applicationIcon;
     private int? _lastPercent;
     private bool _lastConnected;
     private bool _lastStale;
@@ -98,6 +99,7 @@ public sealed class TrayAppContext : ApplicationContext
         _aulaPoll.Configure(_settings.MonitorAulaL99);
         UiText.SetLanguage(_settings.Language);
         _tray = new NotifyIcon { Text = "AJAZZ APEX: " + UiText.Get("Connecting...") };
+        _applicationIcon = ApplicationIconAssets.Load(_settings.ApplicationIconColor);
         UpdateIcon(null, false);
         _tray.ContextMenuStrip = BuildMenu();
         _tray.Visible = true;
@@ -213,15 +215,16 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     private string DeviceColor(string key)
-        => TrayColorRules.Normalize(_settings.DeviceTrayColors.GetValueOrDefault(key));
+        => TrayColorRules.EffectiveColor(_settings.DeviceTrayColors.GetValueOrDefault(key), _settings.DefaultTrayColor);
 
     private void EditTrayColor(string key, string name)
     {
         if (_closing || !DeviceAliasRules.ValidKey(key)) return;
         string? original = _settings.DeviceTrayColors.GetValueOrDefault(key);
-        using var dialog = new TrayColorForm(name, DeviceColor(key));
+        using var dialog = new TrayColorForm(name, original, _settings.DefaultTrayColor,
+            key != DeviceAliasRules.AulaSlot && _settings.MouseTrayIcon);
         if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
-        if (dialog.Choice == TrayColorRules.Default) _settings.DeviceTrayColors.Remove(key);
+        if (dialog.Choice == "inherit") _settings.DeviceTrayColors.Remove(key);
         else _settings.DeviceTrayColors[key] = dialog.Choice;
         if (!_settings.Save())
         {
@@ -287,9 +290,12 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_closing) return;
         if (_dashboard is null || _dashboard.IsDisposed)
+        {
             _dashboard = new DeviceDashboardForm(PollSoon,
                 () => _ = ShowExtendedDiagnosticsAsync(),
                 () => _ = ShowHostMetricsAsync());
+            _dashboard.Icon = _applicationIcon;
+        }
         RefreshDashboard();
         _dashboard.Show();
         _dashboard.BringToFront();
@@ -712,6 +718,9 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem BuildSettingsMenu()
     {
         ToolStripMenuItem menu = new(UiText.Get("Settings"));
+        menu.DropDownItems.Add(BuildAppearanceMenu(true));
+        menu.DropDownItems.Add(BuildAppearanceMenu(false));
+        menu.DropDownItems.Add(BuildMouseStyleMenu());
         menu.DropDownItems.Add(BuildNotificationsMenu());
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
@@ -750,6 +759,62 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(new ToolStripSeparator());
         menu.DropDownItems.Add(BuildLanguageMenu());
         return menu;
+    }
+
+    private ToolStripMenuItem BuildAppearanceMenu(bool appIcon)
+    {
+        var menu = new ToolStripMenuItem(UiText.Get(appIcon ? "Application icon" : "Default tray color"));
+        var choices = appIcon ? TrayColorRules.AppIcons : TrayColorRules.Choices;
+        foreach (string choice in choices)
+        {
+            var item = new ToolStripMenuItem(UiText.Get("Tray color " + choice));
+            item.Checked = choice == (appIcon ? _settings.ApplicationIconColor : _settings.DefaultTrayColor);
+            item.Click += (_, _) =>
+            {
+                if (_closing) return;
+                string previous = appIcon ? _settings.ApplicationIconColor : _settings.DefaultTrayColor;
+                if (appIcon) _settings.ApplicationIconColor = choice;
+                else _settings.DefaultTrayColor = choice;
+                if (!_settings.Save())
+                {
+                    if (appIcon) _settings.ApplicationIconColor = previous;
+                    else _settings.DefaultTrayColor = previous;
+                    MessageBox.Show(UiText.Get("Unable to save device preference."));
+                    return;
+                }
+                foreach (ToolStripMenuItem option in menu.DropDownItems)
+                    option.Checked = ReferenceEquals(option, item);
+                if (appIcon)
+                {
+                    Icon next = ApplicationIconAssets.Load(choice);
+                    if (_dashboard is { IsDisposed: false }) _dashboard.Icon = next;
+                    _applicationIcon?.Dispose();
+                    _applicationIcon = next;
+                }
+                RefreshDeviceDisplay();
+            };
+            menu.DropDownItems.Add(item);
+        }
+        return menu;
+    }
+
+    private ToolStripMenuItem BuildMouseStyleMenu()
+    {
+        var item = new ToolStripMenuItem(UiText.Get("Mouse-shaped tray icon"))
+            { Checked = _settings.MouseTrayIcon };
+        item.Click += (_, _) =>
+        {
+            bool previous = _settings.MouseTrayIcon;
+            _settings.MouseTrayIcon = !previous;
+            if (!_settings.Save())
+            {
+                _settings.MouseTrayIcon = previous;
+                MessageBox.Show(UiText.Get("Unable to save device preference."));
+            }
+            item.Checked = _settings.MouseTrayIcon;
+            RefreshDeviceDisplay();
+        };
+        return item;
     }
 
     private ToolStripMenuItem BuildUpdateSettingsMenu()
@@ -1769,18 +1834,20 @@ public sealed class TrayAppContext : ApplicationContext
         }
         string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
         if (_statusItem.Text != status) _statusItem.Text = status;
-        string tooltip = neutral ? UiText.Get("Device Manager") : $"{value} — {displayName} ({source})";
+        string color = aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
+            receiver is not null ? DeviceColor(receiver.Key) : _settings.DefaultTrayColor;
+        string tooltip = neutral ? UiText.Get("Device Manager") :
+            $"{value} · {UiText.Get("Tray color " + color)} — {displayName} ({source})";
         if (unknownUsb) tooltip = $"{source} · {value} — {displayName}";
         tooltip = tooltip[..Math.Min(63, tooltip.Length)];
         if (_tray.Text != tooltip) _tray.Text = tooltip;
-        string color = aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
-            receiver is not null ? DeviceColor(receiver.Key) : TrayColorRules.Default;
-        UpdateIcon(displayPercent, displayConnected, stale, neutral, color);
+        UpdateIcon(displayPercent, displayConnected, stale, neutral, color,
+            _settings.MouseTrayIcon && !aulaIsPrimary);
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
                 receiver?.Key, _settings.HiddenTrayDevices, DeviceColor,
-                BluetoothExtraIcons(reading, primaryBle));
+                BluetoothExtraIcons(reading, primaryBle), _settings.MouseTrayIcon);
         UpdateBluetoothStatus();
         RefreshDashboard();
     }
@@ -1798,11 +1865,13 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     private void UpdateIcon(int? percent, bool connected, bool stale = false,
-        bool neutral = false, string? color = null)
+        bool neutral = false, string? color = null, bool mouseStyle = false)
     {
-        var key = TrayIconRenderKey.Create(percent, connected, stale, neutral, color);
+        var key = TrayIconRenderKey.Create(percent, connected, stale, neutral, color, mouseStyle,
+            _settings.ApplicationIconColor);
         if (_icon is not null && _iconRenderKey == key) return;
-        Icon next = TrayIconFactory.Create(percent, connected, stale, neutral, color);
+        Icon next = TrayIconFactory.Create(percent, connected, stale, neutral, color, mouseStyle,
+            _settings.ApplicationIconColor);
         try { _tray.Icon = next; }
         catch { next.Dispose(); throw; }
         Icon? previous = _icon;
@@ -1848,6 +1917,7 @@ public sealed class TrayAppContext : ApplicationContext
         _tray.ContextMenuStrip?.Dispose();
         _tray.Dispose();
         _icon?.Dispose();
+        _applicationIcon?.Dispose();
         FileLog.Write("INFO", "Application stopped");
         base.ExitThreadCore();
     }

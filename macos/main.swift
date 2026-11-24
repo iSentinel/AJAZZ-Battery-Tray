@@ -261,6 +261,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(
             withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🔋?"
+        NSApp.applicationIconImage = TrayAppearance.appIcon(TrayAppearance.choice("ApplicationIconColor"))
         buildStatusMenu()
         configureTimer()
         refresh()
@@ -315,8 +316,48 @@ final class TrayController: NSObject, NSApplicationDelegate {
         return menu
     }
 
+    private func appearanceMenu(_ title: String, key: String) -> NSMenuItem {
+        let parent = NSMenuItem(title: AppText.text(title), action: nil, keyEquivalent: "")
+        let menu = NSMenu()
+        for color in TrayAppearance.choices {
+            let item = command(color.capitalized, #selector(selectAppearance(_:)))
+            item.representedObject = [key, color]
+            item.state = TrayAppearance.choice(key) == color ? .on : .off
+            if key == "ApplicationIconColor", let image = TrayAppearance.appIcon(color) {
+                image.size = NSSize(width: 16, height: 16)
+                item.image = image
+            }
+            menu.addItem(item)
+        }
+        parent.submenu = menu
+        return parent
+    }
+
+    @objc private func selectAppearance(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? [String], value.count == 2,
+              ["ApplicationIconColor", "TrayIconColor"].contains(value[0]),
+              TrayAppearance.choices.contains(value[1]) else { return }
+        UserDefaults.standard.set(value[1], forKey: value[0])
+        if value[0] == "ApplicationIconColor" {
+            NSApp.applicationIconImage = TrayAppearance.appIcon(value[1])
+        }
+        buildStatusMenu()
+        renderStatus(displayedStatus)
+    }
+
+    @objc private func toggleTrayStyle() {
+        UserDefaults.standard.set(!TrayAppearance.mouseStyle(), forKey: "MouseTrayIcon")
+        buildStatusMenu()
+        renderStatus(displayedStatus)
+    }
+
     private func buildSettingsMenu() -> NSMenu {
         let menu = NSMenu(title: AppText.text("Settings"))
+        menu.addItem(appearanceMenu("Application icon", key: "ApplicationIconColor"))
+        menu.addItem(appearanceMenu("Tray icon color", key: "TrayIconColor"))
+        let style = command("Mouse-shaped tray icon", #selector(toggleTrayStyle))
+        style.state = TrayAppearance.mouseStyle() ? .on : .off
+        menu.addItem(style)
         let notifications = NSMenuItem(title: AppText.text("Notifications"),
                                        action: nil, keyEquivalent: "")
         notifications.submenu = buildNotificationsMenu()
@@ -666,7 +707,13 @@ final class TrayController: NSObject, NSApplicationDelegate {
                 detailItem.title += " · " + AppText.format("Last verified USB sample (session): %@", text)
             }
         }
-        statusItem.button?.toolTip = detailItem.title
+        let color = TrayAppearance.choice("TrayIconColor")
+        var level: Int?
+        if case .battery(let percent) = status { level = percent }
+        statusItem.button?.title = ""
+        statusItem.button?.image = TrayAppearance.image(level: level, choice: color,
+            mouseStyle: TrayAppearance.mouseStyle())
+        statusItem.button?.toolTip = detailItem.title + " · " + AppText.text(color.capitalized)
     }
 
     private func refreshStartupMenu() {
