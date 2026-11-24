@@ -88,8 +88,11 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   High Sierra target p95 12.959 ms, 20/20 each on macOS 15 Intel.
   Universal bounded-read prototype adds typed IPC and simulated
   overlap/timeout/recovery tests without changing the menu timer.
-  CI pending; shared I/O exclusion, shutdown, RTC and separate
-  High Sierra prototype precede opt-in integration.
+  Prototype #107, legacy watchdog #108, shared I/O gate #109 and
+  cancellation #110 passed CI and merged. Universal session-only
+  --experimental-isolated-polling candidate adds bounded read/RTC and
+  deferred quit. CI and owner acceptance pending. Separate High Sierra
+  routine prototype remains next; default worker activation is gated.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.
