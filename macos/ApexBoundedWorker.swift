@@ -31,6 +31,24 @@ struct ApexWorkerReply: Codable {
     }
 }
 
+/// Thread-safe cancellation flag; only the supervisor signals its child.
+final class ApexWorkerCancellation {
+    private let lock = NSLock()
+    private var cancelled = false
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        lock.unlock()
+    }
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+}
+
 /// Prototype only. The regular menu-bar timer does not call this supervisor.
 enum ApexBoundedWorker {
     static let readMode = "--internal-bounded-apex-read"
@@ -41,6 +59,7 @@ enum ApexBoundedWorker {
     enum Result: Equatable {
         case reply(ApexBattery.Status)
         case timeout
+        case cancelled
         case busy
         case failed
     }
@@ -74,9 +93,12 @@ enum ApexBoundedWorker {
     }
 
     /// The worker emits at most one tiny JSON object. No raw HID output.
-    static func read(mode: String = readMode, timeout: Double = 8) -> Result {
+    static func read(mode: String = readMode, timeout: Double = 8,
+                     cancellation: ApexWorkerCancellation? = nil) -> Result {
+        guard cancellation?.isCancelled != true else { return .cancelled }
         guard gate.try() else { return .busy }
         defer { gate.unlock() }
+        guard cancellation?.isCancelled != true else { return .cancelled }
         guard let path = Bundle.main.executablePath else { return .failed }
         let child = Process()
         let pipe = Pipe()
@@ -88,17 +110,31 @@ enum ApexBoundedWorker {
         child.terminationHandler = { _ in done.signal() }
         do { try child.run() } catch { return .failed }
         try? pipe.fileHandleForWriting.close()
-        if done.wait(timeout: .now() + timeout) == .timedOut {
-            if child.isRunning { kill(child.processIdentifier, SIGKILL) }
-            // Keep the gate until process exit is observed.
-            child.waitUntilExit()
-            return .timeout
+        let deadline = DispatchTime.now() + timeout
+        while true {
+            if cancellation?.isCancelled == true {
+                stopAndWait(child)
+                return .cancelled
+            }
+            let next = min(deadline, DispatchTime.now() + .milliseconds(50))
+            if done.wait(timeout: next) == .success { break }
+            if DispatchTime.now() >= deadline {
+                stopAndWait(child)
+                return .timeout
+            }
         }
         child.waitUntilExit()
+        guard cancellation?.isCancelled != true else { return .cancelled }
         guard child.terminationReason == .exit, child.terminationStatus == 0 else {
             return .failed
         }
         return decode(pipe.fileHandleForReading.readDataToEndOfFile())
+    }
+
+    private static func stopAndWait(_ child: Process) {
+        if child.isRunning { kill(child.processIdentifier, SIGKILL) }
+        // Keep the gate until process exit is observed.
+        child.waitUntilExit()
     }
 
     static func selfTest() -> Bool {
@@ -124,6 +160,18 @@ enum ApexBoundedWorker {
         guard busy == .busy else { return false }
         guard read(mode: sampleMode) == .reply(.accessUnknown) else { return false }
         guard read(mode: hangMode, timeout: 1) == .timeout else { return false }
+
+        let alreadyCancelled = ApexWorkerCancellation()
+        alreadyCancelled.cancel()
+        guard read(mode: sampleMode, cancellation: alreadyCancelled) == .cancelled
+        else { return false }
+
+        let during = ApexWorkerCancellation()
+        DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(250)) {
+            during.cancel()
+        }
+        guard read(mode: hangMode, timeout: 4, cancellation: during) == .cancelled
+        else { return false }
         return read(mode: sampleMode) == .reply(.accessUnknown)
     }
 }

@@ -632,7 +632,7 @@ if let worker = CommandLine.arguments.dropFirst().first(where: ApexBoundedWorker
 } else if CommandLine.arguments.contains("--self-test-bounded-poll") {
     guard CommandLine.arguments.count == 2 else { exit(1) }
     let passed = ApexBoundedWorker.selfTest()
-    print(passed ? "PASS: bounded worker IPC, rejection, timeout and recovery" :
+    print(passed ? "PASS: bounded worker IPC, rejection, timeout, cancellation and recovery" :
         "FAIL: bounded worker self-test")
     exit(passed ? 0 : 1)
 } else if CommandLine.arguments.contains("--internal-poll-sample") {
