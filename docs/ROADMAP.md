@@ -62,7 +62,8 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   unknown result and retain each receiver's last successful measurement time
   for the current session. Confirmed absence in the main tray has no implied
   last device identity. The per-receiver menu retains that device's timestamp.
-  Further work covers the Apple status menus and BLE/AULA presentation parity.
+  Apple session-only historical USB timestamps and access classification are
+  implemented in a candidate PR; BLE/AULA presentation parity remains open.
 - **Windows Device Manager.** Five primary actions replace ten buttons.
   Device settings and Diagnostics group the existing commands. A Windows
   smoke test exercises callbacks, selection changes, removal while a menu
@@ -93,7 +94,9 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   --experimental-isolated-polling candidate adds bounded read/RTC and
   deferred quit (#111 CI PASS, merged). Legacy routine prototype #112
   also passed CI and merged. High Sierra opt-in menu integration adds
-  cancellable reads and deferred quit; CI pending. Default worker
+  cancellable reads and deferred quit (#113 CI PASS before the Windows
+  gap/debounce fix #115 was merged). See ISOLATED_POLLING_ACCEPTANCE.md.
+  Default worker
   activation remains gated on owner field acceptance for all editions.
 
 Hardware collection and visual acceptance may run alongside software changes.

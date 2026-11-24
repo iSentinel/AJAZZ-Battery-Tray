@@ -1,3 +1,14 @@
+# Resume — Apple observation parity
+
+- PR #114 merged 1f9f74a, all three platform development artifacts
+  verified on that SHA. PR #115 merged ed25a4f after Windows/macOS PASS.
+  Combined #113 checks pending before consolidation into #104/#99.
+- Apple candidate: separate HID open failure from no validated charge,
+  localized session-only last verified USB timestamp, cleared on confirmed
+  absence; no identity-bound cache or new device traffic.
+- Next: candidate native CI, consolidate branches, remaining field gates
+  and BLE/AULA presentation. No public release or new hardware evidence.
+
 # Resume — High Sierra opt-in isolated polling
 
 - Universal opt-in PR #111 merged 68576f0; legacy prototype #112 merged
