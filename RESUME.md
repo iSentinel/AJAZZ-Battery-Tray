@@ -4,7 +4,10 @@
 - Device Manager Entry-only display candidate, localized status and tooltip.
   No changes to shared dashboard state, local snapshot, history or alerts.
   Initial #132 Windows smoke compilation failed (CS0103, missing
-  BatteryDisplayState.cs link). Added the dependency; rerun pending.
+  BatteryDisplayState.cs link); fixed. Rerun 5bf66e4 reached runtime
+  smoke tests and failed stale candidate tooltip assertion. Explicitly
+  set battery tooltip for all states, assert replacement after both
+  unavailable and verified transitions; third native CI pending.
   Universal and upgrade checks passed the initial head.
 - Owner accepted tray 100? and AULA 75% on 9cd415b.
   Actual changed-charge accuracy remains unverified.

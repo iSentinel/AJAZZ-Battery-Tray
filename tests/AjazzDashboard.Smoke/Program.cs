@@ -110,13 +110,16 @@ internal static class Program
         {
             form.SetEntries(new[] { next });
             Require((string?)grid.Rows[0].Cells["Battery"].Value == "—", "Invalid or missing field displayed");
-            Require(string.IsNullOrEmpty(grid.Rows[0].Cells["Battery"].ToolTipText), "Stale candidate tooltip");
+            Require(grid.Rows[0].Cells["Battery"].ToolTipText == "—",
+                "Unavailable tooltip must replace previous candidate");
         }
         form.SetEntries(new[] { entry with { State = state with { Status = DeviceDashboardStatus.Fresh,
             Percent = 98, MeasuredAt = DateTimeOffset.UtcNow } } });
         Require((string?)grid.Rows[0].Cells["Battery"].Value == "98%", "Verified value must win");
         Require((string?)grid.Rows[0].Cells["Status"].Value == UiText.Get("Fresh reading"),
             "Fresh status must win");
+        Require(grid.Rows[0].Cells["Battery"].ToolTipText == "98%",
+            "Verified tooltip must replace previous candidate");
         Console.WriteLine($"PASS: {language} dashboard unverified field and state transitions");
     }
 

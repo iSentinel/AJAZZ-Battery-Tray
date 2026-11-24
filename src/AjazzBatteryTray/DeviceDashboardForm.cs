@@ -177,9 +177,9 @@ internal sealed class DeviceDashboardForm : Form
                     entry.TrayVisible is bool visible ? UiText.Get(visible ? "Allowed" : "Hidden") : "—",
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
-                if (HasUnverifiedField(entry))
-                    _grid.Rows[row].Cells["Battery"].ToolTipText =
-                        UsbTrayStatus.UnverifiedField(entry.UnverifiedPercent!.Value);
+                _grid.Rows[row].Cells["Battery"].ToolTipText = HasUnverifiedField(entry)
+                    ? UsbTrayStatus.UnverifiedField(entry.UnverifiedPercent!.Value)
+                    : FormatBattery(entry);
                 if (previous is not null && (previous.Key is not null
                     ? previous.Key == entry.Key
                     : entry.Key is null && previous.State.Name == state.Name &&
