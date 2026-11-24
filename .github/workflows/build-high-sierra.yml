@@ -56,6 +56,13 @@ jobs:
           grep -q 'BEGIN: diagnostic=' "$REPORT"
           grep -q 'TEST: worker started' "$REPORT"
           grep -q 'TIMEOUT: worker exceeded' "$REPORT"
+          CHILD_PID="$(sed -n 's/^TEST: worker started; pid=\([0-9][0-9]*\);.*/\1/p' "$REPORT")"
+          test -n "$CHILD_PID"
+          if kill -0 "$CHILD_PID" 2>/dev/null; then
+            echo "FAIL: timed-out worker still exists"
+            exit 1
+          fi
+          echo "PASS: timed-out worker exited before return"
           test "$(stat -f %Lp "$REPORT")" = 600
           ln -s "$REPORT" "$REPORT.symlink"
           if "$EXE" --self-test-watchdog --output "$REPORT.symlink"; then

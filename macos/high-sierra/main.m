@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <string.h>
 #include <unistd.h>
 #import <CoreBluetooth/CoreBluetooth.h>
@@ -839,12 +840,21 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         if (!strcmp(mode, "--internal-test-sleep")) {
-            puts("TEST: worker started; verifying bounded watchdog");
+            printf("TEST: worker started; pid=%ld; verifying bounded watchdog\n",
+                   (long)getpid());
             sleep(6);
             return 0;
         }
-        if (!strcmp(mode, "--internal-trace-hid")) return TraceReceiver();
-        if (!strcmp(mode, "--internal-diagnose")) return DiagnoseReceiver();
+        // A diagnostic child must not keep I/O alive indefinitely after parent exit.
+        if (!strcmp(mode, "--internal-trace-hid") ||
+            !strcmp(mode, "--internal-diagnose")) {
+            signal(SIGALRM, SIG_DFL);
+            alarm(92); // maximum public diagnostic deadline is 90 seconds
+            int result = !strcmp(mode, "--internal-trace-hid")
+                ? TraceReceiver() : DiagnoseReceiver();
+            alarm(0);
+            return result;
+        }
         if (!strcmp(mode, "--self-test")) return SelfTest();
         return RunMode(mode, timeout, output);
     }
