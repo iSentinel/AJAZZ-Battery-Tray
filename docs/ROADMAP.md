@@ -104,6 +104,12 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   #118 validates routine Windows replies before state application; CI PASS.
   #119 extends shared corpus to downstream history/alert checks; CI PASS.
 
+- **Installer upgrade.** Dedicated candidate CI installs the hash-pinned
+  public beta.60 setup and an unpublished beta.61 test package, compares
+  installed binary and registry version, and checks that synthetic
+  per-user preferences/history survive upgrade and uninstall. No tray
+  launch or HID access. CI pending; actual owner upgrade remains open.
+
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.
 

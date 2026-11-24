@@ -1,3 +1,12 @@
+# Resume — installer upgrade acceptance
+
+- Draft #99 ff37a72: all five final checks PASS; 81 offline regressions.
+- Verified exact-head field artifacts and tool kit; no new device evidence.
+- New CI candidate tests pinned public beta.60 setup -> CI-only beta.61
+  candidate -> uninstall, preserving synthetic per-user settings/history.
+  No launch, HID, release publication or permanent version bump.
+- Actual owner upgrade and hardware checks remain open (#93, #53, #34).
+
 # Resume — field evidence tools
 
 - #121 merged 942dd31 and #122 merged 574d390 into #120 after
