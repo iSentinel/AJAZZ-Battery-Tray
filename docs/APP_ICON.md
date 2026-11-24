@@ -34,3 +34,15 @@ rich colored text. Settings are persisted locally, not portable backup v1.
 Both Apple editions expose independent app and tray color menus and mouse/numeric style.
 Their runtime application image changes through AppKit; the signed bundle/Finder
 icon remains the build-time orange resource. Native CI and owner UI checks are separate. No HID or alert threshold changes.
+
+## Appearance acceptance
+
+Menu previews show the actual bundled app icon or normal tray silhouette.
+Apple synthetic checks exercise each theme at 0, 8, 10, 11, 20, 21, 100,
+unknown and out-of-range values, validate resource loading and rendered
+dimensions, and check for red pixels only in the critical state. These
+checks do not require HID or change preferences. Windows already has a
+native resource/rendering smoke and JSON preference round trip.
+Owner: verify all four colors, independent tray setting, selection after
+restart, hover text, actual 100/125/150/200% DPI and light/dark shell.
+Unknown or cached readings must not be treated as fresh critical telemetry.

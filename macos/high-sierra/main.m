@@ -474,6 +474,8 @@ static int TraceReceiver(void) {
             NSImage *image = AppearanceAppIcon(color);
             image.size = NSMakeSize(16, 16);
             item.image = image;
+        } else if ([key isEqualToString:@"TrayIconColor"]) {
+            item.image = AppearanceTrayImage(83, color, YES);
         }
     }
     parent.submenu = menu;
@@ -1035,6 +1037,11 @@ static BOOL VerifyObservationCorpus(NSString *path) {
 }
 
 static int SelfTest(void) {
+    if (!AppearanceSelfTest()) {
+        puts("FAIL: bundled appearance resources or rendered critical state");
+        return 1;
+    }
+    puts("PASS: four bundled app icons and 36 appearance rendering cases");
     uint8_t first[] = {5, 0, 0, 1};
     uint8_t full[] = {5, 0, 0, 100};
     uint8_t stripped[] = {0, 0, 25};

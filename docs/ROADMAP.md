@@ -73,7 +73,7 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   is open and minimum-size EN/RU/UK layout. Interactive keyboard and
   125%/150%/200% DPI acceptance remain open. A candidate smoke extension
   checks keyboard focus order and synthetic font/window scaling separately
-  from actual monitor DPI; native CI pending.
+  from actual monitor DPI; #125 native CI PASS (nine scale cases).
 - **AJ159 GET ID differential.** An explicit Windows diagnostic compares GET
   05 and 00 in pairs after the existing allowlisted F7 request. The normal
   polling path is unchanged. Experimental results are never promoted to
@@ -112,6 +112,16 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   per-user preferences/history survive upgrade and uninstall. No tray
   launch or HID access. #124 upgrade CI 45426251349 PASS; actual owner
   upgrade remains open.
+
+- **Appearance themes.** #126 and #127 native Windows, Universal, High Sierra
+  and installer upgrade checks PASS. Merged into draft audit as 9dabf9a.
+  Four orange/white/black/blue app resources; independent tray color;
+  <=10% red numeric override, 11–20% amber, unavailable gray.
+  Windows resource loading, red pixels and preference serialization passed.
+  Native Apple appearance resource/pixel regression and color menu previews
+  are now under CI. Actual tray appearance, hover and restart persistence
+  remain owner checks. The selected runtime app icon does not change the
+  static signed EXE/Finder icon. No default HID worker activation.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.

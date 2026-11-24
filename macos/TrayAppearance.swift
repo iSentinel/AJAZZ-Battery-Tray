@@ -70,4 +70,32 @@ enum TrayAppearance {
         image.isTemplate = false
         return image
     }
+
+    static func selfTest() -> Bool {
+        for choice in choices {
+            guard let asset = appIcon(choice), asset.isValid else { return false }
+            for level in [0, 8, 10, 11, 20, 21, 100, -1, 101] {
+                let rendered = image(level: level, choice: choice, mouseStyle: true)
+                let expectedWidth: CGFloat = level > 20 && level <= 100 ? 18 : 36
+                guard rendered.size == NSSize(width: expectedWidth, height: 18),
+                      !rendered.isTemplate, let bytes = rendered.tiffRepresentation,
+                      let bitmap = NSBitmapImageRep(data: bytes) else { return false }
+                if level >= 0 && level <= 10 && !hasRed(bitmap) { return false }
+                if (level < 0 || level > 10) && hasRed(bitmap) { return false }
+            }
+        }
+        return appIcon("../invalid") == nil
+    }
+
+    private static func hasRed(_ bitmap: NSBitmapImageRep) -> Bool {
+        for x in 0..<bitmap.pixelsWide {
+            for y in 0..<bitmap.pixelsHigh {
+                guard let pixel = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB)
+                else { continue }
+                if pixel.alphaComponent > 0.8 && pixel.redComponent > 0.75 &&
+                    pixel.greenComponent < 0.35 && pixel.blueComponent < 0.4 { return true }
+            }
+        }
+        return false
+    }
 }

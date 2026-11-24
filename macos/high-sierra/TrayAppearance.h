@@ -70,3 +70,31 @@ static inline NSImage *AppearanceTrayImage(NSInteger level, NSString *color, BOO
     image.template = NO;
     return image;
 }
+
+static inline BOOL AppearanceHasRed(NSBitmapImageRep *bitmap) {
+    for (NSInteger x = 0; x < bitmap.pixelsWide; x++) {
+        for (NSInteger y = 0; y < bitmap.pixelsHigh; y++) {
+            NSColor *pixel = [[bitmap colorAtX:x y:y]
+                colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+            if (pixel && pixel.alphaComponent > .8 && pixel.redComponent > .75 &&
+                pixel.greenComponent < .35 && pixel.blueComponent < .4) return YES;
+        }
+    }
+    return NO;
+}
+
+static inline BOOL AppearanceSelfTest(void) {
+    for (NSString *choice in AppearanceChoices()) {
+        if (!AppearanceAppIcon(choice).valid) return NO;
+        for (NSNumber *value in @[@0, @8, @10, @11, @20, @21, @100, @(-1), @101]) {
+            NSInteger level = value.integerValue;
+            NSImage *image = AppearanceTrayImage(level, choice, YES);
+            NSSize expected = NSMakeSize(level > 20 && level <= 100 ? 18 : 36, 18);
+            NSData *bytes = image.TIFFRepresentation;
+            NSBitmapImageRep *bitmap = bytes ? [NSBitmapImageRep imageRepWithData:bytes] : nil;
+            if (!NSEqualSizes(image.size, expected) || image.template || !bitmap) return NO;
+            if (AppearanceHasRed(bitmap) != (level >= 0 && level <= 10)) return NO;
+        }
+    }
+    return AppearanceAppIcon(@"../invalid") == nil;
+}
