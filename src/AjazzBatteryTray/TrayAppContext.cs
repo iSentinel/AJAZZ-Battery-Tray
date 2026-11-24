@@ -1512,6 +1512,8 @@ public sealed class TrayAppContext : ApplicationContext
                     _usbSchedule.Complete(item.Key, item.CompletedTick);
                 _latestUsbReadAt = DateTimeOffset.UtcNow;
                 ApplyReading(result.Batch);
+                // Preserve an explicit clock request through unknown USB presence.
+                _manualClockSync |= result.DeferredManualClock;
                 ApplyClockResult(result.Attempted, result.Succeeded);
                 StartBluetoothPoll(result.Batch.Summary.ReceiverPresent);
                 if (force && _settings.MonitorAulaL99) _ = PollAulaAsync(manual: true);
@@ -1540,27 +1542,30 @@ public sealed class TrayAppContext : ApplicationContext
         }
     }
 
-    private (AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded)
-        QueryAndSync(IReadOnlySet<string> deferred, bool manual, bool autoClock)
+    private (AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded,
+        bool DeferredManualClock) QueryAndSync(IReadOnlySet<string> deferred, bool manual, bool autoClock)
     {
         AjazzHidReader.Batch batch = _reader.ReadAll(shouldSample: key => !deferred.Contains(key));
         AjazzHidReader.Reading reading = batch.Summary;
         DateTimeOffset now = DateTimeOffset.UtcNow;
         bool automatic = _clockSchedule.ShouldAttempt(
-            now, autoClock, reading.ReceiverPresent);
+            now, autoClock, reading.ReceiverPresent, reading.PresenceKnown);
+        if (!reading.PresenceKnown)
+            return (batch, false, false, manual);
+
         if (!manual && !automatic)
         {
-            return (batch, false, false);
+            return (batch, false, false, false);
         }
 
         if (!reading.ReceiverPresent)
         {
-            return (batch, true, false);
+            return (batch, true, false, false);
         }
 
         bool sent = _reader.TrySyncDockClock(DateTime.Now);
         _clockSchedule.RecordAttempt(now);
-        return (batch, true, sent);
+        return (batch, true, sent, false);
     }
 
     private void StartBluetoothPoll(bool receiverPresent, bool force = false, string? key = null)
