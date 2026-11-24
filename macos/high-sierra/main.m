@@ -933,6 +933,53 @@ static int DiagnoseReceiver(void) {
     return 2;
 }
 
+@interface CorpusTray : LegacyTray
+@property(nonatomic, assign) NSUInteger notifications;
+@end
+@implementation CorpusTray
+- (BOOL)setting:(NSString *)key { (void)key; return YES; }
+- (void)notify:(NSString *)title message:(NSString *)message {
+    (void)title; (void)message;
+    self.notifications++;
+}
+@end
+
+static BOOL VerifyObservationCorpus(NSString *path) {
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+    if (!text) return NO;
+    NSArray *rows = [text componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    NSUInteger count = 0;
+    for (NSUInteger i = 1; i < rows.count; i++) {
+        if (![rows[i] length]) continue;
+        NSArray<NSString *> *fields = [rows[i] componentsSeparatedByString:@","];
+        if (fields.count != 5 || fields[2].length % 2) return NO;
+        NSMutableData *data = [NSMutableData data];
+        for (NSUInteger j = 0; j < fields[2].length; j += 2) {
+            NSString *pair = [fields[2] substringWithRange:NSMakeRange(j, 2)];
+            NSScanner *scanner = [NSScanner scannerWithString:pair];
+            unsigned int value = 0;
+            if (![scanner scanHexInt:&value] || !scanner.isAtEnd || value > 255) return NO;
+            uint8_t byte = (uint8_t)value;
+            [data appendBytes:&byte length:1];
+        }
+        NSInteger percent = ParseBattery(data.bytes, data.length);
+        NSString *result = percent < 0 ? @"unknown" : [NSString stringWithFormat:@"%ld", (long)percent];
+        if (![result isEqualToString:fields[4]]) return NO;
+        if (percent < 0) {
+            CorpusTray *tray = [[CorpusTray alloc] init];
+            [tray evaluateAlerts:(BatteryReading){BatteryValid, 83, 1}];
+            [tray evaluateAlerts:(BatteryReading){BatteryAbsent, -1, 0}];
+            [tray evaluateAlerts:(BatteryReading){BatteryUnknown, -1, 1}];
+            [tray evaluateAlerts:(BatteryReading){BatteryAbsent, -1, 0}];
+            if (tray.notifications != 0 || tray.absentCount != 1) return NO;
+        }
+        count++;
+    }
+    if (count != 20) return NO;
+    puts("PASS: 20 shared F7 observations and alert policy (no notifications delivered)");
+    return YES;
+}
+
 static int SelfTest(void) {
     uint8_t first[] = {5, 0, 0, 1};
     uint8_t full[] = {5, 0, 0, 100};
@@ -962,7 +1009,8 @@ static int SelfTest(void) {
         [SessionVerifiedAt(verified, (BatteryReading){BatteryTimedOut, -1, 0},
             [stamp dateByAddingTimeInterval:30]) isEqualToDate:stamp] &&
         SessionVerifiedAt(verified, (BatteryReading){BatteryAbsent, -1, 0}, stamp) == nil;
-    BOOL pass = provenance && safe && shared && ParseBattery(first, 4) == 1 &&
+    NSString *corpus = [NSProcessInfo processInfo].environment[@"AJAZZ_TEST_CORPUS"];
+    BOOL pass = (!corpus || VerifyObservationCorpus(corpus)) && provenance && safe && shared && ParseBattery(first, 4) == 1 &&
         ParseBattery(full, 4) == 100 &&
         ParseBattery(stripped, 3) == 25 &&
         ParseBattery(zero, 4) == -1 &&

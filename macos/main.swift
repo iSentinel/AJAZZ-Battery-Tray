@@ -715,6 +715,45 @@ final class TrayController: NSObject, NSApplicationDelegate {
     @objc private func quit() { NSApp.terminate(nil) }
 }
 
+/// Replay the shared sanitized fixture through the decoder and actual history writer.
+private func verifyObservationCorpus(_ path: String) -> Bool {
+    guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return false }
+    let rows = text.split(whereSeparator: \.isNewline).dropFirst()
+    guard rows.count == 20 else { return false }
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    for (index, row) in rows.enumerated() {
+        let fields = row.split(separator: ",", omittingEmptySubsequences: false)
+        guard fields.count == 5, fields[2].count.isMultiple(of: 2) else { return false }
+        let hex = Array(fields[2])
+        var bytes: [UInt8] = []
+        for offset in stride(from: 0, to: hex.count, by: 2) {
+            guard let byte = UInt8(String(hex[offset...offset + 1]), radix: 16) else { return false }
+            bytes.append(byte)
+        }
+        let percent = ApexBattery.parse(bytes)
+        guard (percent.map { String($0) } ?? "unknown") == String(fields[4]) else { return false }
+        let value = percent.map(ApexBattery.Status.battery) ?? .unavailable
+        let writer = BatteryHistoryWriter(directory: root.appendingPathComponent(String(index)))
+        writer.record(value)
+        guard let csv = try? String(contentsOf: writer.file, encoding: .utf8),
+              let line = csv.split(whereSeparator: \.isNewline).last,
+              let sample = BatteryHistoryReader.parse(String(line)),
+              sample.percent == percent,
+              sample.state == (percent == nil ? "unavailable" : "online") else { return false }
+        if percent == nil {
+            let alerts = BatteryAlertPolicy()
+            guard alerts.evaluate(.battery(83), notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(value, notifyLow: true, notifyDisconnect: true) == nil,
+                  alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil
+            else { return false }
+        }
+    }
+    print("PASS: 20 shared F7 observations, CSV and alert policy")
+    return true
+}
+
 if CommandLine.arguments.contains("--internal-test-io-lease") {
     guard CommandLine.arguments.count == 2 else { exit(1) }
     let lease = AjazzAcquireIoLease()
@@ -876,7 +915,9 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
         ApexBattery.noSampleStatus(matched: true, opened: false) == .accessUnknown &&
         ApexBattery.noSampleStatus(matched: true, opened: true) == .unavailable &&
         ApexBattery.noSampleStatus(matched: false, opened: false) == .unsupportedCollection
-    let valid = provenanceValid && sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests && timeoutValid &&
+    let corpusValid = ProcessInfo.processInfo.environment["AJAZZ_TEST_CORPUS"]
+        .map(verifyObservationCorpus) ?? true
+    let valid = corpusValid && provenanceValid && sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests && timeoutValid &&
                 selectedTests && jumpTests &&
                 chartValid && historyValid &&
                 clockValid && guardValid &&
