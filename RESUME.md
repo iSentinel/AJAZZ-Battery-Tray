@@ -1,3 +1,13 @@
+# Resume — AJAZZ cross-process vendor gate candidate
+
+- PR #102 merged 89fe3f60 and PR #103 merged 87b2d4b8 into draft #99.
+  Both Windows/macOS checks PASS. Prototype routine self-test passed.
+- New session-local named mutex for AjazzHidReader.ReadAll and
+  TrySyncDockClock. Busy read maps to unknown, not physical removal.
+- Separate-process Windows CI gate fixture; no real HID access.
+- Routine timer still uses original reader; opt-in integration next
+  after gate CI. Published beta.60 unchanged.
+
 # Resume — routine HID worker prototype after benchmark
 
 - PR #101 merged into draft PR #99 at 4155c1c; Windows/macOS/Python PASS.

@@ -70,3 +70,19 @@ Before production activation, define shared device-I/O exclusion,
 unknown-presence mapping, orderly shutdown and RTC scheduling; test
 actual hardware and resources. The regular tray polling path remains
 unchanged.
+
+
+## Session-local vendor I/O exclusion
+
+The AJAZZ read batch and dock RTC send now share a named mutex within
+the Windows logon session. This covers regular polling, bounded full
+capture, safe CLI diagnostics and the experimental GET comparison,
+because they all call the same AjazzHidReader. A busy gate yields an
+unknown-presence batch, not a disconnect or a valid sample. No wait
+queue or retry burst is introduced. The gate is held and released
+on the native I/O thread; Windows releases ownership on process death,
+and the next caller accepts abandoned ownership. No external GearHub
+or older app version participates in this mutex; close those separately.
+Metadata-only inventory and AULA/BLE use other paths. CI holds the
+mutex in a separate process and checks that diagnostic mode performs
+no HID enumeration or F7 request. Routine integration remains disabled.
