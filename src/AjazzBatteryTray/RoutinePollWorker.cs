@@ -8,13 +8,15 @@ namespace AjazzBatteryTray;
 internal static class RoutinePollWorker
 {
     private const string ReadMode = "--internal-routine-hid-worker";
+    private const string ClockMode = "--internal-routine-clock-worker";
+    private const string ClockSampleMode = "--internal-routine-clock-sample";
     private const string SampleMode = "--internal-routine-hid-sample";
     private const string HangMode = "--internal-routine-hid-hang";
     private const int MaxKeys = 128;
     private const int ChildLimitSeconds = 12;
     private static int _active;
 
-    internal static bool IsWorker(string mode) => mode is ReadMode or SampleMode or HangMode;
+    internal static bool IsWorker(string mode) => mode is ReadMode or SampleMode or HangMode or ClockMode or ClockSampleMode;
 
     private static string[] ValidateKeys(string[]? keys)
     {
@@ -32,18 +34,25 @@ internal static class RoutinePollWorker
         catch (System.ComponentModel.Win32Exception) { /* Child watchdog remains active. */ }
     }
 
-    internal static async Task<AjazzHidReader.Batch> ReadAsync(
+    internal static Task<AjazzHidReader.Batch> ReadAsync(
         string[] deferred, CancellationToken closing, string mode = ReadMode)
+        => InvokeAsync<AjazzHidReader.Batch>(deferred, closing, mode);
+
+    internal static Task<bool> SyncClockAsync(CancellationToken closing)
+        => InvokeAsync<bool>(Array.Empty<string>(), closing, ClockMode);
+
+    private static async Task<T> InvokeAsync<T>(
+        string[] deferred, CancellationToken closing, string mode)
     {
         ValidateKeys(deferred);
         closing.ThrowIfCancellationRequested();
         if (Interlocked.CompareExchange(ref _active, 1, 0) != 0)
             throw new InvalidOperationException("Routine HID worker already active");
-        try { return await ExchangeAsync(deferred, closing, mode).ConfigureAwait(false); }
+        try { return await ExchangeAsync<T>(deferred, closing, mode).ConfigureAwait(false); }
         finally { Volatile.Write(ref _active, 0); }
     }
 
-    private static async Task<AjazzHidReader.Batch> ExchangeAsync(
+    private static async Task<T> ExchangeAsync<T>(
         string[] deferred, CancellationToken closing, string mode)
     {
         ProcessStartInfo start = new(Environment.ProcessPath!)
@@ -64,7 +73,7 @@ internal static class RoutinePollWorker
                 .ConfigureAwait(false);
             child.StandardInput.Close();
             await child.WaitForExitAsync().ConfigureAwait(false);
-            return Decode(await output.ConfigureAwait(false), child.ExitCode, deadline, closing);
+            return Decode<T>(await output.ConfigureAwait(false), child.ExitCode, deadline, closing);
         }
         catch (IOException) when (deadline.IsCancellationRequested)
         {
@@ -79,14 +88,15 @@ internal static class RoutinePollWorker
         }
     }
 
-    private static AjazzHidReader.Batch Decode(string body, int code,
+    private static T Decode<T>(string body, int code,
         CancellationTokenSource deadline, CancellationToken closing)
     {
         closing.ThrowIfCancellationRequested();
         if (deadline.IsCancellationRequested || code == 124) throw new TimeoutException();
         if (code != 0) throw new IOException("Routine HID worker failed");
-        return JsonSerializer.Deserialize<AjazzHidReader.Batch>(body)
-            ?? throw new InvalidDataException("Missing routine worker response");
+        T? result = JsonSerializer.Deserialize<T>(body);
+        if (result is null) throw new InvalidDataException("Missing routine worker response");
+        return result;
     }
 
     internal static int RunWorker(string mode)
@@ -100,10 +110,20 @@ internal static class RoutinePollWorker
             if (line is null || line.Length > 10000) return 1;
             string[] deferred = ValidateKeys(JsonSerializer.Deserialize<string[]>(line));
             if (mode == HangMode) Thread.Sleep(Timeout.Infinite);
-            AjazzHidReader.Batch batch = mode == SampleMode ? Sample(deferred) :
-                new AjazzHidReader().ReadAll(shouldSample: key => !deferred.Contains(key));
             using Stream output = Console.OpenStandardOutput();
-            JsonSerializer.Serialize(output, batch);
+            if (mode is ClockMode or ClockSampleMode)
+            {
+                if (deferred.Length != 0) return 1;
+                bool sent = mode == ClockSampleMode ||
+                    new AjazzHidReader().TrySyncDockClock(DateTime.Now);
+                JsonSerializer.Serialize(output, sent);
+            }
+            else
+            {
+                AjazzHidReader.Batch batch = mode == SampleMode ? Sample(deferred) :
+                    new AjazzHidReader().ReadAll(shouldSample: key => !deferred.Contains(key));
+                JsonSerializer.Serialize(output, batch);
+            }
             return 0;
         }
         catch (Exception) { return 1; }
@@ -148,6 +168,9 @@ internal static class RoutinePollWorker
         try { await ReadAsync(Array.Empty<string>(), closing.Token, HangMode); }
         catch (OperationCanceledException) { cancelled = true; }
         if (!cancelled) throw new InvalidDataException("Expected cancellation");
+
+        if (!await InvokeAsync<bool>(Array.Empty<string>(), CancellationToken.None, ClockSampleMode))
+            throw new InvalidDataException("Synthetic clock result failed");
 
         var recovery = await ReadAsync(new[] { first }, CancellationToken.None, SampleMode);
         if (recovery.Receivers[0].Sampled || !recovery.Receivers[1].Sampled ||

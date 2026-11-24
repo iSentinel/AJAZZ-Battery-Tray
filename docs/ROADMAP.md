@@ -78,9 +78,12 @@ for the code findings and the [hardware matrix](VALIDATION_MATRIX.md) for field 
   [baseline](POLL_WORKER_BASELINE.md). A separate internal routine-read
   prototype preserves deferred receiver keys and supervises child exit;
   its self-test covers overlapping calls, timeout, cancellation and
-  recovery. CI pending. Default polling, RTC, AULA and BLE are unchanged.
-  Cross-process exclusion, presence mapping, shutdown and hardware
-  acceptance remain prerequisites for activation.
+  recovery. Prototype PR #102 and RTC fix #103 passed CI and merged.
+  PR #104 adds session-local exclusion for AJAZZ vendor I/O. The next
+  opt-in integration adds bounded routine battery and RTC workers via
+  --experimental-isolated-polling; default invocation is unchanged.
+  CI and field resource/sleep/wake/shutdown evidence remain required
+  before any default activation. AULA/BLE native paths are unchanged.
 
 Hardware collection and visual acceptance may run alongside software changes.
 Promote a stage to hardware-verified only after recording the corresponding device and observation.

@@ -10,7 +10,8 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        if (args.Length > 0)
+        bool isolated = args.Length == 1 && args[0] == "--experimental-isolated-polling";
+        if (args.Length > 0 && !isolated)
         {
             Environment.ExitCode = WindowsHidDiagnostics.Run(args);
             return;
@@ -25,6 +26,6 @@ internal static class Program
 
         ApplicationConfiguration.Initialize();
         FileLog.Write("INFO", "Application started");
-        Application.Run(new TrayAppContext());
+        Application.Run(new TrayAppContext(isolated));
     }
 }

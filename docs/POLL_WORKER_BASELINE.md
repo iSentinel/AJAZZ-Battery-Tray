@@ -86,3 +86,40 @@ or older app version participates in this mutex; close those separately.
 Metadata-only inventory and AULA/BLE use other paths. CI holds the
 mutex in a separate process and checks that diagnostic mode performs
 no HID enumeration or F7 request. Routine integration remains disabled.
+
+
+## Opt-in tray integration
+
+In a development build containing this change (not published beta.60),
+close all old tray instances and vendor utilities, then launch:
+
+    Start-Process -FilePath .\AJAZZBatteryTray.exe -ArgumentList '--experimental-isolated-polling'
+
+The ordinary invocation still uses the original in-process reader.
+The option is session-only, not stored in preferences or autostart.
+The experimental path uses sequential children for routine battery
+reads and the existing dock RTC command when due. Each has an 8 s
+parent deadline and 12 s independent child watchdog. RTC writes are
+not automatically retried after an ambiguous timeout; the existing
+schedule is recorded before the attempt. Unknown discovery defers
+manual RTC requests instead of sending a command or inventing absence.
+The same mutex protects vendor I/O in both paths. No new HID opcode,
+report framing, poll interval or AULA/BLE implementation is introduced.
+
+The parent's normal state handling consumes the returned batch. Read
+timeout and busy state produce no battery sample, no confirmed
+disconnect and no Bluetooth fallback. The tray timer resumes after
+the worker has exited. Closing the application cancels an active child.
+Synthetic tests cover IPC, schedule skips, child timeout, overlap,
+cancellation, recovery, clock-result serialization and localized
+status rules. Physical behavior and resource cost remain unverified.
+
+Field acceptance: compare normal and opt-in sessions on the same PC
+with automatic update checks disabled; use identical poll settings,
+one receiver first, then multiple if available. Record startup,
+several polls, sleep/wake, unplug/replug, manual refresh, a manually
+requested RTC sync when applicable, and app exit. Confirm no parallel
+vendor I/O, no false battery sample or disconnect after timeout,
+no orphan child, and comparable idle CPU/RAM. Use the existing
+Measure-TrayResources.ps1 for resource evidence. Do not deliberately
+force a native hardware hang; the CI synthetic hang covers that case.

@@ -109,8 +109,13 @@ foreach (string lang in new[] { "en", "ru", "uk" })
             UsbTrayStatus.Reason(false, false, UsbReadIssue.None),
             UsbTrayStatus.Reason(true, false, UsbReadIssue.None),
             UsbTrayStatus.Reason(true, true, UsbReadIssue.InterfaceUnavailable),
-            UsbTrayStatus.Reason(true, true, UsbReadIssue.None)
-        }.Distinct().Count() == 5);
+            UsbTrayStatus.Reason(true, true, UsbReadIssue.None),
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.Busy),
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.Timeout)
+        }.Distinct().Count() == 7);
+    Check($"Unknown or timed-out USB does not permit Bluetooth fallback ({lang})",
+        !BatteryDisplayState.MayUseBluetooth(false, false) &&
+        BatteryDisplayState.Resolve(false, null, true, 75, false).Percent is null);
     string noReply = UsbTrayStatus.Reason(true, true, UsbReadIssue.None);
     Check($"Unknown charge without previous reading has no historical time ({lang})",
         UsbTrayStatus.WithLastVerified(noReply, null) == noReply);
