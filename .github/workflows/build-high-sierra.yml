@@ -6,6 +6,8 @@ on:
       - 'macos/high-sierra/**'
       - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
+      - 'macos/AjazzIoLease.h'
+      - 'tools/check_apple_io_lease.py'
       - '.github/workflows/build-high-sierra.yml'
       - '.github/workflows/release-high-sierra.yml'
   push:
@@ -14,6 +16,8 @@ on:
       - 'macos/high-sierra/**'
       - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
+      - 'macos/AjazzIoLease.h'
+      - 'tools/check_apple_io_lease.py'
       - '.github/workflows/build-high-sierra.yml'
   workflow_dispatch:
 
@@ -26,6 +30,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build native Intel app and run parser tests
         run: bash macos/high-sierra/build.sh
+      - name: Verify shared vendor I/O gate without HID
+        run: |
+          python3 tools/check_apple_io_lease.py --exe "dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra"
       - name: Measure synthetic worker startup without HID
         run: |
           python3 tools/measure_apple_worker.py --dry-run

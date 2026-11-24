@@ -73,7 +73,7 @@ static NSInteger ReadFeature(IOHIDDeviceRef device, BOOL *accessFailed) {
 }
 
 /// The only USB query is the original, read-only-in-purpose F7/05 protocol.
-static BatteryReading ReadReceiver(void) {
+static BatteryReading ReadReceiverUnlocked(void) {
     BatteryReading reading = {BatteryAccessError, -1, 0};
     IOHIDManagerRef manager = IOHIDManagerCreate(kCFAllocatorDefault, 0);
     if (!manager) return reading;
@@ -121,6 +121,15 @@ static BatteryReading ReadReceiver(void) {
     return reading;
 }
 
+
+/// A busy or unsafe gate is unknown presence, never confirmed removal.
+static BatteryReading ReadReceiver(void) {
+    int lease = AjazzAcquireIoLease();
+    if (lease < 0) return (BatteryReading){BatteryAccessError, -1, 0};
+    BatteryReading result = ReadReceiverUnlocked();
+    AjazzReleaseIoLease(lease);
+    return result;
+}
 
 /// Emit only the first eight bytes, never a complete vendor HID packet.
 static void PrintHIDPrefix(const uint8_t *reply, CFIndex length) {
@@ -180,7 +189,7 @@ static NSInteger TraceCollections(const void **list, CFIndex count,
 }
 
 /// Explicit diagnostic; outputs only operation status and bounded prefix.
-static int TraceReceiver(void) {
+static int TraceReceiverUnlocked(void) {
     puts("AJAZZ High Sierra HID telemetry trace (no serial numbers)");
     puts("VID:PID=3151:5007 expected usage=FFFF:0002");
     IOHIDManagerRef manager = IOHIDManagerCreate(kCFAllocatorDefault, 0);
@@ -219,6 +228,17 @@ static int TraceReceiver(void) {
     }
     printf("PASS: battery=%ld%%\n", (long)battery);
     return 0;
+}
+
+static int TraceReceiver(void) {
+    int lease = AjazzAcquireIoLease();
+    if (lease < 0) {
+        puts("INCONCLUSIVE: vendor I/O gate unavailable; no HID request");
+        return 2;
+    }
+    int result = TraceReceiverUnlocked();
+    AjazzReleaseIoLease(lease);
+    return result;
 }
 
 @interface LegacyTray : NSObject <NSApplicationDelegate, CBCentralManagerDelegate,
@@ -807,6 +827,7 @@ int main(int argc, char *argv[]) {
                        !strcmp(argv[i], "--internal-trace-hid") ||
                        !strcmp(argv[i], "--internal-diagnose") ||
                        !strcmp(argv[i], "--internal-poll-sample") ||
+                       !strcmp(argv[i], "--internal-test-io-lease") ||
                        !strcmp(argv[i], "--internal-test-sleep"))) {
                 mode = argv[i];
             } else {
@@ -833,6 +854,12 @@ int main(int argc, char *argv[]) {
         }
         if (!strcmp(mode, "--help") || !strcmp(mode, "-h")) {
             Help();
+            return 0;
+        }
+        if (!strcmp(mode, "--internal-test-io-lease")) {
+            int lease = AjazzAcquireIoLease();
+            if (lease < 0) return 2;
+            AjazzReleaseIoLease(lease);
             return 0;
         }
         if (!strcmp(mode, "--internal-poll-sample")) {
