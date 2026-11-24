@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from compare_ready_clear import compare, parse_matrix, ready_clear, read_report
+from compare_ready_clear import compare, disagreement, ordinary_field, parse_matrix, ready_clear, read_report
 from compare_apex_reports import SECTION
 
 
@@ -110,6 +110,36 @@ class ReadyClearTests(unittest.TestCase):
         first = parse_matrix(report(100, "21:22:33"))
         second = parse_matrix(report(100, "21:35:12"))
         self.assertEqual(compare(first, second), "UNCHANGED FIELD")
+
+    @staticmethod
+    def with_ordinary(text, field):
+        prefix = chr(10).join([
+            "[AJAZZ last ordinary poll — not a fresh request]",
+            "Receiver present: True; presence known: True",
+            "Battery: unavailable; status: No valid battery status report",
+            f"unverified mouse field (not telemetry)={field}",
+            "Matching MI_02 paths: 1", "Interface: 3151:5007 MI_02 COL--",
+            "USB revision: 0x0002", "Feature report size: 65",
+            f"SET F7 / GET 05 (65 bytes): OK; header=050000{field:02X}; no valid battery",
+            f"SET F7 / GET 05 (67 bytes): OK; header=050000{field:02X}; no valid battery",
+            "[Independent AJAZZ receivers]", SECTION])
+        return text.replace(SECTION, prefix)
+
+    def test_ordinary_full_disagreement(self):
+        text = self.with_ordinary(report(100), 98)
+        self.assertEqual(disagreement(text, parse_matrix(text)), (98, True))
+
+    def test_ordinary_full_agreement(self):
+        text = self.with_ordinary(report(100), 100)
+        self.assertEqual(disagreement(text, parse_matrix(text)), (100, False))
+
+    def test_ordinary_invalid_header(self):
+        text = self.with_ordinary(report(100), 98).replace("header=05000062", "header=05000063", 1)
+        self.assertIsNone(ordinary_field(text))
+
+    def test_missing_ordinary_is_not_conflict(self):
+        text = report()
+        self.assertEqual(disagreement(text, parse_matrix(text)), (None, False))
 
     def test_size_guard(self):
         with tempfile.TemporaryDirectory() as directory:

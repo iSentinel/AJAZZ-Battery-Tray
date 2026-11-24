@@ -70,3 +70,21 @@ and ordering of each probe. An offline reconstruction of the two owner
 report times and six identical status prefixes yields UNCHANGED FIELD.
 This is replay of the visible sanitized evidence, not a new measurement or
 an independent calibration. No physical proof of charge accuracy.
+
+## Power-cycle follow-up — Nov 25, 01:19 Kyiv
+
+Owner observed a lower tray value after switching the mouse off and on.
+At 23:19:43 UTC the ordinary poll recorded 98, two successful headers
+05000062 (65 and 67 bytes), not verified telemetry. The full matrix
+at 23:19:53 UTC again contained 100 in all six responses, exact prefix
+05000064010001020000, ready clear and 0/6 verified. The earlier 23:18:20
+capture was 100. AULA was fresh 71 in both. This is evidence that the
+field can vary, but it is not evidence of accurate or current charge.
+Cause of the difference is unknown: cached or alternating receiver
+status, capture timing or another device state are possible. Never
+promote the field to telemetry. Keep ordinary and matrix observations
+separate and flag disagreement in the offline comparison; an otherwise
+unchanged full matrix must be INCONCLUSIVE if the ordinary field differs.
+Do not send new opcodes or power-cycle automatically. Raw reports remain
+local. Compare natural wake and next ordinary polls before another
+explicit full capture, with GearHub closed.
