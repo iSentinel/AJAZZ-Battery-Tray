@@ -25,6 +25,7 @@
     <Compile Include="../../src/AjazzBatteryTray/UpdateClient.cs" Link="UpdateClient.cs" />
     <Compile Include="../../src/AjazzBatteryTray/UpdateRequestGate.cs" Link="UpdateRequestGate.cs" />
     <Compile Include="../../src/AjazzBatteryTray/ApexProtocolMatrix.cs" Link="ApexProtocolMatrix.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/UnverifiedObservationStreak.cs" Link="UnverifiedObservationStreak.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BatteryReportParser.cs"
              Link="BatteryReportParser.cs" />
     <Compile Include="../../src/AjazzBatteryTray/AlertPolicy.cs"

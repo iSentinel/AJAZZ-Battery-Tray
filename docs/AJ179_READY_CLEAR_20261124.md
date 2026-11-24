@@ -88,3 +88,28 @@ unchanged full matrix must be INCONCLUSIVE if the ordinary field differs.
 Do not send new opcodes or power-cycle automatically. Raw reports remain
 local. Compare natural wake and next ordinary polls before another
 explicit full capture, with GearHub closed.
+
+## Owner follow-up: power-cycle-only changes
+
+Owner reports the tray field stays unchanged during normal use and
+changes only after switching the mouse off/on. This is consistent with,
+but does not establish, cached status or radio battery update behavior.
+#135 ordinary/full disagreement detection passed all three checks
+(97 Python tests), merged 99a271a.
+
+Windows extended reports now include a session-only streak for each
+receiver: current unverified field, count of consecutive sampled
+ordinary observations, first/last UTC and observed duration. Scheduled
+skips do not increment the count, duplicate timestamp/field does not
+count twice, changed fields or reversed timestamps start a new streak,
+missing/invalid fields or absent/unknown receiver clear the streak.
+A full matrix is not applied to the ordinary monitor, so it cannot
+increment the streak. No extra HID I/O, disk persistence, alerts,
+battery history, estimates or API fields. Long unchanged streaks do
+not prove stale data or determine the true charge.
+
+For the next field run, capture ordinary extended reports (not the
+full vendor matrix) before switching the mouse off/on, after one normal
+poll, and after several ordinary polls. Include whether GearHub is
+closed and whether its gauge changes independently. No forced
+discharge or repeated power-cycle automation.

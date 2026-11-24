@@ -16,6 +16,7 @@ internal sealed class ReceiverMonitor : IDisposable
         internal BatteryHistory History { get; }
         internal AlertPolicy Alerts { get; } = new();
         internal ConnectionAlertPolicy Connection { get; } = new();
+        internal UnverifiedObservationStreak UnverifiedStreak { get; } = new();
         internal AjazzHidReader.Reading Reading { get; set; }
         internal bool Present { get; set; } = true;
         internal DateTimeOffset? MeasuredAt { get; set; }
@@ -88,6 +89,7 @@ internal sealed class ReceiverMonitor : IDisposable
                 if (!item.Sampled) continue;
                 state.Reading = item.Reading;
                 state.MeasuredAt = item.MeasuredAt ?? now;
+                state.UnverifiedStreak.Observe(item.Reading.UnverifiedPercent, state.MeasuredAt.Value);
                 if (item.Reading.Percent.HasValue) state.LastVerifiedAt = state.MeasuredAt;
                 Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
             }
@@ -99,6 +101,7 @@ internal sealed class ReceiverMonitor : IDisposable
                 missing.Reading = AbsentReading;
                 missing.ScheduledSkip = false;
                 missing.MeasuredAt = null;
+                missing.UnverifiedStreak.Reset();
                 Record(missing, settings, notifier,
                     bluetoothEnabled && batch.Receivers.Count == 0, now);
             }
@@ -126,6 +129,7 @@ internal sealed class ReceiverMonitor : IDisposable
         {
             // A missing/unknown/missing sequence is not two consecutive absences.
             state.Connection.ObserveUnknown();
+            state.UnverifiedStreak.Reset();
             if (!state.Present) continue;
             state.Reading = issue is UsbReadIssue.Busy or UsbReadIssue.Timeout
                 ? UnknownReading with { Issue = issue } : UnknownReading;

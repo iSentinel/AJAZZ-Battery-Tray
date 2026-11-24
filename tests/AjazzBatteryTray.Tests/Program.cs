@@ -122,6 +122,38 @@ Check("Diagnostic candidate absent or invalid stays unavailable",
     new int?[] { null, 0, -1, 101 }.All(x =>
         BatteryReportParser.DiagnosticUnverifiedField(x) == "unverified mouse field (not telemetry)=unavailable"));
 
+var observationStreak = new UnverifiedObservationStreak();
+var streakStart = new DateTimeOffset(2026, 11, 24, 23, 18, 7, TimeSpan.Zero);
+observationStreak.Observe(100, streakStart);
+observationStreak.Observe(100, streakStart.AddSeconds(30));
+observationStreak.Observe(100, streakStart.AddSeconds(30));
+Check("Repeated candidate counts distinct ordinary observations only",
+    observationStreak.Count == 2 && observationStreak.First == streakStart &&
+    observationStreak.Last == streakStart.AddSeconds(30) &&
+    observationStreak.DiagnosticText().Contains("span seconds=30.0; not telemetry"));
+observationStreak.Observe(98, streakStart.AddSeconds(60));
+Check("Changed candidate starts a new observation streak",
+    observationStreak.Field == 98 && observationStreak.Count == 1 &&
+    observationStreak.First == streakStart.AddSeconds(60));
+observationStreak.Observe(100, streakStart.AddSeconds(90));
+Check("Return to 100 starts a separate streak",
+    observationStreak.Field == 100 && observationStreak.Count == 1);
+observationStreak.Observe(100, streakStart.AddSeconds(80));
+Check("Clock reversal resets observation streak",
+    observationStreak.Count == 1 && observationStreak.First == streakStart.AddSeconds(80));
+foreach (int? missingCandidate in new int?[] { null, 0, 101 })
+{
+    observationStreak.Observe(98, streakStart);
+    observationStreak.Observe(missingCandidate, streakStart.AddSeconds(30));
+    Check($"No streak for invalid candidate {missingCandidate}",
+        observationStreak.Count == 0 && observationStreak.Field is null &&
+        observationStreak.First is null && observationStreak.Last is null);
+}
+observationStreak.Observe(98, streakStart);
+observationStreak.Reset();
+Check("Absence or unknown presence clears observation streak",
+    observationStreak.DiagnosticText() == "no consecutive unverified ordinary observations");
+
 // The Apple and offline readers replay the same sanitized fixtures in CI.
 string corpus = Path.Combine(AppContext.BaseDirectory, "fixtures", "apex-f7-v1.csv");
 foreach (string row in File.ReadLines(corpus).Skip(1))

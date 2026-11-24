@@ -1465,7 +1465,10 @@ public sealed class TrayAppContext : ApplicationContext
                 $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}; " +
                 BatteryReportParser.DiagnosticUnverifiedField(x.Reading.UnverifiedPercent, !x.ScheduledSkip))) +
             $"\nSeparate tray icons: {_settings.MultipleTrayIcons}\n" +
-            "\n[AULA L99 last measurement]\n" +
+            "\n[AJAZZ ordinary unverified observation streaks — session only]\n" +
+            string.Join("\n", _receivers.Devices.Select(x =>
+                $"{x.Label}: {x.UnverifiedStreak.DiagnosticText()}; scheduled skip={x.ScheduledSkip}")) +
+            "\n\n[AULA L99 last measurement]\n" +
             $"Auto monitoring: {_settings.MonitorAulaL99}; interval={_settings.EffectivePollInterval(DeviceAliasRules.AulaSlot)}s; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {aula?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {aula?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n" +
