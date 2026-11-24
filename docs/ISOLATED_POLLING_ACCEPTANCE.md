@@ -115,7 +115,9 @@ the tools and unpacked candidate:
     .\tools\Measure-TrayJobCpu.ps1 -ExePath .\AJAZZBatteryTray.exe -Mode Normal -OutputPath .\normal-tree.csv
     .\tools\Measure-TrayJobCpu.ps1 -ExePath .\AJAZZBatteryTray.exe -Mode Isolated -OutputPath .\isolated-tree.csv
 
-Both default to 300 seconds and record the executable SHA256, explicit
+Both default to 300 seconds. The interval must not exceed half the duration;
+if the tray exits or fewer than three samples are collected, no complete
+report is written. They record the executable SHA256, explicit
 mode, elapsed time, job CPU and process counts. The CSV is distinct from
 the parent sampler and cannot be passed to compare_tray_resources.py.
 Compare matching reports with:

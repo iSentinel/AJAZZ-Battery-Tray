@@ -31,14 +31,15 @@ if ($Help) {
 if ($SelfTest -and $DryRun) { throw 'Choose SelfTest or DryRun, not both.' }
 if (-not $SelfTest) {
     if (!$ExePath -or !$OutputPath) { throw 'ExePath and OutputPath are required.' }
-    if ($IntervalSeconds -gt $DurationSeconds) { throw 'Interval must not exceed duration.' }
+    if (2 * $IntervalSeconds -gt $DurationSeconds) { throw 'Interval must not exceed half the duration.' }
     $exe = (Resolve-Path -LiteralPath $ExePath).Path
-    if ([IO.Path]::GetFileName($exe) -ne 'AJAZZBatteryTray.exe') {
+    if (!(Test-Path -LiteralPath $exe -PathType Leaf) -or
+        [IO.Path]::GetFileName($exe) -ne 'AJAZZBatteryTray.exe') {
         throw 'Select the unpacked AJAZZBatteryTray.exe.'
     }
     if (Test-Path -LiteralPath $OutputPath) { throw 'Output already exists.' }
     if ($DryRun) {
-        Write-Host "DRY-RUN: launch $Mode in new job; $DurationSeconds seconds; no process or file created"
+        Write-Output "DRY-RUN: launch $Mode in new job; $DurationSeconds seconds; no process or file created"
         return
     }
     if (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) {
@@ -79,6 +80,9 @@ try {
         if ($job.RootExited) { throw 'Tray exited during measurement; no complete report.' }
         $seconds = $clock.Elapsed.TotalSeconds
         $sample = $job.Read()
+        if ($job.RootExited -or $sample.ActiveProcesses -lt 1) {
+            throw 'Tray exited during sampling; no complete report.'
+        }
         $rows.Add([pscustomobject][ordered]@{
             utc = [DateTimeOffset]::UtcNow.ToString('o')
             version = $version
@@ -93,6 +97,7 @@ try {
         Start-Sleep -Milliseconds ([int][Math]::Max(1, [Math]::Min($IntervalSeconds * 1000,
             ($DurationSeconds - $seconds) * 1000)))
     } while ($true)
+    if ($rows.Count -lt 3) { throw 'Fewer than three samples; no complete report.' }
     $stream = [IO.File]::Open($OutputPath, [IO.FileMode]::CreateNew)
     try {
         $writer = [IO.StreamWriter]::new($stream)
