@@ -149,3 +149,19 @@ Intel runner measurement of the 10.13-targeted executable is not an
 actual High Sierra test, nor does a universal build establish arm64
 runtime latency. This is a startup lower bound, not HID/CPU/energy
 performance. No regular Apple polling or RTC behavior changes.
+
+
+## High Sierra diagnostic worker lifecycle prerequisite
+
+The legacy diagnostic watchdog previously returned 124 after SIGKILL
+and a non-blocking waitpid. That did not establish child exit. Before
+reusing the mechanism for regular polling, the supervisor now waits
+for child termination/reaping (retrying EINTR), and reports failure
+if it cannot stop/reap the worker. ECHILD is not followed by a kill
+of a potentially reused PID. The real diagnostic child has its own
+92-second alarm, just beyond the maximum supported 90-second deadline.
+The CI synthetic sleep fixture checks the PID no longer exists after
+the watchdog returns. This is a lifecycle fix to existing explicit
+diagnostics; the menu timer still uses its original in-process reader.
+As with any native worker, an OS-level uninterruptible kernel stall
+cannot be guaranteed to terminate within the requested timeout.
