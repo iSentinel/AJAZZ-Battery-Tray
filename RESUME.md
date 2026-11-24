@@ -3,7 +3,7 @@
 - #126 all four CI PASS, merged fcda8dd into draft #99.
 - Four official-color inspired app resources bundled; Windows appearance
   and independent tray palette implemented, critical <=10% red numeric.
-- Windows CI pending; Apple resource selection UI is next.
+- Windows and Apple selection UI implemented; native CI pending.
 - Hardware acceptance still open; no release.
 
 # Resume — orange mouse application icon

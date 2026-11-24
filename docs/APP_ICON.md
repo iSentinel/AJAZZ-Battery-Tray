@@ -31,5 +31,6 @@ or the percentage. Fresh 11–20% remains amber numeric, <=10% red numeric.
 Unknown/cached is gray, cached retains asterisk. AULA remains numeric.
 Native Windows hover text includes percentage and chosen color name, not
 rich colored text. Settings are persisted locally, not portable backup v1.
-Apple ICNS variants are bundled; Apple interactive selection is a separate
-implementation stage. No HID or alert threshold changes.
+Both Apple editions expose independent app and tray color menus and mouse/numeric style.
+Their runtime application image changes through AppKit; the signed bundle/Finder
+icon remains the build-time orange resource. Native CI and owner UI checks are separate. No HID or alert threshold changes.

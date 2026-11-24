@@ -346,6 +346,12 @@ public static class UiText
 
     public static string Get(string english)
     {
+        if (Language == "en" && english.StartsWith("Tray color ", StringComparison.Ordinal))
+        {
+            string color = english["Tray color ".Length..];
+            if (color == "inherit") return "Global color";
+            if (color.Length > 0) return char.ToUpperInvariant(color[0]) + color[1..];
+        }
         if (!Messages.TryGetValue(english, out var translated)) return english;
         return Language switch
         {

@@ -55,20 +55,20 @@ public static class TrayIconFactory
 
     private static void DrawNumber(Graphics graphics, Color background, int? level, bool stale)
     {
-            using Brush fill = new SolidBrush(background);
-            graphics.FillEllipse(fill, 2, 2, 60, 60);
-            using var border = new Pen(Color.FromArgb(230, 230, 230), 2);
-            graphics.DrawEllipse(border, 2, 2, 60, 60);
-            string text = level is not null ? level.ToString()! + "%" + (stale ? "*" : "") : "?";
-            float size = text.Length >= 5 ? 17 : text.Length >= 4 ? 21 : text.Length >= 3 ? 27 : 33;
-            using Font font = new("Segoe UI", size, FontStyle.Bold, GraphicsUnit.Pixel);
-            using StringFormat alignment = new()
-            {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center
-            };
-            Brush foreground = background.GetBrightness() > 0.72f ? Brushes.Black : Brushes.White;
-            graphics.DrawString(text, font, foreground,
-                new RectangleF(1, -1, 62, 64), alignment);
+        using Brush fill = new SolidBrush(background);
+        graphics.FillEllipse(fill, 2, 2, 60, 60);
+        using var border = new Pen(Color.FromArgb(230, 230, 230), 2);
+        graphics.DrawEllipse(border, 2, 2, 60, 60);
+        string text = level is not null ? level.ToString()! + "%" + (stale ? "*" : "") : "?";
+        float size = text.Length >= 5 ? 17 : text.Length >= 4 ? 21 : text.Length >= 3 ? 27 : 33;
+        using Font font = new("Segoe UI", size, FontStyle.Bold, GraphicsUnit.Pixel);
+        using StringFormat alignment = new()
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center
+        };
+        Brush foreground = background.GetBrightness() > 0.72f ? Brushes.Black : Brushes.White;
+        graphics.DrawString(text, font, foreground,
+            new RectangleF(1, -1, 62, 64), alignment);
     }
 }
