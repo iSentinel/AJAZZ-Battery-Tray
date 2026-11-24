@@ -1,3 +1,18 @@
+# Resume — routine HID worker prototype after benchmark
+
+- PR #101 merged into draft PR #99 at 4155c1c; Windows/macOS/Python PASS.
+- CI artifact 14890313646: 20/20 samples; p50 112.419 ms,
+  p95 148.834 ms, max 304.940 ms. See docs/POLL_WORKER_BASELINE.md.
+- Internal RoutinePollWorker prototype; normal tray timer unchanged.
+  Local stdin/stdout IPC, deferred keys, exclusive in-process gate,
+  parent deadline and independent child watchdog.
+- Synthetic Windows CI self-test for overlap, timeout, cancellation,
+  scheduled skip and recovery. Pending CI before merging.
+- Next: integration design for unknown presence, RTC schedule,
+  cross-process exclusion and shutdown; physical resource/USB test.
+- PR #100 GET 00/05 diagnostic already merged into draft #99;
+  hardware issue #53 remains open. Published Latest still beta.60.
+
 # Resume — follow-up GET ID differential on top of draft PR 99
 
 - Baseline for this change: draft PR 99 at 697daca, all four CI checks PASS.
