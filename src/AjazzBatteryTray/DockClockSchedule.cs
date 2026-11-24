@@ -8,8 +8,11 @@ public sealed class DockClockSchedule
     private bool _receiverWasPresent;
 
     /// <summary>Indicates when the next automatic clock update should run.</summary>
-    public bool ShouldAttempt(DateTimeOffset now, bool enabled, bool receiverPresent)
+    public bool ShouldAttempt(DateTimeOffset now, bool enabled, bool receiverPresent,
+        bool presenceKnown = true)
     {
+        // Failed discovery is not evidence of unplug/replug.
+        if (!presenceKnown) return false;
         if (!receiverPresent)
         {
             _receiverWasPresent = false;

@@ -678,6 +678,24 @@ schedule.RecordAttempt(start.AddMinutes(5));
 Check("clock receiver removed", !schedule.ShouldAttempt(start.AddMinutes(6), true, false));
 Check("clock receiver reconnected", schedule.ShouldAttempt(start.AddMinutes(6), true, true));
 
+// A transient unknown presence must not restart the dock RTC schedule.
+DockClockSchedule uncertainClock = new();
+Check("clock initially present", uncertainClock.ShouldAttempt(start, true, true));
+uncertainClock.RecordAttempt(start);
+Check("clock unknown absence never writes",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(1), true, false, presenceKnown: false));
+Check("clock unknown presence never writes",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(1), true, true, presenceKnown: false));
+Check("clock same confirmed receiver after uncertainty is not a reconnect",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(2), true, true));
+Check("clock deadline remains due after uncertainty",
+    uncertainClock.ShouldAttempt(start.AddMinutes(5), true, true));
+uncertainClock.RecordAttempt(start.AddMinutes(5));
+Check("clock confirmed unplug still resets",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(6), true, false));
+Check("clock confirmed replug still synchronizes",
+    uncertainClock.ShouldAttempt(start.AddMinutes(6), true, true));
+
 // A corrected Windows clock must not postpone RTC synchronization for hours.
 DockClockSchedule correctedClock = new();
 Check("clock correction initial sync", correctedClock.ShouldAttempt(start, true, true));
