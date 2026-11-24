@@ -3,6 +3,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#ifdef __APPLE__
+#include "AjazzIoLease.h"
+#endif
 
 // IOKit can return the requested 05 report with or without its report ID.
 static inline int AjazzBatteryPercent(const uint8_t *bytes, size_t length) {

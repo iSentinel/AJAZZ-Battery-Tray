@@ -35,6 +35,9 @@ enum ApexBattery {
     }
 
     static func read() -> Status {
+        let lease = AjazzAcquireIoLease()
+        guard lease >= 0 else { return .accessUnknown }
+        defer { AjazzReleaseIoLease(lease) }
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         let criteria: [String: Any] = [
             kIOHIDVendorIDKey as String: vendorID,
@@ -78,6 +81,9 @@ enum ApexBattery {
 
     /// Transfers local wall-clock time to the same vendor HID collection.
     static func syncClock() -> Bool {
+        let lease = AjazzAcquireIoLease()
+        guard lease >= 0 else { return false }
+        defer { AjazzReleaseIoLease(lease) }
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         let criteria: [String: Any] = [
             kIOHIDVendorIDKey as String: vendorID,
@@ -626,7 +632,13 @@ final class TrayController: NSObject, NSApplicationDelegate {
     @objc private func quit() { NSApp.terminate(nil) }
 }
 
-if let worker = CommandLine.arguments.dropFirst().first(where: ApexBoundedWorker.isWorker) {
+if CommandLine.arguments.contains("--internal-test-io-lease") {
+    guard CommandLine.arguments.count == 2 else { exit(1) }
+    let lease = AjazzAcquireIoLease()
+    guard lease >= 0 else { exit(2) }
+    AjazzReleaseIoLease(lease)
+    exit(0)
+} else if let worker = CommandLine.arguments.dropFirst().first(where: ApexBoundedWorker.isWorker) {
     guard CommandLine.arguments.count == 2 else { exit(1) }
     exit(ApexBoundedWorker.runChild(worker))
 } else if CommandLine.arguments.contains("--self-test-bounded-poll") {
