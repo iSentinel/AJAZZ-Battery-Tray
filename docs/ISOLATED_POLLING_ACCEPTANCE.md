@@ -134,3 +134,19 @@ Default activation remains blocked until the applicable field checks
 are complete, regressions resolved, and end-to-end resource impact
 reviewed. A development build may be distributed for explicit testing
 without asserting hardware support or a new public release.
+
+
+## Regression: unknown Windows receiver observation
+
+An unknown enumeration previously skipped per-receiver history and
+disconnect debounce processing. A confirmed missing poll followed by
+unknown and another missing poll could be counted as consecutive
+absence. The updated monitor explicitly interrupts pending absence
+counts for all tracked receivers, preserving already-delivered alerts.
+For previously present receivers it records an unavailable history gap,
+clears the current measurement, and retains the last verified timestamp.
+It never emits a low-battery event or claims a new numeric measurement
+from a busy/timeout/unknown result. Already absent devices do not
+receive repeated unknown-history rows. The ordinary polling schedule
+and BLE fallback rules are unchanged. This correction has synthetic
+policy and CSV regression tests; physical acceptance remains separate.

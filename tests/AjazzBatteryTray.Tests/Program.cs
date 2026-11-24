@@ -1061,6 +1061,19 @@ Check("first confirmed missing poll after error ignored",
 Check("second confirmed missing poll raises warning",
     transientError.Evaluate(false, false));
 
+ConnectionAlertPolicy interruptedAbsence = new();
+interruptedAbsence.Evaluate(true, true);
+Check("first absent poll is debounced", !interruptedAbsence.Evaluate(false, false));
+interruptedAbsence.ObserveUnknown();
+Check("unknown between absent polls interrupts the sequence",
+    !interruptedAbsence.Evaluate(false, false));
+Check("two consecutive confirmed absences still notify",
+    interruptedAbsence.Evaluate(false, false));
+interruptedAbsence.ObserveUnknown();
+Check("unknown does not reset a delivered disconnect alert",
+    !interruptedAbsence.Evaluate(false, false) &&
+    !interruptedAbsence.Evaluate(false, false));
+
 Check("USB disconnect alert preserved without BLE",
     BatteryDisplayState.NotifyReceiverDisconnect(true, false));
 
@@ -1685,6 +1698,15 @@ try
     Check("History new sample written and retained", lazyHistory.ReadRecent().LastOrDefault()?.Percent == 69);
     lazyHistory.Record(historyNow.AddSeconds(1), 69, true);
     Check("History repeated sample does not append", File.ReadAllLines(lazyHistoryPath).Length == 3);
+    // Unknown enumeration is a history gap, including when the same level returns.
+    lazyHistory.Record(historyNow.AddSeconds(2), null, receiverPresent: true);
+    lazyHistory.Record(historyNow.AddSeconds(3), 69, receiverPresent: true);
+    var gapRows = File.ReadAllLines(lazyHistoryPath).Skip(1)
+        .Select(BatteryHistoryCsv.Parse).OfType<BatterySample>().ToArray();
+    Check("Unknown history gap contains no charge or disconnected state",
+        gapRows.Length == 4 && gapRows[2].Percent is null &&
+        gapRows[2].State == "unavailable" && gapRows[3].Percent == 69 &&
+        gapRows[3].State == "online");
 }
 finally { Directory.Delete(lazyHistoryDir, true); }
 
