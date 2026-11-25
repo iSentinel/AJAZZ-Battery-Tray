@@ -1062,6 +1062,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       license review, trusted signatures, candidate-bound SBOM and advisories.
       Release hold unchanged.
 
+### ENG-06/12 distribution notice preparation
+
+- [x] Stage exact five notice files from pinned packages; verify lengths and hashes.
+- [x] Review official Windows SDK REDIST and .NET Windows product license
+      guidance; record net9.0 path discrepancy and single-file terms.
+- [ ] Resolve exact redistribution coverage, downstream terms, installer and
+      portable notice inclusion, signature trust and SBOM/advisory evidence.
+      Release hold unchanged.
+
 ### ENG-12 scoped Windows CycloneDX inventory
 
 - [x] Verify pinned packs and scoped host reconstruction before BOM generation.

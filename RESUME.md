@@ -1,3 +1,9 @@
+# Resume — combined notice and scoped SBOM candidate
+
+#163 merged 5d965ce, #164 exact 40af0e4 CI 4/4 PASS. Resolve
+three content conflicts preserving notice and SBOM tools/checkpoints.
+Fresh combined QA required. No release admission.
+
 # Resume — scoped Windows CycloneDX inventory
 
 #161 merged a98cb0d after exact 4/4 CI. #162 joined at 6728a01;
@@ -5,6 +11,17 @@ combined QA 185/185 PASS. New scoped BOM generator verified historical
 Tray 265 and HA 184 embedded files, both official CycloneDX 1.6 schema
 PASS, with composition explicitly incomplete. Full distribution coverage,
 licenses, signatures, advisories and release admission remain open.
+
+# Resume — notice staging and field evidence
+
+New stacked notice preparation: five exact files from four pinned packs,
+all five hashes and sizes verified. SDK REDIST lists net8.0/net6.0 paths,
+actual package has net9.0; .NET Windows single-file product terms require
+separate review. No distribution workflow change or legal clearance.
+Owner report 2026-11-25 04:30 UTC: shared receiver candidate 96, 6/6
+agreement, 0/6 validated; AULA fresh 66, zero misses. Prior owner-confirmed
+AJ179 field 97; new report model provisional. No raw report committed,
+no telemetry promotion. #99 comment 7152938353. Release hold unchanged.
 
 # Resume — merge license inventory with resource serialization
 
