@@ -1617,3 +1617,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI, integrate stacked changes, inspect PE resource
       directory metadata/serialization, compiled script, licensing,
       independent trust and physical acceptance. Release hold.
+
+### Observed Inno resource serialization
+
+- [x] Reconstruct actual loader and inner resource directory bytes
+      from previously qualified leaf payloads, including metadata,
+      names, order, alignment and complete section tails.
+- [x] Verify actual #206 and add three synthetic regressions.
+- [ ] Hosted CI and integration; inspect compiled setup script and
+      remaining installer overlay, licensing, independent key trust
+      and physical acceptance. No release admission.

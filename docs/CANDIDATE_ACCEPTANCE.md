@@ -524,3 +524,19 @@ comparison. Directory metadata and resource serialization are not
 qualified. Actual replay SHA-256:
 a3a928f103ffc617a706d90e4327c44cf26685b15e8a41c7ea868a059bc97f6b.
 This is not compiled-script, publisher trust or release admission.
+
+### Observed Windows resource serialization reconstruction
+
+After independently qualifying scoped leaf payloads on exact #206,
+reconstruct observed directory ordering, data entries, UTF-16 names,
+directory version 4, codepage 1252, neutral/English language IDs,
+zero name-table alignment, PAD leaf alignment and PADDINGXXPADDING
+section-tail pattern. Both complete resource directory byte areas
+and section tails match: loader 171036 + 484 bytes (32 directories,
+25 leaves); inner engine 266748 + 4 bytes (80 directories, 71 leaves).
+Actual replay SHA-256
+ec1ec93bd1d6373d565fdcd5c0ef11a0ddb76ee606b574c1e25302c3959fdffb.
+This reconstructs the observed Windows layout from already-qualified
+leaf data, not an independent implementation of Windows resource
+update APIs. The offset record remains scoped to CRC/bounds validation;
+compiled script, licensing, publisher trust and hardware are separate.

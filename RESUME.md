@@ -1,3 +1,12 @@
+# Resume — resource serialization reconstruction
+
+Stacked on #212. Actual #206 loader and inner .rsrc areas and
+complete section tails byte-match reconstructed observed layout.
+Three regressions. Scoped payload verification precedes serialization;
+not an independent Windows resource API implementation.
+Compiled script, remaining overlay, licensing, trust and hardware
+remain open. Release hold.
+
 # Resume — exact manifest and version payloads
 
 #210 merged 1efb27b (4/4); #211 merged f3c05a6 into parent (5/5).
