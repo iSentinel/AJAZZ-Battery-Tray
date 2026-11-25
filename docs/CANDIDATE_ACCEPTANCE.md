@@ -758,11 +758,11 @@ archive checksums and their bundle inventories.
 
 | Edition | Version/build | Executable SHA-256 |
 | --- | --- | --- |
-| Windows | 0.3.0-beta.61 | fe5d74b72f03ca2851956b6237589b915bd4afb52d382c4b302f39968b0828f4 |
+| Portable Windows | 0.3.0-beta.61 | fe5d74b72f03ca2851956b6237589b915bd4afb52d382c4b302f39968b0828f4 |
 | Universal | 65 | bc7357b2ef27ce7f7b518bfadbd3572ab05a56cdb701a2f7c16af1f0e51856ce |
 | High Sierra | 1 (CI experimental) | bb3226a68609366613e20fcecd0d054b76fedefbb5c19813cf62c405e2010869 |
 
-Five blank checklists were generated and independently replayed
+Five blank checklists were generated and replayed
 through the local review function: AJ179 17, AJ159 17, AULA 1,
 Universal 11, High Sierra 11, all 57 NOT_RUN. The scope is archive
 identity and checklist structure only. Source provenance is a
