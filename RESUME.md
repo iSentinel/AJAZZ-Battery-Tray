@@ -1,3 +1,19 @@
+# Resume — product notice upgrade and reinstall
+
+#226 merged 06fa60c (7/7); #227 merged df33fd8 into parent (6/6).
+Exact native product notice evidence matches staged record, removal PASS.
+New CI-only beta.60 -> beta.61 notice upgrade/reinstall with synthetic
+data preservation and cleanup; native result pending. Release hold,
+legal terms and physical acceptance unchanged.
+
+# Resume — opt-in product notice qualification
+
+Stacked on #226. ProductNoticeProbe requires NoticeRoot, cannot combine
+with lifecycle probe; separate filename and CI-only compilation.
+Exact app/icon/notice checks, no tray launch and cleanup required.
+Two regressions; hosted result pending. Default release unchanged.
+Remaining upgrade, legal terms and physical acceptance; release hold.
+
 # Resume — native isolated notice evidence
 
 #225 merged 95b1990 into parent after 6/6 CI. Exact native evidence

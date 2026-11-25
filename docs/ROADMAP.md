@@ -1754,3 +1754,25 @@ configuration commands. USB `VersionNumber` is a device revision,
       staged/installed records and check removal observation.
 - [ ] Candidate-only product notice packaging test; legal terms and
       physical acceptance. Release hold.
+
+### Opt-in product notice qualification
+
+- [x] Add separate product probe flag, explicit notice entries and
+      distinct output filename; leave release workflow unchanged.
+- [x] Add native product install/hash/notice/uninstall CI with no tray
+      launch and two source regressions.
+- [ ] Hosted evidence and integration, upgrade lifecycle with notices,
+      full distribution terms and physical acceptance. Release hold.
+
+### Product notice upgrade and reinstall
+
+- [x] #226 merged 06fa60c (7/7), #227 merged df33fd8 (6/6)
+      into parent after exact tested tree checks.
+- [x] Retrieve exact product probe evidence; artifact digest matches,
+      installed notice observation equals prior staged record.
+- [x] Add CI-only pinned beta.60 to beta.61 notice upgrade,
+      same-version missing-notice restoration and synthetic data
+      preservation through uninstall. Static regression PASS.
+- [ ] Native upgrade result, exact evidence review, integration,
+      remaining redistribution terms and physical acceptance.
+      Release hold.

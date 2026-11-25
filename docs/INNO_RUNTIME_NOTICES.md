@@ -130,3 +130,39 @@ installed MATCH, uninstalled REMOVED, application_installed=false.
 Fixture setup SHA-256
 5edb9559372f6276115e48ab79bdf4e33bbc3cdb725b74c084655048695cf6d6.
 No product installer qualification or release admission.
+
+## Opt-in product notice qualification
+
+The product .iss has a separate ProductNoticeProbe mode requiring
+NoticeRoot and rejecting combination with InstallerLifecycleProbe.
+It uses the same explicit ten notice entries as the native isolated
+fixture and a distinct output filename. The default product payload
+and release workflows are unchanged. Hosted CI builds a fresh beta.61
+app and compiles the probe with the pinned compiler; verifies app hash,
+registered version, icons and complete installed notice tree, and
+requires uninstall cleanup without launch or user-data creation.
+Only JSON evidence is uploaded. This is an unpublished qualification
+probe, not the historical #206 artifact or a release candidate.
+Legal terms, upgrade with notices, and physical acceptance remain open.
+
+## Native product probe result and upgrade extension
+
+Exact PR #227 head 63d07870b5a59da643d303e4db88a0236a630f1c,
+hosted checkout 49e9019cb2f1ec73db00e3ddd4ded2a8d52d4041,
+run 45612775572, job 139200324703: PASS. Artifact 15020293935 ZIP
+SHA-256 87bf605087d39182a6fc361e43d083cc69dbe1391d8c96d7338a047a0ac83e96
+matches REST. Installed evidence exactly equals the earlier isolated
+staged evidence. Product setup SHA-256
+458159fda84ec506ff38c48ebf57d158677172111e3e718e0c505162e077528e,
+app SHA-256
+7c090885614c48efde31b8622e14271bb2ee91d28cfda54fe3e13100f471ea23.
+Notices MATCH and REMOVED; tray launch NOT_OBSERVED.
+
+The next separate hosted scenario installs the pinned beta.60 baseline,
+creates synthetic settings/history, upgrades to the product notice probe,
+checks the exact app, four icons and notice tree, removes one known test
+notice and verifies same-version reinstall restores it. It checks
+synthetic data integrity after upgrade, reinstall and uninstall, requires
+cleanup of product files/registry and no observed tray launch. Restricted
+to an ephemeral Actions runner with clean preconditions. Only JSON
+evidence uploaded. Native upgrade result pending; release recipe unchanged.

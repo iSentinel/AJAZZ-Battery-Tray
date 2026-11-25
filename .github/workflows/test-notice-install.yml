@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - 'installer/NoticeTransportProbe.iss'
+      - 'installer/AJAZZBatteryTray.iss'
+      - 'src/**'
+      - 'global.json'
+      - 'tools/test_product_notice_probe.py'
+      - 'tools/Test-ProductNoticeUpgrade.ps1'
       - 'tools/stage_windows_notices.py'
       - 'tools/verify_windows_notice_transport.py'
       - '.github/workflows/test-notice-install.yml'
@@ -21,6 +26,16 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.13.17'
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '11.0.100'
+      - name: Verify selected .NET SDK
+        shell: pwsh
+        run: |
+          $actual = dotnet --version
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '11.0.100') {
+            throw 'Selected SDK differs from reviewed global.json'
+          }
       - name: Stage exact reviewed notices
         shell: pwsh
         run: |
@@ -103,5 +118,103 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/staged-evidence.json
             ${{ runner.temp }}/ajazz-notice-probe/installed-evidence.json
             ${{ runner.temp }}/ajazz-notice-probe/lifecycle.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build unpublished product notice probe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.61 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
+          if ($LASTEXITCODE -ne 0) { throw 'Product probe publish failed' }
+          $candidates = @(@(
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -Unique)
+          if ($candidates.Count -ne 1) { throw 'Expected exactly one reviewed compiler' }
+          $iscc = $candidates[0]
+          if ((Get-FileHash -LiteralPath $iscc -Algorithm SHA256).Hash.ToLowerInvariant() -cne 'eb6f4410c8db367a5f74127e8025ad2ccacc0afabbe783959d237df3050f97fb') {
+            throw 'Compiler digest differs'
+          }
+          $lines = @(& $iscc '/DAppVersion=0.3.0-beta.61' '/DProductNoticeProbe=1' "/DNoticeRoot=$(Join-Path $root 'staged')" "/O$root" 'installer/AJAZZBatteryTray.iss')
+          $code = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0 -or @($lines | Where-Object { $_ -ceq 'Compiler engine version: Inno Setup 6.7.1' }).Count -ne 1) {
+            throw 'Product probe compilation failed or engine differs'
+          }
+      - name: Verify product notice lifecycle without tray launch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $setup = Join-Path $root 'AJAZZBatteryTray-Notice-Probe-win-x64.exe'
+          $target = Join-Path $root 'product-installed'
+          $app = Join-Path $target 'AJAZZBatteryTray.exe'
+          $uninstaller = Join-Path $target 'unins000.exe'
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9829045F-37F0-4AC3-ACBD-1B5E4129A179}_is1'
+          $data = Join-Path $env:APPDATA 'AJAZZBatteryTray'
+          if (!(Test-Path -LiteralPath $setup -PathType Leaf) -or (Test-Path $target) -or (Test-Path $key) -or (Test-Path $data) -or (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue)) {
+            throw 'Expected clean isolated product probe target'
+          }
+          $expected = (Get-FileHash -LiteralPath 'dist/app/AJAZZBatteryTray.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          try {
+            $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LAUNCH=0',"/DIR=`"$target`"") -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or !(Test-Path -LiteralPath $app -PathType Leaf) -or !(Test-Path -LiteralPath $uninstaller -PathType Leaf)) {
+              throw 'Product probe installation failed'
+            }
+            if ((Get-FileHash -LiteralPath $app -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expected -or (Get-ItemProperty -LiteralPath $key).DisplayVersion -cne '0.3.0-beta.61' -or (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) -or (Test-Path $data)) {
+              throw 'Unexpected product identity or launch'
+            }
+            foreach ($name in @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')) {
+              if ((Get-FileHash -LiteralPath (Join-Path $target "Icons/$name")).Hash -cne (Get-FileHash -LiteralPath "src/AjazzBatteryTray/Assets/$name").Hash) { throw 'Product icon differs' }
+            }
+            python tools/verify_windows_notice_transport.py --tree (Join-Path $target 'Notices') --output (Join-Path $root 'product-installed-evidence.json')
+            if ($LASTEXITCODE -ne 0) { throw 'Product notices differ' }
+            $p = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or (Test-Path $app) -or (Test-Path $key) -or (Test-Path $data) -or (Test-Path (Join-Path $target 'Icons')) -or (Test-Path (Join-Path $target 'Notices'))) {
+              throw 'Product probe uninstall cleanup failed'
+            }
+            [ordered]@{
+              schema = 'product-notice-probe-v1'
+              source_sha = (git rev-parse HEAD)
+              setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $expected
+              installed_notices = 'MATCH'
+              uninstalled_notices = 'REMOVED'
+              tray_launch = 'NOT_OBSERVED'
+              physical_acceptance = 'NOT_VERIFIED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'product-lifecycle.json') -Encoding utf8
+          } finally {
+            if (Test-Path -LiteralPath $uninstaller -PathType Leaf) {
+              Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait
+            }
+          }
+      - name: Retain product probe JSON evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: product-notice-probe-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/product-installed-evidence.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-lifecycle.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify upgrade and reinstall with exact notices
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./tools/Test-ProductNoticeUpgrade.ps1 -ProbeRoot (Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe')
+      - name: Retain upgrade probe JSON evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: product-notice-upgrade-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-notices.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-lifecycle.json
           if-no-files-found: error
           retention-days: 7
