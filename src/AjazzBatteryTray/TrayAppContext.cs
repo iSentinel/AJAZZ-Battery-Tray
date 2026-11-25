@@ -61,6 +61,7 @@ public sealed class TrayAppContext : ApplicationContext
             int lowest = int.MaxValue;
             foreach (var pair in _bleSlots)
             {
+                if (_settings.BleUsbLinks.ContainsKey(pair.Key)) continue;
                 int candidateRank = _ble.VisiblePercent(pair.Key, true, false, now).HasValue ? 2 :
                     _ble.CachedPercent(pair.Key, now).HasValue ? 1 : 0;
                 if (key is not null && (candidateRank < rank ||
@@ -1276,6 +1277,7 @@ public sealed class TrayAppContext : ApplicationContext
         _ble.Disable(key);
         _bleSlots.Remove(key);
         _settings.ConsentedBleEndpoints.Remove(key);
+        _settings.BleUsbLinks.Remove(key);
         SaveBleOptOut();
         _bluetoothWindow?.DisableAutomatic();
         RefreshDeviceDisplay();
@@ -1286,6 +1288,7 @@ public sealed class TrayAppContext : ApplicationContext
         _ble.DisableAll();
         _bleSlots.Clear();
         _settings.ConsentedBleEndpoints.Clear();
+        _settings.BleUsbLinks.Clear();
         SaveBleOptOut();
         _bluetoothWindow?.DisableAutomatic();
         RefreshDeviceDisplay();
@@ -1325,6 +1328,57 @@ public sealed class TrayAppContext : ApplicationContext
         finally { _bleRestoreBusy = false; }
     }
 
+    private void ChangeTransportLink(string ble, string? usb)
+    {
+        if (_closing || !_settings.ConsentedBleEndpoints.Contains(ble)) return;
+        var links = _settings.BleUsbLinks;
+        string? previous = links.GetValueOrDefault(ble);
+        if (usb is not null)
+        {
+            if (!_bleSlots.TryGetValue(ble, out var slot) ||
+                !TransportLinks.CanLink(links, _settings.ConsentedBleEndpoints, ble, usb) ||
+                !_receivers.Devices.Any(x => x.Key == usb && x.Present && x.Reading.PresenceKnown))
+                return;
+            if (MessageBox.Show(UiText.Format(
+                "Link {0} to this USB receiver only if both belong to the same physical mouse. Continue?",
+                BleDisplayLabel(slot)), UiText.Get("Bluetooth"), MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes) return;
+            if (_closing || !_bleSlots.ContainsKey(ble) ||
+                !TransportLinks.CanLink(links, _settings.ConsentedBleEndpoints, ble, usb) ||
+                !_receivers.Devices.Any(x => x.Key == usb && x.Present && x.Reading.PresenceKnown))
+                return;
+            links[ble] = usb;
+        }
+        else links.Remove(ble);
+        if (!_settings.Save())
+        {
+            if (previous is null) links.Remove(ble);
+            else links[ble] = previous;
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        RefreshDeviceDisplay();
+    }
+
+    private void AddTransportLinkMenu(ToolStripMenuItem item, string ble)
+    {
+        if (_settings.BleUsbLinks.ContainsKey(ble))
+        {
+            item.DropDownItems.Add(UiText.Get("Unlink USB receiver"), null,
+                (_, _) => ChangeTransportLink(ble, null));
+            return;
+        }
+        var link = new ToolStripMenuItem(UiText.Get("Link to USB receiver..."));
+        foreach (var receiver in _receivers.Devices.Where(x => x.Present && x.Reading.PresenceKnown))
+        {
+            string usb = receiver.Key;
+            if (!TransportLinks.CanLink(_settings.BleUsbLinks, _settings.ConsentedBleEndpoints, ble, usb)) continue;
+            link.DropDownItems.Add(receiver.DisplayLabel, null, (_, _) => ChangeTransportLink(ble, usb));
+        }
+        link.Enabled = link.DropDownItems.Count > 0;
+        item.DropDownItems.Add(link);
+    }
+
     private void PopulateBleMenu()
     {
         foreach (ToolStripItem old in _bleDevicesMenu.DropDownItems.Cast<ToolStripItem>().ToArray()) old.Dispose();
@@ -1343,6 +1397,7 @@ public sealed class TrayAppContext : ApplicationContext
             item.DropDownItems.Add(read);
             item.DropDownItems.Add(UiText.Get("Disable selected BLE monitor"), null,
                 (_, _) => DisableBluetoothKey(key));
+            AddTransportLinkMenu(item, key);
             _bleDevicesMenu.DropDownItems.Add(item);
         }
         int pending = 0;
@@ -1352,6 +1407,7 @@ public sealed class TrayAppContext : ApplicationContext
             var item = new ToolStripMenuItem(UiText.Format("Saved BLE device #{0} (not found)", ++pending));
             item.DropDownItems.Add(UiText.Get("Disable selected BLE monitor"), null,
                 (_, _) => DisableBluetoothKey(key));
+            if (_settings.BleUsbLinks.ContainsKey(key)) AddTransportLinkMenu(item, key);
             _bleDevicesMenu.DropDownItems.Add(item);
         }
         if (_bleDevicesMenu.DropDownItems.Count == 0)
@@ -1699,7 +1755,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_closing) return;
         var request = _ble.TryBegin(_latestUsbReading?.PresenceKnown == true, receiverPresent, DateTimeOffset.UtcNow,
-            force ? key ?? PrimaryBleKey : null);
+            force ? key ?? PrimaryBleKey ?? _bleSlots.OrderBy(x => x.Value.Number).Select(x => x.Key).FirstOrDefault() : null);
         if (request is null || !_bleSlots.TryGetValue(request.Key, out var slot)) return;
         UpdateBluetoothStatus();
         _ = PollBluetoothFallbackAsync(slot, request);
@@ -1808,8 +1864,10 @@ public sealed class TrayAppContext : ApplicationContext
         bool aulaPresent = _settings.MonitorAulaL99 &&
             _aulaLatest is { ReceiverPresent: true, PresenceKnown: true };
         bool showAula = aulaPresent && IsTrayVisible(DeviceAliasRules.AulaSlot);
-        var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons,
-            _settings.HiddenTrayDevices);
+        var linked = LinkedTrayDevices();
+        var hiddenUsb = new HashSet<string>(_settings.HiddenTrayDevices, StringComparer.Ordinal);
+        hiddenUsb.UnionWith(_settings.BleUsbLinks.Values);
+        var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons, hiddenUsb);
         int? aulaLevel = AulaDisplayPercent();
         bool aulaStale = _aulaLatest?.Percent is null && aulaLevel.HasValue;
         int? usbPercent = reading.PresenceKnown ? receiver?.Reading.Percent : null;
@@ -1818,10 +1876,12 @@ public sealed class TrayAppContext : ApplicationContext
             _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow).HasValue &&
             !usbPercent.HasValue;
         bool bluetoothPrimary = BatteryDisplayState.PreferIndependentBluetooth(
-            receiver is not null, usbPercent, BleEnabled, blePercent) || retainCachedBle;
-        bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary;
-        bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary &&
-            (reading.ReceiverPresent || aulaPresent);
+            receiver is not null, usbPercent, primaryBle is not null, blePercent) || retainCachedBle;
+        // Prefer a linked device as the main icon only if no standalone mouse is selected.
+        var linkedPrimary = receiver is null && !bluetoothPrimary ? linked.FirstOrDefault() : null;
+        bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary && linkedPrimary is null;
+        bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null &&
+            (reading.ReceiverPresent || aulaPresent || _settings.BleUsbLinks.Count > 0);
 
         string device = bluetoothPrimary && primaryBle is not null ? BleLabel(_bleSlots[primaryBle]) :
             receiver?.Label ?? "AJAZZ APEX";
@@ -1834,6 +1894,12 @@ public sealed class TrayAppContext : ApplicationContext
             displayPercent = aulaLevel;
             source = "2.4 GHz";
         }
+        if (linkedPrimary is { } pair)
+        {
+            device = "AJAZZ linked mouse";
+            displayPercent = pair.Display.Percent;
+            source = pair.Display.Percent is null ? "2.4 GHz / Bluetooth" : pair.Display.Bluetooth ? "Bluetooth" : "2.4 GHz";
+        }
         if (neutral)
         {
             device = "Device Manager";
@@ -1841,7 +1907,7 @@ public sealed class TrayAppContext : ApplicationContext
             displayPercent = null;
         }
         bool displayConnected = displayPercent.HasValue;
-        bool stale = aulaIsPrimary && aulaStale;
+        bool stale = (aulaIsPrimary && aulaStale) || linkedPrimary?.Display.Cached == true;
         if (bluetoothPrimary && primaryBle is not null && !blePercent.HasValue)
         {
             displayPercent = _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow);
@@ -1862,13 +1928,13 @@ public sealed class TrayAppContext : ApplicationContext
         _lastSource = source;
         _lastDevice = device;
         _lastStale = stale;
-        string displayName = bluetoothPrimary && primaryBle is not null ? BleDisplayLabel(_bleSlots[primaryBle]) :
-            aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device;
+        string displayName = linkedPrimary?.Name ?? (bluetoothPrimary && primaryBle is not null ? BleDisplayLabel(_bleSlots[primaryBle]) :
+            aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device);
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
         else if (displayConnected && !aulaIsPrimary && !bluetoothPrimary && receiver?.ScheduledSkip == true)
             value += " (" + UiText.Get("Last scheduled reading") + ")";
-        bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary;
+        bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null;
         int? unverified = unknownUsb && receiver is { ScheduledSkip: false } && reading.PresenceKnown
             ? receiver.Reading.UnverifiedPercent : null;
         if (unknownUsb)
@@ -1881,7 +1947,8 @@ public sealed class TrayAppContext : ApplicationContext
         }
         string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
         if (_statusItem.Text != status) _statusItem.Text = status;
-        string color = aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
+        string color = linkedPrimary is { } linkedIcon ? DeviceColor(linkedIcon.UsbKey) :
+            aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
             !bluetoothPrimary && receiver is not null ? DeviceColor(receiver.Key) : _settings.DefaultTrayColor;
         string tooltip = neutral ? UiText.Get("Device Manager") :
             $"{value} · {UiText.Get("Tray color " + color)} — {displayName} ({source})";
@@ -1893,10 +1960,38 @@ public sealed class TrayAppContext : ApplicationContext
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
-                bluetoothPrimary ? null : receiver?.Key, _settings.HiddenTrayDevices, DeviceColor,
-                BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null), _settings.MouseTrayIcon);
+                bluetoothPrimary ? null : receiver?.Key, hiddenUsb, DeviceColor,
+                BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null),
+                _settings.MouseTrayIcon, linked.Where(x => x != linkedPrimary).Select(x =>
+                    (x.UsbKey, x.Name, x.Display.Percent, x.Display.Cached,
+                    x.Display.Percent is null ? "2.4 GHz / Bluetooth" : x.Display.Bluetooth ? "Bluetooth" : "2.4 GHz")).ToArray());
         UpdateBluetoothStatus();
         RefreshDashboard();
+    }
+
+    private sealed record LinkedTrayDevice(string UsbKey, string Name, TransportLinks.Display Display);
+
+    private IReadOnlyList<LinkedTrayDevice> LinkedTrayDevices()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var result = new List<LinkedTrayDevice>();
+        foreach (var pair in _settings.BleUsbLinks.OrderBy(x => x.Value, StringComparer.Ordinal))
+        {
+            if (!IsTrayVisible(pair.Value)) continue;
+            var usb = _receivers.Devices.FirstOrDefault(x => x.Key == pair.Value);
+            _bleSlots.TryGetValue(pair.Key, out var ble);
+            int? usbValue = usb is { Present: true, Reading.PresenceKnown: true, ScheduledSkip: false }
+                ? usb.Reading.Percent : null;
+            int? scheduled = usb is { Present: true, Reading.PresenceKnown: true, ScheduledSkip: true,
+                MeasuredAt: { } at } && now >= at && now - at <= TimeSpan.FromMinutes(3)
+                ? usb.Reading.Percent : null;
+            var display = TransportLinks.Select(usbValue,
+                _ble.VisiblePercent(pair.Key, true, false, now), _ble.CachedPercent(pair.Key, now), scheduled);
+            string name = usb?.DisplayLabel ?? (ble is not null ? BleDisplayLabel(ble) :
+                DeviceAliasRules.DisplayName("AJAZZ", _settings.DeviceAliases.GetValueOrDefault(pair.Value)));
+            result.Add(new(pair.Value, name, display));
+        }
+        return result;
     }
 
     private IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> BluetoothExtraIcons(
@@ -1905,7 +2000,7 @@ public sealed class TrayAppContext : ApplicationContext
         if (!_settings.MultipleTrayIcons || _bleSlots.Count == 0)
             return Array.Empty<(string, string, int?, bool)>();
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        return _bleSlots.Where(x => x.Key != primary).OrderBy(x => x.Value.Number)
+        return _bleSlots.Where(x => x.Key != primary && !_settings.BleUsbLinks.ContainsKey(x.Key)).OrderBy(x => x.Value.Number)
             .Select(x =>
             {
                 int? fresh = _ble.VisiblePercent(x.Key, true, false, now);

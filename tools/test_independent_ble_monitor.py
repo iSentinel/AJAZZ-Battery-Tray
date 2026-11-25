@@ -51,6 +51,20 @@ class IndependentBleMonitorTests(unittest.TestCase):
         self.assertIn('stale: item.Stale', extra)
         self.assertIn('response.IsFreshGatt && response.Percent is int percent', code)
 
+    def test_explicit_links_project_single_icon(self) -> None:
+        """Keep link consent explicit, independent telemetry and local preferences."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('TransportLinks.CanLink(', code)
+        self.assertIn('same physical mouse. Continue?', code)
+        self.assertIn('hiddenUsb.UnionWith(_settings.BleUsbLinks.Values)', code)
+        self.assertIn('!_settings.BleUsbLinks.ContainsKey(x.Key)', code)
+        self.assertIn('_settings.BleUsbLinks.Remove(key)', code)
+        self.assertIn('TransportLinks.Select(usbValue,', code)
+        self.assertIn('linked.Where(x => x != linkedPrimary)', code)
+        self.assertNotIn('BleUsbLinks', (root / 'PreferencesBackup.cs').read_text())
+        self.assertIn('wanted.Add(item.Key)', (root / 'ReceiverMonitor.cs').read_text())
+
 
 if __name__ == '__main__':
     unittest.main()
