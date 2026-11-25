@@ -92,8 +92,8 @@ def decompress(raw: bytes, size: int) -> bytes:
     return data
 
 
-def reverse_calls(raw: bytes) -> bytes:
-    """Reverse documented version-3 relative address transform, offset zero."""
+def reverse_calls(raw: bytes, offset: int = 0) -> bytes:
+    """Reverse documented version-3 relative address transform, including file block offset."""
     data = bytearray(raw)
     i = 0
     while i < len(data) - 4:
@@ -102,7 +102,7 @@ def reverse_calls(raw: bytes) -> bytes:
             continue
         i += 1
         if data[i + 3] in (0, 255):
-            rel = (int.from_bytes(data[i:i + 3], 'little') - i - 4) & 0xffffff
+            rel = (int.from_bytes(data[i:i + 3], 'little') - offset - i - 4) & 0xffffff
             if rel & 0x800000:
                 data[i + 3] ^= 255
             data[i:i + 3] = rel.to_bytes(3, 'little')

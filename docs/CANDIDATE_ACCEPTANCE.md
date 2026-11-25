@@ -556,3 +556,31 @@ four source icons' sizes, hashes, solid offsets and compressed extent.
 This is inventory equivalence, not independent decompression or
 semantic verification of script/header records. Actual replay SHA-256
 df3bd148952bb37ad05d523053241e791b4fbd515af075ee122db3d5c9dc39f8.
+
+### Independent solid stream decoding
+
+Exact #206 setup solid chunk (40486354 compressed bytes after zlb
+marker) independently decoded using bounded raw LZMA2, 64 KiB output
+chunks and version-3 inverse call transform with per-file offsets.
+All five decoded file SHA-256 values and sizes match retained inventory;
+the 149610595-byte application and four icon payloads pass. Exact
+end-of-stream, no compressed or decoded suffix. No executable launched
+or file extracted by this verifier. Actual replay SHA-256
+eee25bde51d1742bee02db3e37cb6f3464e168cba6c7703e8e50d9784208ebb9.
+Script and remaining header semantic verification still open.
+
+### Scoped IFPS launch policy
+
+Inno source cfdf48923178df4b4f040e038b423aa555a61ffc pins
+remobjects/pascalscript d6e25439080c37e15af23badb48c39760a2b8d4d.
+Review TPSExec.LoadData, ReadVariable and opcode implementations.
+Exact #206 644-byte script: build 23, 32 types, four procedures,
+two globals, no type/procedure attributes, 27 instructions including
+main RET. Imports only EXPANDCONSTANT and WIZARDSILENT. All observed
+operands, stack operations, comparisons, flag branches, return paths
+and procedure boundaries match the reviewed pinned .iss launch policy:
+LAUNCH=0 false, LAUNCH=1 true, otherwise not WizardSilent. Static
+scoped comparison, not general Pascal Script interpretation, runtime
+execution or independent compiler reproduction. Replay SHA-256
+1b0f4222e071913006fd47054e41b253dcea57e5eadcba04a03f4c2a28f14738.
+Remaining Setup.0 records, license, trust and hardware gates open.

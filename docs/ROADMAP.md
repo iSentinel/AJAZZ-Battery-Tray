@@ -1639,3 +1639,22 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI/integration, independently review IFPS bytecode and
       remaining setup header records, solid stream, licensing/trust,
       physical acceptance. Release hold.
+
+### Independent solid LZMA2 stream
+
+- [x] Decode the exact #206 solid chunk, reverse per-file call
+      transformation in 64 KiB blocks, match all five SHA-256 hashes.
+- [x] Check exact EOS and no suffix; three regression tests and CLI gate.
+- [ ] Hosted CI/integration; IFPS semantics and setup header entries,
+      licensing, independent trust and hardware acceptance. Release hold.
+
+### Scoped IFPS launch policy attribution
+
+- [x] #214 merged a19cdfb after 5/5; #215 merged 445efc8 into
+      parent after 5/5; exact tested trees matched.
+- [x] Review pinned Pascal Script loader and opcode sources.
+- [x] Decode all types, procedures, globals and 27 instructions;
+      compare full scoped launch policy to pinned installer source.
+- [x] Actual replay PASS, three synthetic regressions and CLI gate.
+- [ ] Hosted CI/integration; remaining Setup.0 records and wizard
+      data, licensing, trust, hardware acceptance. Release hold.
