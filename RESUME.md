@@ -1,3 +1,19 @@
+# Resume — Setup.0 framing and inventory
+
+#213 merged d40f0a6 into parent after 4/4 CI. Actual #206 Setup.0
+header, CRC chunks, LZMA1 terminal state and file location records PASS.
+644-byte IFPS isolated; semantics and remaining header entries unverified.
+Four regressions, exact artifact replay. Release hold unchanged.
+
+# Resume — resource serialization reconstruction
+
+Stacked on #212. Actual #206 loader and inner .rsrc areas and
+complete section tails byte-match reconstructed observed layout.
+Three regressions. Scoped payload verification precedes serialization;
+not an independent Windows resource API implementation.
+Compiled script, remaining overlay, licensing, trust and hardware
+remain open. Release hold.
+
 # Resume — exact manifest and version payloads
 
 #210 merged 1efb27b (4/4); #211 merged f3c05a6 into parent (5/5).

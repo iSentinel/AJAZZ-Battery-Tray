@@ -524,3 +524,35 @@ comparison. Directory metadata and resource serialization are not
 qualified. Actual replay SHA-256:
 a3a928f103ffc617a706d90e4327c44cf26685b15e8a41c7ea868a059bc97f6b.
 This is not compiled-script, publisher trust or release admission.
+
+### Observed Windows resource serialization reconstruction
+
+After independently qualifying scoped leaf payloads on exact #206,
+reconstruct observed directory ordering, data entries, UTF-16 names,
+directory version 4, codepage 1252, neutral/English language IDs,
+zero name-table alignment, PAD leaf alignment and PADDINGXXPADDING
+section-tail pattern. Both complete resource directory byte areas
+and section tails match: loader 171036 + 484 bytes (32 directories,
+25 leaves); inner engine 266748 + 4 bytes (80 directories, 71 leaves).
+Actual replay SHA-256
+ec1ec93bd1d6373d565fdcd5c0ef11a0ddb76ee606b574c1e25302c3959fdffb.
+This reconstructs the observed Windows layout from already-qualified
+leaf data, not an independent implementation of Windows resource
+update APIs. The offset record remains scoped to CRC/bounds validation;
+compiled script, licensing, publisher trust and hardware are separate.
+
+### Exact #206 Setup.0 framing and location inventory
+
+Pinned setup SHA-256 b37f077969d01bfbe1b3b1411a53b00ba1baf28b89f33e6fcb0e980b44d7b929.
+Using official Shared.Struct.pas and Compiler.SetupCompiler.pas WriteSetup0,
+validate SetupID, unencrypted 49-byte encryption header CRC, two
+contiguous bounded LZMA1 blocks (20192/264 stored bytes, 5/1 CRC
+chunks, 46193/445 decoded bytes). Both streams reach EOS exactly.
+Read 39 Unicode and four ANSI fields, verify identity and 17 entry
+counts. Compiled IFPS code length 644 bytes, SHA-256
+ec37558245fc7a7712e9e023f36cce2ce5150d268f19c7c7fbe7a69cb8d27ebf.
+Five 89-byte file location records match retained application and
+four source icons' sizes, hashes, solid offsets and compressed extent.
+This is inventory equivalence, not independent decompression or
+semantic verification of script/header records. Actual replay SHA-256
+df3bd148952bb37ad05d523053241e791b4fbd515af075ee122db3d5c9dc39f8.

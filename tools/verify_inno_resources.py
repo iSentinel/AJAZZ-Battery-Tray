@@ -13,6 +13,7 @@ from run_offline_qa import write_json
 from verify_dotnet_host_resources import resources
 from verify_inno_inner_engine import ENGINE_SHA, recover
 from verify_inno_metadata import compare_metadata
+from verify_inno_serialization import verify_serialization
 from verify_windowsdesktop_provenance import read_local
 
 ICON_SHA = 'be6d9849acd8c768725d73a4b1a70a4aba9284770dff72bbb5d355694bef3b16'
@@ -96,6 +97,10 @@ def verify(setup: bytes, loader: bytes, template: bytes, ico: bytes, sha: str) -
     engine_result = compare_resources(resources(template), resources(engine), icons, 'engine')
     loader_result['metadata_payloads'] = compare_metadata(loader, setup, 'loader')
     engine_result['metadata_payloads'] = compare_metadata(template, engine, 'engine')
+    for result, exe in ((loader_result, setup), (engine_result, engine)):
+        result['layout'] = verify_serialization(exe)
+        result['directory_metadata'] = 'MATCH_OBSERVED_LAYOUT'
+        result['resource_serialization'] = 'MATCH_OBSERVED_LAYOUT'
     loader_result['unqualified'] = []
     engine_result['unqualified'] = []
     return {'schema': 1, 'setup_sha256': sha, 'icon_sha256': ICON_SHA,
