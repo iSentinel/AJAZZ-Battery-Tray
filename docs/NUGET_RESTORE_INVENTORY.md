@@ -43,3 +43,17 @@ runner image win25-vs2026/20261116.315 lists this toolcache version,
 and actions/python-versions versions-manifest.json lists a stable
 win32-x64 distribution. Linux QA remains pinned to 3.12.16. Native
 execution of the inventory still requires new CI.
+
+## .NET 11 integration and Windows evidence reader
+
+#145 merged 871e27b after 5/5 exact candidate CI; #147 is updated to
+that base. Python 3.13.17 setup succeeded on 7a1d826, but both Windows
+jobs failed at the first inventory (ValueError, exact stage not logged).
+CPython #157671 documents divergent Windows stat/fstat ctime semantics:
+https://github.com/python/cpython/issues/157671. A likely cause is the
+cross-API ctime equality check. Compare birth time across the APIs on
+Windows, retain same-API change-time checks and require a regular
+single-link, non-reparse file with identity. Added regression for the
+divergent timestamps and stable rewritten file, native reader tests,
+and input/schema/output diagnostics without private values. Exact root
+cause still requires native CI; no weaker fallback or raw assets upload.

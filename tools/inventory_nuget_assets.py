@@ -112,11 +112,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--assets", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
+    stage = "input"
     try:
-        result = inventory(read_evidence(args.assets))
+        raw = read_evidence(args.assets)
+        stage = "schema"
+        result = inventory(raw)
+        stage = "output"
         write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RecursionError) as error:
-        print(f"ERROR: invalid restore inventory ({type(error).__name__})",
+        print(f"ERROR: restore inventory {stage} ({type(error).__name__})",
               file=sys.stderr)
         return 2
     print("PASS: restore metadata inventory (not release admission)")

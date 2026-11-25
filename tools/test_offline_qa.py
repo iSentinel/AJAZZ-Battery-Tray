@@ -1,13 +1,15 @@
 """Exercise the offline QA result contract with synthetic suites and files."""
 
 import json
+from types import SimpleNamespace
 from pathlib import Path
 import tempfile
 import unittest
 
 from qa_unittest import execute
 from run_offline_qa import (REQUIRED, create_run, junit_counts, read_evidence,
-                            verify_inventory, verify_manifest, write_json)
+                            verify_inventory, verify_manifest, write_json,
+                            file_identity)
 
 
 def sample_case(kind: str) -> unittest.TestCase:
@@ -113,6 +115,30 @@ class OfflineQaTests(unittest.TestCase):
                 self.skipTest("Symlink unavailable on this platform")
             with self.assertRaises(ValueError):
                 read_evidence(link)
+
+    def test_windows_cross_api_timestamp(self) -> None:
+        """Windows creation/change times may differ for the same file."""
+        fields = dict(st_dev=1, st_ino=2, st_size=3, st_mtime_ns=4,
+                      st_birthtime_ns=5, st_nlink=1)
+        before = SimpleNamespace(**fields, st_ctime_ns=5)
+        opened = SimpleNamespace(**fields, st_ctime_ns=6)
+        self.assertEqual(file_identity(before, True, True),
+                         file_identity(opened, True, True))
+        self.assertNotEqual(file_identity(before, False, True),
+                            file_identity(opened, False, True))
+        self.assertNotEqual(file_identity(before, True, False),
+                            file_identity(opened, True, False))
+        opened.st_mtime_ns += 1
+        self.assertNotEqual(file_identity(before, True, True),
+                            file_identity(opened, True, True))
+
+    def test_read_evidence_after_rewrite(self) -> None:
+        """A stable rewritten regular file must still be readable."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "evidence"
+            path.write_bytes(b"first")
+            path.write_bytes(b"second")
+            self.assertEqual(read_evidence(path), b"second")
 
     def test_junit_count_mismatch(self) -> None:
         """Do not accept a reported total inconsistent with testcase entries."""

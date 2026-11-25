@@ -100,10 +100,20 @@ def run_step(arguments: list[str], timeout: int,
             "exit_code": code, "elapsed_seconds": round(time.monotonic() - start, 6)}
 
 
-def file_identity(info: os.stat_result) -> tuple[int, int, int, int, int, int]:
-    """Bind a regular file read to identity, size and mutation metadata."""
+def file_identity(info: os.stat_result, cross_api: bool = False,
+                  windows: bool = os.name == "nt") -> tuple[int, int, int, int, int, int]:
+    """Compare creation time across Windows stat APIs, change time within one API."""
+    timestamp = info.st_birthtime_ns if windows and cross_api else info.st_ctime_ns
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
-            info.st_ctime_ns, info.st_nlink)
+            timestamp, info.st_nlink)
+
+
+def regular_evidence(info: os.stat_result) -> bool:
+    """Require a regular single-link file, rejecting Windows reparse points."""
+    reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    attributes = getattr(info, "st_file_attributes", 0)
+    return (stat.S_ISREG(info.st_mode) and info.st_nlink == 1
+            and info.st_ino != 0 and not attributes & reparse)
 
 
 def read_evidence(path: Path) -> bytes:
@@ -112,7 +122,7 @@ def read_evidence(path: Path) -> bytes:
         before = path.lstat()
     except FileNotFoundError as error:
         raise ValueError("Required evidence file missing") from error
-    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+    if not regular_evidence(before):
         raise ValueError("Expected an unlinked-to regular evidence file")
     if before.st_size > MAX_EVIDENCE:
         raise ValueError("Evidence exceeds limit")
@@ -120,13 +130,15 @@ def read_evidence(path: Path) -> bytes:
     descriptor = os.open(path, flags | getattr(os, "O_BINARY", 0))
     with os.fdopen(descriptor, "rb") as stream:
         opened = os.fstat(stream.fileno())
-        if not stat.S_ISREG(opened.st_mode) or file_identity(opened) != file_identity(before):
+        if (not regular_evidence(opened)
+                or file_identity(opened, True) != file_identity(before, True)):
             raise ValueError("Evidence changed before read")
         raw = stream.read(MAX_EVIDENCE + 1)
         after = os.fstat(stream.fileno())
     if len(raw) > MAX_EVIDENCE or len(raw) != before.st_size:
         raise ValueError("Evidence length mismatch")
-    if file_identity(after) != file_identity(before) or file_identity(path.lstat()) != file_identity(before):
+    if (file_identity(after) != file_identity(opened)
+            or file_identity(path.lstat()) != file_identity(before)):
         raise ValueError("Evidence changed during read")
     return raw
 

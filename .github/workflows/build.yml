@@ -31,12 +31,12 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
-          dotnet-version: '8.0.428'
+          dotnet-version: '11.0.100'
       - name: Verify selected .NET SDK
         shell: pwsh
         run: |
           $actual = dotnet --version
-          if ($LASTEXITCODE -ne 0 -or $actual -ne '8.0.428') {
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '11.0.100') {
             throw 'Selected SDK differs from reviewed global.json'
           }
           Write-Host "Selected .NET SDK: $actual"
@@ -78,6 +78,13 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $output -ErrorAction SilentlyContinue
           }
+      - name: Verify inventory reader on Windows
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tools -p 'test_inventory_nuget_assets.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Inventory regression failed' }
+          python -m unittest discover -s tools -p 'test_offline_qa.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Evidence regression failed' }
       - name: Record framework restore inventories
         shell: pwsh
         run: |
