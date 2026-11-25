@@ -79,7 +79,7 @@ def extended_summary(data: str) -> str:
     if len(versions) != 1 or len(block) != 4:
         raise ValueError("missing extended AULA fields")
     auto = re.fullmatch(
-        r"Auto monitoring: (True|False); interval: \d+s; UTC: (.+)", block[0])
+        r"Auto monitoring: (True|False); interval(?:=|: )\d+s; UTC: (.+)", block[0])
     presence = re.fullmatch(
         r"Receiver present: (True|False); presence known: (True|False)",
         block[1])
