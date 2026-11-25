@@ -3,8 +3,10 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 #ifdef __APPLE__
 #include "AjazzIoLease.h"
+#include "AjazzDiagnosticExport.h"
 #endif
 
 // IOKit can return the requested 05 report with or without its report ID.

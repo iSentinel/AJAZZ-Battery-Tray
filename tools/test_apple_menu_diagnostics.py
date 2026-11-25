@@ -1,0 +1,71 @@
+"""Source and portable native contracts for the macOS diagnostics menu."""
+
+from pathlib import Path
+import os
+import subprocess
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class AppleMenuDiagnosticsTests(unittest.TestCase):
+    """Check policy boundaries independently of physical AppKit acceptance."""
+
+    def test_passive_snapshots_no_hid(self) -> None:
+        """Require passive report builders to use in-memory state."""
+        modern = (ROOT / 'macos/main.swift').read_text()
+        legacy = (ROOT / 'macos/high-sierra/main.m').read_text()
+        snapshot = modern.split('private func diagnosticSnapshot()', 1)[1].split(
+            'private func copyReport', 1)[0]
+        legacy_snapshot = legacy.split('- (NSString *)diagnostics {', 1)[1].split(
+            '- (void)copyReport:', 1)[0]
+        for text in (snapshot, legacy_snapshot):
+            self.assertNotIn('IOHID', text)
+            self.assertNotIn('ReadReceiver', text)
+            self.assertNotIn('ApexBattery.read', text)
+            self.assertIn('Last verified USB UTC', text)
+
+    def test_explicit_worker_and_single_flight(self) -> None:
+        """Keep active capture behind consent and existing polling exclusion."""
+        modern = (ROOT / 'macos/main.swift').read_text()
+        legacy = (ROOT / 'macos/high-sierra/main.m').read_text()
+        self.assertIn('#selector(runHIDDiagnostics)', modern)
+        self.assertIn('@selector(runHIDDiagnostics:)', legacy)
+        self.assertIn('guard !polling, !diagnosticRunning, !closing', modern)
+        self.assertIn('self.polling || self.diagnosticRunning || self.closing', legacy)
+        self.assertIn('consent.runModal() == .alertFirstButtonReturn', modern)
+        self.assertIn('[consent runModal] != NSAlertFirstButtonReturn', legacy)
+        self.assertIn('mode: ApexBoundedWorker.traceMode', modern)
+        self.assertIn('CaptureMenuTrace(NO)', legacy)
+
+    def test_trace_worker_no_clock_mode(self) -> None:
+        """Keep explicit trace on the existing telemetry path, not RTC."""
+        worker = (ROOT / 'macos/ApexBoundedWorker.swift').read_text()
+        trace = worker.split('if mode == traceMode || mode == traceSampleMode {', 1)[1].split(
+            '} else if mode == clockMode', 1)[0]
+        self.assertIn('ApexBattery.read', trace)
+        self.assertNotIn('syncClock', trace)
+        self.assertIn('lines.count < 16', trace)
+
+    def test_export_native_contract(self) -> None:
+        """Compile exact shared export helper and check mode/no-clobber/symlink."""
+        if os.name == "nt":
+            header = (ROOT / "macos/AjazzDiagnosticExport.h").read_text()
+            self.assertIn("O_EXCL | O_NOFOLLOW, 0600", header)
+            return
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'export.c'
+            binary = root / 'export'
+            source.write_text(
+                '#include "AjazzDiagnosticExport.h"\n'
+                'int main(void) { return AjazzDiagnosticExportSelfTest() ? 0 : 1; }\n')
+            subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra',
+                            '-Werror', '-I', str(ROOT / 'macos'), str(source),
+                            '-o', str(binary)], check=True, timeout=20)
+            subprocess.run([str(binary)], check=True, timeout=10)
+
+
+if __name__ == '__main__':
+    unittest.main()

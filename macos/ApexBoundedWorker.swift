@@ -53,6 +53,8 @@ final class ApexWorkerCancellation {
 
 /// Supervisor for the explicit experimental menu mode.
 enum ApexBoundedWorker {
+    static let traceMode = "--internal-bounded-apex-trace"
+    static let traceSampleMode = "--internal-bounded-apex-trace-sample"
     static let readMode = "--internal-bounded-apex-read"
     static let sampleMode = "--internal-bounded-apex-sample"
     static let hangMode = "--internal-bounded-apex-hang"
@@ -61,6 +63,7 @@ enum ApexBoundedWorker {
     private static let gate = NSLock()
 
     enum Result: Equatable {
+        case trace(String)
         case reply(ApexBattery.Status)
         case clock(Bool)
         case timeout
@@ -70,7 +73,7 @@ enum ApexBoundedWorker {
     }
 
     static func isWorker(_ mode: String) -> Bool {
-        [readMode, sampleMode, hangMode, clockMode, clockSampleMode].contains(mode)
+        [readMode, sampleMode, hangMode, clockMode, clockSampleMode, traceMode, traceSampleMode].contains(mode)
     }
 
     static func runChild(_ mode: String) -> Int32 {
@@ -84,7 +87,15 @@ enum ApexBoundedWorker {
         }
         do {
             let data: Data
-            if mode == clockMode || mode == clockSampleMode {
+            if mode == traceMode || mode == traceSampleMode {
+                var lines = [String]()
+                let value: ApexBattery.Status = mode == traceSampleMode ? .accessUnknown : ApexBattery.read {
+                    if lines.count < 16 { lines.append($0) }
+                }
+                lines.append("Battery status: " + ApexWorkerReply(value).state)
+                if case .battery(let level) = value { lines.append("Verified battery: \(level)%") }
+                data = try JSONEncoder().encode(lines.joined(separator: "\n"))
+            } else if mode == clockMode || mode == clockSampleMode {
                 data = try JSONEncoder().encode(mode == clockSampleMode || ApexBattery.syncClock())
             } else {
                 let value: ApexBattery.Status = mode == sampleMode ? .accessUnknown : ApexBattery.read()
@@ -102,7 +113,7 @@ enum ApexBoundedWorker {
         return .reply(status)
     }
 
-    /// The worker emits at most one tiny JSON object. No raw HID output.
+    /// Routine IPC has no vendor bytes; explicit trace is capped to a small JSON string.
     static func read(mode: String = readMode, timeout: Double = 8,
                      cancellation: ApexWorkerCancellation? = nil) -> Result {
         guard cancellation?.isCancelled != true else { return .cancelled }
@@ -139,6 +150,11 @@ enum ApexBoundedWorker {
             return .failed
         }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        if mode == traceMode || mode == traceSampleMode {
+            guard data.count <= 4096, let text = try? JSONDecoder().decode(String.self, from: data)
+            else { return .failed }
+            return .trace(text)
+        }
         if mode == clockMode || mode == clockSampleMode {
             guard data.count <= 1024,
                   let sent = try? JSONDecoder().decode(Bool.self, from: data)
@@ -189,6 +205,7 @@ enum ApexBoundedWorker {
         }
         guard read(mode: hangMode, timeout: 4, cancellation: during) == .cancelled
         else { return false }
+        guard read(mode: traceSampleMode) == .trace("Battery status: unknown") else { return false }
         return read(mode: sampleMode) == .reply(.accessUnknown) &&
             read(mode: clockSampleMode) == .clock(true)
     }
