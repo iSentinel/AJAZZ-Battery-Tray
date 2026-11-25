@@ -1247,3 +1247,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Exact hosted CI, physical menu cancellation and recovery.
 - [ ] High Sierra supervisor cancellation without orphan workers.
 - [ ] Multi-snapshot capture and active trace outcome normalization.
+
+### High Sierra interactive diagnostic cancellation
+
+- [x] Merge #180 and #181 after exact hosted CI.
+- [x] Replace GUI CLI-grandchild path with direct bounded trace worker,
+      nonblocking capped pipe drain, cancel and quit supervision.
+- [x] Add EN/RU/UK menu state, partial redaction and native synthetic
+      timeout/cancel/reap checks; retain public CLI watchdog.
+- [ ] Exact hosted native CI and physical High Sierra acceptance.
+- [ ] Normalize active capture outcomes and multi-snapshot capture.

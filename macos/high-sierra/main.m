@@ -3,6 +3,7 @@
 #import "diagnostic_runner.h"
 #import "../AjazzBatteryReport.h"
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -306,6 +307,7 @@ static NSInteger TraceFeature(IOHIDDeviceRef device) {
     for (CFIndex count = 65; count <= 67; count += 2) {
         uint8_t request[67] = {0};
         request[1] = 0xf7;
+        printf("STEP: F7.set.length=%ld\n", (long)count);
         IOReturn sent = IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature,
                                              0, request, count);
         printf("F7.set.length=%ld result=0x%08x\n",
@@ -315,6 +317,7 @@ static NSInteger TraceFeature(IOHIDDeviceRef device) {
         uint8_t reply[67] = {0};
         reply[0] = 5;
         CFIndex actual = count;
+        printf("STEP: 05.get.length=%ld\n", (long)count);
         IOReturn got = IOHIDDeviceGetReport(device, kIOHIDReportTypeFeature,
                                             5, reply, &actual);
         printf("05.get.result=0x%08x length=%ld\n",
@@ -346,6 +349,7 @@ static NSInteger TraceCollections(const void **list, CFIndex count,
         if (feature && CFGetTypeID(feature) == CFNumberGetTypeID())
             CFNumberGetValue(feature, kCFNumberIntType, &size);
         printf("collection.%ld.revision=%d feature_bytes=%d\n", (long)*matches, rev, size);
+        puts("STEP: collection.open");
         IOReturn opened = IOHIDDeviceOpen(device, 0);
         printf("collection.%ld.open=0x%08x\n",
                (long)*matches, (unsigned int)opened);
@@ -368,12 +372,14 @@ static int TraceReceiverUnlocked(void) {
         @kIOHIDProductIDKey: @0x5007
     };
     IOHIDManagerSetDeviceMatching(manager, (__bridge CFDictionaryRef)matching);
+    puts("STEP: manager.open");
     IOReturn opened = IOHIDManagerOpen(manager, 0);
     printf("manager.open=0x%08x\n", (unsigned int)opened);
     if (opened != kIOReturnSuccess) {
         CFRelease(manager);
         return 2;
     }
+    puts("STEP: receiver.enumerate");
     CFSetRef devices = IOHIDManagerCopyDevices(manager);
     CFIndex count = devices ? CFSetGetCount(devices) : 0;
     printf("receiver.hid_count=%ld\n", (long)count);
@@ -410,39 +416,97 @@ static int TraceReceiver(void) {
     return result;
 }
 
-/// Capture the existing supervised CLI trace without a shell or global redirection.
-static NSString *CaptureMenuTrace(BOOL synthetic) {
+/// Keep only complete non-terminal records from an interrupted capture.
+static NSString *IncompleteMenuTrace(NSString *text, NSString *reason) {
+    NSMutableArray *lines = [NSMutableArray array];
+    NSArray *records = [text componentsSeparatedByString:@"\n"];
+    for (NSUInteger i = 0; i + 1 < records.count; i++) {
+        NSString *line = records[i];
+        if ([line hasPrefix:@"PASS: battery="] || [line hasPrefix:@"Diagnostic exit:"] ||
+            [line hasPrefix:@"INCOMPLETE:"]) continue;
+        [lines addObject:line];
+    }
+    return [NSString stringWithFormat:@"INCOMPLETE: %@; no fresh battery claimed\n%@",
+            reason, [lines componentsJoinedByString:@"\n"]];
+}
+
+/// Nonblocking drain keeps the child pipe moving without unbounded retention.
+static BOOL DrainMenuTrace(int fd, NSMutableData *captured, BOOL *truncated) {
+    uint8_t buffer[1024];
+    for (int i = 0; i < 16; i++) {
+        ssize_t count = read(fd, buffer, sizeof(buffer));
+        if (count < 0 && errno == EINTR) continue;
+        if (count < 0) return errno == EAGAIN || errno == EWOULDBLOCK;
+        if (count == 0) return YES;
+        NSUInteger remaining = 4096 - captured.length;
+        NSUInteger keep = MIN(remaining, (NSUInteger)count);
+        if (keep) [captured appendBytes:buffer length:keep];
+        if (keep < (NSUInteger)count) *truncated = YES;
+    }
+    return YES;
+}
+
+/// Direct same-binary GUI worker; only this supervisor may stop and reap it.
+static NSString *CaptureMenuTrace(BOOL synthetic, LegacyPollCancellation *token,
+                                  NSTimeInterval timeout) {
+    if (token.isCancelled) return IncompleteMenuTrace(@"", @"cancelled");
     NSTask *task = [[NSTask alloc] init];
     task.launchPath = [[NSBundle mainBundle] executablePath];
-    task.arguments = synthetic ? @[@"--self-test-watchdog"] : @[@"--trace-hid"];
+    task.arguments = synthetic ? @[@"--internal-test-sleep"] : @[@"--internal-menu-trace"];
     NSPipe *pipe = [NSPipe pipe];
     task.standardOutput = pipe;
     task.standardError = pipe;
+    int fd = pipe.fileHandleForReading.fileDescriptor;
+    int flags = fcntl(fd, F_GETFL);
+    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+        return IncompleteMenuTrace(@"", @"capture unavailable");
+    NSMutableData *captured = [NSMutableData data];
+    BOOL truncated = NO;
+    NSString *reason = nil;
+    NSTimeInterval started = [[NSProcessInfo processInfo] systemUptime];
     @try {
-        NSTimeInterval started = [[NSProcessInfo processInfo] systemUptime];
         [task launch];
-        // NSTask closes the parent writing end for NSPipe.
-        NSMutableData *captured = [NSMutableData data];
-        BOOL truncated = NO;
-        for (;;) {
-            NSData *chunk = [[pipe fileHandleForReading] readDataOfLength:1024];
-            if (!chunk.length) break;
-            if (!truncated && captured.length + chunk.length <= 4096) [captured appendData:chunk];
-            else truncated = YES;
+        while (task.running) {
+            if (!DrainMenuTrace(fd, captured, &truncated)) reason = @"capture failed";
+            else if (token.isCancelled) reason = @"cancelled";
+            else if ([[NSProcessInfo processInfo] systemUptime] - started >= timeout)
+                reason = @"timeout";
+            if (reason) { StopRoutineChild(task); break; }
+            [NSThread sleepForTimeInterval:0.05];
         }
         [task waitUntilExit];
+        if (!DrainMenuTrace(fd, captured, &truncated) && !reason) reason = @"capture failed";
+        if (token.isCancelled) reason = @"cancelled";
+        int code = task.terminationStatus;
+        if (!reason && (task.terminationReason != NSTaskTerminationReasonExit ||
+                        (code != 0 && code != 2))) reason = @"worker failed";
+        if (!reason && truncated) reason = @"output truncated";
         NSString *text = [[NSString alloc] initWithData:captured encoding:NSUTF8StringEncoding];
-        return [NSString stringWithFormat:@"%@%@\nDiagnostic exit: %d\nElapsed ms: %.0f",
-            text ?: @"Diagnostic output unavailable", truncated ? @"\n[Output truncated]" : @"",
-            task.terminationStatus, ([[NSProcessInfo processInfo] systemUptime] - started) * 1000];
+        if (!text) { text = @""; reason = reason ?: @"invalid output"; }
+        if (reason) text = IncompleteMenuTrace(text, reason);
+        else if (code == 2 && [text containsString:@"PASS: battery="]) {
+            reason = @"inconsistent worker status";
+            text = IncompleteMenuTrace(text, reason);
+        }
+        return [text stringByAppendingFormat:@"\nDiagnostic exit: %d\nElapsed ms: %.0f",
+            reason ? ([reason isEqualToString:@"timeout"] ? 124 :
+                [reason isEqualToString:@"cancelled"] ? 125 : 1) : code,
+            ([[NSProcessInfo processInfo] systemUptime] - started) * 1000];
     } @catch (NSException *exception) {
         (void)exception;
-        // Close a failed capture pipe before waiting for the supervisor.
-        @try { [[pipe fileHandleForReading] closeFile]; }
-        @catch (NSException *ignored) { (void)ignored; }
-        if (task.running) [task waitUntilExit];
-        return @"FAIL: diagnostic process unavailable";
+        if (task.running) StopRoutineChild(task);
+        return IncompleteMenuTrace(@"", @"capture unavailable");
     }
+}
+
+/// Synthetic evidence only: require the observed worker PID to be gone.
+static BOOL MenuTraceChildReaped(NSString *trace) {
+    NSRange marker = [trace rangeOfString:@"TEST: worker started; pid="];
+    if (marker.location == NSNotFound) return NO;
+    NSScanner *scanner = [NSScanner scannerWithString:
+        [trace substringFromIndex:NSMaxRange(marker)]];
+    int pid = 0;
+    return [scanner scanInt:&pid] && pid > 1 && kill((pid_t)pid, 0) < 0 && errno == ESRCH;
 }
 
 @interface LegacyTray : NSObject <NSApplicationDelegate, CBCentralManagerDelegate,
@@ -459,6 +523,9 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
 @property(nonatomic, assign) BOOL isolatedPolling;
 @property(nonatomic, assign) BOOL closing;
 @property(nonatomic, assign) BOOL diagnosticRunning;
+@property(nonatomic, strong) LegacyPollCancellation *diagnosticCancellation;
+@property(nonatomic, strong) NSMenuItem *runDiagnosticItem;
+@property(nonatomic, strong) NSMenuItem *cancelDiagnosticItem;
 @property(nonatomic, strong) LegacyPollCancellation *activeCancellation;
 @property(nonatomic, assign) NSUInteger pollAttempt;
 @property(nonatomic, assign) BOOL everConnected;
@@ -556,10 +623,15 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
                                     ru:@"Проверить Bluetooth…" uk:@"Перевірити Bluetooth…"]
                    action:@selector(checkBluetooth:)];
     NSMenu *diagnostics = [[NSMenu alloc] initWithTitle:@"Diagnostics"];
+    diagnostics.autoenablesItems = NO;
     [self item:diagnostics title:[self word:@"Device diagnostics…" ru:@"Диагностика устройства…" uk:@"Діагностика пристрою…"]
                    action:@selector(showDiagnostics:)];
-    [self item:diagnostics title:[self word:@"Run HID diagnostics…" ru:@"Запустить HID-диагностику…" uk:@"Запустити HID-діагностику…"]
+    self.runDiagnosticItem = [self item:diagnostics title:[self word:@"Run HID diagnostics…" ru:@"Запустить HID-диагностику…" uk:@"Запустити HID-діагностику…"]
                    action:@selector(runHIDDiagnostics:)];
+    self.cancelDiagnosticItem = [self item:diagnostics
+        title:[self word:@"Cancel HID diagnostics" ru:@"Отменить HID-диагностику" uk:@"Скасувати HID-діагностику"]
+        action:@selector(cancelHIDDiagnostics:)];
+    [self updateDiagnosticMenu];
     [self item:diagnostics title:[self word:@"Copy diagnostics" ru:@"Копировать диагностику" uk:@"Копіювати діагностику"]
                    action:@selector(copyDiagnostics:)];
     NSMenuItem *diagnosticItem = [menu addItemWithTitle:
@@ -714,6 +786,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
     self.tray.button.title = @"";
     self.tray.button.image = AppearanceTrayImage(
         reading.state == BatteryValid ? reading.percent : -1, color, AppearanceMouseStyle());
+    [self updateDiagnosticMenu];
     self.tray.button.toolTip = [self.detail.title stringByAppendingFormat:@" · %@", [self appearanceLabel:color]];
 }
 
@@ -905,6 +978,24 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
 
 - (void)showDiagnostics:(id)sender { [self reviewReport:[self diagnostics]]; }
 
+- (void)updateDiagnosticMenu {
+    self.runDiagnosticItem.enabled = !self.diagnosticRunning && !self.closing;
+    self.cancelDiagnosticItem.enabled = self.diagnosticRunning && !self.closing &&
+        self.diagnosticCancellation && !self.diagnosticCancellation.isCancelled;
+    if (self.diagnosticRunning) {
+        self.detail.title = self.diagnosticCancellation.isCancelled ?
+            [self word:@"Cancelling HID diagnostics…" ru:@"Отмена HID-диагностики…" uk:@"Скасування HID-діагностики…"] :
+            [self word:@"Running HID diagnostics…" ru:@"Выполняется HID-диагностика…" uk:@"Виконується HID-діагностика…"];
+    }
+}
+
+- (void)cancelHIDDiagnostics:(id)sender {
+    if (!self.diagnosticRunning || self.closing || !self.diagnosticCancellation ||
+        self.diagnosticCancellation.isCancelled) return;
+    self.diagnosticCancellation.cancelled = YES;
+    [self updateDiagnosticMenu];
+}
+
 - (void)runHIDDiagnostics:(id)sender {
     if (self.polling || self.diagnosticRunning || self.closing) {
         [self message:[self word:@"Diagnostic busy; try again after the current read" ru:@"Идёт опрос; повторите после завершения" uk:@"Триває опитування; повторіть після завершення"]];
@@ -920,12 +1011,15 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
     [NSApp activateIgnoringOtherApps:YES];
     if ([consent runModal] != NSAlertFirstButtonReturn || self.polling || self.diagnosticRunning || self.closing) return;
     self.diagnosticRunning = YES;
+    LegacyPollCancellation *token = [[LegacyPollCancellation alloc] init];
+    self.diagnosticCancellation = token;
     NSString *snapshot = [self diagnostics];
-    self.detail.title = [self word:@"Running HID diagnostics…" ru:@"Выполняется HID-диагностика…" uk:@"Виконується HID-діагностика…"];
+    [self updateDiagnosticMenu];
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @autoreleasepool {
-            NSString *trace = CaptureMenuTrace(NO);
+            NSString *trace = CaptureMenuTrace(NO, token, 20);
             dispatch_async(dispatch_get_main_queue(), ^{
+                self.diagnosticCancellation = nil;
                 if (self.closing) {
                     self.diagnosticRunning = NO;
                     [NSApp replyToApplicationShouldTerminate:YES];
@@ -933,7 +1027,10 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
                 }
                 self.diagnosticRunning = NO;
                 [self display:self.latest];
-                [self reviewReport:[snapshot stringByAppendingFormat:@"\n\nFresh bounded F7/05 trace:\n%@", trace]];
+                [self updateDiagnosticMenu];
+                NSString *result = token.isCancelled && ![trace hasPrefix:@"INCOMPLETE: cancelled;"] ?
+                    IncompleteMenuTrace([trace stringByAppendingString:@"\n"], @"cancelled") : trace;
+                [self reviewReport:[snapshot stringByAppendingFormat:@"\n\nFresh bounded F7/05 trace:\n%@", result]];
             });
         }
     });
@@ -1109,6 +1206,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
     if (self.diagnosticRunning) {
         self.closing = YES;
         [self.timer invalidate];
+        self.diagnosticCancellation.cancelled = YES;
         return NSTerminateLater;
     }
     if (!self.isolatedPolling || !self.polling) return NSTerminateNow;
@@ -1294,6 +1392,7 @@ int main(int argc, char *argv[]) {
                        !strcmp(argv[i], "--self-test-watchdog") ||
                        !strcmp(argv[i], "--self-test-menu-diagnostic") ||
                        !strcmp(argv[i], "--internal-trace-hid") ||
+                       !strcmp(argv[i], "--internal-menu-trace") ||
                        !strcmp(argv[i], "--internal-diagnose") ||
                        !strcmp(argv[i], "--internal-poll-sample") ||
                        !strcmp(argv[i], "--internal-test-io-lease") ||
@@ -1333,9 +1432,25 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         if (!strcmp(mode, "--self-test-menu-diagnostic")) {
-            NSString *trace = CaptureMenuTrace(YES);
-            if (![trace containsString:@"TIMEOUT:"] || ![trace containsString:@"Diagnostic exit: 124"] || !AjazzDiagnosticExportSelfTest()) return 1;
-            puts("PASS: menu capture uses supervised trace without HID");
+            NSString *trace = CaptureMenuTrace(YES, nil, 1);
+            if (![trace containsString:@"INCOMPLETE: timeout;"] ||
+                ![trace containsString:@"Diagnostic exit: 124"] ||
+                !MenuTraceChildReaped(trace) || !AjazzDiagnosticExportSelfTest()) return 1;
+            LegacyPollCancellation *cancel = [[LegacyPollCancellation alloc] init];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 750 * NSEC_PER_MSEC),
+                           dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ cancel.cancelled = YES; });
+            NSString *partial = CaptureMenuTrace(YES, cancel, 4);
+            if (![partial containsString:@"INCOMPLETE: cancelled;"] ||
+                [partial containsString:@"PASS: battery="] ||
+                ([partial containsString:@"TEST: worker started; pid="] &&
+                 !MenuTraceChildReaped(partial))) return 1;
+            LegacyPollCancellation *before = [[LegacyPollCancellation alloc] init];
+            before.cancelled = YES;
+            if (![CaptureMenuTrace(YES, before, 4) containsString:@"INCOMPLETE: cancelled;"]) return 1;
+            NSString *redacted = IncompleteMenuTrace(@"STEP: before read\nPASS: battery=83%\nunfinished", @"cancelled");
+            if ([redacted containsString:@"83%"] || [redacted containsString:@"unfinished"] ||
+                ![redacted containsString:@"STEP: before read"]) return 1;
+            puts("PASS: menu capture timeout, cancellation, reaping and redaction without HID");
             return 0;
         }
         if (!strcmp(mode, "--self-test-routine-poll")) return RoutineSelfTest();
@@ -1360,10 +1475,12 @@ int main(int argc, char *argv[]) {
         }
         // A diagnostic child must not keep I/O alive indefinitely after parent exit.
         if (!strcmp(mode, "--internal-trace-hid") ||
+            !strcmp(mode, "--internal-menu-trace") ||
             !strcmp(mode, "--internal-diagnose")) {
             signal(SIGALRM, SIG_DFL);
-            alarm(92); // maximum public diagnostic deadline is 90 seconds
-            int result = !strcmp(mode, "--internal-trace-hid")
+            BOOL menu = !strcmp(mode, "--internal-menu-trace");
+            alarm(menu ? 22 : 92); // abandoned child bound
+            int result = menu || !strcmp(mode, "--internal-trace-hid")
                 ? TraceReceiver() : DiagnoseReceiver();
             alarm(0);
             return result;

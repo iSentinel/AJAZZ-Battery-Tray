@@ -37,7 +37,7 @@ class AppleMenuDiagnosticsTests(unittest.TestCase):
         self.assertIn('consent.runModal() == .alertFirstButtonReturn', modern)
         self.assertIn('[consent runModal] != NSAlertFirstButtonReturn', legacy)
         self.assertIn('mode: ApexBoundedWorker.traceMode', modern)
-        self.assertIn('CaptureMenuTrace(NO)', legacy)
+        self.assertIn('CaptureMenuTrace(NO, token, 20)', legacy)
 
     def test_trace_worker_no_clock_mode(self) -> None:
         """Keep explicit trace on the existing telemetry path, not RTC."""
@@ -76,6 +76,23 @@ class AppleMenuDiagnosticsTests(unittest.TestCase):
         worker = (ROOT / 'macos/ApexBoundedWorker.swift').read_text()
         self.assertIn('read(mode: traceHangMode, timeout: 4, cancellation: traceCancellation)', worker)
         self.assertIn('stopAndWait(child)', worker)
+
+    def test_legacy_cancel_direct_worker(self) -> None:
+        """Keep GUI worker direct and retain ownership until it is reaped."""
+        code = (ROOT / 'macos/high-sierra/main.m').read_text()
+        capture = code.split('static NSString *CaptureMenuTrace(', 1)[1].split(
+            'static BOOL MenuTraceChildReaped', 1)[0]
+        self.assertIn('@[@"--internal-menu-trace"]', capture)
+        self.assertNotIn('@[@"--trace-hid"]', capture)
+        self.assertIn('O_NONBLOCK', capture)
+        self.assertIn('StopRoutineChild(task)', capture)
+        self.assertIn('[task waitUntilExit]', capture)
+        self.assertIn('alarm(menu ? 22 : 92)', code)
+        self.assertIn('MenuTraceChildReaped(trace)', code)
+        cancel = code.split('- (void)cancelHIDDiagnostics:', 1)[1].split(
+            '- (void)runHIDDiagnostics:', 1)[0]
+        self.assertIn('self.diagnosticCancellation.cancelled = YES', cancel)
+        self.assertNotIn('self.diagnosticRunning = NO', cancel)
 
     def test_export_native_contract(self) -> None:
         """Compile exact shared export helper and check mode/no-clobber/symlink."""
