@@ -45,7 +45,7 @@ CLI = ("analyze_windows_cli_diagnostics", "analyze_aula_sleep", "analyze_apple_d
        "verify_inno674_setup_records",
        "verify_inno674_migration_evidence",
        "verify_interactive_acceptance",
-       "verify_hardware_acceptance",
+       "verify_hardware_acceptance", "verify_hardware_acceptance_set",
        "build_local_inno674_candidate",
        "audit_product_sbom_advisories",
        "crosscheck_product_sbom_osv",
