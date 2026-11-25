@@ -189,3 +189,18 @@ and waits for the supervisor. EN/RU/UK menu controls survive menu
 rebuilds. Native synthetic tests exercise timeout, cancellation before
 and during launch, PID reaping and partial report redaction without HID.
 Actual High Sierra GUI and real-device acceptance remain required.
+
+## Active capture outcome normalization
+
+The cross-platform summary now includes an independent active_capture
+object. Its outcome distinguishes not_requested/not_reported,
+inconclusive, timeout, cancelled, incomplete, unrecognized and
+reported_valid. A reported percentage is accepted only from coherent
+platform-specific terminal fields or the Windows fresh summary,
+never from raw vendor buffers. Incomplete/cancelled/timeout markers
+override terminal claims; truncated legacy output is incomplete.
+The result explicitly states independent_verification=NOT_VERIFIED:
+the importer does not replay the wire protocol, bind device identity
+or update ordinary USB or GATT state. Actual hardware report fixtures
+remain required. Five additional synthetic regressions cover the
+new terminal outcome handling.

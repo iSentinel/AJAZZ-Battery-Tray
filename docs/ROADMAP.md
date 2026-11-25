@@ -1257,3 +1257,12 @@ configuration commands. USB `VersionNumber` is a device revision,
       timeout/cancel/reap checks; retain public CLI watchdog.
 - [ ] Exact hosted native CI and physical High Sierra acceptance.
 - [ ] Normalize active capture outcomes and multi-snapshot capture.
+
+### Normalize active diagnostic capture outcomes
+
+- [x] Extend common envelope with independent active_capture outcome.
+- [x] Distinguish completed reported values from incomplete/timeout/cancelled
+      captures; omit raw buffers, preserve ordinary USB and GATT state.
+- [x] Add five synthetic regressions and malformed/partial controls.
+- [ ] Exact hosted CI, actual native report fixtures and protocol replay.
+- [ ] Multi-snapshot capture, provider dashboard and physical acceptance.
