@@ -6,7 +6,7 @@ import unittest
 import zipfile
 
 from inventory_dotnet_bundle import BundleError
-from verify_windowsdesktop_provenance import PACK, PREFIX, compare
+from verify_windowsdesktop_provenance import CORE, SDK, PACK, PREFIX, compare
 
 
 def digest(data: bytes) -> str:
@@ -14,17 +14,18 @@ def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def fixture(version: str = "11.0.0", duplicate: bool = False) -> bytes:
+def fixture(version: str = "11.0.0", duplicate: bool = False,
+            package: str = PACK, prefix: str = PREFIX) -> bytes:
     """Create a synthetic package with two assets and a license."""
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, "w") as archive:
-        archive.writestr("pack.nuspec", f"<package><metadata><id>{PACK}</id>"
+        archive.writestr("pack.nuspec", f"<package><metadata><id>{package}</id>"
                          f"<version>{version}</version></metadata></package>")
-        archive.writestr(PREFIX + "Known.dll", b"known")
-        archive.writestr(PREFIX + "de/Known.resources.dll", b"resource")
+        archive.writestr(prefix + "Known.dll", b"known")
+        archive.writestr(prefix + "de/Known.resources.dll", b"resource")
         archive.writestr("LICENSE", b"synthetic")
         if duplicate:
-            archive.writestr(PREFIX + "KNOWN.dll", b"other")
+            archive.writestr(prefix + "KNOWN.dll", b"other")
     return stream.getvalue()
 
 
@@ -67,6 +68,33 @@ class ProvenanceTests(unittest.TestCase):
         wrong = fixture("12.0.0")
         with self.assertRaises(BundleError):
             compare(attribution(), wrong, digest(wrong))
+
+    def test_core_and_sdk_layouts(self) -> None:
+        """Select only the reviewed package and do not claim desktop resources."""
+        for package, prefix, version in (
+                (CORE, PREFIX, "11.0.0"), (SDK, "lib/net9.0/", "10.0.19041.87")):
+            data = attribution()
+            data["components"][0].update(id="runtimepack." + package, version=version)
+            raw = fixture(version, package=package, prefix=prefix)
+            result = compare(data, raw, digest(raw), package)
+            self.assertEqual(result["package"], package)
+            self.assertEqual([x["status"] for x in result["files"]], ["match"])
+
+    def test_missing_embedded_claim(self) -> None:
+        """A declared but absent file cannot be hidden by the attribution step."""
+        data = attribution()
+        data["missing_declared_files"] = [
+            {"library": "runtimepack." + PACK + "/11.0.0", "path": "Absent.dll"}]
+        raw = fixture()
+        result = compare(data, raw, digest(raw))
+        self.assertEqual(result["files"][-1]["status"], "missing_embedded")
+        self.assertIsNone(result["files"][-1]["embedded_sha256"])
+
+    def test_unreviewed_pack_rejected(self) -> None:
+        """No arbitrary ZIP prefix or component can be supplied by the caller."""
+        raw = fixture()
+        with self.assertRaises(BundleError):
+            compare(attribution(), raw, digest(raw), "Example.Other")
 
     def test_duplicate_case_path(self) -> None:
         """Reject ambiguous package members."""
