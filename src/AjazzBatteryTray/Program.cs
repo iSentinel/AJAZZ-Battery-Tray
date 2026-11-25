@@ -16,6 +16,8 @@ internal static class Program
                     => FullHidCapture.RunWorker(args[0]),
                 "--self-test-full-hid-watchdog" => FullHidCapture.SelfTest(true),
                 "--self-test-full-hid-success" => FullHidCapture.SelfTest(false),
+                "--full-hid-test-parent" => FullHidCapture.ParentExitSupervisor(),
+                "--self-test-full-hid-parent-exit" => FullHidCapture.SelfTestParentExit(),
                 _ => WindowsHidDiagnostics.Run(args)
             } : WindowsHidDiagnostics.Run(args);
             return;
