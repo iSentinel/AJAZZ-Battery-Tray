@@ -2234,3 +2234,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       device identity or physical sleep-state claims exported.
       Three new synthetic test groups.
 - [ ] Hosted Python/roundtrip CI and hardware acceptance.
+
+### Local Windows CLI diagnostic analysis
+
+- [x] #267 exact 4/4 CI, merged 3432dc7 after tested-tree equality.
+- [x] Add a bounded local JSON CLI for ordinary HID diagnostics and
+      experimental GET-ID logs. Reuse existing parsers and scoped F7
+      gate sequences; separate reported transport results, policy
+      classifications and paired status-byte agreement. Exclude
+      interrupted gate evidence, reject malformed terminal markers,
+      never export raw payloads or infer battery from experimental data.
+      Five synthetic test groups and CLI help coverage.
+- [ ] Hosted CI and physical acceptance; release hold unchanged.
