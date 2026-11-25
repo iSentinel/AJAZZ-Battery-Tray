@@ -1,3 +1,20 @@
+# Resume — APEX dashboard smoke dependency correction
+
+#254 initial CI 4/5: isolated dashboard smoke compile CS0103
+because BatteryDisplayState referenced LocalBatterySnapshot.
+Move shared five-minute ceiling to DeviceDashboardState and
+keep the API alias. New shared-limit assertion, native rerun
+pending; do not merge failing head. Release hold unchanged.
+
+# Resume — APEX presentation age consistency
+
+#253 exact 5/5 CI merged c2061d3 after tested tree equality.
+New shared APEX display projection limits ordinary USB age to
+5 min, scheduled to 3 min; suppresses expired unverified fields
+and allows fresh linked BLE selection. Seven C# assertions added.
+Native CI pending, physical AULA/APEX acceptance remains open.
+No HID protocol, history, alert or release changes.
+
 # Resume — AULA retained-success freshness consistency
 
 #252 exact 5/5 CI merged d812850. Fix AULA retained successful

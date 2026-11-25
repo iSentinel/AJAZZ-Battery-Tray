@@ -189,13 +189,28 @@ internal sealed class ReceiverMonitor : IDisposable
                     level, "2.4 GHz", threshold), ToolTipIcon.Warning);
     }
 
+    internal static DeviceDashboardState Dashboard(State state, DateTimeOffset now)
+        => ApexDisplayPolicy.Dashboard(state.DisplayLabel, state.Reading.PresenceKnown,
+            state.Present, state.ScheduledSkip, state.Reading.Percent, state.MeasuredAt, now);
+
+    internal static int? Unverified(State state, DateTimeOffset now)
+        => ApexDisplayPolicy.Unverified(state.Reading.PresenceKnown, state.Present,
+            state.ScheduledSkip, state.Reading.UnverifiedPercent, state.MeasuredAt, now);
+
     internal static string Status(State state)
-        => state.Reading.Percent is int level ? $"{level}%" :
-            state.Reading.UnverifiedPercent is int raw && !state.ScheduledSkip
-                ? UsbTrayStatus.UnverifiedField(raw) :
-            UsbTrayStatus.WithLastVerified(
-                UsbTrayStatus.Reason(state.Reading.PresenceKnown, state.Present, state.Reading.Issue),
-                state.LastVerifiedAt);
+        => Status(state, DateTimeOffset.UtcNow);
+
+    private static string Status(State state, DateTimeOffset now)
+    {
+        var display = Dashboard(state, now);
+        if (display.Percent is int level)
+            return display.Status == DeviceDashboardStatus.Scheduled
+                ? display.MenuStatus() : $"{level}%";
+        if (Unverified(state, now) is int raw) return UsbTrayStatus.UnverifiedField(raw);
+        return UsbTrayStatus.WithLastVerified(
+            UsbTrayStatus.Reason(state.Reading.PresenceKnown, state.Present, state.Reading.Issue),
+            state.LastVerifiedAt);
+    }
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
         Func<string, bool> visible, Action<string> toggle,
@@ -266,9 +281,11 @@ internal sealed class ReceiverMonitor : IDisposable
             {
                 if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
-                int? raw = pair.Value.ScheduledSkip ? null : pair.Value.Reading.UnverifiedPercent;
-                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent ?? raw, menu, refresh,
-                    color: color(pair.Key), status: pair.Value.Reading.Percent.HasValue ? null : Status(pair.Value),
+                var now = DateTimeOffset.UtcNow;
+                var display = Dashboard(pair.Value, now);
+                int? raw = display.Percent.HasValue ? null : Unverified(pair.Value, now);
+                SetIcon(pair.Key, pair.Value.DisplayLabel, display.Percent ?? raw, menu, refresh,
+                    color: color(pair.Key), status: display.Status == DeviceDashboardStatus.Fresh ? null : Status(pair.Value, now),
                     mouseStyle: mouseStyle, unverified: raw.HasValue);
             }
             if (showAula && !aulaIsPrimary)

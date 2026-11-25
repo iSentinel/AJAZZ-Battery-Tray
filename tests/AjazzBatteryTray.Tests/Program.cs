@@ -335,6 +335,37 @@ var scheduledDashboard = DeviceDashboardState.FromPoll("Mouse", "2.4 GHz",
 Check("Scheduled display preserves measurement time and percent",
     scheduledDashboard.Status == DeviceDashboardStatus.Scheduled &&
     scheduledDashboard.MeasuredAt == scheduleMeasurement && scheduledDashboard.Percent == 83);
+Check("Shared display freshness ceiling matches API",
+    DeviceDashboardState.MaximumFreshAge == TimeSpan.FromMinutes(5) &&
+    LocalBatterySnapshot.MaximumFreshAge == DeviceDashboardState.MaximumFreshAge);
+Check("APEX fresh boundary matches API",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(5)).Status == DeviceDashboardStatus.Fresh);
+Check("APEX expired success hides percentage",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(5).AddTicks(1)) is
+        { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("APEX scheduled boundary is three minutes",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, true, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(3)).Status == DeviceDashboardStatus.Scheduled &&
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, true, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(3).AddTicks(1)).Percent is null);
+Check("APEX missing or future timestamps cannot produce charge",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83, null, scheduleMeasurement).Percent is null &&
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement.AddTicks(1), scheduleMeasurement).Percent is null);
+Check("APEX unknown presence and zero never produce charge",
+    ApexDisplayPolicy.Dashboard("Mouse", false, true, false, 83, scheduleMeasurement, scheduleMeasurement).Percent is null &&
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 0, scheduleMeasurement, scheduleMeasurement).Percent is null);
+Check("APEX unverified field only on current ordinary observation",
+    ApexDisplayPolicy.Unverified(true, true, false, 83, scheduleMeasurement, scheduleMeasurement) == 83 &&
+    ApexDisplayPolicy.Unverified(true, true, true, 83, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.Unverified(true, true, false, 83, scheduleMeasurement, scheduleMeasurement.AddMinutes(6)) is null &&
+    ApexDisplayPolicy.Unverified(false, true, false, 83, scheduleMeasurement, scheduleMeasurement) is null);
+Check("APEX expired USB allows linked fresh BLE selection",
+    TransportLinks.Select(ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(6)).Percent, 77, null) is
+        { Bluetooth: true, Cached: false, Percent: 77 });
 Check("Scheduled flag cannot hide confirmed disconnect",
     DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, true, false,
         83, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.Disconnected);

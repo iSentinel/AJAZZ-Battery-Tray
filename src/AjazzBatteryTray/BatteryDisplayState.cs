@@ -31,6 +31,28 @@ public static class UsbTrayStatus
             : status;
 }
 
+/// <summary>Bound the presentation of the last ordinary USB observation.</summary>
+public static class ApexDisplayPolicy
+{
+    public static readonly TimeSpan ScheduledLifetime = TimeSpan.FromMinutes(3);
+
+    public static bool IsCurrent(bool known, bool present, bool scheduled,
+        DateTimeOffset? measured, DateTimeOffset now)
+        => known && present && measured is { } at && at <= now &&
+            now - at <= (scheduled ? ScheduledLifetime : DeviceDashboardState.MaximumFreshAge);
+
+    public static DeviceDashboardState Dashboard(string name, bool known, bool present,
+        bool scheduled, int? percent, DateTimeOffset? measured, DateTimeOffset now)
+        => DeviceDashboardState.FromPoll(name, "2.4 GHz", true, known, present,
+            IsCurrent(known, present, scheduled, measured, now) && percent is >= 1 and <= 100
+                ? percent : null, measured, scheduled: scheduled);
+
+    public static int? Unverified(bool known, bool present, bool scheduled,
+        int? field, DateTimeOffset? measured, DateTimeOffset now)
+        => !scheduled && IsCurrent(known, present, false, measured, now) &&
+            field is >= 1 and <= 100 ? field : null;
+}
+
 /// <summary>Selects a battery source without merging distinct transports.</summary>
 public sealed record BatteryDisplayState(BatteryTransport Source, int? Percent)
 {

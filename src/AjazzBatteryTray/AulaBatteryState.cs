@@ -48,7 +48,7 @@ public sealed class AulaBatteryState
         if (!automatic && !checkedOnce)
             return new(name, transport, DeviceDashboardStatus.Disabled, null, null);
         if (fresh is not (>= 1 and <= 100) || measuredAt is not { } at ||
-            at > now || now - at > LocalBatterySnapshot.MaximumFreshAge ||
+            at > now || now - at > DeviceDashboardState.MaximumFreshAge ||
             fresh != LastGoodPercent || at != LastGoodAt)
             fresh = null;
         int? cached = CachedPercent(present, known, now);
