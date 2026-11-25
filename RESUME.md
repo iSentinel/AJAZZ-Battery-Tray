@@ -1364,3 +1364,10 @@ New verify_inno_inner_engine.py actual replay PASS, five regressions.
 Evidence /root/ajazz-201-payload.Lb7VSIiW/inner-engine-verification.json.
 Resources, compiled script, actual uninstaller, trust/licensing and
 physical acceptance remain open; public release held.
+
+# Resume — exercised uninstaller evidence candidate
+
+#205 merged d1a60f5 with exact 5/5 checks and identical candidate tree.
+Retain exact upgrade uninstaller before execution; separate CI artifact
+with candidate and baseline digests, no uninstall data/log. Hosted
+upgrade run and independent engine attribution pending. Release hold.

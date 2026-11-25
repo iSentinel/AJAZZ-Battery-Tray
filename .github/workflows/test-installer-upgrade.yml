@@ -69,6 +69,7 @@ jobs:
           try {
             Install-Checked $old '0.3.0-beta.60'
             $oldHash = (Get-FileHash $installed).Hash
+            $oldUninstallerHash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant()
             New-Item -ItemType Directory -Path $data | Out-Null
             $settings = Join-Path $data 'settings.json'
             $history = Join-Path $data 'battery-history.csv'
@@ -104,6 +105,19 @@ jobs:
               if ($p.ExitCode -ne $case.Expected) { throw "Installed synthetic worker test failed: $($case.Argument)" }
             }
             Write-Host 'PASS: installed synthetic full HID worker lifecycle; no device I/O'
+            # Retain only the exact executable exercised below, never its uninstall log/data.
+            $uninstallEvidence = Join-Path $env:RUNNER_TEMP 'ajazz-beta61-uninstaller'
+            New-Item -ItemType Directory -Path $uninstallEvidence -ErrorAction Stop | Out-Null
+            $item = Get-Item -LiteralPath $uninstaller
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
+                $item.Length -le 0 -or $item.Length -gt 16777216) { throw 'Unexpected uninstaller file' }
+            $uninstallCopy = Join-Path $uninstallEvidence 'unins000.exe'
+            $uninstallHash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+            Copy-Item -LiteralPath $uninstaller -Destination $uninstallCopy
+            if ((Get-FileHash -LiteralPath $uninstallCopy -Algorithm SHA256).Hash.ToLowerInvariant() -ne $uninstallHash -or
+                (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne $uninstallHash) {
+              throw 'Uninstaller copy mismatch'
+            }
             $p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
             if ($p.ExitCode -ne 0 -or (Test-Path $installed) -or (Test-Path $key)) { throw 'Uninstall failed' }
             if ((Get-FileHash $settings).Hash -ne $settingsHash -or (Get-FileHash $history).Hash -ne $historyHash) { throw 'Uninstall changed user data' }
@@ -112,6 +126,22 @@ jobs:
                 throw "Installed icon remains after uninstall: $name"
               }
             }
+            $source = git rev-parse HEAD
+            if ($LASTEXITCODE -ne 0 -or $source -notmatch '^[0-9a-f]{40}$') { throw 'Source revision unavailable' }
+            [ordered]@{
+              schema = 'installer-uninstaller-v1'
+              source_sha = $source
+              version = '0.3.0-beta.61'
+              setup_sha256 = (Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $actualHash.ToLowerInvariant()
+              baseline_uninstaller_sha256 = $oldUninstallerHash
+              uninstaller_sha256 = $uninstallHash
+              uninstaller_bytes = (Get-Item -LiteralPath $uninstallCopy).Length
+              scenario = 'beta60_to_beta61'
+              uninstall_smoke = 'PASS'
+              engine_attribution = 'NOT_VERIFIED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $uninstallEvidence 'uninstaller.json') -Encoding utf8
             Write-Host 'PASS: four installed shortcut ICO resources and uninstall cleanup'
             Write-Host 'PASS: pinned beta.60 -> unpublished beta.61 -> uninstall, settings/history preserved; no tray launch or HID'
           } finally {
@@ -235,6 +265,17 @@ jobs:
           path: |
             ${{ runner.temp }}/ajazz-beta61-candidate/AJAZZBatteryTray-Setup-win-x64.exe
             ${{ runner.temp }}/ajazz-beta61-candidate/candidate.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload exercised unpublished beta.61 uninstaller
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: AJAZZBatteryTray-beta61-uninstaller-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-beta61-uninstaller/unins000.exe
+            ${{ runner.temp }}/ajazz-beta61-uninstaller/uninstaller.json
           if-no-files-found: error
           retention-days: 7
 

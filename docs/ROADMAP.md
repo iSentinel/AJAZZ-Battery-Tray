@@ -1547,3 +1547,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add reproducible verifier and five negative/format regressions.
 - [ ] Hosted exact CI, uninstaller attribution, resource reconstruction,
       licensing, independent key trust and hardware acceptance.
+
+- [x] Merge #205 d1a60f5 after five exact hosted checks; integrated tree
+      matches cafd72c (908c9e9).
+
+### Exercised uninstaller evidence
+
+- [x] Retain the exact beta.61 upgrade uninstaller executable before
+      executing it; bound file size and verify copy hash.
+- [x] Bind manifest to CI checkout, candidate setup/app and baseline
+      uninstaller SHA-256; upload only on successful lifecycle checks.
+- [x] Separate seven-day CI artifact; no uninstall data/log or release.
+- [ ] Hosted Windows upgrade job and artifact digest verification.
+- [ ] Offline PE/engine/resource attribution, licensing and hardware
+      acceptance. A matching baseline hash is not proof of new engine.
