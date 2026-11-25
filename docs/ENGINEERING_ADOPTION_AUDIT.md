@@ -196,3 +196,10 @@ version, and added source regression checks. See CI_DEPENDENCY_REVIEW.md.
 Held release-only download-artifact identity resolved upstream, not
 executed; no release permission change. Toolchain/transitive/security
 qualification remains open. Local offline QA and hosted CI required.
+
+ENG-06 #141 first action pin candidate 5639def, local 121 tests and
+manifest PASS. Separate local SDK follow-up selects 8.0.428 explicitly
+(observed installed in 45517112616 and 45517112819, previously selected
+SDK unproven). Adds global.json, matching setup inputs/version checks,
+runtime and Apple toolchain observation, one source regression.
+Hosted CI required; no runtime/NuGet/Inno/Apple lock qualification yet.

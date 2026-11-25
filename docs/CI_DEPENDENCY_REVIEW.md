@@ -22,3 +22,21 @@ revision, Xcode/Swift/Clang, Inno Setup (observed 6.7.1), reproducibility,
 action transitive dependencies, notices/licenses, SBOM, advisories and
 disposition. No unreviewed tool upgrades, release dispatch or live
 production mutation. Native and hosted QA required for this candidate.
+
+## SDK selection follow-up (separate candidate)
+
+Windows 45517112616 and installer 45517112819 logs report setup-dotnet
+found SDK 8.0.428 already installed. They do not establish the selected
+SDK when a newer SDK is present. This follow-up adds global.json
+(version 8.0.428, rollForward disable, no prerelease) plus matching exact
+setup-dotnet input and selected SDK verification in all four jobs.
+This is an explicit selection change that requires native regression,
+not a claim of identical prior compiler output. Developer builds now
+require the exact installed SDK. Installed runtime version inventory
+and Apple Xcode/Swift/Clang/SDK observation steps added; neither locks
+the resolved runtime/NuGet graph or Apple runner image. No path or
+credential intentionally emitted in the new Windows inventory.
+Inno 6.7.1 observed in prior upgrade logs; installer fallback still
+requires a separate supply-chain review. No new package downloads
+or installer changes here. Node 20 actions forced to Node 24 warning
+in earlier CI is recorded for review; no automatic action upgrade.

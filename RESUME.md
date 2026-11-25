@@ -1,3 +1,15 @@
+# Resume — ENG-06 selected SDK follow-up
+
+#141 action pins head 5639def; local 121 tests / common QA PASS.
+Hosted CI running; do not merge without exact successful checks.
+Local branch fix/engineering-sdk-selection is based on #141, not
+pushed. global.json exact SDK 8.0.428 (observed installed, not proven
+previously selected), matching setup/check and Apple toolchain
+observation. Native qualification required; runtime and Inno locks
+remain open. Next: integrate #141 only after PASS, cherry-pick SDK
+candidate onto identical tested tree, submit separate PR.
+No release execution or main merge.
+
 # Resume — ENG-06 exact CI action pins
 
 #140 merged 17a65b8 into draft #99, 3/3 hosted CI; Windows
