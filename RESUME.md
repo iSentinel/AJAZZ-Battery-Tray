@@ -1,3 +1,9 @@
+# Resume — SBOM with exact artifact roundtrip
+
+#167 merged e00b229 after exact-head 3/3 CI PASS. #164 prior native
+checks passed but artifact roundtrip failed; both roadmap histories
+retained. Requalify the joined head. No release admission.
+
 # Resume — exact CI artifact identities
 
 Base 5d965ce. #164 and #166 had synthetic artifact-roundtrip failures
@@ -6,6 +12,20 @@ requires both exact IDs/digests before pinned action and original byte
 checks. Local mock delayed/missing/wrong-digest and source checks PASS.
 #166 scalar path bug corrected separately at 89acdb4, native CI pending.
 Release hold unchanged.
+
+# Resume — combined notice and scoped SBOM candidate
+
+#163 merged 5d965ce, #164 exact 40af0e4 CI 4/4 PASS. Resolve
+three content conflicts preserving notice and SBOM tools/checkpoints.
+Fresh combined QA required. No release admission.
+
+# Resume — scoped Windows CycloneDX inventory
+
+#161 merged a98cb0d after exact 4/4 CI. #162 joined at 6728a01;
+combined QA 185/185 PASS. New scoped BOM generator verified historical
+Tray 265 and HA 184 embedded files, both official CycloneDX 1.6 schema
+PASS, with composition explicitly incomplete. Full distribution coverage,
+licenses, signatures, advisories and release admission remain open.
 
 # Resume — notice staging and field evidence
 
