@@ -1,3 +1,11 @@
+# Resume — diagnostic timeline sample provenance
+
+#271 pending native CI at initial review. Child compares reported
+USB sample timestamps independently from capture time and adds
+AULA last-read versus last-good timestamp relations. Three new
+synthetic groups; no physical identity or fresh telemetry claims.
+Hosted CI, latest artifact binding and hardware gates open.
+
 # Resume — scoped Inno 6.7.4 evidence replay
 
 #270 exact 2/2 CI merged 43e3cb5. Run 45694508038 (head

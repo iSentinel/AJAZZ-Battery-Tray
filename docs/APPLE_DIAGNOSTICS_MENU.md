@@ -318,3 +318,16 @@ labels only, not independent verification. Older reports lacking
 labels produce empty counts. Failed or unlabeled transfers break
 adjacency; interrupted active traces are excluded. It does not
 compare device identity or infer physical sleep state.
+
+### Reported timestamp relations
+
+Each adjacent timeline transition now includes
+`reported_sample_timestamp_relations`. Windows USB compares the
+ordinary measurement timestamp, not batch completion. Apple USB
+compares the last verified session timestamp, which may be historical.
+AULA poll and last-good timestamps are separate. Same reported timestamp
+does not establish a fresh observation or physical device identity,
+especially when the exported precision is limited. Earlier, later,
+missing and future timestamps are classified explicitly. Different
+editions are not compared. Owner annotations remain annotations,
+not evidence of a transport or hardware state transition.
