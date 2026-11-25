@@ -847,7 +847,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
     NSString *battery = self.latest.state == BatteryValid ?
         [NSString stringWithFormat:@"%ld%%", (long)self.latest.percent] : @"unknown";
     return [NSString stringWithFormat:
-        @"AJAZZ Battery Tray High Sierra Edition\nVersion: %@ (%@)\nUTC: %@\n"
+        @"AJAZZ Battery Tray High Sierra Edition\nReport schema: apple-menu-v1\nVersion: %@ (%@)\nUTC: %@\n"
          @"OS: %@\nVID:PID: 3151:5007\nUsage: FFFF:0002\n"
          @"Battery state: %@; battery: %@\nMatching HID collections: %ld\n"
          @"Last verified USB UTC (session): %@\nPolling active: %@; isolated: %@\n"
