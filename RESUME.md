@@ -1,3 +1,19 @@
+# Resume — merge license inventory with resource serialization
+
+#161 integrated a98cb0d after exact 4/4 CI. #162 prior head b48e3de
+4/4 PASS; conflicts resolved retaining both sets of tools and roadmap
+entries. Fresh combined QA required; release hold unchanged.
+
+# Resume — pinned package license inventory
+
+Base f23b8fc #99 6/6 CI PASS. #160 and #161 integration pending.
+Four exact official NuGet packs re-downloaded and hashes verified;
+three MIT declarations and one Windows SDK license URL with acceptance
+required. Exact notices and signature presence recorded, no compliance
+or signature clearance. License CLI and seven regression tests added.
+SDK terms, notice distribution, toolchain, SBOM/advisories and release
+qualification remain open.
+
 # Resume — independent PE resource serialization (scoped inputs)
 
 #158 integrated f23b8fc after 4/4 checks. #160 935a1a4 staged.

@@ -30,6 +30,7 @@ CLI = ("analyze_aula_sleep", "check_apple_io_lease", "code_audit",
        "inventory_dotnet_host_headers",
        "verify_dotnet_header_reconstruction",
        "verify_dotnet_resource_serialization",
+       "inventory_dotnet_pack_licenses",
        "inventory_nuget_assets",
        "measure_apple_worker", "qa_unittest",
        "run_offline_qa")

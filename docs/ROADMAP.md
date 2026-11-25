@@ -1053,3 +1053,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Historical #147 Tray/HA: exact reconstructed resources and headers PASS.
 - [ ] Exact hosted QA and final candidate artifacts, independent app build,
       signature, licenses/notices, advisory and SBOM. Release hold unchanged.
+
+### ENG-06/12 pinned package license inventory
+
+- [x] Re-download four exact NuGet packages and verify pinned digests.
+- [x] Record declared licenses, exact root notice hashes and signature presence.
+- [ ] Hosted QA, SDK redistribution terms, distribution notices, toolchain
+      license review, trusted signatures, candidate-bound SBOM and advisories.
+      Release hold unchanged.
