@@ -1,3 +1,21 @@
+# Resume — exact manifest and version payloads
+
+#210 merged 1efb27b (4/4); #211 merged f3c05a6 into parent (5/5).
+Actual #206 loader manifest transform and both version resources
+reconstructed byte-for-byte; inner manifest unchanged. Scoped leaf
+payloads accounted for, offset CRC/bounds verified. Four regressions.
+Directory metadata and serialization, compiled script, licensing,
+trust and hardware acceptance remain open. Release hold.
+
+# Resume — scoped resource icon attribution
+
+Stacked on #210. Actual #206 setup loader 25 leaves, engine 71;
+14/62 unchanged template leaves and seven custom icon images plus
+MAINICON group match. Exact scoped key sets match; loader offset
+CRC/bounds separately verified. Version, manifest, metadata and
+serialization provenance still open. Three regressions added.
+Compiled script, licensing, trust and hardware remain open.
+
 # Resume — exact English message equivalence
 
 #208 merged ecfc636 (5/5); #209 merged 38e03dd into its parent
