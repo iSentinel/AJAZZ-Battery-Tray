@@ -1,3 +1,14 @@
+# Resume — exact native version-default and interactive checklist
+
+#246 merged d68b7e0 after exact 7/7 CI, eight archive digests,
+13-document replay, independent BOM schema and dated advisory checks.
+New local RG01–RG06 candidate-bound checklist validator; three
+regressions PASS; actual #246 checklist 6 NOT_RUN. Exact setup bytes
+not retained by JSON-only CI, so owner testing needs a separately
+qualified exact artifact. Native rerun of tool pending. Legal/signing,
+interactive/hardware and production compiler/notice gates open.
+Release hold unchanged.
+
 # Resume — candidate metadata coherence without publication
 
 #245 merged e20a350 after exact 7/7 CI and eight archive/13-document
