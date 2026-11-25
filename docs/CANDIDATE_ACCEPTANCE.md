@@ -584,3 +584,20 @@ scoped comparison, not general Pascal Script interpretation, runtime
 execution or independent compiler reproduction. Replay SHA-256
 1b0f4222e071913006fd47054e41b253dcea57e5eadcba04a03f4c2a28f14738.
 Remaining Setup.0 records, license, trust and hardware gates open.
+
+### Complete scoped Setup.0 record framing and installation policy
+
+Exact #206 first decoded block (46193 bytes) accounted for to EOF.
+Compare all 39 Unicode fields, three empty ANSI info/license fields,
+IFPS, 17 counts and 162-byte fixed header (including privileges,
+architecture, version, compression and options) against reviewed
+source/defaults. Compare complete language message frame with 281
+pinned English messages and 12 custom messages from Default.isl.
+Verify optional unchecked desktop task, generated uninstaller entry,
+five file destinations/flags and locations, two shortcut entries,
+one run entry gated by ShouldLaunchTray, and all record boundaries.
+Two PNG wizard images (5767 and 10005 bytes) inventoried; provenance
+not yet verified. No trailing bytes. Actual replay SHA-256
+52950d48434d1000653fc9c563c6343b5f5e1e68f569a0c660ad5c7fe614ba06.
+Scoped policy verification, not independent recompilation or release
+admission.
