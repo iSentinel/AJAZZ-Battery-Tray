@@ -6,6 +6,7 @@ on:
       - '.github/workflows/test-inno-674-trust.yml'
       - 'config/inno-674-component-pins.json'
       - 'tools/verify_inno674_components.py'
+      - 'tools/verify_inno674_product_binary.py'
       - 'installer/Inno674CompilerProbe.iss'
       - 'installer/AJAZZBatteryTray.iss'
       - 'src/**'
@@ -254,6 +255,14 @@ jobs:
             }
             python tools/verify_windows_notice_transport.py --tree (Join-Path $target 'Notices') --output (Join-Path $root 'product-installed-evidence.json')
             if ($LASTEXITCODE -ne 0) { throw 'Product notices differ' }
+            $capture = Join-Path $root 'exercised-unins000.exe'
+            if (Test-Path -LiteralPath $capture) { throw 'Uninstaller capture already exists' }
+            $hash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+            Copy-Item -LiteralPath $uninstaller -Destination $capture
+            if ((Get-FileHash -LiteralPath $capture -Algorithm SHA256).Hash.ToLowerInvariant() -cne $hash -or
+                (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant() -cne $hash) {
+              throw 'Uninstaller capture differs'
+            }
             $p = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
             if ($p.ExitCode -ne 0 -or (Test-Path $app) -or (Test-Path $key) -or (Test-Path $data) -or (Test-Path (Join-Path $target 'Icons')) -or (Test-Path (Join-Path $target 'Notices'))) {
               throw 'Product probe uninstall cleanup failed'
@@ -269,6 +278,15 @@ jobs:
               physical_acceptance = 'NOT_VERIFIED'
               release_admission = 'NOT_VERIFIED'
             } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'product-lifecycle.json') -Encoding utf8
+            [ordered]@{
+              schema = 'inno-674-exercised-uninstaller-v1'
+              source_sha = (git rev-parse HEAD)
+              setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $expected
+              uninstaller_sha256 = $hash
+              uninstall_result = 'REMOVED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'exercised-uninstaller.json') -Encoding utf8
           } finally {
             if (Test-Path -LiteralPath $uninstaller -PathType Leaf) {
               Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait
@@ -345,5 +363,24 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/product-components-before.json
             ${{ runner.temp }}/ajazz-notice-probe/product-components-after.json
             ${{ runner.temp }}/ajazz-notice-probe/inno674-product-binding.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Attribute exact product setup and exercised uninstaller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          python tools/verify_inno674_product_binary.py --setup (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') --uninstaller (Join-Path $root 'exercised-unins000.exe') --loader (Join-Path $compiler 'SetupLdr.e32') --engine (Join-Path $compiler 'Setup.e32') --binding (Join-Path $root 'inno674-product-binding.json') --exercised (Join-Path $root 'exercised-uninstaller.json') --output (Join-Path $root 'binary-attribution.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Product binary attribution failed' }
+      - name: Retain scoped binary attribution JSON only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-binary-attribution
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/exercised-uninstaller.json
+            ${{ runner.temp }}/ajazz-notice-probe/binary-attribution.json
           if-no-files-found: error
           retention-days: 7

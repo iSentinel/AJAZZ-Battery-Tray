@@ -1,3 +1,11 @@
+# Resume — Inno 6.7.4 scoped product binary attribution
+
+Stacked on #238. New loader and engine pins, actual uninstaller
+capture before execution, binding to successful removal and exact
+product setup/source/app. Scoped PE/frame/message validation,
+two regressions; hosted evidence pending. Resource/solid/script
+and interactive, legal, hardware gates remain open.
+
 # Resume — Inno 6.7.4 product lifecycle qualification
 
 #236 merged 0a5e715, 7/7 CI. Stacked on #237. Exact native fixture
