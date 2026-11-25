@@ -582,6 +582,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
             ISO8601DateFormatter().string(from: $0)
         } ?? "never"
         return "AJAZZ Battery Tray diagnostic report\n" +
+            "Report schema: apple-menu-v1\n" +
             "Version: \(version) (\(build))\n" +
             "UTC: \(ISO8601DateFormatter().string(from: Date()))\n" +
             "macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)\n" +
@@ -589,7 +590,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
             "Last ordinary status: \(last.state); battery: \(battery)\n" +
             "Last verified USB UTC (session): \(sample)\n" +
             "Polling active: \(polling); isolated: \(isolatedPolling)\n" +
-            (bluetoothWindow?.diagnosticSummary ?? "Bluetooth manual 180F/2A19: not requested") + "\n" +
+            (bluetoothWindow?.diagnosticSummary ?? "Bluetooth discovery: not requested\n" +
+                "Bluetooth manual 180F/2A19 pending: false\nBluetooth last manual read: not requested") + "\n" +
             "No serial numbers, device paths or Bluetooth addresses collected."
     }
 

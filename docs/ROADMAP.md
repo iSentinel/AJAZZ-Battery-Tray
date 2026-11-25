@@ -1215,3 +1215,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add native synthetic timeout/failure and offline source contract.
 - [ ] Exact native CI and physical timeout/quit/report acceptance.
 - [ ] Interactive cancellation and versioned cross-platform reports.
+
+### Versioned Apple diagnostics snapshot — first schema
+
+- [x] Add apple-menu-v1 marker and stable manual Bluetooth fields to
+      both Apple menu reports.
+- [x] Add bounded local snapshot importer with independent USB/GATT
+      observations, UTC validation and no raw trace bytes in output.
+- [x] Add six synthetic importer tests; integrate help into offline QA.
+- [ ] Exact native CI, physical report fixtures, versioned Windows
+      adapter and active trace outcome normalization.
+- [ ] Interactive cancellation and multi-snapshot capture.

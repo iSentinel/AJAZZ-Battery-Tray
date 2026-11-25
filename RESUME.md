@@ -1,3 +1,10 @@
+# Resume — Apple menu report schema
+
+Stacked on #178 969540e. Both Apple editions emit apple-menu-v1.
+Bounded local parser normalizes passive USB and independent GATT
+observations without exporting raw traces. Native CI, real reports and
+Windows adapter remain open. Release hold unchanged.
+
 # Resume — Universal partial HID trace
 
 #176/#177 merged; integrated 56a2c59. New bounded streaming trace

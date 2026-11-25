@@ -113,3 +113,23 @@ change routine IPC, protocol commands or telemetry. Native synthetic
 workers exercise timeout, abnormal exit, malformed/oversized output and
 normal completion without HID. Quit cancels the worker, but interactive
 cancellation and multi-snapshot collection remain separate tasks.
+
+## Versioned Apple snapshot import
+
+Both editions emit Report schema: apple-menu-v1 and stable Bluetooth
+snapshot keys even if Bluetooth was never requested. The local CLI:
+
+    python tools/analyze_apple_diagnostics.py report.txt
+
+accepts one versioned report (UTF-8, at most 64 KiB), normalizes the
+ordinary USB state, prior verified-session timestamp and independent
+manual GATT result, and indicates whether an active trace is present.
+It intentionally omits the trace contents, device names and arbitrary
+free text from JSON. It rejects duplicate required fields, concatenated
+reports, unknown schema, invalid timestamps and inconsistent percent/state.
+A GATT 0% is valid; USB 0% is not. A valid imported snapshot is not
+evidence of a simultaneous measurement, physical device identity or
+verified active HID capture. Unversioned reports and Windows reports
+are outside this initial parser's scope. No upload, I/O or telemetry
+promotion occurs. Actual native report fixtures and cross-platform
+comparison remain open.
