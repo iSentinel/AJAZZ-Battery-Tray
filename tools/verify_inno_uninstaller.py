@@ -12,6 +12,8 @@ import lzma
 from compare_inno_loader import TEMPLATE_SHA, compare, digest, layout
 from run_offline_qa import write_json
 from verify_inno_inner_engine import ENGINE_SHA, recover
+from verify_inno_messages import verify_messages
+from verify_inno_message_sources import compare_sources
 from verify_installer_candidate import SETUP
 from verify_uninstaller_evidence import EXE, verify_pair
 from verify_windowsdesktop_provenance import read_local
@@ -51,7 +53,7 @@ def attribute(engine: bytes, exe: bytes) -> dict:
 
 def verify_attribution(raw: bytes, sha: str, candidate_raw: bytes,
                        candidate_sha: str, source: str, loader: bytes,
-                       template: bytes) -> dict:
+                       template: bytes, message_sources: tuple[bytes, bytes, bytes] | None = None) -> dict:
     """Bind both CI archives and pinned templates before recovering the engine."""
     binding = verify_pair(raw, sha, candidate_raw, candidate_sha, source)
     if digest(loader) != TEMPLATE_SHA or digest(template) != ENGINE_SHA:
@@ -63,9 +65,13 @@ def verify_attribution(raw: bytes, sha: str, candidate_raw: bytes,
     compare(loader, setup)
     engine, record = recover(setup)
     match = compare(template, engine, overlay_expected=False)
+    messages = exe[len(engine) + 32:-12]
+    message_result = (compare_sources(messages, *message_sources) if message_sources
+                      else verify_messages(messages))
     return {'schema': 1, 'binding': binding, 'recovery': record,
             'official_engine_sections': match['sections'],
             'attribution': attribute(engine, exe),
+            'messages': message_result,
             'engine_non_resource_bytes': 'MATCH',
             'engine_resource_provenance': 'NOT_VERIFIED',
             'compiled_script': 'NOT_VERIFIED', 'release_admission': 'NOT_VERIFIED'}
@@ -78,19 +84,25 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument('--' + name, type=Path, required=True)
     for name in ('sha256', 'candidate-sha256', 'source-sha'):
         parser.add_argument('--' + name, required=True)
+    for name in ('default-isl', 'message-ids', 'installer-script'):
+        parser.add_argument('--' + name, type=Path)
     args = parser.parse_args(argv)
+    paths = (args.default_isl, args.message_ids, args.installer_script)
+    if any(paths) and not all(paths):
+        parser.error('all three message source inputs are required together')
     try:
+        sources = tuple(read_local(p) for p in paths) if all(paths) else None
         result = verify_attribution(read_local(args.archive), args.sha256,
                                     read_local(args.candidate_archive),
                                     args.candidate_sha256, args.source_sha,
                                     read_local(args.loader_template),
-                                    read_local(args.engine_template))
+                                    read_local(args.engine_template), sources)
         write_json(args.output, result)
     except (OSError, ValueError, TypeError, KeyError, RuntimeError, NotImplementedError,
             struct.error, zipfile.BadZipFile, zlib.error, lzma.LZMAError, RecursionError):
         print('FAIL: scoped Inno uninstaller attribution', file=sys.stderr)
         return 2
-    print('PASS: exact uninstaller PE and message frame; message semantics not verified')
+    print('PASS: scoped uninstaller attribution; release admission not verified')
     return 0
 
 

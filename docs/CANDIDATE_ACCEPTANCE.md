@@ -452,3 +452,38 @@ Actual replay via verify_inno_uninstaller.py PASS, evidence SHA-256
 c05499fe53a691806206fc27eca9aa1e3426fa7b6a64b2f6c0a358cf7b12da2c.
 No publisher trust, compiled script, physical acceptance or release
 admission is inferred.
+
+### Uninstaller message block structure
+
+Pinned Inno source Shared.Struct.pas, Shared.SetupMessageIDs.pas and
+SetupLdrAndSetup.Messages.pas define the exact message header, 281
+identifiers and language options record. Actual #206 uninstaller
+message region 25302 bytes: total message data 25200 bytes, header
+size complement and CRC32 07beb49d PASS; all 281 UTF-16LE
+NUL-terminated strings, 102-byte options with ID !mlo!670 PASS.
+Body SHA-256 31b34a6d0f6d21f25e92c7ef6fcb03067654b5dd16df3416374f2d12ed4b3dbd.
+Combined replay evidence SHA-256
+ddfbb4399e7241cabdbbd3fe9e74bf5e86a2a7a8a45aa8650ea21cb8a4b73c05.
+This is structural validation, not source text or language-option
+semantic equivalence. Compiled script, licensing, independent trust
+and hardware acceptance remain open.
+
+### Pinned English message and appearance equivalence
+
+The exact #206 compiler inventory artifact 15005558278 (archive SHA-256
+27f107834274efd01e6095da5675967b4888a13a7b460eb504a715362ee2b730)
+binds the same source and setup hash and records Default.isl SHA-256
+42a5f6f7dbbddf26cc278f67db5d894235ce1d126a6856702e31bd02023a1316,
+matching the independently extracted official file. The actual CI
+checkout installer script SHA-256 is
+668ff74c3c55db0cd8de544d30bac23497ad6e7a38aaf6da77016c78de2b2a65.
+Using the pinned Shared.SetupMessageIDs.pas enumeration and the
+documented EnumMessagesProc %n expansion, all 281 English strings
+serialize to exactly the observed UTF-16LE body. The 102-byte language
+record also matches reconstructed reviewed defaults: Segoe UI,
+9/7/15 font settings, 120/120 wizard size, clNone colors, modern
+and keep-aspect flags, all light controls. No source text or private
+data is embedded in evidence. Actual paired archive replay SHA-256
+a01b64d9ccf807d01ac54932f05c33cf4690c66486ba6b395b4217e0f6e70d83.
+This establishes scoped English text and appearance equivalence, not
+compiled script execution, resource provenance or release admission.

@@ -1580,3 +1580,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Integrate stacked verifier and attribution into draft #99 after
       hosted CI. Review message semantics, resource provenance, script,
       licensing, independent trust and hardware acceptance.
+- [x] Validate actual uninstaller message block header, size complement,
+      CRC, 281 UTF-16LE terminated messages and language options ID.
+      Add strict scoped parser and three synthetic regressions.
+- [ ] Hosted CI, compare message content and language options with
+      pinned compiler inputs; then review remaining resource provenance.
+
+- [x] #208 merged ecfc636 after exact 5/5 CI; #209 merged 38e03dd
+      into #208 branch after 4/4 CI, equivalent tested trees.
+- [x] Verify #206 compiler inventory digest and Default.isl pin.
+- [x] Compare all 281 English messages in exact enum order and
+      reconstruct 102-byte appearance options; actual replay PASS.
+- [x] Optional all-or-none pinned source CLI inputs and three regressions.
+- [ ] Hosted CI and integrate stacked source verification; inspect
+      PE resource provenance, compiled script, licensing, trust and
+      hardware acceptance. Release hold unchanged.

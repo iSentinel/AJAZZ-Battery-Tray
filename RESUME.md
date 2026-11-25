@@ -1,3 +1,20 @@
+# Resume — exact English message equivalence
+
+#208 merged ecfc636 (5/5); #209 merged 38e03dd into its parent
+(4/4). Exact #206 compiler inventory and source pins verified.
+All 281 English message strings and 102-byte appearance record
+match reconstructed bytes. Three new regression tests.
+Resource provenance, compiled script, licensing, trust and
+physical acceptance remain open; release hold.
+
+# Resume — uninstaller message block structure
+
+Stacked on #208. Actual #206 message block passes header, CRC,
+281 UTF-16LE messages and 102-byte language record checks.
+Reusable structural parser and three regressions added.
+Text and language semantics, resource provenance, licensing,
+trust and physical acceptance remain open. Release hold.
+
 # Resume — exercised uninstaller attribution
 
 #206 merged 59b718d, #207 merged d20d2bf into #206 branch, both
