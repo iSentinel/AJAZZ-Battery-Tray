@@ -1428,3 +1428,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted native builds, physical menu/ZIP acceptance and actual
       High Sierra 10.13 runtime verification.
 - [ ] Release admission; no public beta update.
+
+### Candidate physical acceptance refresh
+
+- [x] Merge #195 and #196 after exact hosted CI; candidate integration
+      d5d3313 matches tested #196 tree.
+- [x] Replace obsolete current fallback instructions with independent
+      persistent BLE, cache, link, opt-out and session acceptance.
+- [x] Prepare 18 Windows and 11 per-Apple-edition scenario IDs with
+      exact candidate provenance, explicit NOT RUN physical status.
+- [ ] Verify exact current artifact bytes and High Sierra symbol screen.
+- [ ] Owner physical acceptance; release hold stays in force.
