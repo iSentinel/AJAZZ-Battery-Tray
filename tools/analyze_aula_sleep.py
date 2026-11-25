@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare three existing AULA L99 clipboard summaries without USB access."""
+"""Compare existing AULA L99 clipboard or extended reports without USB access."""
 
 import argparse
 from dataclasses import dataclass
@@ -62,8 +62,46 @@ def parse_time(value: str) -> datetime | None:
     return result
 
 
+def extended_summary(data: str) -> str:
+    """Project only allowlisted AULA fields from one extended report."""
+    lines = data.splitlines()
+    heading = "[AULA L99 last measurement]"
+    title = "AJAZZ Battery Tray extended diagnostic report"
+    if lines.count(heading) != 1 or lines.count(title) != 1:
+        raise ValueError("expected one extended AULA report")
+    begin = lines.index(title)
+    end = lines.index(heading)
+    if begin >= end:
+        raise ValueError("invalid extended report order")
+    versions = [line.removeprefix("App version: ") for line in lines[begin:end]
+                if line.startswith("App version: ")]
+    block = lines[end + 1:end + 5]
+    if len(versions) != 1 or len(block) != 4:
+        raise ValueError("missing extended AULA fields")
+    auto = re.fullmatch(
+        r"Auto monitoring: (True|False); interval: \d+s; UTC: (.+)", block[0])
+    presence = re.fullmatch(
+        r"Receiver present: (True|False); presence known: (True|False)",
+        block[1])
+    level = re.fullmatch(r"Battery: (unavailable|\d+); status: .+", block[2])
+    if not auto or not presence or not level or not CACHE_FIELDS.fullmatch(block[3]):
+        raise ValueError("malformed extended AULA fields")
+    return "\n".join([
+        "AULA L99 2.4 GHz experimental battery check",
+        f"Version: {versions[0]}",
+        f"Automatic monitoring enabled: {auto[1]}",
+        f"Receiver present: {presence[1]}",
+        f"Presence known: {presence[2]}",
+        f"Battery percentage: {level[1]}",
+        f"Last read UTC: {auto[2]}",
+        block[3],
+    ])
+
+
 def parse_summary(data: str) -> Summary:
     """Parse only known exported fields, never paths or serial numbers."""
+    if "[AULA L99 last measurement]" in data.splitlines():
+        data = extended_summary(data)
     lines = data.strip().splitlines()
     if not lines or lines[0] != "AULA L99 2.4 GHz experimental battery check":
         raise ValueError("not an AULA L99 clipboard summary")
@@ -178,6 +216,44 @@ def analyze(awake: Summary, sleep: Summary,
     return result, checks
 
 
+def check_cached_pair(value: Summary) -> tuple[str, str]:
+    """Validate cached state without inventing an awake checkpoint."""
+    if value.cache_active and (not value.known or not value.present):
+        return "FAIL", "cache displayed without confirmed receiver presence"
+    if value.percent is not None or not value.known or not value.present:
+        return "NOT OBSERVED", "confirmed no-reply receiver not observed"
+    if value.last_read is None or value.last_good_at is None or value.last_good is None:
+        return "FAIL", "cached sample or timestamp missing"
+    age = (value.last_read - value.last_good_at).total_seconds()
+    if age <= 0 or value.failures == 0:
+        return "FAIL", "no-reply poll must follow the last good sample"
+    if value.cache_lifetime != 24:
+        return "NOT OBSERVED", "unexpected cache lifetime"
+    if age >= 24 * 3600:
+        return ("FAIL", "expired cache displayed") if value.cache_active else (
+            "NOT OBSERVED", "cache expired")
+    if not value.cache_active:
+        return "FAIL", "eligible cache not displayed"
+    return "PASS", "timestamped last-good cache visible"
+
+
+def analyze_pair(sleep: Summary, recovered: Summary
+                 ) -> tuple[str, list[tuple[str, str, str]]]:
+    """Evaluate only two observed states; never return full acceptance."""
+    if (sleep.version != recovered.version or
+            not (sleep.automatic and recovered.automatic)):
+        return "NOT OBSERVED", [("SETTINGS", "NOT OBSERVED",
+                                 "versions or monitoring differ")]
+    cached = check_cached_pair(sleep)
+    checks = [("SLEEP", *cached)]
+    if cached[0] == "PASS":
+        checks.append(("RECOVERED", *check_recovery(sleep, recovered)))
+    checks.append(("AWAKE", "NOT OBSERVED", "independent initial report missing"))
+    if any(item[1] == "FAIL" for item in checks):
+        return "FAIL", checks
+    return "NOT OBSERVED", checks
+
+
 def read_file(path: Path) -> Summary:
     """Read a bounded, local-only clipboard export as UTF-8."""
     if path.stat().st_size > 65536:
@@ -188,13 +264,17 @@ def read_file(path: Path) -> Summary:
 def main() -> int:
     """Return PASS=0, FAIL=1, NOT OBSERVED=2, invalid input=1."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--awake", type=Path, required=True)
+    parser.add_argument("--awake", type=Path,
+                        help="Initial fresh report; omit for partial analysis")
     parser.add_argument("--asleep", type=Path, required=True)
     parser.add_argument("--recovered", type=Path, required=True)
     args = parser.parse_args()
     try:
-        result, checks = analyze(*(read_file(path) for path in
-                                   (args.awake, args.asleep, args.recovered)))
+        sleep, recovered = (read_file(path) for path in (args.asleep, args.recovered))
+        if args.awake is None:
+            result, checks = analyze_pair(sleep, recovered)
+        else:
+            result, checks = analyze(read_file(args.awake), sleep, recovered)
     except (OSError, UnicodeError, ValueError) as error:
         print(f"FAIL: cannot evaluate AULA summaries: {type(error).__name__}")
         return 1

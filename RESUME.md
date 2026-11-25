@@ -1,3 +1,12 @@
+# Resume — extended owner evidence
+
+#172 merged 7c25cfa after 3/3 exact CI and 15/15 native macOS groups.
+New beta.60 owner reports: ready-clear 95 -> 94, zero verified;
+AULA cached 66 (22 misses) -> fresh 66 (zero misses).
+Extended AULA analyzer supports partial two-state evidence,
+never full acceptance without an independent awake report.
+Raw captures not published; release hold unchanged.
+
 # Resume — Apple self-test attribution
 
 Integrated #99 21dd502 run 45554473404 failed aggregate self-test

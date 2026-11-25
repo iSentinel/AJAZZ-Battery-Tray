@@ -113,3 +113,17 @@ full vendor matrix) before switching the mouse off/on, after one normal
 poll, and after several ordinary polls. Include whether GearHub is
 closed and whether its gauge changes independently. No forced
 discharge or repeated power-cycle automation.
+
+## Additional ready-clear field observations — Nov 25
+
+Two beta.60 owner reports at 05:39:38 and 05:43:23 UTC show respectively
+95 and 94 in the ordinary poll and all six matching full F7/05 responses
+(65/67 bytes, 30/100/250 ms), 0/6 validated battery readings each.
+One receiver, 3151:5007 rev 0002, MI_02 FFFF:0002, feature length 65.
+The ready flag remains clear. Values changed between captures, but the
+reports do not independently establish physical model, charge, continuity
+without power cycling, or freshness. Bluetooth fallback disabled; neither
+capture contains an independent fresh GATT observation. Keep field
+display-only and unverified. No new protocol requests or telemetry,
+no raw captures published. AULA cached-to-fresh observation is recorded
+separately in AULA_SLEEP_ACCEPTANCE.md.

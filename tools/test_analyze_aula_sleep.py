@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from analyze_aula_sleep import Summary, analyze, parse_summary, read_file
+from analyze_aula_sleep import Summary, analyze, analyze_pair, parse_summary, read_file
 
 
 START = "2026-11-23T08:00:00+00:00"
@@ -42,6 +42,77 @@ def cases() -> tuple[Summary, Summary, Summary]:
     recovered = parse_summary(summary(now=WAKE, percent=80, good=80,
                                       last_good=WAKE))
     return awake, asleep, recovered
+
+
+def extended(now: str, good_at: str, fresh: bool) -> str:
+    """Reconstruct allowlisted summary fields, without any vendor buffers."""
+    return (
+        "AJAZZ APEX full comparison report (one capture)\n"
+        "Version: 0.3.0-beta.60\n"
+        "AJAZZ Battery Tray extended diagnostic report\n"
+        "App version: 0.3.0-beta.60\n"
+        "[AULA L99 last measurement]\n"
+        f"Auto monitoring: True; interval: 30s; UTC: {now}\n"
+        "Receiver present: True; presence known: True\n"
+        f"Battery: {'66' if fresh else 'unavailable'}; status: synthetic\n"
+        f"Last successful battery: 66; UTC: {good_at}; "
+        f"Consecutive no-reply polls: {0 if fresh else 22}; "
+        f"Cache lifetime hours: 24; Display cache active: {not fresh}\n"
+        "[Bluetooth fallback state]\n"
+    )
+
+
+class ExtendedEvidenceTests(unittest.TestCase):
+    """Do not equate a two-state result with complete acceptance."""
+
+    def test_extended_pair(self) -> None:
+        """New cached and fresh states pass, independent awake is missing."""
+        sleep = parse_summary(extended(SLEEP, START, False))
+        wake = parse_summary(extended(WAKE, WAKE, True))
+        result, checks = analyze_pair(sleep, wake)
+        self.assertEqual(result, "NOT OBSERVED")
+        self.assertEqual([item[:2] for item in checks],
+                         [("SLEEP", "PASS"), ("RECOVERED", "PASS"),
+                          ("AWAKE", "NOT OBSERVED")])
+
+    def test_extended_full_sequence(self) -> None:
+        """Allow three extended reports to retain the existing full gate."""
+        self.assertEqual(analyze(
+            parse_summary(extended(START, START, True)),
+            parse_summary(extended(SLEEP, START, False)),
+            parse_summary(extended(WAKE, WAKE, True)))[0], "PASS")
+
+    def test_pair_recovery_timestamp(self) -> None:
+        """Reject an old last-good value as a fresh recovery."""
+        sleep = parse_summary(extended(SLEEP, START, False))
+        wake = parse_summary(extended(WAKE, START, True))
+        self.assertEqual(analyze_pair(sleep, wake)[0], "FAIL")
+
+    def test_pair_missing_cache(self) -> None:
+        """Reject loss of eligible cache while the receiver is present."""
+        sleep = parse_summary(extended(SLEEP, START, False).replace(
+            "Display cache active: True", "Display cache active: False"))
+        wake = parse_summary(extended(WAKE, WAKE, True))
+        self.assertEqual(analyze_pair(sleep, wake)[0], "FAIL")
+
+    def test_duplicate_extended_section(self) -> None:
+        """Reject concatenated reports instead of silently choosing one."""
+        with self.assertRaises(ValueError):
+            parse_summary(extended(SLEEP, START, False) * 2)
+
+    def test_pair_unknown_presence_cache(self) -> None:
+        """Unknown receiver presence must not expose a cached value."""
+        sleep = parse_summary(extended(SLEEP, START, False).replace(
+            "presence known: True", "presence known: False"))
+        wake = parse_summary(extended(WAKE, WAKE, True))
+        self.assertEqual(analyze_pair(sleep, wake)[0], "FAIL")
+
+    def test_pair_mixed_versions(self) -> None:
+        """Do not attribute different-version observations to one build."""
+        sleep = parse_summary(extended(SLEEP, START, False))
+        wake = parse_summary(extended(WAKE, WAKE, True).replace(
+            "App version: 0.3.0-beta.60", "App version: 0.3.0-beta.59"))
+        self.assertEqual(analyze_pair(sleep, wake)[0], "NOT OBSERVED")
 
 
 class AulaOfflineSummaryTests(unittest.TestCase):
