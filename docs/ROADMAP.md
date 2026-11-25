@@ -884,8 +884,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       synthetic hang; neither case issues hardware commands.
 - [ ] Windows CI and macOS regression checks; verify the Windows WinExe
       redirected pipe and timeout behavior in the actual runner.
+- [x] Add non-inherited kill-on-close Windows Job Object and pipe start
+      gate; worker cannot begin HID until the supervisor assigns the job.
+- [x] Add synthetic forced-parent-exit CI case; observe actual child exit.
+- [ ] Verify new job/handshake and parent-exit tests on Windows CI,
+      including nested CI job compatibility and no-HID-on-assignment-failure.
 - [ ] Manual GUI consent, deadline/recovery, install/upgrade validation;
-      assess hard parent termination and failed worker termination.
+      verify failed termination behavior on real Windows.
 - [ ] Release only after CI and packaging gates; retain beta.60 as Latest
       until a verified replacement. Hardware issue #53 and High Sierra
       acceptance remain independent.
