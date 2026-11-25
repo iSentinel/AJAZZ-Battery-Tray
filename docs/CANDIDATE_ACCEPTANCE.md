@@ -568,3 +568,19 @@ end-of-stream, no compressed or decoded suffix. No executable launched
 or file extracted by this verifier. Actual replay SHA-256
 eee25bde51d1742bee02db3e37cb6f3464e168cba6c7703e8e50d9784208ebb9.
 Script and remaining header semantic verification still open.
+
+### Scoped IFPS launch policy
+
+Inno source cfdf48923178df4b4f040e038b423aa555a61ffc pins
+remobjects/pascalscript d6e25439080c37e15af23badb48c39760a2b8d4d.
+Review TPSExec.LoadData, ReadVariable and opcode implementations.
+Exact #206 644-byte script: build 23, 32 types, four procedures,
+two globals, no type/procedure attributes, 27 instructions including
+main RET. Imports only EXPANDCONSTANT and WIZARDSILENT. All observed
+operands, stack operations, comparisons, flag branches, return paths
+and procedure boundaries match the reviewed pinned .iss launch policy:
+LAUNCH=0 false, LAUNCH=1 true, otherwise not WizardSilent. Static
+scoped comparison, not general Pascal Script interpretation, runtime
+execution or independent compiler reproduction. Replay SHA-256
+1b0f4222e071913006fd47054e41b253dcea57e5eadcba04a03f4c2a28f14738.
+Remaining Setup.0 records, license, trust and hardware gates open.

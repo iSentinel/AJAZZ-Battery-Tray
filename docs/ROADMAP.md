@@ -1647,3 +1647,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Check exact EOS and no suffix; three regression tests and CLI gate.
 - [ ] Hosted CI/integration; IFPS semantics and setup header entries,
       licensing, independent trust and hardware acceptance. Release hold.
+
+### Scoped IFPS launch policy attribution
+
+- [x] #214 merged a19cdfb after 5/5; #215 merged 445efc8 into
+      parent after 5/5; exact tested trees matched.
+- [x] Review pinned Pascal Script loader and opcode sources.
+- [x] Decode all types, procedures, globals and 27 instructions;
+      compare full scoped launch policy to pinned installer source.
+- [x] Actual replay PASS, three synthetic regressions and CLI gate.
+- [ ] Hosted CI/integration; remaining Setup.0 records and wizard
+      data, licensing, trust, hardware acceptance. Release hold.

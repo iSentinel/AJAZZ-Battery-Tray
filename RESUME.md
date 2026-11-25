@@ -1,3 +1,12 @@
+# Resume — scoped IFPS launch policy
+
+#214 merged a19cdfb (5/5), #215 merged 445efc8 into parent (5/5).
+Actual #206 644-byte IFPS: all 32 types, four procedures, two
+globals and 27 instructions reviewed against pinned .iss policy.
+Static match only, no runtime execution or independent recompilation.
+Three regressions. Remaining Setup.0 records, licensing, trust,
+physical acceptance remain open. Release hold.
+
 # Resume — independent solid stream
 
 Stacked on #214. Actual #206 full LZMA2 solid chunk decoded,
