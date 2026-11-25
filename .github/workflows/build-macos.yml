@@ -26,6 +26,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Record selected Apple toolchain versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          swiftc --version
+          clang --version | sed -n '1p'
+          xcrun --sdk macosx --show-sdk-version
       - name: Build universal menu-bar app
         run: bash macos/build-macos.sh
       - name: Verify shared vendor I/O gate without HID

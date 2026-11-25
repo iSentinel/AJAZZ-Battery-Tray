@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'global.json'
       - 'src/**'
       - 'tests/**'
       - 'tools/Measure-TrayResources.ps1'
@@ -28,7 +29,21 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.0.428'
+      - name: Verify selected .NET SDK
+        shell: pwsh
+        run: |
+          $actual = dotnet --version
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '8.0.428') {
+            throw 'Selected SDK differs from reviewed global.json'
+          }
+          Write-Host "Selected .NET SDK: $actual"
+          dotnet --list-runtimes | ForEach-Object {
+            if ($_ -match '^([A-Za-z0-9.]+) ([0-9.]+) \[') {
+              Write-Host ("Available runtime: " + $Matches[1] + " " + $Matches[2])
+            }
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime inventory failed' }
       - name: Run unit tests
         shell: pwsh
         run: |

@@ -81,6 +81,25 @@ class CiActionPinTests(unittest.TestCase):
             self.assertTrue(job_budgets(source))
         self.assertEqual(seen, allowed)
 
+    def test_dotnet_sdk_selection_is_exact(self) -> None:
+        """Require matching global SDK selection, setup pin and version check."""
+        sdk = json.loads((ROOT / "global.json").read_text())["sdk"]
+        self.assertRegex(sdk["version"], r"^8\.0\.[0-9]+$")
+        self.assertEqual(sdk["rollForward"], "disable")
+        self.assertIs(sdk["allowPrerelease"], False)
+        observed = set()
+        for path in (ROOT / ".github/workflows").glob("*.yml"):
+            source = path.read_text()
+            if "uses: actions/setup-dotnet@" not in source:
+                continue
+            observed.add(path.name)
+            self.assertIn("dotnet-version: '" + sdk["version"] + "'", source)
+            self.assertIn("$actual = dotnet --version", source)
+            self.assertIn("$actual -ne '" + sdk["version"] + "'", source)
+            self.assertNotIn("dotnet-version: '8.0.x'", source)
+        self.assertEqual(observed, {"build.yml", "test-ha-preview.yml",
+                                   "test-installer-upgrade.yml", "release-beta.yml"})
+
     def test_reject_floating_or_unreviewed(self) -> None:
         """A full hash alone is insufficient without a reviewed lock entry."""
         allowed = {"actions/checkout@" + "a" * 40}
