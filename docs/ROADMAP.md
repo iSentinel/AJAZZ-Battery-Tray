@@ -1168,3 +1168,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Exact hosted CI, independent export evidence, dyld bind/fixup
       coverage, reexports, dynamic APIs and physical OS acceptance.
       No symbol availability or release admission claim.
+
+### ENG-12 High Sierra SDK text-stub name screen
+
+- [x] Requalify #174 exact CI; merge dea88bf.
+- [x] Review pinned third-party SDK 10.13 mirror; hash-verify 65 local
+      stubs and 62 reexport edges; 139/139 names found.
+- [x] Distinguish 134 unrestricted matches from five AppKit names
+      appearing only in restricted UIFoundation export groups.
+- [x] Add offline replay CLI and six stdlib regressions; retain 19
+      relevant linker directive records without evaluating semantics.
+- [ ] Exact hosted CI, actual OS export provenance, client and linker
+      directive semantics, runtime Objective-C API and hardware validation.
+      No native compatibility or release admission claim.

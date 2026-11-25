@@ -1,3 +1,13 @@
+# Resume — High Sierra SDK name screen
+
+#174 merged dea88bf after 4/4 exact hosted CI.
+Pinned third-party SDK 10.13 mirror, 65 local hash-qualified
+stubs and 62 reexport edges. Actual High Sierra 7c25cfa app:
+139 names present, 134 unrestricted, five AppKit restricted-only.
+Offline replay CLI retains 19 unevaluated linker directives.
+Actual OS provenance, runtime and native acceptance open.
+Release hold unchanged.
+
 # Resume — scoped Apple undefined symbols
 
 #173 merged 390e29c after 3/3 exact CI. Integrated 7c25cfa 6/6 PASS.
