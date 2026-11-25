@@ -1,3 +1,11 @@
+# Resume — single-run 6.7.4 migration evidence
+
+#242 merged dfa8202 into draft #99 after 6/6 CI. Seven exact archives
+match REST; complete scoped Setup.0 PASS. New 12-document/11-edge
+consistency verifier, actual #242 replay PASS, two regressions.
+Native rerun and independent exact BOM schema/advisory checks open.
+Production compiler 6.7.1 and release hold unchanged.
+
 # Resume — native solid payload and complete Setup.0 qualification
 
 #241 merged 3c9dbb0 into draft #99 after 7/7 CI. Three evidence
