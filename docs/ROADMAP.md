@@ -2166,3 +2166,20 @@ configuration commands. USB `VersionNumber` is a device revision,
       Nine C# regression assertions.
 - [ ] Native Windows CI and real-device loss/recovery acceptance.
 - [ ] Integrate after parent #260 passes; release hold unchanged.
+
+### Typed F7 observation classification
+
+- [x] #260 exact 6/6 CI, merged 4276f8f after tested-tree equality.
+- [x] Refactor existing numbered F7 gates into a typed observation:
+      separate reported field, accepted percentage, provisional field
+      and rejection reason. Preserve legacy compact parsing, existing
+      diagnostic strings and admission predicates. Add four C# checks,
+      including parity across 4374 synthetic combinations.
+- [ ] Native parity and corpus checks; physical validation remains open.
+- [ ] Integrate after parent #261 qualification. No new HID commands
+      or promotion of unverified fields. Release hold unchanged.
+
+- [x] #261 exact 5/5 CI merged c7264b9.
+- [x] Correct #262 initial Windows test compile CS0136 by using
+      matrix-specific variable names. Existing admission rules unchanged.
+- [ ] Re-run native F7 parity matrix on corrected head.
