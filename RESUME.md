@@ -1325,3 +1325,12 @@ ISSig exploratory replay on official package plus 17 sidecars:
 18/18 ECDSA P-256 signatures valid for def01/def02 from pinned source
 commit. Private issig-observations.json in official evidence directory.
 Committed reusable verifier and independent key trust still open.
+
+## Reproducible ISSig verifier checkpoint
+
+Stacked on #202 364e7b1. New verify_inno_issig.py checks pinned
+def01/def02 key bytes, key IDs, exact observed v2 empty-tag records,
+actual metadata and ECDSA scalars using OpenSSL. Actual 18/18 replay
+PASS. Four synthetic regressions, including real OpenSSL P-256
+verification. Key trust, Authenticode, engine and release admission
+remain NOT_VERIFIED. No application runtime dependency added.

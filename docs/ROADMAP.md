@@ -1508,3 +1508,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       installer and 17 observed sidecars valid for pinned source keys.
 - [ ] Commit bounded reproducible ISSig verifier with negative tests;
       independently qualify publisher key trust. No release admission.
+
+### Reproducible ISSig verification
+
+- [x] Implement bounded scoped ISSig-v2 parser and OpenSSL verification;
+      pin source key file digests and exact component coverage.
+- [x] Replay actual 18 signatures; add four negative/native regressions
+      and required OpenSSL availability in hosted Ubuntu QA.
+- [ ] Hosted exact CI, independent publisher-key trust qualification.
+- [ ] Independently verify new #201 candidate payload, embedded engine
+      and uninstaller, licensing/notice coverage and physical acceptance.
