@@ -1,8 +1,7 @@
 # Resume — Apple diagnostic age evidence
 
-#255 head 990aac6: High Sierra, Windows, Python and roundtrip
-PASS; Universal pending at initial review. Independent stacked
-parser change preserves reported historical value and classifies
+#255 exact 5/5 CI PASS, merged f729ca7 after tested-tree equality.
+Independent parser change preserves reported historical value and classifies
 age at snapshot time, with missing/future/expired and conservative
 300-second boundary. Two new regression groups. No hardware
 evidence or release authorization. Release hold unchanged.

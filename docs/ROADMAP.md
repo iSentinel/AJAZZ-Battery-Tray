@@ -2107,6 +2107,7 @@ configuration commands. USB `VersionNumber` is a device revision,
       eligibility from actual current or independently verified data.
       Conservative 300-second boundary for second-resolution reports.
       Two new regression groups; both native report layouts exercised.
-- [ ] Hosted validation and merge after parent #255 passes.
+- [x] #255 exact 5/5 CI, merged f729ca7 after tested-tree equality.
+- [ ] Hosted validation and merge of parser change.
 - [ ] Physical sleep/wake and real-device USB/GATT comparisons remain
       open; no new HID commands or release authorization.
