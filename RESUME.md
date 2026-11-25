@@ -1,3 +1,12 @@
+# Resume — isolated installed-notice transport probe
+
+#223 merged 5a723a6 into parent, exact 5/5 CI. Stacked on #224.
+Separate notice-only fixture and hosted install/verify/uninstall job.
+Canonical LF manifest and project license checkout preserved; real
+Linux staging replay retains exact pin. Two source regressions.
+Native Windows result pending; release installer unchanged.
+Outstanding distribution terms and hardware acceptance; release hold.
+
 # Resume — candidate-bound portable notice prototype
 
 #221 merged 6f9f2fd, #222 merged 56b40f1 into parent, exact CI 5/5 each.

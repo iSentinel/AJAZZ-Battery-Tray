@@ -1736,3 +1736,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       actual replay and three regressions PASS.
 - [ ] Hosted CI, integration, installed notice packaging prototype,
       remaining terms and hardware acceptance. Release hold.
+
+### Isolated installed-notice transport probe
+
+- [x] #223 merged 5a723a6 into parent after exact 5/5 CI.
+- [x] Preserve canonical notice manifest bytes on Windows and Linux.
+- [x] Add isolated notice-only installer and separate hosted test,
+      verify explicit source and destination scope in two regressions.
+- [ ] Actual native install/uninstall evidence, integration, reviewed
+      product distribution design, outstanding terms and hardware
+      acceptance. Release hold.
