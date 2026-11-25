@@ -1,3 +1,11 @@
+# Resume — scoped Apple archive inventory
+
+#164 integrated a0f9b50. New Apple inventory checked e00b229 historical
+Universal and High Sierra archives, exact outer and inner checksums,
+7 files each, x86_64+arm64 and x86_64 respectively. Plist minima 13.0
+and 10.13; no native compatibility or signature claim. Hosted QA and
+load-command/framework/signature review remain open.
+
 # Resume — SBOM with exact artifact roundtrip
 
 #167 merged e00b229 after exact-head 3/3 CI PASS. #164 prior native

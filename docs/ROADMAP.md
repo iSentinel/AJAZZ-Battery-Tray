@@ -1085,3 +1085,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Historical Tray 265 and HA 184 files; both CycloneDX 1.6 schema PASS.
 - [ ] Hosted QA, exact release candidate, full graph and distribution/toolchain
       coverage, signature trust, advisory disposition and release admission.
+
+### ENG-12 scoped Apple archive inventory
+
+- [x] Re-download and hash-check actual Universal and High Sierra CI artifacts.
+- [x] Inventory seven files per app and verify reviewed Mach-O architecture layout.
+- [ ] Hosted QA, load-command deployment and framework inventory, signing and
+      distribution SBOM, physical High Sierra acceptance. Release hold unchanged.
