@@ -82,6 +82,21 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $report -ErrorAction SilentlyContinue
           }
+      - name: Verify full HID capture worker isolation
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          foreach ($case in @(
+            @{ Argument = '--self-test-full-hid-success'; Expected = 0 },
+            @{ Argument = '--self-test-full-hid-watchdog'; Expected = 124 }
+          )) {
+            $p = Start-Process -FilePath $exe -ArgumentList $case.Argument -PassThru -Wait
+            if ($p.ExitCode -ne $case.Expected) {
+              throw "Full HID worker $($case.Argument): expected $($case.Expected), got $($p.ExitCode)"
+            }
+          }
+          echo 'PASS: complete pipe output and terminated hanging worker; partial output discarded'
       - name: Validate owner HID acceptance helper
         shell: pwsh
         run: |
