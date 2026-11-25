@@ -2004,3 +2004,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       candidate binaries for owner testing after distribution review.
 - [ ] Interactive, hardware, signing, licensing and production
       compiler/notice selection remain open. Release hold.
+
+### Exact candidate distribution review
+
+- [x] #248 exact 5/5 CI, tested merge tree match; merged dd38bf4
+      into draft #99.
+- [x] Compare exact #246 embedded SDK components with the pinned SDK
+      archive and inspect package metadata; review official REDIST
+      scope and .NET/Inno terms; record unresolved decisions in
+      CANDIDATE_DISTRIBUTION_REVIEW.md.
+- [ ] Obtain applicable SDK license terms and scope confirmation;
+      review product terms, transitive notices and intended test channel.
+- [ ] Arrange exact independently qualified executable for human
+      testing; no substitution of historical installer evidence.
+- [ ] Physical/interactive acceptance, signing and release admission.
