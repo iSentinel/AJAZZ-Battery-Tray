@@ -43,9 +43,8 @@ state from a new trace and includes version/build, UTC, OS, matching
 collection metadata, operation status, bounded prefix and elapsed time.
 No identity identifiers, firmware query, RTC or configuration action.
 Universal trace uses the existing 8-second supervisor; complete short
-records are retained on timeout or abnormal termination. Legacy wraps the existing 20-second
-CLI trace supervisor, preserving captured partial text when available,
-capped at 4096 bytes. An ordinary in-flight poll causes a busy message;
+records are retained on timeout or abnormal termination. Legacy uses a direct 20-second GUI worker supervisor with bounded
+nonblocking pipe draining and partial output retention capped at 4096 bytes. An ordinary in-flight poll causes a busy message;
 the UI guard and shared vendor I/O lease prevent overlapping requests.
 Do not update the normal tray reading, alerts, history or fallback from
 diagnostic results. The tray resumes normal monitoring independently.
@@ -172,6 +171,21 @@ or after worker completion but before UI delivery is also handled
 conservatively. Rebuilding the menu or changing language does not
 reset cancellation state. No new HID command or history update.
 Native synthetic cancellation and recovery are included in the bounded
-worker self-test. High Sierra retains its existing bounded capture and
-requires a separate safe supervisor cancellation implementation.
+worker self-test. High Sierra interactive cancellation is implemented separately below.
 Actual AppKit interaction and physical HID acceptance remain open.
+
+## High Sierra interactive cancellation
+
+The menu now launches the same-binary direct trace child, rather than
+a CLI supervisor that would own a grandchild. Its GUI supervisor drains
+the pipe without blocking, retains at most 4096 bytes, and checks the
+thread-safe cancellation token and monotonic 20-second deadline. It
+keeps exclusion until the child exits and is reaped. An abandoned
+menu child has its own 22-second alarm. The public CLI watchdog and
+timeout options remain unchanged. On incomplete capture discard the
+unfinished last record and terminal PASS/exit claims; keep operation
+markers and the bounded diagnostic prefix. Quit requests cancellation
+and waits for the supervisor. EN/RU/UK menu controls survive menu
+rebuilds. Native synthetic tests exercise timeout, cancellation before
+and during launch, PID reaping and partial report redaction without HID.
+Actual High Sierra GUI and real-device acceptance remain required.

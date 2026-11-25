@@ -1,3 +1,10 @@
+# Resume — High Sierra interactive cancellation
+
+#180/#181 merged; integrated b9cb5bb. Legacy GUI direct worker
+implements bounded partial capture and cancellation without CLI
+grandchild. Native CI and physical acceptance remain open.
+Release hold unchanged.
+
 # Resume — Universal interactive cancellation
 
 Stacked on #180 da1e5ca. Localized menu cancellation uses existing
