@@ -3,7 +3,7 @@
 import json
 import unittest
 
-from compare_diagnostic_timeline import timeline
+from compare_diagnostic_timeline import gate_sequences, timeline
 from compare_ready_clear import parse_matrix
 from test_beta60_field_report_import import projected_report
 from test_compare_ready_clear import report
@@ -21,6 +21,41 @@ def field_report(field: int, time: str) -> str:
 
 class DiagnosticTimelineTests(unittest.TestCase):
     """Never equate repeated raw observations with a validated battery."""
+
+    def test_gate_sequences_scoped(self) -> None:
+        """Keep transitions within one observed collection and completed exchange."""
+        def pair(gate: str) -> str:
+            """Build a synthetic successful Apple GET and its classification."""
+            return ('05.get.result=0x00000000 length=65\n'
+                    '05.reply.first_bytes=omitted\nF7 policy gate: ' + gate)
+        text = '\n'.join(('STEP: collection.open', pair('ReadUnavailable'),
+                          pair('Accepted'), 'STEP: collection.open',
+                          pair('Offline'), '05.get.result=0x00000001 length=0',
+                          pair('Accepted')))
+        result = gate_sequences(text, True)
+        self.assertEqual(result['reported_gate_counts'],
+                         {'Accepted': 2, 'Offline': 1, 'ReadUnavailable': 1})
+        self.assertEqual(result['reported_transitions'],
+                         [{'from': 'ReadUnavailable', 'to': 'Accepted', 'count': 1}])
+        self.assertNotIn('omitted', json.dumps(result))
+
+    def test_gate_sequences_reject_orphan_and_duplicate(self) -> None:
+        """Do not accept labels outside a successful in-scope transfer."""
+        get = 'Interface: synthetic\nSET F7 / GET 05 (65 bytes): OK; header=omitted'
+        for text in ('F7 policy gate: Accepted', get + '\nF7 policy gate: invented',
+                     get + '\nunrelated section\nF7 policy gate: Accepted',
+                     get + '\nF7 policy gate: Accepted\nF7 policy gate: Offline'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                gate_sequences(text, False)
+
+    def test_gate_sequence_missing_label_breaks_transition(self) -> None:
+        """Missing classifications never bridge two observations."""
+        get = 'SET F7 / GET 05 (65 bytes): OK; header=omitted'
+        text = '\n'.join(('Interface: synthetic', get, 'F7 policy gate: Offline',
+                          get, get, 'F7 policy gate: Accepted'))
+        result = gate_sequences(text, False)
+        self.assertEqual(result['reported_transitions'], [])
+        self.assertEqual(sum(result['reported_gate_counts'].values()), 2)
 
     def test_order_and_unchanged_unverified(self) -> None:
         """Sort by actual capture time and keep the F7 value unverified."""

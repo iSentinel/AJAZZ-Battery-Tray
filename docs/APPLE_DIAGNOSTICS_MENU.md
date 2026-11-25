@@ -310,3 +310,11 @@ ordered policy, not independently verified physical sleep or radio
 state. Transfer failure produces no gate label. The existing trace
 prefix, request sequence, ordinary observation and passive report
 normalizer are unchanged.
+
+The local timeline tool, `python3 tools/compare_diagnostic_timeline.py
+REPORT1 REPORT2`, now includes separate ordinary and active F7
+policy counts and within-collection transitions. These are reported
+labels only, not independent verification. Older reports lacking
+labels produce empty counts. Failed or unlabeled transfers break
+adjacency; interrupted active traces are excluded. It does not
+compare device identity or infer physical sleep state.

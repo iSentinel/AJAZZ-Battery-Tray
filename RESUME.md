@@ -1,3 +1,12 @@
+# Resume — reported F7 policy sequence analysis
+
+#265 exact 5/5 CI merged 31f2ec7 after tested-tree equality.
+Extend local timeline with ordinary/active typed gate counts and
+within-collection transitions. Reject orphan/duplicate labels,
+break on missing/failed transfers and exclude interrupted active
+captures. Three synthetic groups. Hosted CI and physical acceptance
+pending; release hold unchanged.
+
 # Resume — Apple bounded F7 trace classifications
 
 #264 exact 5/5 CI merged c105bbf after tested-tree equality.
