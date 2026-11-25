@@ -1,3 +1,14 @@
+# Resume — ENG-06 SDK lock candidate after action integration
+
+#141 merged 364fe76 into draft #99, all six hosted checks PASS.
+Downloaded hosted Python QA run 45517669228 verified on reopen:
+121 tests, 14 steps, Python 3.12.16, exact tree f426ee6.
+SDK follow-up cherry-picked as 107ba36 (tree ea2a16f), identical to
+local 778a309; clean offline QA 122 tests PASS. Selected SDK 8.0.428
+and matching CI checks require new native qualification; runtime/NuGet,
+Inno and Apple locks remain open. Next: exact SDK candidate CI, then
+ENG-06/12 resolved toolchain and reviewed upstream inventory. No release.
+
 # Resume — ENG-06 selected SDK follow-up
 
 #141 action pins head 5639def; local 121 tests / common QA PASS.

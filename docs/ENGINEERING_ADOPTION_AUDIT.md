@@ -203,3 +203,8 @@ manifest PASS. Separate local SDK follow-up selects 8.0.428 explicitly
 SDK unproven). Adds global.json, matching setup inputs/version checks,
 runtime and Apple toolchain observation, one source regression.
 Hosted CI required; no runtime/NuGet/Inno/Apple lock qualification yet.
+
+#141 merged 364fe76 after 6/6 CI. Hosted Python artifact 14978986492
+verified on reopen (121 tests, 14 steps, Python 3.12.16, tree f426ee6).
+SDK candidate 107ba36 matches local 778a309 tree ea2a16f; offline
+QA 122 tests PASS. Native qualification remains pending.

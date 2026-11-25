@@ -31,7 +31,7 @@ and [AGENTS](../AGENTS.md). Priority order:
 - [ ] ENG-04/08/16: local Python QA entrypoint passed clean local run (111 tests, 14 steps); explicit evidence verifier implemented locally. Hosted qualification, native wrappers, atomic publication and case catalog remain open.
 - [ ] ENG-05: Windows closed UTC JSONL operational journal merged in #139 (12/12 native log checks, 903 total C# PASS); Apple/ACL/timing qualification remains open.
 - [ ] ENG-15: source network-boundary review and strict duplicate release metadata regression merged in #140 (907 C# PASS). Live TLS/broker/host provider acceptance remains open; no MQTT connector implemented.
-- [ ] ENG-06/12: exact action lock and finite job budgets #141; separate exact .NET SDK candidate plus toolchain inventory; runtime/NuGet/Inno/Apple locks, upstream inventory, SBOM/license/advisories remain open.
+- [ ] ENG-06/12: exact action lock and finite job budgets #141 merged 364fe76 after 6/6 CI; separate exact .NET SDK candidate plus toolchain inventory; runtime/NuGet/Inno/Apple locks, upstream inventory, SBOM/license/advisories remain open.
 - [ ] ENG-07/14: CLI contracts, bounded inputs (first APEX comparator fix implemented locally), installer dry-run and rollback.
 - [ ] ENG-09/11: real hardware, DPI, worker recovery and sleep acceptance.
 - [ ] ENG-10: exact candidate release admission, reproducibility/signature status, separate approval. BLOCKED.
