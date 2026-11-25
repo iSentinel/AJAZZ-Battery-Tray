@@ -1,3 +1,12 @@
+# Resume — native solid payload and complete Setup.0 qualification
+
+#241 merged 3c9dbb0 into draft #99 after 7/7 CI. Three evidence
+archives match REST and exact binding. Fifteen decoded files and
+reviewed 27-instruction IFPS match. New complete Setup.0 verifier
+checks sixteen file destinations, shortcuts, run, language, fixed
+header and wizard images. Two regressions, native result pending.
+Production 6.7.1, interactive/legal/hardware gates and release hold.
+
 # Resume — native 6.7.4 resource and solid payload qualification
 
 #239 merged ff9c55d; #240 merged 1030524 into respective parent branches.

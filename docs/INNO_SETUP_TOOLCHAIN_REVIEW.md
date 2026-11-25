@@ -276,3 +276,42 @@ The verifier requires 16 file records including generated uninstaller,
 terminal state and per-file hash; checks scoped IFPS launch predicate.
 File destination records and remaining Setup.0 records are not yet
 qualified by this tool. Actual native result pending. No release change.
+
+## Native 6.7.4 solid payload and IFPS result
+
+PR #241 head 177001c8d667dbc4b7445dd193e88bc3ae469253,
+hosted checkout 111439eb40f8038690f24e8a1b4e553ae76028eb,
+run 45641200908, job 139300000991: PASS (7/7 CI).
+Three exact archive digests match REST:
+- Solid 15036335309:
+  e79d782d0a77a74170d60a61beb315486b41d2560175a19ef1b3d0efb03a1a3a
+- Resources 15035970459:
+  0ef1f4fe937d7f19429605b6f3483e05c90ed00a31943a06ed57c96751552328
+- Binding 15036040398:
+  1610d6ca5522e8c4f53e280eb8a52863b273a25a6592494790889b09d2c6a997
+
+Solid evidence SHA-256
+10111f99b8030a7020b98ccfa61bde0c8847c39e564f6f7d59ba96d75a861c46.
+Setup SHA-256 e26cb9b41685ba42a78100111d0fd803de1c596513ba6f9de31b3335ec2635b7;
+app SHA-256 71950f5df7b29a9c91ec7d114623db580000d54e6b718f778871a6f33a3e81b0.
+All fifteen decoded source file hashes match. Setup.0 decoded block
+sizes 48397 and 1335 bytes (15 location records), CRC and terminal
+state PASS. IFPS 32 types, four procedures, two globals, 27 instructions,
+only EXPANDCONSTANT and WIZARDSILENT imports. Exact bytecode SHA-256
+ec37558245fc7a7712e9e023f36cce2ce5150d268f19c7c7fbe7a69cb8d27ebf
+matches historical reviewed launch policy. Static semantic scope only;
+no independent recompilation or IFPS runtime execution by the verifier.
+#241 merged into draft integration #99 at 3c9dbb0.
+
+## Complete scoped Setup.0 record qualification
+
+The new verifier binds the exact solid evidence, source LF-normalized
+SHA-256 d2876f4209f244033dd92dd19a6f9e9d641ca3cbed441b4dbd020923492f9ef8,
+pinned language inputs, and exact 6.7.4 ISCmplr.dll SHA-256
+236555054ca65194c69544b4ef1d49ea345259745f5c4a2005aca7b5674e7cff.
+Both official wizard RCDATA hashes match the previous reviewed images.
+It checks the header, language and custom messages, task, 16 ordered
+file records including the generated uninstaller, two shortcuts,
+one launch record, both images, and exact end of the decoded block.
+Two synthetic regressions PASS. Native verification pending.
+No release compiler change, interactive acceptance or legal clearance.
