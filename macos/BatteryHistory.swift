@@ -23,7 +23,7 @@ final class BatteryHistoryWriter {
         previous != current || secondsSinceLast < 0 || secondsSinceLast >= 300
     }
 
-    func record(_ status: ApexBattery.Status) {
+    func record(_ status: ApexBattery.Status, at now: Date = Date()) {
         let value: String
         let state: String
         switch status {
@@ -38,7 +38,6 @@ final class BatteryHistoryWriter {
             state = "unavailable"
         }
 
-        let now = Date()
         let fingerprint = value + "|" + state
         guard Self.shouldRecord(previous: lastValue, current: fingerprint,
             secondsSinceLast: now.timeIntervalSince(lastWrite)) else { return }
@@ -50,7 +49,10 @@ final class BatteryHistoryWriter {
 
     /// Return false on a disk error so the next poll retries the sample.
     private func append(time: Date, value: String, state: String) -> Bool {
-        let timestamp = ISO8601DateFormatter().string(from: time)
+        // The CSV has whole-second precision. Never serialize a future timestamp
+        // when the formatter rounds a fractional instant across a second boundary.
+        let timestamp = ISO8601DateFormatter().string(from:
+            Date(timeIntervalSince1970: floor(time.timeIntervalSince1970)))
         let row = "\(timestamp),\(value),\(state)\n"
         do {
             if !FileManager.default.fileExists(atPath: file.path) {

@@ -1350,6 +1350,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI and real single/multiple-icon switching acceptance.
 - [ ] Multi-snapshot capture, diagnostic comparison and release admission.
 
+### Universal observation-corpus CI triage
+
+- [x] Identify exact integration failure bda4dc0, run 45565394706,
+      job 139038945524: observation-corpus alone failed.
+- [x] Add fixed stage/row diagnostics for fixture, decoder, CSV and alerts.
+- [x] Explicitly floor CSV timestamps to whole seconds and replay each
+      fixture at fractional instants .001, .499, .9999 through real writer.
+      This addresses a possible formatter/prune boundary defect; original
+      failure cause is not yet proven. Preserve all original predicates.
+- [ ] Native macOS CI on exact candidate; investigate any failure stage.
+- [ ] Recheck integration and physical macOS acceptance.
+
 ### Redacted multi-snapshot diagnostic timeline
 
 - [x] Confirm #189/#190 merged at bda4dc0 after exact hosted CI.

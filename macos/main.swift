@@ -937,38 +937,74 @@ final class TrayController: NSObject, NSApplicationDelegate {
 }
 
 /// Replay the shared sanitized fixture through the decoder and actual history writer.
+private func corpusFailure(_ stage: String, row: Int? = nil) -> Bool {
+    // Only fixed stage names and synthetic row numbers; no paths or raw buffers.
+    let location = row.map { " row=\($0)" } ?? ""
+    print("FAIL: observation-corpus stage=\(stage)\(location)")
+    return false
+}
+
+private func verifyCorpusHistory(_ status: ApexBattery.Status, percent: Int?,
+                                 directory: URL, now: Date, row: Int) -> Bool {
+    let writer = BatteryHistoryWriter(directory: directory)
+    writer.record(status, at: now)
+    guard let csv = try? String(contentsOf: writer.file, encoding: .utf8) else {
+        return corpusFailure("history-read", row: row)
+    }
+    guard let line = csv.split(whereSeparator: \.isNewline).last,
+          let sample = BatteryHistoryReader.parse(String(line)) else {
+        return corpusFailure("history-row", row: row)
+    }
+    guard sample.percent == percent,
+          sample.state == (percent == nil ? "unavailable" : "online"),
+          sample.timestamp <= now, now.timeIntervalSince(sample.timestamp) < 1 else {
+        return corpusFailure("history-observation", row: row)
+    }
+    return true
+}
+
+/// Replay the shared sanitized fixture through the decoder and actual history writer.
 private func verifyObservationCorpus(_ path: String) -> Bool {
-    guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return false }
+    guard let text = try? String(contentsOfFile: path, encoding: .utf8) else {
+        return corpusFailure("fixture-read")
+    }
     let rows = text.split(whereSeparator: \.isNewline).dropFirst()
-    guard rows.count == 20 else { return false }
+    guard rows.count == 20 else { return corpusFailure("fixture-count") }
     let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }
     for (index, row) in rows.enumerated() {
+        let number = index + 1
         let fields = row.split(separator: ",", omittingEmptySubsequences: false)
-        guard fields.count == 5, fields[2].count.isMultiple(of: 2) else { return false }
+        guard fields.count == 5, fields[2].count.isMultiple(of: 2) else {
+            return corpusFailure("fixture-layout", row: number)
+        }
         let hex = Array(fields[2])
         var bytes: [UInt8] = []
         for offset in stride(from: 0, to: hex.count, by: 2) {
-            guard let byte = UInt8(String(hex[offset...offset + 1]), radix: 16) else { return false }
+            guard let byte = UInt8(String(hex[offset...offset + 1]), radix: 16) else {
+                return corpusFailure("fixture-hex", row: number)
+            }
             bytes.append(byte)
         }
         let percent = ApexBattery.parse(bytes)
-        guard (percent.map { String($0) } ?? "unknown") == String(fields[4]) else { return false }
+        guard (percent.map { String($0) } ?? "unknown") == String(fields[4]) else {
+            return corpusFailure("decoder", row: number)
+        }
         let value = percent.map(ApexBattery.Status.battery) ?? .unavailable
-        let writer = BatteryHistoryWriter(directory: root.appendingPathComponent(String(index)))
-        writer.record(value)
-        guard let csv = try? String(contentsOf: writer.file, encoding: .utf8),
-              let line = csv.split(whereSeparator: \.isNewline).last,
-              let sample = BatteryHistoryReader.parse(String(line)),
-              sample.percent == percent,
-              sample.state == (percent == nil ? "unavailable" : "online") else { return false }
+        // Exercise both sides of the whole-second formatting boundary.
+        for (phase, fraction) in [0.001, 0.499, 0.9999].enumerated() {
+            let now = Date(timeIntervalSince1970: 1_800_000_000 + fraction)
+            let directory = root.appendingPathComponent("\(index)-\(phase)")
+            guard verifyCorpusHistory(value, percent: percent, directory: directory,
+                                      now: now, row: number) else { return false }
+        }
         if percent == nil {
             let alerts = BatteryAlertPolicy()
             guard alerts.evaluate(.battery(83), notifyLow: true, notifyDisconnect: true) == nil,
                   alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil,
                   alerts.evaluate(value, notifyLow: true, notifyDisconnect: true) == nil,
                   alerts.evaluate(.notConnected, notifyLow: true, notifyDisconnect: true) == nil
-            else { return false }
+            else { return corpusFailure("alerts", row: number) }
         }
     }
     print("PASS: 20 shared F7 observations, CSV and alert policy")
