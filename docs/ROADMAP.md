@@ -1677,3 +1677,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       in pinned official ISCmplr.dll; two regressions and CLI gate.
 - [ ] Hosted CI/integration; licensing, independent key trust and
       hardware acceptance. Release hold.
+
+### Scoped Inno runtime notice preparation
+
+- [x] Review exact Inno license, pinned Pascal Script license, and
+      LZMA SDK decoder declarations; retain exact copies in documentation.
+- [x] Add visible upstream attribution and two notice integrity regressions.
+- [ ] Review transitive Delphi/RTL, embedded helpers and other third-party
+      terms, exact Windows SDK coverage and candidate distribution notices.
+- [ ] Hosted CI and integration; separately qualify future installer and
+      portable notice inclusion. No release admission.
