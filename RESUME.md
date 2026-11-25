@@ -1,3 +1,15 @@
+# Resume — ENG-14 bounded local APEX analysis
+
+Source 09b9a47 / tree b76c9c4; common local QA 114/114,
+14 steps, manifest verified on reopen (offline-qa-aainipi4).
+ENG-14 bounded APEX report reader and sanitized failure output
+candidate; existing comparison semantics retained. Regression pending.
+GitHub auth status reports available again, but previous merge failed
+HTTP 401; no alternate credentials or write permission assumed.
+Next: run local common QA, verify current PR head/checks and retry
+normal merge only if authorization and exact reviewed head permit.
+ENG-05 native logging still requires hosted Windows verification.
+
 # Resume — ENG-16 local evidence verification
 
 Source 09e8d3d / tree 1590ec8: common Python QA PASS from clean checkout,

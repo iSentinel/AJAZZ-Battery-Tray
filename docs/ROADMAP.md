@@ -31,7 +31,7 @@ and [AGENTS](../AGENTS.md). Priority order:
 - [ ] ENG-04/08/16: local Python QA entrypoint passed clean local run (111 tests, 14 steps); explicit evidence verifier implemented locally. Hosted qualification, native wrappers, atomic publication and case catalog remain open.
 - [ ] ENG-05/15: safe logging and external transport security review.
 - [ ] ENG-06/12: pin and review dependencies/actions, upstream inventory, SBOM/license/advisories.
-- [ ] ENG-07/14: CLI contracts, bounded inputs, installer dry-run and rollback.
+- [ ] ENG-07/14: CLI contracts, bounded inputs (first APEX comparator fix implemented locally), installer dry-run and rollback.
 - [ ] ENG-09/11: real hardware, DPI, worker recovery and sleep acceptance.
 - [ ] ENG-10: exact candidate release admission, reproducibility/signature status, separate approval. BLOCKED.
 - [ ] ENG-13: other CI providers / Confluence only if explicitly selected and qualified.

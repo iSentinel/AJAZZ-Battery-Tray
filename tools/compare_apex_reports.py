@@ -4,13 +4,16 @@
 import argparse
 from collections import Counter
 from collections.abc import Iterator
+import os
 from pathlib import Path
 import re
+import stat
 
 RX = re.compile(r"^\s*RX buffer\[(\d+)\]=([0-9a-fA-F]+)\s*$")
 TX = re.compile(r"^\s*Attempt UTC=.*?delay=(\d+)ms; TX\[(\d+)\]=")
 RECEIVER = re.compile(r"^\[Receiver #(\d+)\]$")
 SECTION = "[Fresh APEX protocol matrix — full vendor buffers]"
+MAX_REPORT_BYTES = 1024 * 1024
 
 
 def legacy_percent(data: bytes) -> int | None:
@@ -70,14 +73,33 @@ def read_attempts(text: str) -> Iterator[tuple[str, int, int, bytes | None]]:
             yield receiver, delay, length, data
 
 
+def read_report(path: Path) -> str:
+    """Read only a bounded regular local report, not a pipe or symlink."""
+    before = path.lstat()
+    if not stat.S_ISREG(before.st_mode):
+        raise ValueError("Expected a regular local report")
+    if before.st_size > MAX_REPORT_BYTES:
+        raise ValueError("Report exceeds one MiB")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    fd = os.open(path, flags | getattr(os, "O_BINARY", 0))
+    with os.fdopen(fd, "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        if (not stat.S_ISREG(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino)):
+            raise ValueError("Report identity changed before read")
+        data = stream.read(MAX_REPORT_BYTES + 1)
+    if len(data) > MAX_REPORT_BYTES:
+        raise ValueError("Report exceeds one MiB")
+    return data.decode("utf-8-sig")
+
+
 def inspect(path: Path) -> None:
     """Summarize each returned buffer and distinguish no-RX attempts."""
     attempts = Counter()
     received = Counter()
     valid = 0
     print(f"\n=== {path.name} ===")
-    for receiver, delay, length, data in read_attempts(
-            path.read_text(encoding="utf-8-sig")):
+    for receiver, delay, length, data in read_attempts(read_report(path)):
         key = (receiver, delay, length)
         if data is None:
             attempts[key] += 1
@@ -103,11 +125,11 @@ def main() -> int:
     parser.add_argument("reports", nargs="+", type=Path)
     args = parser.parse_args()
     failed = False
-    for path in args.reports:
+    for index, path in enumerate(args.reports, 1):
         try:
             inspect(path)
         except (OSError, ValueError) as error:
-            print(f"{path.name}: ERROR: {error}")
+            print(f"Report #{index}: ERROR: {type(error).__name__}")
             failed = True
     print("\nCandidate fields are hypotheses, not validated live battery readings.")
     return 1 if failed else 0

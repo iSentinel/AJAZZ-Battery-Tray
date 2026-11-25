@@ -127,3 +127,12 @@ Next local ENG-16 change adds explicit --verify, fixed complete inventory,
 strict manifest schema, per-file identity/metadata checks and rejection of
 symlinks/hardlinks. It is local integrity only, not authentication,
 durability or an atomic multi-file snapshot. No source push due to 401.
+
+ENG-16 clean local QA at 09b9a47 / tree b76c9c4, 114/114 tests,
+14 steps, zero errors/failures/skips, verified manifest on reopen
+(private run offline-qa-aainipi4). Next ENG-14 fixes the unbounded
+APEX comparator input: one MiB cap, regular local file only, descriptor
+identity check, safe ordinal/error type on failed input. Existing
+success output, positional CLI and exit 0/1 retained; successful
+local reports still show user-selected basename. Broader CLI/output
+privacy review remains open. No runtime or HID changes.

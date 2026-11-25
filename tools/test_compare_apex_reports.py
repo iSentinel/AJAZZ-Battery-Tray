@@ -1,7 +1,13 @@
 """Synthetic regression cases for offline APEX report analysis."""
 
+import contextlib
+import io
+from pathlib import Path
+import tempfile
 import unittest
-from compare_apex_reports import legacy_percent, vendor_candidate, read_attempts, SECTION
+from unittest.mock import patch
+from compare_apex_reports import (legacy_percent, vendor_candidate, read_attempts,
+                                  read_report, main, SECTION, MAX_REPORT_BYTES)
 
 
 class ApexComparisonTests(unittest.TestCase):
@@ -56,6 +62,43 @@ class ApexComparisonTests(unittest.TestCase):
                 windows = bytes([5]) + bridge[1:]
                 self.assertEqual(legacy_percent(windows), None if ready else 100)
                 self.assertEqual(vendor_candidate(windows), ("candidate-only", 100))
+
+    def test_bounded_report_and_nonregular_input(self) -> None:
+        """Read a local UTF-8 report and reject oversized or directory inputs."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / "report.txt"
+            path.write_text(SECTION, encoding="utf-8-sig")
+            self.assertEqual(read_report(path), SECTION)
+            path.write_bytes(b"x" * (MAX_REPORT_BYTES + 1))
+            with self.assertRaises(ValueError):
+                read_report(path)
+            with self.assertRaises(ValueError):
+                read_report(root)
+
+    def test_report_symlink_is_rejected(self) -> None:
+        """Do not read a report redirected via a symbolic link."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / "report.txt"
+            path.write_text(SECTION, encoding="utf-8")
+            link = root / "link.txt"
+            try:
+                link.symlink_to(path)
+            except (OSError, NotImplementedError):
+                self.skipTest("Symlink creation unavailable on this platform")
+            with self.assertRaises(ValueError):
+                read_report(link)
+
+    def test_cli_error_does_not_export_raw_exception(self) -> None:
+        """Retain exit 1 without including the exception's private text."""
+        output = io.StringIO()
+        with (patch("sys.argv", ["compare_apex_reports.py", "report.txt"]),
+              patch("compare_apex_reports.inspect", side_effect=OSError("PRIVATE_CANARY")),
+              contextlib.redirect_stdout(output)):
+            self.assertEqual(main(), 1)
+        self.assertIn("Report #1: ERROR: OSError", output.getvalue())
+        self.assertNotIn("PRIVATE_CANARY", output.getvalue())
 
     def test_malformed(self) -> None:
         """Reject absent matrix and mismatched reported buffer lengths."""
