@@ -1,3 +1,14 @@
+# Resume — notice staging and field evidence
+
+New stacked notice preparation: five exact files from four pinned packs,
+all five hashes and sizes verified. SDK REDIST lists net8.0/net6.0 paths,
+actual package has net9.0; .NET Windows single-file product terms require
+separate review. No distribution workflow change or legal clearance.
+Owner report 2026-11-25 04:30 UTC: shared receiver candidate 96, 6/6
+agreement, 0/6 validated; AULA fresh 66, zero misses. Prior owner-confirmed
+AJ179 field 97; new report model provisional. No raw report committed,
+no telemetry promotion. #99 comment 7152938353. Release hold unchanged.
+
 # Resume — merge license inventory with resource serialization
 
 #161 integrated a98cb0d after exact 4/4 CI. #162 prior head b48e3de
