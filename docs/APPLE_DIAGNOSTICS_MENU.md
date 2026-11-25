@@ -133,3 +133,29 @@ verified active HID capture. Unversioned reports and Windows reports
 are outside this initial parser's scope. No upload, I/O or telemetry
 promotion occurs. Actual native report fixtures and cross-platform
 comparison remain open.
+
+## Cross-platform redacted summary
+
+Windows extended reports now include Report schema: windows-extended-v1.
+The local tool:
+
+    python tools/normalize_device_diagnostics.py report.txt
+
+accepts the two versioned Apple layouts and the reviewed Windows extended
+or full comparison layout. Unversioned Windows reports with that exact
+layout are labelled windows-extended-legacy, not silently upgraded.
+Output uses device-diagnostics-summary-v1 with platform-specific observation
+fields inside a common envelope. Windows ordinary completion time is not
+the Apple last-verified USB session time. Windows manual and last direct
+GATT observations remain separate; cached Windows battery is never direct
+GATT or USB telemetry. Unknown presence remains unknown. The seventh .NET
+fractional-second digit is truncated to Python microsecond precision.
+Raw trace and arbitrary labels are omitted; full-matrix presence is not
+evidence of successful capture. AULA and other unrelated device readings
+are not imported by this adapter. No identity or simultaneity claim.
+
+The importer uses bounded regular-file reads (one MiB Windows, 64 KiB Apple).
+Six synthetic regression tests cover independent sources, historical layouts,
+full trace redaction, missing inspector, unknown presence and malformed data.
+Physical native report fixtures and active trace outcome normalization remain
+open. No protocol or polling change.
