@@ -1,3 +1,14 @@
+# Resume — candidate metadata coherence without publication
+
+#245 merged e20a350 after exact 7/7 CI and eight archive/13-document
+native replay; default Program Files install and scoped attribution
+PASS. Exact BOM schema and dated advisory replay PASS.
+New draft defaults beta.61, Universal build 65; dormant release tag
+aligned, stale embedded notes replaced with draft notes. No overrides
+in 6.7.4 candidate CI; historical replay identical. Two regressions.
+Native rerun, actual production compiler/notice selection, legal,
+signing, interactive and hardware gates open. Release hold.
+
 # Resume — production-shaped non-publishing Inno 6.7.4 qualification
 
 #243 merged fab3734 into draft #99 after 6/6; eight native archive
