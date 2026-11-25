@@ -136,3 +136,14 @@ identity check, safe ordinal/error type on failed input. Existing
 success output, positional CLI and exit 0/1 retained; successful
 local reports still show user-selected basename. Broader CLI/output
 privacy review remains open. No runtime or HID changes.
+
+## Integrated policy and current candidate
+
+PR #137 merged 4099ae4 after all four hosted checks PASS and successful
+normal retry of previously failed authorization. Six local commits copied
+onto the same tested tree, original local branch preserved. PR #138 at
+0b1ed6d (tree c230ebc9c073a3c1db1dbca45794dce645f93265) passed clean
+local common QA: 117 tests, 14 steps, zero errors/failures/skips; manifest
+verified on reopen, private run offline-qa-m7fozn0p. Hosted candidate
+checks pending; no native/runtime claims or publication. Release hold is
+in draft #99, not main. ENG-05 is the next independent remediation.

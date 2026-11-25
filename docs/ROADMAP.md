@@ -26,8 +26,8 @@
 
 See [standard](engineering-standards.md), [audit and exception register](ENGINEERING_ADOPTION_AUDIT.md),
 and [AGENTS](../AGENTS.md). Priority order:
-- [ ] ENG-01/02: adopt standards and hold unsafe release workflows; review CI.
-- [ ] ENG-03: Python production/test source debt reduced to zero locally; exact empty-baseline gate implemented. Hosted verification and native equivalent, lint/static typing remain open.
+- [x] ENG-01/02: standards and source-level release hold passed #137 CI, merged into draft #99 at 4099ae4; main still unchanged.
+- [ ] ENG-03: Python production/test source debt zero; exact empty-baseline gate in #138 (117 tests local PASS). Hosted verification and native equivalent, lint/static typing remain open.
 - [ ] ENG-04/08/16: local Python QA entrypoint passed clean local run (111 tests, 14 steps); explicit evidence verifier implemented locally. Hosted qualification, native wrappers, atomic publication and case catalog remain open.
 - [ ] ENG-05/15: safe logging and external transport security review.
 - [ ] ENG-06/12: pin and review dependencies/actions, upstream inventory, SBOM/license/advisories.

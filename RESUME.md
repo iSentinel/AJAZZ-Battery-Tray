@@ -1,3 +1,18 @@
+# Resume — ENG-03/04/14/16 candidate PR #138
+
+#137 all four checks PASS, normal retry of merge succeeded after prior
+HTTP 401, merged into draft #99 at 4099ae4. No main merge or release.
+Six local commits preserved and cherry-picked into fix/engineering-offline-qa.
+Candidate #138 source 0b1ed6d / tree c230ebc9c073a3c1db1dbca45794dce645f93265.
+Common QA clean run: Python 3.13.5, Linux x86_64, cc 14.2.0,
+117/117 tests, 14 steps, zero failures/errors/skips; AST zero and required
+manifest verified on reopen. Private run ID offline-qa-m7fozn0p.
+ENG-03 Python AST gate, ENG-04 runner, ENG-16 verifier, ENG-14 first
+bounded report fix implemented; hosted checks pending. Full native audit,
+lint/type analysis, atomic evidence publication and release gates open.
+Next: inspect exact #138 CI and merge only on success; ENG-05 safe native
+logging remediation and regression tests. No new HID or publication.
+
 # Resume — ENG-14 bounded local APEX analysis
 
 Source 09b9a47 / tree b76c9c4; common local QA 114/114,
