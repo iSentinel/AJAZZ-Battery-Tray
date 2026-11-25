@@ -85,3 +85,17 @@ a typed union, not a claim of full static type checking. No Python
 dependency added. Next: remediate test fixture and test method docs/types,
 then activate exact zero-debt gate without adopting a blanket baseline.
 Native audit/lint/type analysis remain separate ENG-03 work.
+
+## ENG-03 exact zero-debt gate
+
+Local commits f2553e6 and 949665a eliminated all 81 production and 247 test
+source findings by explicit annotations and scenario-specific documentation.
+No assertions or test bodies weakened. Python 3.13.5, 104/104 tests passed
+after each commit; AST inventory zero. No legacy debt entries accepted.
+The next local candidate enables the empty versioned exact baseline and
+recursive tools/**/*.py scanning, with tests for nested sources and symlinks.
+CI workflow requires the baseline check and preserves its report even after
+an earlier failing step. This is a source audit, not full PEP 8 lint, type
+checking, native-language audit or hardware validation.
+GitHub write access remains blocked by HTTP 401; hosted CI for local
+commits not run. No branch protection or release setting changed.

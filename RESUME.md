@@ -1,3 +1,14 @@
+# Resume — ENG-03 zero Python source debt
+
+Source: f2553e6 (81 production findings removed), 949665a (247 test
+findings removed). Local Python 3.13.5 regression 104/104 after each.
+Stage: exact empty baseline, recursive source audit and CI gate.
+No reviewed legacy debt entries required. Native audit/lint/types pending.
+GitHub HTTP 401 at #137 merge; local branch fix/engineering-python-types
+not pushed. No hosted evidence for local commits. Release hold unmerged.
+Next independent action: ENG-04 dependency-free offline QA result contract,
+then native wrappers and evidence validation. No production/hardware work.
+
 # Resume — ENG-03 Python annotations
 
 Source: PR #137 tested head 0e140d3 / tree ad04238d1f7d9dc9f5668257bb57335b80824434.

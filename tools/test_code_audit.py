@@ -1,9 +1,11 @@
 """Source-only engineering audit regression cases."""
 
 from collections import Counter
+from pathlib import Path
+import tempfile
 import unittest
 
-from code_audit import audit_text, baseline_keys, compare, keys
+from code_audit import audit_text, baseline_keys, compare, keys, scan
 
 
 class CodeAuditTests(unittest.TestCase):
@@ -43,6 +45,33 @@ class CodeAuditTests(unittest.TestCase):
         new, resolved = compare(actual, baseline + baseline)
         self.assertFalse(new)
         self.assertEqual(resolved, baseline)
+
+    def test_nested_sources_cannot_escape_gate(self) -> None:
+        """New Python modules in subdirectories are included in the audit."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            nested = root / "tools" / "nested"
+            nested.mkdir(parents=True)
+            (nested / "new.py").write_text("def f():\n    pass\n")
+            findings = scan(root)
+            self.assertEqual(len(findings), 2)
+            self.assertEqual(findings[0].path, "tools/nested/new.py")
+            self.assertTrue(compare(findings, Counter())[0])
+
+    def test_symlink_rejected(self) -> None:
+        """Do not follow symlinked source entries into unreviewed files."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tools = root / "tools"
+            tools.mkdir()
+            outside = root / "outside.py"
+            outside.write_text("raise RuntimeError()")
+            try:
+                (tools / "linked.py").symlink_to(outside)
+            except (OSError, NotImplementedError):
+                self.skipTest("Symlink creation unavailable on this platform")
+            with self.assertRaises(ValueError):
+                scan(root)
 
     def test_baseline_schema(self) -> None:
         """Reject malformed versions or finding keys; keep multiplicities."""

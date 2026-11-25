@@ -36,6 +36,7 @@ failures or interpolate untrusted shell input.
 ## 3. Quality and debt
 Source-only Python AST audit (no imports of scanned code), exact finding
 identity (path, qualified symbol, rule, detail), preserve multiplicities.
+The Python audit covers tools/**/*.py including tests; symlinks are rejected.
 Line number is evidence only. A baseline requires review; reject any new
 finding and require removal of resolved entries. Do not regenerate to pass.
 Establish native C#/Swift/ObjC equivalent audit and lint separately; AST is

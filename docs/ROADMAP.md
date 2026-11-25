@@ -27,7 +27,7 @@
 See [standard](engineering-standards.md), [audit and exception register](ENGINEERING_ADOPTION_AUDIT.md),
 and [AGENTS](../AGENTS.md). Priority order:
 - [ ] ENG-01/02: adopt standards and hold unsafe release workflows; review CI.
-- [ ] ENG-03: source-only inventory implemented; production tool annotations remediated locally, test source debt next; exact gate and native equivalent remain open.
+- [ ] ENG-03: Python production/test source debt reduced to zero locally; exact empty-baseline gate implemented. Hosted verification and native equivalent, lint/static typing remain open.
 - [ ] ENG-04/08/16: portable offline QA, JUnit/JSON, private immutable evidence and catalog.
 - [ ] ENG-05/15: safe logging and external transport security review.
 - [ ] ENG-06/12: pin and review dependencies/actions, upstream inventory, SBOM/license/advisories.

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tools/**'
+      - 'config/code-audit-baseline.json'
       - '.github/workflows/release-*.yml'
       - 'tests/fixtures/**'
       - 'macos/AjazzBatteryReport.h'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - 'tools/**'
+      - 'config/code-audit-baseline.json'
       - '.github/workflows/release-*.yml'
       - 'tests/fixtures/**'
       - 'macos/AjazzBatteryReport.h'
@@ -42,14 +44,15 @@ jobs:
           python tools/compare_get_ids.py --help
           python tools/compare_ready_clear.py --help
           python tools/code_audit.py --help
-      - name: Inventory Python engineering debt (not qualification)
+      - name: Enforce exact Python engineering debt gate
+        if: always()
         run: |
           mkdir -p artifacts
-          python tools/code_audit.py --inventory > artifacts/code-audit.json
+          python tools/code_audit.py --baseline config/code-audit-baseline.json > artifacts/code-audit.json
       - name: Preserve source-only audit inventory
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: code-audit-inventory
+          name: code-audit
           path: artifacts/code-audit.json
           if-no-files-found: error

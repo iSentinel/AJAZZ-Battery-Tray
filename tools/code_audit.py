@@ -102,12 +102,19 @@ def read_bounded(path: Path) -> str:
 
 
 def scan(root: Path) -> list[Finding]:
-    """Audit current flat tools tree, including regression test sources."""
-    if (root / "tools").is_symlink():
-        raise ValueError("Symlinked tools directory")
-    paths = sorted((root / "tools").glob("*.py"))
+    """Audit the tools tree, rejecting symlinked source directories/files."""
+    directory = root / "tools"
+    if directory.is_symlink() or not directory.is_dir():
+        raise ValueError("Expected regular tools directory")
+    paths = []
+    for entry in directory.rglob("*"):
+        if entry.is_symlink():
+            raise ValueError("Symlinked tools entry")
+        if entry.suffix == ".py":
+            paths.append(entry)
     if not paths:
         raise ValueError("No Python source files")
+    paths.sort()
     return sorted(finding for path in paths
                   for finding in audit_text(path.relative_to(root).as_posix(),
                                             read_bounded(path)))
@@ -150,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         findings = scan(ROOT)
-        result = {"schema": 1, "scope": "tools/*.py including tests",
+        result = {"schema": 1, "scope": "tools/**/*.py including tests",
                   "findings": [asdict(finding) for finding in findings]}
         code = 0
         if args.baseline:
