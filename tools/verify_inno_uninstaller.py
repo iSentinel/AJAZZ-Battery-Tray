@@ -12,6 +12,7 @@ import lzma
 from compare_inno_loader import TEMPLATE_SHA, compare, digest, layout
 from run_offline_qa import write_json
 from verify_inno_inner_engine import ENGINE_SHA, recover
+from verify_inno_messages import verify_messages
 from verify_installer_candidate import SETUP
 from verify_uninstaller_evidence import EXE, verify_pair
 from verify_windowsdesktop_provenance import read_local
@@ -66,6 +67,7 @@ def verify_attribution(raw: bytes, sha: str, candidate_raw: bytes,
     return {'schema': 1, 'binding': binding, 'recovery': record,
             'official_engine_sections': match['sections'],
             'attribution': attribute(engine, exe),
+            'messages': verify_messages(exe[len(engine) + 32:-12]),
             'engine_non_resource_bytes': 'MATCH',
             'engine_resource_provenance': 'NOT_VERIFIED',
             'compiled_script': 'NOT_VERIFIED', 'release_admission': 'NOT_VERIFIED'}

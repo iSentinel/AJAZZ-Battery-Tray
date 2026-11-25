@@ -452,3 +452,18 @@ Actual replay via verify_inno_uninstaller.py PASS, evidence SHA-256
 c05499fe53a691806206fc27eca9aa1e3426fa7b6a64b2f6c0a358cf7b12da2c.
 No publisher trust, compiled script, physical acceptance or release
 admission is inferred.
+
+### Uninstaller message block structure
+
+Pinned Inno source Shared.Struct.pas, Shared.SetupMessageIDs.pas and
+SetupLdrAndSetup.Messages.pas define the exact message header, 281
+identifiers and language options record. Actual #206 uninstaller
+message region 25302 bytes: total message data 25200 bytes, header
+size complement and CRC32 07beb49d PASS; all 281 UTF-16LE
+NUL-terminated strings, 102-byte options with ID !mlo!670 PASS.
+Body SHA-256 31b34a6d0f6d21f25e92c7ef6fcb03067654b5dd16df3416374f2d12ed4b3dbd.
+Combined replay evidence SHA-256
+ddfbb4399e7241cabdbbd3fe9e74bf5e86a2a7a8a45aa8650ea21cb8a4b73c05.
+This is structural validation, not source text or language-option
+semantic equivalence. Compiled script, licensing, independent trust
+and hardware acceptance remain open.
