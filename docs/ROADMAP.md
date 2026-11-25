@@ -1490,3 +1490,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       components with official distribution and relevant signed inputs.
 - [ ] Attribute embedded engine/uninstaller, verify licensing/notice
       coverage, signature and physical acceptance. Keep release hold.
+
+### Official Inno compiler comparison
+
+- [x] Merge #200 and #201 after exact CI.
+- [x] Verify exact #201 compiler and installer archive digests, source
+      tree equivalence and candidate binding.
+- [x] Independently extract official Inno Setup 6.7.1 distribution
+      with pinned isolated tool; compare all 38 observed inputs.
+- [x] Add reproducible comparator and three synthetic regressions;
+      real inventory replay PASS.
+- [ ] Qualify ISSig cryptographic verification and publisher keys;
+      attribute embedded engine/uninstaller and review licensing.
+- [ ] Exact new candidate payload and physical acceptance.

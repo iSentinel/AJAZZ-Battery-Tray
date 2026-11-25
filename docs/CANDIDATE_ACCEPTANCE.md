@@ -243,3 +243,39 @@ workflow. The separate seven-day evidence artifact is not a full
 compiler directory inventory, module load trace, signed-input
 verification, embedded engine attribution or licensing clearance.
 Native execution and review of the observed inventory remain pending.
+
+### Actual compiler inventory compared with official distribution
+
+#201 native installer CI run 45575117356 passed. Inventory artifact
+15003144789 SHA-256
+`b5363e88521e524c4060215615882ffe8a28a110d31b4788f907670a147ea7d5`;
+candidate artifact 15004565401 SHA-256
+`54aea7b6b1a069028098fe7e9104bd4d58a9111ce75f0d3b384625f0a9b12ca6`.
+Both match GitHub REST digests. CI checkout
+`d03bbd8c15b472006cfba9e1b633db0085aa0ed9` has parents f19af12
+and 098ec00 and identical tree to PR head 098ec00 and merged c7f44c7.
+Inventory and candidate manifest agree on source and setup SHA-256
+`68ff9d3f9c87c9ea611a0d7e4cb04bac1314aed5b92dbd566bddadae49a279ef`.
+The reported app hash is
+`fcf1831766b88236908da0286827a615600ae85eef56c51a0efd697da9a1376b`.
+This is a new CI candidate; earlier #198 payload qualification does
+not independently verify these new application bytes.
+
+Official [Inno Setup 6.7.1 release](https://github.com/jrsoftware/issrc/releases/tag/is-6_7_1)
+asset 357294783, SHA-256
+`4d11e8050b6185e0d49bd9e8cc661a7a59f44959a621d31d11033124c4e8a7b0`,
+and companion asset 357294875, SHA-256
+`09ea9b9931a562cae199fecd76583cab22d0a50506912d211a5cfb2fe4ebf2c5`,
+matched GitHub REST digests. The official installer was extracted
+using the same pinned unprivileged network-isolated innoextract
+environment described above; it was not executed. All 38 scoped
+observations (21 primary inputs and 17 .issig sidecars) matched
+the independently extracted official files in size and SHA-256.
+The official .issig declares the same package digest; cryptographic
+signature verification and trusted key qualification remain open.
+
+New compare_inno_compiler.py validates the two CI archives, exact
+component set, source/setup binding, official package digest, and
+extracted file hashes. Actual replay PASS. The CLI does not perform
+extraction, authenticate the publisher, or attribute embedded code;
+the caller must establish directory provenance. No release admission.
