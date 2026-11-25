@@ -349,3 +349,39 @@ EXE certificate table absent. This evidence qualifies only the exact
 builds, embedded installer engine, publisher trust or physical tests.
 The OpenSSL ISSig replay evidence SHA-256 is
 `f70f2e72f6362fc7affc69e14f3b7091f637821448c2b3228c0c306e8ed106d0`.
+
+### Scoped Inno loader template comparison
+
+The exact #201 setup (SHA-256
+`68ff9d3f9c87c9ea611a0d7e4cb04bac1314aed5b92dbd566bddadae49a279ef`)
+was compared to official SetupLdr.e32 (SHA-256
+`eb95b6ea1abb86dfb53023c2c8ce3c2e8d51cfc52f7a8efa61cc33e198feff23`).
+The latter is one of the 38 matched official files and its ISSig
+was verified against the pinned source key.
+
+The x86 PE32 entry point and ten non-resource section records match;
+all their file-backed bytes and gaps match exactly. The two empty
+sections are layout matches, not additional code evidence.
+Only five header fields differ: initialized-data size, image size,
+resource directory size, resource section virtual size and raw size.
+Resource growth is structurally consistent with alignment. The
+resource section and 41845722-byte appended overlay are not qualified.
+The reviewed Compiler.SetupCompiler.pas source at cfdf4892 describes
+icon, version and manifest updates, offset table writing, and LZMA
+compression of the inner setup executable after call transformation.
+The observed resource difference is consistent with those operations;
+no claim is made that each changed resource has been reconstructed.
+
+Reproducible command on trusted immutable local artifacts:
+
+```sh
+python3 tools/compare_inno_loader.py --template SetupLdr.e32 \
+  --setup setup.exe \
+  --setup-sha256 68ff9d3f9c87c9ea611a0d7e4cb04bac1314aed5b92dbd566bddadae49a279ef \
+  --output loader-comparison.json
+```
+
+Actual replay PASS. Evidence JSON SHA-256
+`5e95b06d4cf04fb38932644416075b293507e83a2c820c14d7e15920688c4fa0`.
+This is a scoped loader attribution only, not verification of the
+compressed inner engine, uninstaller, resources, script or trust.

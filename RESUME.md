@@ -1341,3 +1341,15 @@ five declared files match, EXE hash fcf1831766b88236908da0286827a615600ae85eef56
 Scoped PE/.NET and 269-component CycloneDX schema PASS. Private
 evidence /root/ajazz-201-payload.Lb7VSIiW. No engine/signature trust
 or physical acceptance claim; public release hold unchanged.
+
+## Scoped loader comparison checkpoint
+
+#203 merged e0dac42; exact tree equals eccb848. Earlier b35316e
+Universal self-tests 15/15 PASS but artifact ENOTFOUND, rerun requested.
+#201 exact setup vs pinned official SetupLdr.e32: ten non-resource
+section records and bytes/gaps match, five resource-growth header
+fields differ. New compare_inno_loader.py actual replay PASS;
+resource and overlay explicitly unqualified. Evidence
+/root/ajazz-201-payload.Lb7VSIiW/loader-comparison.json.
+Inner engine offset table/LZMA/call transform, uninstaller, trust,
+licensing and physical acceptance remain open.

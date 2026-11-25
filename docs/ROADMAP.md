@@ -1524,3 +1524,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       replay scoped PE/.NET/SBOM on actual new beta.61 EXE.
 - [ ] Hosted CI of reusable ISSig verifier, embedded engine attribution,
       independent key trust, licensing and physical acceptance.
+
+### Scoped Inno loader attribution
+
+- [x] Merge #203 after exact 4/4 CI, e0dac42.
+- [x] Compare actual #201 PE32 loader to pinned official SetupLdr.e32;
+      ten non-resource sections, gaps and entry point match.
+- [x] Add strict scoped comparator, three synthetic regressions and
+      CLI help. Record resource/overlay as not qualified.
+- [ ] Validate loader offset resource and extract bounded inner setup
+      engine; reverse documented call transform, verify CRC and
+      compare with official template. Uninstaller attribution pending.
+- [ ] Independent key trust, licensing and hardware acceptance.
