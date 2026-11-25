@@ -2269,3 +2269,21 @@ configuration commands. USB `VersionNumber` is a device revision,
       no binary or checklist identity transfer to a different build.
 - [ ] Verify next complete integration CI generation; physical,
       signing and distribution admission remain open.
+
+### Scoped Inno 6.7.4 evidence replay — integration generation 5b18c5c
+
+- [x] #270 exact 2/2 CI merged 43e3cb5 after tested-tree equality.
+- [x] Replay 14 input documents from eight digest-checked artifacts
+      of successful run 45694508038, integration head 5b18c5c,
+      synthetic checkout 5c825ce. Hosted joined JSON matches replay
+      after line-ending normalization. Production-shape and local-build
+      checks are scoped MATCH; migration remains NOT_AUTHORIZED.
+- [x] Restore three pinned CycloneDX schemas from specification tag
+      1.6 after temporary directory loss; exact digest checks and
+      independent schema validation with candidate binding PASS.
+- [x] Re-evaluate retained NuGet and OSV evidence for four exact
+      source packs. No matching ranges or returned IDs in those
+      historical inputs. Freshness and authentication not verified.
+- [ ] Rebind the latest complete portable/Apple CI generation for
+      hardware review. Physical, signing, distribution, interactive
+      acceptance and compiler migration gates remain open.
