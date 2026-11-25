@@ -87,6 +87,7 @@
              Link="BluetoothMultiSession.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothAutoPolicy.cs"
              Link="BluetoothAutoPolicy.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/BluetoothManualObservation.cs" Link="BluetoothManualObservation.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BluetoothBatteryResult.cs"
              Link="BluetoothBatteryResult.cs" />
     <Compile Include="../../src/AjazzBatteryTray/BatteryDisplayState.cs"

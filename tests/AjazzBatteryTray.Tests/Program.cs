@@ -18,6 +18,25 @@ void Check(string name, bool valid)
     }
 }
 
+var manualAt = new DateTimeOffset(2026, 11, 25, 1, 17, 0, TimeSpan.Zero);
+var manual97 = BluetoothManualObservation.Create("AJ179 APEX", true,
+    new(97, BluetoothBatterySource.DirectGatt, "PRIVATE_CANARY"), manualAt);
+Check("Manual diagnostic preserves fresh source and historical UTC",
+    manual97.Format().Contains("AJ179 APEX; transport=BLE; battery=97; source=DirectGatt") &&
+    manual97.Format().Contains("historical=true") && manual97.CompletedAt == manualAt &&
+    !manual97.Format().Contains("PRIVATE_CANARY"));
+var privateManual = BluetoothManualObservation.Create("PRIVATE_NAME", true,
+    new(97, BluetoothBatterySource.WindowsCached, "PRIVATE_STATUS"), manualAt);
+Check("Manual diagnostic redacts unknown name and labels cache",
+    privateManual.Source == BluetoothBatterySource.WindowsCached &&
+    !privateManual.Format().Contains("PRIVATE_"));
+Check("Manual diagnostic rejects invalid fresh percentage",
+    BluetoothManualObservation.Create("AJ179 APEX", true,
+        new(101, BluetoothBatterySource.DirectGatt, "invalid"), manualAt).Percent is null);
+Check("Manual diagnostic rejects Classic direct GATT claim",
+    BluetoothManualObservation.Create("AJ179 APEX", false,
+        new(97, BluetoothBatterySource.DirectGatt, "invalid"), manualAt).Percent is null);
+
 Check("100 percent", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0, 100, 1, 1, 1, 2 }) == 100);
 Check("34 percent", BatteryReportParser.ParseWindowsFeature(

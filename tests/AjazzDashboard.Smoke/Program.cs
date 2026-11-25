@@ -170,6 +170,9 @@ internal static class Program
         var diagnostics = Find("Diagnostics");
         diagnostics.PerformClick();
         var diagnosticMenu = diagnostics.ContextMenuStrip!;
+        diagnosticMenu.Items[0].PerformClick();
+        Require(action == "report", "Unified report command missing");
+        diagnostics.PerformClick();
         diagnosticMenu.Items[1].PerformClick();
         Require(action == "telemetry", "Telemetry command missing");
         diagnosticMenu.Close();
