@@ -65,6 +65,35 @@ class WindowsCliAnalysisTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 analyze(bad)
 
+    def test_completed_outcomes(self) -> None:
+        """Reject contradictory successful, inconclusive and transport evidence."""
+        base = ordinary()
+        success = base.replace('INCONCLUSIVE: no verified battery report',
+                               'PASS: verified battery 42%').replace(
+                                   'END: worker exited 2', 'END: worker exited 0')
+        for bad in (ordinary('Accepted'), success,
+                    base.replace('INCONCLUSIVE:', 'FAIL:'),
+                    base.replace('STEP: SET F7 OK Win32=0 elapsed=0ms\n', ''),
+                    base.replace('STEP: found 1 matching MI_02 paths',
+                                 'STEP: found 1 matching MI_02 paths\n'
+                                 'STEP: found 0 matching MI_02 paths')):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                analyze(bad)
+        for gate in ('Accepted', 'Unrecognized'):
+            row = analyze(success.replace('ReadUnavailable', gate))
+            self.assertEqual(row['reported_percent'], 42)
+        legacy = success.replace('F7 policy gate: ReadUnavailable\n', '')
+        self.assertEqual(analyze(legacy)['reported_percent'], 42)
+
+    def test_experimental_terminal(self) -> None:
+        """A mixed timeout and worker exit cannot describe one experiment."""
+        text = fixture()
+        for bad in (text + '\nTIMEOUT: worker exceeded deadline',
+                    text.replace('END: worker exited 2',
+                                 'END: worker exited 2\nEND: worker exited 2')):
+            with self.assertRaises(ValueError):
+                analyze(bad)
+
     def test_invalid(self) -> None:
         """Reject displaced markers, missing timezone and invented labels."""
         for text in ('prefix\n' + ordinary(), ordinary().replace('00Z', '00'),

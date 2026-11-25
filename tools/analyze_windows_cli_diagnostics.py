@@ -11,7 +11,7 @@ import sys
 
 from compare_diagnostic_timeline import gate_sequences
 from compare_get_ids import MODE, parse, summarize
-from compare_windows_hid_logs import classify, parse_log
+from compare_windows_hid_logs import Capture, classify, parse_log
 
 LIMIT = 1024 * 1024
 BEGIN = re.compile(r'BEGIN: UTC=(\S+) timeout=(\d+)s')
@@ -45,8 +45,20 @@ def framing(text: str) -> tuple[list[str], str]:
     return lines, stamp.isoformat()
 
 
+def terminal_marker(lines: list[str]) -> str:
+    """Require one terminal marker and exclude contradictory worker outcomes."""
+    terminal = [line for line in lines if line.startswith(('END:', 'TIMEOUT:'))]
+    if len(terminal) != 1 or lines[-1] != terminal[0]:
+        raise ValueError('missing, duplicate or displaced terminal marker')
+    if terminal[0].startswith('TIMEOUT:'):
+        if any(line.startswith('PASS:') for line in lines):
+            raise ValueError('timeout contradicts success')
+    return terminal[0]
+
+
 def experiment(lines: list[str]) -> dict:
     """Compare only paired status prefixes without returning raw bytes."""
+    terminal_marker(lines)
     entries = parse('\n'.join(lines))
     rows = summarize(entries) if entries is not None else []
     counts = Counter(row[-1] for row in rows)
@@ -56,21 +68,43 @@ def experiment(lines: list[str]) -> dict:
             'reported_percent': None}
 
 
+def validate_completed(lines: list[str], capture: Capture) -> None:
+    """Require the emitted terminal summary to agree with the worker result."""
+    outcomes = [line for line in lines
+                if line.startswith(('PASS:', 'INCONCLUSIVE:', 'FAIL:'))]
+    expected = (f'PASS: verified battery {capture.battery}%'
+                if capture.ended == 0 else 'INCONCLUSIVE: no verified battery report')
+    if outcomes != [expected] or lines[-2] != expected:
+        raise ValueError('contradictory or displaced worker outcome')
+    if sum(line.startswith('STEP: found ') for line in lines) > 1:
+        raise ValueError('duplicate enumeration count')
+    if capture.get_ok + capture.get_failed > capture.set_ok:
+        raise ValueError('GET count exceeds successful SET count')
+
+
+def validate_gates(gates: dict, capture: Capture) -> None:
+    """Check reported labels without promoting them to independent telemetry."""
+    counts = gates['reported_gate_counts']
+    total = sum(counts.values())
+    if total > capture.get_ok:
+        raise ValueError('more classifications than successful GET operations')
+    if counts.get('Accepted', 0) and capture.battery is None:
+        raise ValueError('accepted classification contradicts missing battery')
+    if (capture.battery is not None and total == capture.get_ok
+            and not (counts.get('Accepted') or counts.get('Unrecognized'))):
+        raise ValueError('reported battery contradicts complete rejection labels')
+
+
 def ordinary(lines: list[str]) -> dict:
     """Preserve ordinary worker outcome and exclude gates from failed captures."""
-    terminal = [line for line in lines if line.startswith(('END:', 'TIMEOUT:'))]
-    if len(terminal) != 1 or lines[-1] != terminal[0]:
-        raise ValueError('missing, duplicate or displaced terminal marker')
-    if sum(line.startswith('PASS:') for line in lines) > 1:
-        raise ValueError('duplicate success marker')
+    terminal_marker(lines)
     capture = parse_log('\n'.join(lines))
     status, _ = classify(capture)
     completed = capture.ended in (0, 2) and not capture.timed_out
-    if completed and lines[-1] != f'END: worker exited {capture.ended}':
-        raise ValueError('invalid terminal marker')
+    if completed:
+        validate_completed(lines, capture)
     gates = gate_sequences('\n'.join(lines) if completed else '', False)
-    if sum(gates['reported_gate_counts'].values()) > capture.get_ok:
-        raise ValueError('more classifications than successful GET operations')
+    validate_gates(gates, capture)
     return {'mode': 'ordinary_f7', 'outcome': status,
             'reported_percent': capture.battery,
             'transport': {'set_ok': capture.set_ok, 'set_failed': capture.set_failed,

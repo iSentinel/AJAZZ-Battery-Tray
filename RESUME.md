@@ -1,3 +1,10 @@
+# Resume — CLI diagnostic consistency
+
+#268 exact 5/5 CI merged bd84554 after tested-tree equality.
+Child validates terminal outcomes, transport counts and policy label
+consistency without independently verifying telemetry. Two additional
+synthetic groups; legacy logs supported. Native and hardware gates open.
+
 # Resume — local Windows CLI diagnostic analysis
 
 #267 exact 4/4 CI merged 3432dc7 after tested-tree equality.
