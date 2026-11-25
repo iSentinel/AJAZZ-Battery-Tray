@@ -556,3 +556,15 @@ four source icons' sizes, hashes, solid offsets and compressed extent.
 This is inventory equivalence, not independent decompression or
 semantic verification of script/header records. Actual replay SHA-256
 df3bd148952bb37ad05d523053241e791b4fbd515af075ee122db3d5c9dc39f8.
+
+### Independent solid stream decoding
+
+Exact #206 setup solid chunk (40486354 compressed bytes after zlb
+marker) independently decoded using bounded raw LZMA2, 64 KiB output
+chunks and version-3 inverse call transform with per-file offsets.
+All five decoded file SHA-256 values and sizes match retained inventory;
+the 149610595-byte application and four icon payloads pass. Exact
+end-of-stream, no compressed or decoded suffix. No executable launched
+or file extracted by this verifier. Actual replay SHA-256
+eee25bde51d1742bee02db3e37cb6f3464e168cba6c7703e8e50d9784208ebb9.
+Script and remaining header semantic verification still open.
