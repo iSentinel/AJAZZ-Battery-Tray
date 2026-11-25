@@ -1,3 +1,13 @@
+# Resume — independent PE resource serialization (scoped inputs)
+
+#158 integrated f23b8fc after 4/4 checks. #160 935a1a4 staged.
+New stacked verifier derives .rsrc bytes and size from pinned Host and
+embedded application resources. Historical #147 Tray 1629900 and HA
+1473220 bytes exact; reconstructed headers and zero tail both PASS.
+Scope limited to reviewed key types and three named resources; no
+independent app build, whole-file reproducibility or signature claim.
+Hosted CI and release/physical gates remain open.
+
 # Resume — conditional PE header reconstruction
 
 #159 merged b21337d after 4/4 CI and actual synthetic lifecycle log PASS.
