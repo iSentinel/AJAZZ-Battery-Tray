@@ -29,6 +29,13 @@ The capture pauses ordinary AJAZZ polling and RTC sync; it performs only the
 existing allowlisted SET F7 / GET 05 battery query, at 30, 100 and 250 ms
 requested waits and the existing distinct buffer lengths (65–256 bytes).
 It completes every allowed length/delay combination, even after success.
+
+Unreleased issue #93 candidate: full capture runs in an isolated worker,
+with a 40-second deadline and local status. Raw bytes travel through an
+anonymous pipe; incomplete reports are discarded. A Windows kill-on-close
+job and start handshake protect the worker lifetime. If termination cannot
+be confirmed, AJAZZ polling remains paused. This is a pending CI and GUI
+acceptance candidate, not behavior shipped in beta.60.
 Up to nine requests per eligible collection (usually six). It records
 the sanitized interface, USB revision, HID capacities, full TX and initialized
 GET buffers, full returned buffer on successful GET, Win32 failures, UTC and
