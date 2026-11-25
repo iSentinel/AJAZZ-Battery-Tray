@@ -345,3 +345,31 @@ tests pass. Native rerun pending. Production compiler remains 6.7.1;
 migration, signing, advisory freshness, independent schema check of
 the new exact BOM, distribution terms and interactive/hardware
 acceptance remain separate gates. Release hold unchanged.
+
+## Exact #242 SBOM and migration checkpoint
+
+The independently validated #242 BOM SHA-256
+3416f7d8f9c205422f73efc7597c8804b0be8c90b84461ec7400db2023881475
+matches the joined product evidence. Independent CycloneDX Draft7
+validation and candidate binding PASS; evidence SHA-256
+b238afa21a260efa1e4bcbda865330897811f9a4d58b91cc44f7091cf519f019.
+The retained Nov25 NuGet and OSV observations were replayed on the
+exact BOM, not freshly acquired; four exact source packs, no matches
+or IDs. Evidence SHA-256 respectively
+0be0bbf6cbbeb7811cb6145582d251171ada84032be5597b517fd9c22fbd68a5
+and 96728ee180c20662abe1383b747e48bb8e63ef3bba71702a5ab53a1ff6864641.
+No freshness, installer-wide, OS or full transitive advisory clearance.
+
+Migration checklist:
+1. Verify exact #243 hosted joined evidence and integration tree.
+2. Prepare a distinct non-publishing production-shaped build using
+   exact 6.7.4 portable inputs, normal output filename/version policy
+   and reviewed notice inclusion; repeat same-run binary qualification
+   and normal upgrade tests. Do not substitute notice-probe evidence
+   for a different production-shaped binary.
+3. Review complete distribution notices, signer trust and terms.
+4. Record actual RG01-RG06 interactive UAC observations and required
+   device/OS acceptance. A silent hosted test cannot establish these.
+5. Only after review of the exact resulting candidate may production
+   compiler/notice selection and release admission be considered.
+   Preserve the 6.7.1 historical baseline and manual release hold.
