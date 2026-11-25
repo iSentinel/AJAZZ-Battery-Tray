@@ -78,6 +78,16 @@ class SessionImportTests(unittest.TestCase):
             timeline([first.replace('Display cache active: False',
                                     'Display cache active: True'), second])
 
+    def test_roundtrip_contract_wired_to_native_exporter(self) -> None:
+        """Keep Windows CI running the production exporter and Python verifier."""
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / '.github/workflows/build.yml').read_text()
+        fixture_code = (root / 'tests/AjazzBatteryTray.Tests/DiagnosticSessionInterop.cs').read_text()
+        self.assertIn('--export-diagnostic-session-fixture', workflow)
+        self.assertIn('python tools/verify_diagnostic_session_roundtrip.py $archive', workflow)
+        self.assertIn('session.Export(output)', fixture_code)
+        self.assertIn('FileMode.CreateNew', fixture_code)
+
     def test_extra_traversal_or_missing_member(self) -> None:
         """Reject any name outside the exact ordered set."""
         with tempfile.TemporaryDirectory() as root:

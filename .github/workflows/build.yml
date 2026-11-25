@@ -54,6 +54,18 @@ jobs:
         run: |
           dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
           if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
+      - name: Verify native diagnostic session roundtrip
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP ('ajazz-session-' + [Guid]::NewGuid().ToString('N') + '.zip')
+          try {
+            dotnet run --no-build -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj -- --export-diagnostic-session-fixture $archive
+            if ($LASTEXITCODE -ne 0) { throw 'Native session export failed' }
+            python tools/verify_diagnostic_session_roundtrip.py $archive
+            if ($LASTEXITCODE -ne 0) { throw 'Native session import failed' }
+          } finally {
+            Remove-Item -LiteralPath $archive -ErrorAction SilentlyContinue
+          }
       - name: Smoke-test localized Device Manager controls
         run: dotnet run -c Release --project tests/AjazzDashboard.Smoke
       - name: Smoke-test cumulative process-tree CPU accounting
