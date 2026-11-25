@@ -9,7 +9,7 @@ import sys
 from run_offline_qa import write_json
 from validate_scoped_sbom_schema import digest, document, read, binding
 from verify_inno674_components import VENDOR
-from verify_inno674_setup_records import COMPILER, PRODUCTION_SOURCE_PINS, SOURCE_PINS, destinations
+from verify_inno674_setup_records import ALIGNED_SOURCE, COMPILER, PRODUCTION_SOURCE_PINS, SOURCE_PINS, destinations
 from verify_windows_notice_transport import MANIFEST_SHA
 
 NAMES = (
@@ -124,12 +124,35 @@ def production_shape(raw: bytes, result: dict, records: dict) -> dict:
             'production_shape': 'MATCH_SCOPED'}
 
 
+def local_build(raw: bytes, result: dict, solid: dict, records: dict) -> dict:
+    """Bind compiler preflight evidence to the exact observed solid payload."""
+    value = document(raw)
+    require(result.get('production_shape') == 'MATCH_SCOPED')
+    files = {row['name']: row['sha256'] for row in solid['files']}
+    icons = {name: files['Icons/' + name] for name in
+             ('AppIcon.ico', 'AppIcon-white.ico', 'AppIcon-black.ico', 'AppIcon-blue.ico')}
+    require(records['installer_source_lf_sha256'] == ALIGNED_SOURCE
+            and files['Notices/manifest.json'] == MANIFEST_SHA
+            and files['AJAZZBatteryTray.exe'] == result['app_sha256'])
+    expected = {
+        'schema': 'local-inno674-build-v1', 'engine_version': '6.7.4',
+        'setup_sha256': result['setup_sha256'], 'app_sha256': result['app_sha256'],
+        'icons': icons, 'installer_source_sha256': ALIGNED_SOURCE,
+        'notice_manifest_sha256': MANIFEST_SHA, 'input_identity': 'MATCH',
+        'source_provenance': 'NOT_VERIFIED', 'lifecycle': 'NOT_RUN',
+        'distribution_compliance': 'NOT_VERIFIED', 'release_admission': 'NOT_VERIFIED',
+    }
+    require(value == expected)
+    return {**result, 'local_build_sha256': digest(raw), 'local_build': 'MATCH_SCOPED'}
+
+
 def main(argv: list[str] | None = None) -> int:
     """Read fixed named JSON documents; do not run or publish anything."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--production-shape', action='store_true')
+    parser.add_argument('--local-build', action='store_true')
     args = parser.parse_args(argv)
     try:
         raw = [read(args.root / (n + '.json')) for n in NAMES]
@@ -139,6 +162,9 @@ def main(argv: list[str] | None = None) -> int:
             result = production_shape(read(args.root / 'production-shape.json'), result, records)
         else:
             require(records['installer_source_lf_sha256'] not in PRODUCTION_SOURCE_PINS)
+        if args.local_build:
+            result = local_build(read(args.root / 'local-build-evidence.json'),
+                                 result, document(raw[10]), records)
         write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):
         print('FAIL: scoped migration evidence', file=sys.stderr)

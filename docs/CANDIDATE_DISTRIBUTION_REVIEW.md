@@ -133,3 +133,35 @@ also matches the qualified #246 installer payload. Exact retained
 6.7.4 compiler and staged notice files verified, output empty.
 No compiler execution occurred on Linux. Hosted Windows rerun
 of the new entrypoint is required. Release hold unchanged.
+
+## Native shared compiler result and independent binding
+
+PR #250 exact head 5a65a4eeadd1a4d0a69fc2b8cca8194a098c9f5b,
+hosted checkout 66c0cd5abc6a98640831b388c526d038812a218b,
+run 45668151400, job 139395824890, 6/6 CI PASS.
+Merged into draft #99 at fb48770 after tested tree comparison.
+Eight downloaded original evidence archives matched REST digests;
+joined artifact 15047359142 ZIP SHA-256
+1eed43de924cefeb1c6f48baa86efabf8efbb4d3dc51c68d21f27b61542c86ce.
+The thirteen-document independent replay matched the hosted JSON
+after CRLF normalization. Hosted JSON SHA-256
+efe8941c49c56bafbccddc6f6f9442438536129fc2361997b2e4cfb17390487a.
+Setup SHA-256
+e4d2931a90f132aefe0b960f99a0fa6ac35c698fd03c8311b8e8cc1708d0537a;
+app SHA-256
+2f152941da4b6324652682d35ee82ac89f23e11939ca30b1d8a1447df3b33764.
+Local compiler evidence SHA-256
+3207932dcc93257e0f16813e902e661ac2bb875b6d3037744c8f0956b7610dbe.
+
+Extend the independent verifier with explicit --local-build mode:
+compare the entire local compiler evidence record to the exact
+joined candidate identity, aligned installer source, four solid
+payload icon hashes and pinned notice manifest. Preserve the
+historical replay format when the flag is absent. Native CI now
+requires the additional record. Actual #250 fourteen-document
+extended replay passed, previous thirteen-document result unchanged
+apart from the two added fields. Extended JSON SHA-256
+0c93f7a2d7bd0c90f547edf5b6c933722f832d2b0716bb758e5a3054e815d2a3.
+This is scoped evidence validation, not source provenance,
+distribution clearance or release admission. No new setup binary
+retained for owner testing.
