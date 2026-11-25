@@ -2183,3 +2183,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Correct #262 initial Windows test compile CS0136 by using
       matrix-specific variable names. Existing admission rules unchanged.
 - [ ] Re-run native F7 parity matrix on corrected head.
+
+### Apple F7 observation parity
+
+- [x] Introduce typed F7 classification in the shared C decoder
+      used by Universal and High Sierra. Preserve the optional report
+      ID stripping, compact fallback and existing acceptance gates.
+- [x] Native C replay on Linux: 4374 synthetic payload classifications,
+      8748 numbered/unnumbered decoder evaluations and historical
+      corpus PASS. No provisional-field promotion on Apple.
+- [ ] Native macOS CI and integration after corrected #262 passes.
+- [ ] Physical protocol validation and release hold unchanged.
