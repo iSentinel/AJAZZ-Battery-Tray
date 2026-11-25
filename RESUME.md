@@ -1204,3 +1204,12 @@ Integration bda4dc0: 5/6 PASS, Universal run 45565394706/job
 diagnostics and explicit whole-second CSV flooring with three
 deterministic boundary replays per fixture. Suspected formatter/prune
 boundary issue, not confirmed original root cause. Native CI pending.
+
+## Diagnostic timeline checkpoint
+
+#189/#190 merged bda4dc0. New tools/compare_diagnostic_timeline.py accepts
+2–32 existing local reports, sorts timestamps, rejects duplicate captures,
+projects AULA cache separately and compares complete ready-clear matrices
+as unverified observations only. No raw buffers, paths, names or inferred
+identity in JSON. No hardware I/O. Hosted CI and actual multi-report
+replay / interactive capture workflow remain open.

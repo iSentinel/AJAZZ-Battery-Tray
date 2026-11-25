@@ -1361,3 +1361,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       failure cause is not yet proven. Preserve all original predicates.
 - [ ] Native macOS CI on exact candidate; investigate any failure stage.
 - [ ] Recheck integration and physical macOS acceptance.
+
+### Redacted multi-snapshot diagnostic timeline
+
+- [x] Confirm #189/#190 merged at bda4dc0 after exact hosted CI.
+- [x] Compare 2–32 local reports in chronological order; reject duplicate
+      timestamps, retain independent USB, GATT and active capture outcomes.
+- [x] Validate complete ready-clear matrices without promoting the field
+      to telemetry; distinguish absent receiver and uncomparable captures.
+- [x] Project AULA current/last-good/cache separately; reject inconsistent
+      or future observations; report adjacent state transitions.
+- [x] Synthetic regressions and CLI help in offline QA.
+- [ ] Hosted CI, physical capture acceptance and interactive capture workflow.
+- [ ] Release admission; no independent physical identity established.
