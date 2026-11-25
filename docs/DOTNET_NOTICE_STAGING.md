@@ -95,3 +95,28 @@ BOM bytes and both lifecycle document digests. Only JSON artifacts
 are retained. Composition is explicitly incomplete; independent
 schema validation, advisories, distribution compliance, physical
 acceptance and release admission remain unverified. Native CI pending.
+
+## Independent local CycloneDX validation
+
+The exact retained #206 BOM (SHA-256
+8b265767820c7fd26e037c982f3c338eded810b35d67c5d023e705bb12e4d50d)
+passed independent Draft7 validation against the three retained
+hash-pinned CycloneDX schemas. The optional local validator dependency
+lock is scoped to Linux x86_64 CPython 3.13; six exact wheels were
+verified against PyPI file SHA-256 metadata and installed in an isolated
+virtual environment using --require-hashes and --no-index. No system
+Python changes. The CLI validates with a local registry and never
+retrieves remote schema references. No claim of publisher signature
+verification for validator packages or of full SBOM coverage.
+
+```sh
+python -m venv .venv-sbom
+.venv-sbom/bin/python -m pip install --only-binary=:all: --require-hashes -r config/sbom-schema-linux-cp313.txt
+.venv-sbom/bin/python tools/validate_scoped_sbom_schema.py --sbom sbom.json --schema-dir cdx-schema --output schema-evidence.json
+```
+
+Use the three reviewed local schema files whose hashes are pinned in
+the verifier. For the new product-probe BOM also supply --binding
+product-sbom-binding.json. Actual historical schema evidence SHA-256
+667623b4bd919c04efcc028a7b55c49b7d1cdd885c98f9a4d99dad3bb10a7d23.
+The new product BOM still requires exact native evidence.

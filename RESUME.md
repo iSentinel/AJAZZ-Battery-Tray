@@ -1,3 +1,11 @@
+# Resume — independent scoped SBOM schema validation
+
+Stacked on #230. Actual #206 historical BOM passed CycloneDX 1.6
+Draft7 using three pinned local schemas and hash-checked isolated
+validator wheels. Strict local CLI and optional product binding;
+three regressions. New product SBOM evidence, CI/integration,
+advisories, legal and hardware gates remain open. Release hold.
+
 # Resume — candidate-bound product notice SBOM
 
 #229 merged 492b8a2 after 2/2 hosted checks. New hosted SBOM binding
