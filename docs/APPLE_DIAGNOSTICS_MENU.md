@@ -268,3 +268,17 @@ python3 tools/compare_diagnostic_timeline.py --session session.zip
 The portable C writer is exercised by offline QA and Python roundtrip
 tests with synthetic Apple reports. Native AppKit CI and actual macOS
 10.13 physical menu/export acceptance are still required.
+
+### Imported USB age at snapshot time
+
+The Apple parser preserves the reported ordinary USB state and
+percentage as historical fields. It also exposes freshness_at_snapshot
+and reported_age_eligible_percent. The latter is non-null only for a
+reported valid percentage with a non-future timestamp less than 300
+seconds before the snapshot. Missing/future/expired times do not
+qualify. Exactly 300 seconds is BOUNDARY_UNCERTAIN because native
+reports truncate timestamps to seconds. No percentage is inferred
+from a historical timestamp alone. These additive fields describe
+reported age at snapshot time, never current charge at import time,
+physical identity, independent verification or a fresh HID request.
+The manual GATT and active capture evidence remain separate.

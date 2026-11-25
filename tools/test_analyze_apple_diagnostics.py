@@ -1,5 +1,6 @@
 """Regression coverage for versioned, redacted Apple menu reports."""
 
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import tempfile
@@ -40,6 +41,34 @@ class AppleReportTests(unittest.TestCase):
             self.assertEqual(result['usb']['state'], 'unavailable')
             self.assertIsNone(result['usb']['percent'])
             self.assertFalse(result['active_trace_present'])
+
+    def test_reported_usb_age(self) -> None:
+        """Keep historical percent but never promote missing or expired age."""
+        for legacy in (False, True):
+            base = report(legacy).replace(
+                'receiver present, no valid battery' if legacy else 'unavailable',
+                'valid' if legacy else 'battery', 1).replace('battery: unknown', 'battery: 83%')
+            for age, state in ((None, 'MISSING_TIMESTAMP'), (-1, 'FUTURE_TIMESTAMP'),
+                               (0, 'WITHIN_REPORTED_WINDOW'), (299, 'WITHIN_REPORTED_WINDOW'),
+                               (300, 'BOUNDARY_UNCERTAIN'), (301, 'EXPIRED')):
+                text = base
+                if age is not None:
+                    stamp = datetime.fromisoformat(STAMP.replace('Z', '+00:00'))
+                    measured = (stamp - timedelta(seconds=age)).isoformat()
+                    text = text.replace('session): never', 'session): ' + measured)
+                with self.subTest(legacy=legacy, age=age):
+                    result = parse(text)['usb']
+                    self.assertEqual(result['percent'], 83)
+                    self.assertEqual(result['freshness_at_snapshot'], state)
+                    self.assertEqual(result['reported_age_eligible_percent'],
+                                     83 if state == 'WITHIN_REPORTED_WINDOW' else None)
+
+    def test_no_percent_with_historical_timestamp(self) -> None:
+        """A last verified timestamp alone never invents a battery value."""
+        text = report().replace('session): never', 'session): ' + STAMP)
+        result = parse(text)['usb']
+        self.assertEqual(result['freshness_at_snapshot'], 'NO_REPORTED_PERCENT')
+        self.assertIsNone(result['reported_age_eligible_percent'])
 
     def test_independent_gatt_zero(self) -> None:
         """Accept valid GATT zero but preserve independent USB unknown."""

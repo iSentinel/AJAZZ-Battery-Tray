@@ -60,7 +60,31 @@ def level(value: str, minimum: int) -> int | None:
     return number
 
 
-def usb(lines: list[str], edition: str) -> dict:
+def reported_age(percent: int | None, measured: str | None, snapshot: str) -> dict:
+    """Classify reported age at capture time, never at import time."""
+    if percent is None:
+        status = 'NO_REPORTED_PERCENT'
+    elif measured is None:
+        status = 'MISSING_TIMESTAMP'
+    else:
+        seconds = (datetime.fromisoformat(snapshot) -
+                   datetime.fromisoformat(measured)).total_seconds()
+        if seconds < 0:
+            status = 'FUTURE_TIMESTAMP'
+        elif seconds > 300:
+            status = 'EXPIRED'
+        elif seconds == 300:
+            # Native exports truncate timestamps to seconds. The exact
+            # five-minute boundary cannot be reconstructed from them.
+            status = 'BOUNDARY_UNCERTAIN'
+        else:
+            status = 'WITHIN_REPORTED_WINDOW'
+    return {'freshness_at_snapshot': status,
+            'reported_age_eligible_percent': (
+                percent if status == 'WITHIN_REPORTED_WINDOW' else None)}
+
+
+def usb(lines: list[str], edition: str, snapshot: str) -> dict:
     """Normalize ordinary session observation, never the active trace."""
     prefix = 'Last ordinary status: ' if edition == 'universal' else 'Battery state: '
     status, sep, value = field(lines, prefix).partition('; battery: ')
@@ -71,8 +95,10 @@ def usb(lines: list[str], edition: str) -> dict:
     if (normalized == 'valid') != (percent is not None):
         raise ValueError('inconsistent USB observation')
     last = field(lines, 'Last verified USB UTC (session): ')
+    measured = None if last == 'never' else utc(last)
     return {'state': normalized, 'percent': percent,
-            'last_verified_utc': None if last == 'never' else utc(last)}
+            'last_verified_utc': measured,
+            **reported_age(percent, measured, snapshot)}
 
 
 def gatt(lines: list[str]) -> dict:
@@ -117,8 +143,9 @@ def parse(text: str) -> dict:
     if lines.count(expected) != 1 or (
             edition == 'high-sierra' and lines.count('Usage: FFFF:0002') != 1):
         raise ValueError('unexpected HID scope')
+    stamp = utc(field(lines, 'UTC: '))
     return {'schema': 'apple-menu-v1', 'edition': edition,
-            'snapshot_utc': utc(field(lines, 'UTC: ')), 'usb': usb(lines, edition),
+            'snapshot_utc': stamp, 'usb': usb(lines, edition, stamp),
             'manual_gatt': gatt(lines), 'active_trace_present': bool(marker),
             'identity_binding': 'NOT_VERIFIED', 'simultaneous': 'NOT_VERIFIED'}
 

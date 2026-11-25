@@ -1,3 +1,11 @@
+# Resume — Apple diagnostic age evidence
+
+#255 exact 5/5 CI PASS, merged f729ca7 after tested-tree equality.
+Independent parser change preserves reported historical value and classifies
+age at snapshot time, with missing/future/expired and conservative
+300-second boundary. Two new regression groups. No hardware
+evidence or release authorization. Release hold unchanged.
+
 # Resume — Apple retained USB presentation age
 
 #254 corrected head 48a6cf3 passed 6/6 CI, merged df27f42 after

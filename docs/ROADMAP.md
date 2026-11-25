@@ -2099,3 +2099,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       policy changes. Shared C boundary check: 7/7 on Linux.
 - [ ] Native Universal and High Sierra self-tests and actual sleep/wake
       acceptance; no change to release tags or shipping build metadata.
+
+### Apple diagnostic age evidence
+
+- [x] Add reported age classification to the local Apple snapshot
+      parser, keeping historical state/percent and separating age
+      eligibility from actual current or independently verified data.
+      Conservative 300-second boundary for second-resolution reports.
+      Two new regression groups; both native report layouts exercised.
+- [x] #255 exact 5/5 CI, merged f729ca7 after tested-tree equality.
+- [ ] Hosted validation and merge of parser change.
+- [ ] Physical sleep/wake and real-device USB/GATT comparisons remain
+      open; no new HID commands or release authorization.
