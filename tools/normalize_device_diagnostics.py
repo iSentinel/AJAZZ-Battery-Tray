@@ -164,7 +164,9 @@ def universal_capture(lines: list[str]) -> dict:
         value = level(values[0], 1)
         if value is not None:
             return capture('reported_valid', value)
-    if states[0] in ('unknown', 'absent', 'unsupported', 'unavailable') and not values:
+    if states == ['absent'] and not values:
+        return capture('receiver_absent')
+    if states[0] in ('unknown', 'unsupported', 'unavailable') and not values:
         return capture('inconclusive')
     return capture('unrecognized')
 
@@ -210,6 +212,11 @@ def windows_capture(text: str) -> dict:
     known, count, battery = match.groups()
     value = windows_level(battery, 1)
     if value is None:
+        if known == 'True' and int(count) == 0:
+            matrix = lines[lines.index(MATRIX) + 1:]
+            if [line for line in matrix if line.strip()] == ['Matching MI_02 paths: 0']:
+                return capture('receiver_absent')
+            return capture('unrecognized')
         return capture('inconclusive')
     if known == 'True' and int(count) > 0:
         return capture('reported_valid', value)

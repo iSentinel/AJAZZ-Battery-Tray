@@ -224,3 +224,17 @@ feature 65 bytes; 6/6 successful SET/GET, 0/6 validated replies,
 AULA fresh 62%, zero consecutive no-reply polls, cache inactive.
 No independently bound GATT or sleep/wake sequence in this report.
 Do not change parser admission or enable new vendor requests.
+
+## Confirmed absent receiver outcome
+
+Owner beta.60 report 2026-11-25 06:38:48 UTC showed zero AJAZZ
+receivers and zero matching MI_02 paths in the fresh capture.
+Ordinary presence was known false, unverified mouse field unavailable;
+AULA independently returned fresh 62% after retry, no cache or misses.
+The preceding report had one receiver, unverified field 93 and AULA 62%.
+The Windows importer now distinguishes receiver_absent when enumeration
+is known and a zero-count summary agrees with an empty zero-path matrix.
+Unknown enumeration remains inconclusive; contradictory matrix evidence
+is unrecognized. Universal's explicit absent terminal state is also
+normalized as receiver_absent. This is reported state, not independently
+verified physical removal. Reconnect and independent GATT remain open.
