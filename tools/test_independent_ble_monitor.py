@@ -39,6 +39,18 @@ class IndependentBleMonitorTests(unittest.TestCase):
         self.assertNotIn('ConsentedBleEndpoints', backup)
 
 
+    def test_cache_presentation_remains_distinct(self) -> None:
+        """Propagate cached status to dashboard and both icon paths."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('fresh, _ble.LastSuccess(key), cached, _ble.LastSuccess(key)', code)
+        self.assertIn('stale = displayPercent.HasValue', code)
+        self.assertIn('!fresh.HasValue && cached.HasValue', code)
+        self.assertIn('retainCachedBle', code)
+        extra = (root / 'ReceiverMonitor.cs').read_text()
+        self.assertIn('stale: item.Stale', extra)
+        self.assertIn('response.IsFreshGatt && response.Percent is int percent', code)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1476,6 +1476,36 @@ Check("Opt-out invalidates an in-flight restored read", pendingConsent is not nu
     !restoredBle.Complete(pendingConsent, bleDirect, multiAt, true, true) &&
     restoredBle.Count == 0);
 
+// BLE cache is presentation-only, independent of the USB device.
+var bleCache = new BluetoothMultiSession(independent: true);
+bleCache.Enable("cache", bleDirect, multiAt);
+var cacheFailure = bleCache.TryBegin(true, true, multiAt.AddMinutes(1));
+Check("BLE failure invalidates fresh value without losing display cache",
+    cacheFailure is not null && bleCache.Complete(cacheFailure, bleFailed, multiAt.AddMinutes(1), true, true) &&
+    bleCache.VisiblePercent("cache", true, true, multiAt.AddMinutes(1)) is null &&
+    bleCache.CachedPercent("cache", multiAt.AddMinutes(1)) == 83);
+Check("BLE cache expires and rejects reversed time",
+    bleCache.CachedPercent("cache", multiAt.AddMinutes(30)) is null &&
+    bleCache.CachedPercent("cache", multiAt.AddSeconds(-1)) is null);
+var cacheRecovery = bleCache.TryBegin(false, false, multiAt.AddMinutes(3));
+Check("BLE recovery replaces the old cache",
+    cacheRecovery is not null && bleCache.Complete(cacheRecovery,
+        bleDirect with { Percent = 80 }, multiAt.AddMinutes(3), false, false) &&
+    bleCache.VisiblePercent("cache", false, false, multiAt.AddMinutes(3)) == 80 &&
+    bleCache.CachedPercent("cache", multiAt.AddMinutes(3)) == 80);
+bleCache.Disable("cache");
+Check("BLE opt-out removes cache", bleCache.CachedPercent("cache", multiAt.AddMinutes(3)) is null);
+bleCache.Restore("cache");
+Check("Restored consent has no historical cache", bleCache.CachedPercent("cache", multiAt.AddMinutes(3)) is null);
+var cachedBleSnapshot = LocalBatterySnapshot.Create(multiAt.AddMinutes(1), new[] {
+    new LocalBatterySnapshot.Input(LocalBatterySource.Bluetooth, 1,
+        new DeviceDashboardState("", "Bluetooth", DeviceDashboardStatus.Cached, 83, multiAt))
+});
+Check("BLE cached snapshot never exports fresh battery percentage",
+    cachedBleSnapshot.Devices[0].BatteryPercent is null &&
+    cachedBleSnapshot.Devices[0].LastKnownPercent == 83 &&
+    cachedBleSnapshot.Devices[0].Status == "cached");
+
 // Release checks are local, deterministic, and perform no HTTP requests.
 var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
 Check("Update accepts beta tag", installedVersion.Beta == 41);

@@ -1318,3 +1318,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add native policy and offline source regression checks.
 - [ ] Exact hosted CI and physical restart / opt-out / transport acceptance.
 - [ ] Explicit association and stable per-device icon; stale display policy.
+
+### BLE session cache and tray continuity
+
+- [x] Preserve last direct GATT value for display, capped at 30 minutes;
+      do not persist across restart or treat Windows cache as direct GATT.
+- [x] Explicit cached dashboard/local API/main and extra tray icons;
+      retain current cached BLE primary when USB has no verified value.
+- [x] Add native expiry, opt-out, recovery and local snapshot checks.
+- [ ] Hosted CI and physical sleep / switching acceptance.
+- [ ] Explicit USB/BLE device association and stable logical icon slot.

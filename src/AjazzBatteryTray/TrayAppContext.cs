@@ -57,15 +57,16 @@ public sealed class TrayAppContext : ApplicationContext
         {
             var now = DateTimeOffset.UtcNow;
             string? key = null;
-            bool fresh = false;
+            int rank = -1;
             int lowest = int.MaxValue;
             foreach (var pair in _bleSlots)
             {
-                bool valid = _ble.VisiblePercent(pair.Key, true, false, now).HasValue;
-                if (key is not null && (fresh && !valid ||
-                    fresh == valid && pair.Value.Number >= lowest)) continue;
+                int candidateRank = _ble.VisiblePercent(pair.Key, true, false, now).HasValue ? 2 :
+                    _ble.CachedPercent(pair.Key, now).HasValue ? 1 : 0;
+                if (key is not null && (candidateRank < rank ||
+                    candidateRank == rank && pair.Value.Number >= lowest)) continue;
                 key = pair.Key;
-                fresh = valid;
+                rank = candidateRank;
                 lowest = pair.Value.Number;
             }
             return key;
@@ -452,10 +453,11 @@ public sealed class TrayAppContext : ApplicationContext
     {
         string name = BleDisplayLabel(slot);
         const string transport = "Bluetooth";
-        int? percent = _ble.VisiblePercent(key, true, false, DateTimeOffset.UtcNow);
-        return new(name, transport, percent.HasValue
-            ? DeviceDashboardStatus.Fresh : DeviceDashboardStatus.NoReply,
-            percent, percent.HasValue ? _ble.LastSuccess(key) : null);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        int? fresh = _ble.VisiblePercent(key, true, false, now);
+        int? cached = _ble.CachedPercent(key, now);
+        return DeviceDashboardState.FromPoll(name, transport, _ble.LastAttempt(key).HasValue,
+            true, true, fresh, _ble.LastSuccess(key), cached, _ble.LastSuccess(key));
     }
 
     private ToolStripMenuItem BuildBluetoothMenu()
@@ -1374,6 +1376,7 @@ public sealed class TrayAppContext : ApplicationContext
         bool present = _latestUsbReading?.ReceiverPresent == true;
         return string.Join("\n", _bleSlots.OrderBy(x => x.Value.Number).Select(x =>
             $"{BleLabel(x.Value)}: battery={_ble.VisiblePercent(x.Key, known, present, now)?.ToString() ?? "unavailable"}; " +
+            $"cached display={(_ble.VisiblePercent(x.Key, known, present, now) is null ? _ble.CachedPercent(x.Key, now) : null)?.ToString() ?? "unavailable"}; " +
             $"failures={_ble.Failures(x.Key)}; last attempt UTC={_ble.LastAttempt(x.Key)?.ToString("O") ?? "never"}; " +
             $"last success UTC={_ble.LastSuccess(x.Key)?.ToString("O") ?? "never"}"));
     }
@@ -1809,9 +1812,13 @@ public sealed class TrayAppContext : ApplicationContext
             _settings.HiddenTrayDevices);
         int? aulaLevel = AulaDisplayPercent();
         bool aulaStale = _aulaLatest?.Percent is null && aulaLevel.HasValue;
+        int? usbPercent = reading.PresenceKnown ? receiver?.Reading.Percent : null;
+        bool retainCachedBle = primaryBle is not null && _lastSource == "Bluetooth" &&
+            _lastDevice == BleLabel(_bleSlots[primaryBle]) &&
+            _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow).HasValue &&
+            !usbPercent.HasValue;
         bool bluetoothPrimary = BatteryDisplayState.PreferIndependentBluetooth(
-            receiver is not null, reading.PresenceKnown ? receiver?.Reading.Percent : null,
-            BleEnabled, blePercent);
+            receiver is not null, usbPercent, BleEnabled, blePercent) || retainCachedBle;
         bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary;
         bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary &&
             (reading.ReceiverPresent || aulaPresent);
@@ -1835,6 +1842,12 @@ public sealed class TrayAppContext : ApplicationContext
         }
         bool displayConnected = displayPercent.HasValue;
         bool stale = aulaIsPrimary && aulaStale;
+        if (bluetoothPrimary && primaryBle is not null && !blePercent.HasValue)
+        {
+            displayPercent = _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow);
+            stale = displayPercent.HasValue;
+            displayConnected = stale;
+        }
         int? previousPercent = _lastPercent;
         if (displayConnected != _lastConnected ||
             previousPercent != displayPercent || source != _lastSource || device != _lastDevice || stale != _lastStale)
@@ -1886,15 +1899,20 @@ public sealed class TrayAppContext : ApplicationContext
         RefreshDashboard();
     }
 
-    private IReadOnlyList<(string Key, string Name, int? Percent)> BluetoothExtraIcons(
+    private IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> BluetoothExtraIcons(
         string? primary)
     {
         if (!_settings.MultipleTrayIcons || _bleSlots.Count == 0)
-            return Array.Empty<(string, string, int?)>();
+            return Array.Empty<(string, string, int?, bool)>();
         DateTimeOffset now = DateTimeOffset.UtcNow;
         return _bleSlots.Where(x => x.Key != primary).OrderBy(x => x.Value.Number)
-            .Select(x => ($"BLE:{x.Value.Number}", BleDisplayLabel(x.Value),
-                _ble.VisiblePercent(x.Key, true, false, now))).ToArray();
+            .Select(x =>
+            {
+                int? fresh = _ble.VisiblePercent(x.Key, true, false, now);
+                int? cached = _ble.CachedPercent(x.Key, now);
+                return ($"BLE:{x.Value.Number}", BleDisplayLabel(x.Value),
+                    fresh ?? cached, !fresh.HasValue && cached.HasValue);
+            }).ToArray();
     }
 
     private void UpdateIcon(int? percent, bool connected, bool stale = false,
