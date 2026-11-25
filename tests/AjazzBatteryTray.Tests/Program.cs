@@ -18,6 +18,44 @@ void Check(string name, bool valid)
     }
 }
 
+var manualAt = new DateTimeOffset(2026, 11, 25, 1, 17, 0, TimeSpan.Zero);
+var manual97 = BluetoothManualObservation.Create("AJ179 APEX", true,
+    new(97, BluetoothBatterySource.DirectGatt, "PRIVATE_CANARY"), manualAt);
+Check("Manual diagnostic preserves fresh source and historical UTC",
+    manual97.Format().Contains("AJ179 APEX; transport=BLE; battery=97; source=DirectGatt") &&
+    manual97.Format().Contains("historical=true") && manual97.CompletedAt == manualAt &&
+    !manual97.Format().Contains("PRIVATE_CANARY"));
+var privateManual = BluetoothManualObservation.Create("PRIVATE_NAME", true,
+    new(97, BluetoothBatterySource.WindowsCached, "PRIVATE_STATUS"), manualAt);
+Check("Manual diagnostic redacts unknown name and labels cache",
+    privateManual.Source == BluetoothBatterySource.WindowsCached &&
+    !privateManual.Format().Contains("PRIVATE_"));
+Check("Manual diagnostic rejects invalid fresh percentage",
+    BluetoothManualObservation.Create("AJ179 APEX", true,
+        new(101, BluetoothBatterySource.DirectGatt, "invalid"), manualAt).Percent is null);
+Check("Manual diagnostic rejects Classic direct GATT claim",
+    BluetoothManualObservation.Create("AJ179 APEX", false,
+        new(97, BluetoothBatterySource.DirectGatt, "invalid"), manualAt).Percent is null);
+
+var usbEvidence = new UsbDiagnosticHistory();
+Check("USB diagnostic empty before first numeric observation",
+    usbEvidence.Format().EndsWith("never"));
+usbEvidence.Observe(2, null, 97, manualAt);
+usbEvidence.Observe(2, null, null, manualAt.AddMinutes(1));
+Check("USB diagnostic preserves last unverified observation after no value",
+    usbEvidence.Format().Contains("unverified field=97") &&
+    usbEvidence.Format().Contains("verified at observation=unavailable") &&
+    usbEvidence.Format().Contains("historical=true"));
+usbEvidence.Observe(2, 90, null, manualAt.AddSeconds(-1));
+Check("USB diagnostic does not replace evidence with older observation",
+    usbEvidence.Format().Contains("unverified field=97"));
+usbEvidence.Observe(2, 96, 97, manualAt.AddMinutes(2));
+Check("USB diagnostic distinguishes verified observation from unverified",
+    usbEvidence.Format().Contains("verified at observation=96; unverified field=unavailable"));
+usbEvidence.Observe(2, 101, 0, manualAt.AddMinutes(3));
+Check("USB diagnostic rejects out-of-range observations",
+    usbEvidence.Format().Contains("verified at observation=96;"));
+
 Check("100 percent", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0, 100, 1, 1, 1, 2 }) == 100);
 Check("34 percent", BatteryReportParser.ParseWindowsFeature(

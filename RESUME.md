@@ -1,3 +1,12 @@
+# Resume — unified diagnostics and historical transport evidence
+
+#150 merged b5b5c53 after 5/5 checks, identical tree 9a2bfc0.
+#151 initial 9d2395a Windows 911 assertions PASS and EN/RU/UK dashboard
+smoke PASS; local Python 138/138 PASS. Join #150 parent preserving both
+roadmap blocks; retain last numeric single-receiver USB observation
+as historical diagnostics only, not linked to BLE. Fresh exact-head CI
+and owner acceptance needed. No release or parser promotion.
+
 # Resume — component attribution and runtime provenance
 
 #149 merged 09da592 after 5/5 CI, identical tree eee7a80.

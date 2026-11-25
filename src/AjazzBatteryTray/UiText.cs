@@ -294,6 +294,10 @@ public static class UiText
         ["Show all paired Bluetooth devices (if mouse name is different)"] =
             ("Показать все сопряжённые устройства Bluetooth", "Показати всі спарені пристрої Bluetooth"),
         ["Copy lookup summary"] = ("Копировать результат поиска", "Копіювати результат пошуку"),
+        ["Collect full diagnostics..."] = ("Собрать полную диагностику...", "Зібрати повну діагностику..."),
+        ["Collect full diagnostics? Yes includes raw vendor buffers; close the official utility first. No collects existing monitoring data only. Review before sharing."] =
+            ("Собрать полную диагностику? Да — с сырыми буферами; сначала закройте официальную утилиту. Нет — только имеющиеся данные мониторинга. Проверьте отчёт перед отправкой.",
+             "Зібрати повну діагностику? Так — із сирими буферами; спочатку закрийте офіційну утиліту. Ні — лише наявні дані моніторингу. Перевірте звіт перед надсиланням."),
         ["Find paired Bluetooth devices"] = ("Найти устройства Bluetooth", "Знайти пристрої Bluetooth"),
         ["Read selected battery"] = ("Прочитать заряд", "Зчитати заряд"),
         ["Use this mouse in tray when 2.4 GHz receiver is absent (this session)"] =

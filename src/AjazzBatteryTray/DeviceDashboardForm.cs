@@ -152,7 +152,7 @@ internal sealed class DeviceDashboardForm : Form
         _interval.Text = UiText.Get("Device polling interval...");
         _settings.Text = UiText.Get("Device settings") + " ▾";
         _diagnostics.Text = UiText.Get("Diagnostics") + " ▾";
-        _report.Text = UiText.Get("Extended device diagnostics...");
+        _report.Text = UiText.Get("Collect full diagnostics...");
         _telemetry.Text = UiText.Get("System telemetry preview...");
         _close.Text = UiText.Get("Close");
         foreach (DataGridViewColumn column in _grid.Columns)

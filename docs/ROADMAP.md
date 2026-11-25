@@ -995,3 +995,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] AJ159 owner acceptance issue #53 remains open. The owner's
       real Windows GearHub and beta.59 status replies contained
       zero battery fields; this release does not assert a fix.
+
+### Unified Windows diagnostic collection — owner request 2026-11-25
+
+- [ ] One full report collection action shared by tray, Bluetooth inspector and Device Manager; remove separate AULA, receiver and monitor-report copy actions. Keep API snapshot/log access separate as functional exports.
+- [ ] Include last manual BLE result and last direct GATT result with UTC/source, independent of opt-in; no arbitrary names, addresses or raw identifiers. Existing F7 capture remains explicit and bounded; summary-only and worker failure retain monitoring evidence. No new automatic BLE scan/read or HID command.
+- [ ] Owner AJ179 APEX USB F7 unverified 97 and subsequent direct BLE 2A19 97 agreement recorded in #34; no telemetry promotion pending multi-level freshness validation.
+- [ ] Native CI, dashboard smoke, RU/UK and physical owner acceptance; consider equivalent Apple diagnostic consolidation separately.
+
+- [ ] Preserve last sampled single-receiver numeric USB observation across removal/unknown/skipped polls for manual cross-transport comparison; explicitly historical, no inferred identity or telemetry.
