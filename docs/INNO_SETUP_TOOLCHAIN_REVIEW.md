@@ -157,3 +157,27 @@ observations to product setup, app, BOM and checkout identity.
 Only JSON artifacts are uploaded, no release binaries or production
 compiler changes. The new product probe result is pending, as are
 interactive UAC observations and exact generated binary attribution.
+
+## Scoped 6.7.4 product binary attribution
+
+The reviewed 6.7.4 templates retain the narrow unsigned PE32 layout
+used by the prior verifier. Exact new loader and engine SHA-256 pins
+are respectively:
+998c58046b0808e75a030859962e1fe1ea600e8a5cf4646b09aadce77342c1a9
+and
+0c94d43e2c0f4d8371a2e1813b5446f3bc85ece3211dc4a6676159b534bbc483.
+Source comparison shows the Shared.Struct version constants changed,
+but no offset-table format change in the reviewed delta.
+
+The 6.7.4 product workflow now retains a local copy of the actual
+installed uninstaller immediately before executing it, checks the
+copy hash against the executable, and emits a removal record only
+after successful cleanup. The scoped verifier binds that record to
+the exact product setup/source/application identity, checks pinned
+loader and engine non-resource bytes, validates the offset-table and
+compressed engine CRCs, then attributes the uninstaller PE and
+AppId/message frame to the recovered engine. Existing 6.7.1 pins and
+verifiers are unchanged. Only JSON evidence is uploaded.
+Two regressions pass; actual hosted attribution pending.
+Resource content, message semantics, compiled script, solid payload
+attribution, interactive acceptance and release admission remain open.

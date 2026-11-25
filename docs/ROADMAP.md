@@ -1896,3 +1896,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted result and integration; new exact loader/engine/uninstaller
       attribution, interactive UAC, legal and physical gates.
       Production 6.7.1 and release hold unchanged.
+
+### Inno 6.7.4 scoped product binary attribution
+
+- [x] Check exact new template PE32 layout and reviewed source delta;
+      preserve historical 6.7.1 verification pins.
+- [x] Add exact exercised-uninstaller capture and lifecycle binding;
+      new loader/engine/uninstaller/frame verifier, two regressions.
+- [ ] Native product and binary evidence, then resources, message
+      semantics, compiled script and solid payload attribution.
+- [ ] Interactive UAC, legal and physical gates; release hold.
