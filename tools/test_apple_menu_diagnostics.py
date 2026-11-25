@@ -42,11 +42,26 @@ class AppleMenuDiagnosticsTests(unittest.TestCase):
     def test_trace_worker_no_clock_mode(self) -> None:
         """Keep explicit trace on the existing telemetry path, not RTC."""
         worker = (ROOT / 'macos/ApexBoundedWorker.swift').read_text()
-        trace = worker.split('if mode == traceMode || mode == traceSampleMode {', 1)[1].split(
-            '} else if mode == clockMode', 1)[0]
+        trace = worker.split('private static func runTrace(', 1)[1].split(
+            'static func traceResult(', 1)[0]
         self.assertIn('ApexBattery.read', trace)
         self.assertNotIn('syncClock', trace)
-        self.assertIn('lines.count < 16', trace)
+        self.assertIn('count < 16', trace)
+
+    def test_partial_trace_contract(self) -> None:
+        """Keep a bounded partial trace without a final battery claim."""
+        worker = (ROOT / 'macos/ApexBoundedWorker.swift').read_text()
+        parser = worker.split('static func traceResult(', 1)[1].split(
+            'static func runChild(', 1)[0]
+        self.assertIn('data.count <= 4096', parser)
+        self.assertIn('records.dropLast()', parser)
+        self.assertIn('!$0.hasPrefix("Verified battery:")', parser)
+        self.assertIn('!$0.hasPrefix("Battery status:")', parser)
+        self.assertIn('lines.last == "END: trace complete"', parser)
+        self.assertIn('read(mode: traceHangMode, timeout: 3)', worker)
+        self.assertIn('read(mode: traceFailMode)', worker)
+        modern = (ROOT / 'macos/main.swift').read_text()
+        self.assertIn('no fresh battery claimed', modern)
 
     def test_export_native_contract(self) -> None:
         """Compile exact shared export helper and check mode/no-clobber/symlink."""

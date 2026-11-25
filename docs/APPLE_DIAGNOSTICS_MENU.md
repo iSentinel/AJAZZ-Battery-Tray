@@ -42,8 +42,8 @@ the full Windows delay matrix. The report separates the previous ordinary
 state from a new trace and includes version/build, UTC, OS, matching
 collection metadata, operation status, bounded prefix and elapsed time.
 No identity identifiers, firmware query, RTC or configuration action.
-Universal trace uses the existing 8-second supervisor; on timeout the
-partial child trace is not returned. Legacy wraps the existing 20-second
+Universal trace uses the existing 8-second supervisor; complete short
+records are retained on timeout or abnormal termination. Legacy wraps the existing 20-second
 CLI trace supervisor, preserving captured partial text when available,
 capped at 4096 bytes. An ordinary in-flight poll causes a busy message;
 the UI guard and shared vendor I/O lease prevent overlapping requests.
@@ -98,3 +98,18 @@ characteristic before decoding. A stale timeout is distinct from
 arbitrary delayed CoreBluetooth callbacks: physical repeat-read and
 disconnect tests are still required. Native self-tests exercise initial
 passive state and existing GATT payload validation.
+
+## Universal partial trace
+
+The explicit worker emits fixed newline-delimited records as the operations
+progress, including markers before potentially blocking HID calls. At most
+16 detail records (192 bytes each) plus truncation/status/end records keep
+the producer below 4096 bytes. The supervisor reaps the child before
+reading the pipe. On timeout, cancellation or abnormal exit only complete
+UTF-8 non-terminal records are returned, with an explicit INCOMPLETE
+label; terminal battery claims and an unfinished final line are discarded.
+Successful completion requires the terminal marker. This does not
+change routine IPC, protocol commands or telemetry. Native synthetic
+workers exercise timeout, abnormal exit, malformed/oversized output and
+normal completion without HID. Quit cancels the worker, but interactive
+cancellation and multi-snapshot collection remain separate tasks.
