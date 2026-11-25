@@ -1156,3 +1156,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Exact hosted CI; independent awake snapshot and full A01-A14.
 - [ ] Same-device multi-level direct GATT comparison and no-power-cycle
       evidence; keep unverified field outside telemetry. Release hold.
+
+### ENG-12 candidate-bound Apple undefined symbol inventory
+
+- [x] Verify exact 7c25cfa Apple artifacts by outer and inner hashes;
+      archive, load-command, seal, SBOM and CycloneDX 1.6 checks PASS.
+- [x] Inventory scoped nlist undefined symbols with ordinal attribution:
+      Universal x86_64 462, arm64 461; High Sierra x86_64 139.
+- [x] Validate symbol table extents, namespace, partition and weak flags;
+      five synthetic regressions and repeatable actual artifact output.
+- [ ] Exact hosted CI, independent export evidence, dyld bind/fixup
+      coverage, reexports, dynamic APIs and physical OS acceptance.
+      No symbol availability or release admission claim.

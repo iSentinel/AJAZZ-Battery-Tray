@@ -1,3 +1,12 @@
+# Resume — scoped Apple undefined symbols
+
+#173 merged 390e29c after 3/3 exact CI. Integrated 7c25cfa 6/6 PASS.
+Both hash-qualified 7c25cfa Apple ZIPs passed archive, load, seal,
+SBOM and CycloneDX schema checks. New scoped symbol tool inventories
+462/461 Universal and 139 High Sierra undefined nlist symbols.
+OS exports, runtime lookups and native compatibility unverified.
+Release hold unchanged.
+
 # Resume — extended owner evidence
 
 #172 merged 7c25cfa after 3/3 exact CI and 15/15 native macOS groups.
