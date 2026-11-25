@@ -110,3 +110,8 @@ The manifest writer uses explicit UTF-8 LF bytes and Git preserves the
 project license bytes across checkout platforms. Actual Linux staging
 replay retains the original pinned manifest SHA-256. Native Windows
 fixture result is pending.
+
+First hosted attempt (job 139195725680) failed in setup-python before
+notice acquisition: 3.12.16 unavailable on Windows x64. The official
+python-versions manifest lists stable 3.13.17 for Windows x64; pin that
+version for this job only. No fallback or verification bypass.

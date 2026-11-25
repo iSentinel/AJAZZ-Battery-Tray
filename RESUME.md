@@ -1516,3 +1516,7 @@ physical acceptance remain open; public release held.
 Retain exact upgrade uninstaller before execution; separate CI artifact
 with candidate and baseline digests, no uninstall data/log. Hosted
 upgrade run and independent engine attribution pending. Release hold.
+
+Notice probe CI bootstrap correction: Windows x64 Python 3.12.16 is
+unavailable; pin verified available stable 3.13.17 for this job only.
+#224 merged 18118e1 after 5/5 CI. Native install evidence still pending.
