@@ -1061,3 +1061,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted QA, SDK redistribution terms, distribution notices, toolchain
       license review, trusted signatures, candidate-bound SBOM and advisories.
       Release hold unchanged.
+
+### ENG-12 scoped Windows CycloneDX inventory
+
+- [x] Verify pinned packs and scoped host reconstruction before BOM generation.
+- [x] Cover actual embedded file hashes and source pack identities; refuse omissions.
+- [x] Historical Tray 265 and HA 184 files; both CycloneDX 1.6 schema PASS.
+- [ ] Hosted QA, exact release candidate, full graph and distribution/toolchain
+      coverage, signature trust, advisory disposition and release admission.

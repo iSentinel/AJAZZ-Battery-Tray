@@ -1,3 +1,11 @@
+# Resume — scoped Windows CycloneDX inventory
+
+#161 merged a98cb0d after exact 4/4 CI. #162 joined at 6728a01;
+combined QA 185/185 PASS. New scoped BOM generator verified historical
+Tray 265 and HA 184 embedded files, both official CycloneDX 1.6 schema
+PASS, with composition explicitly incomplete. Full distribution coverage,
+licenses, signatures, advisories and release admission remain open.
+
 # Resume — merge license inventory with resource serialization
 
 #161 integrated a98cb0d after exact 4/4 CI. #162 prior head b48e3de
