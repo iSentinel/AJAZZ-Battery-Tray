@@ -366,6 +366,22 @@ Check("APEX unverified field only on current ordinary observation",
     ApexDisplayPolicy.Unverified(true, true, true, 83, scheduleMeasurement, scheduleMeasurement) is null &&
     ApexDisplayPolicy.Unverified(true, true, false, 83, scheduleMeasurement, scheduleMeasurement.AddMinutes(6)) is null &&
     ApexDisplayPolicy.Unverified(false, true, false, 83, scheduleMeasurement, scheduleMeasurement) is null);
+var receiverFresh = ApexDisplayPolicy.Dashboard("Fresh", true, true, false, 71,
+    scheduleMeasurement, scheduleMeasurement);
+var receiverScheduled = ApexDisplayPolicy.Dashboard("Scheduled", true, true, true, 64,
+    scheduleMeasurement, scheduleMeasurement);
+var receiverExpired = ApexDisplayPolicy.Dashboard("Expired", true, true, false, 92,
+    scheduleMeasurement, scheduleMeasurement.AddMinutes(6));
+Check("APEX fresh receiver outranks scheduled and expired observations",
+    ApexDisplayPolicy.SelectionRank(receiverFresh) >
+    ApexDisplayPolicy.SelectionRank(receiverScheduled) &&
+    ApexDisplayPolicy.SelectionRank(receiverScheduled) >
+    ApexDisplayPolicy.SelectionRank(receiverExpired));
+Check("APEX missing presence and invalid values have no selection priority",
+    ApexDisplayPolicy.SelectionRank(ApexDisplayPolicy.Dashboard("Unknown", false, true,
+        false, 71, scheduleMeasurement, scheduleMeasurement)) == 0 &&
+    ApexDisplayPolicy.SelectionRank(receiverFresh with { Percent = 0 }) == 0 &&
+    ApexDisplayPolicy.SelectionRank(receiverFresh with { Percent = null }) == 0);
 Check("APEX expired USB allows linked fresh BLE selection",
     TransportLinks.Select(ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
         scheduleMeasurement, scheduleMeasurement.AddMinutes(6)).Percent, 77, null) is

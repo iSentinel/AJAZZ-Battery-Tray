@@ -692,3 +692,17 @@ historical context. Refreshing the presentation does not itself
 issue a new HID request or replay alerts/history. Check suspension,
 resume, delayed polls, language and appearance changes, and recovery
 on each supported OS. No actual Apple physical acceptance is claimed.
+
+## Multiple USB receivers with different observation ages
+
+In single-icon mode, prefer a currently fresh visible standalone USB
+receiver over a scheduled retained sample or an expired observation.
+For equal priority, prefer the existing summary receiver, then the
+stable ordinal key. A hidden or linked receiver must not be selected
+as a standalone icon. Multiple-icon mode retains its existing stable
+primary identity. The ordinary diagnostic summary selects the first
+fresh observation in the batch, then a current scheduled observation,
+then the first receiver. This changes presentation/summary selection,
+not HID requests, alerts, history, or per-receiver polling.
+Test with two physical receivers and unequal intervals, then disconnect
+or hide the fresh receiver and verify the remaining display.
