@@ -50,7 +50,7 @@ public sealed record LocalBatterySnapshot(int SchemaVersion, DateTimeOffset Gene
         if (!sampled)
             return new(source, input.SessionSlot, status, null, null, null);
         if (state.Percent is not (>= 0 and <= 100) || state.MeasuredAt is not { } measured ||
-            measured > now || now - measured > MaximumCachedAge)
+            !WithinRetention(status, measured, now))
             return new(source, input.SessionSlot, "unavailable", null, null, null);
         measured = measured.ToUniversalTime();
         bool fresh = state.Status == DeviceDashboardStatus.Fresh &&
@@ -60,6 +60,11 @@ public sealed record LocalBatterySnapshot(int SchemaVersion, DateTimeOffset Gene
         return new(source, input.SessionSlot, state.Status == DeviceDashboardStatus.Fresh ?
             "stale" : status, null, state.Percent, measured);
     }
+
+    /// <summary>Keep scheduled observations bounded even without another publication.</summary>
+    internal static bool WithinRetention(string status, DateTimeOffset measured, DateTimeOffset now)
+        => measured <= now && now - measured <= (status == "scheduled"
+            ? DeviceDashboardState.MaximumScheduledAge : MaximumCachedAge);
 
     private static string StatusName(DeviceDashboardStatus status) => status switch
     {

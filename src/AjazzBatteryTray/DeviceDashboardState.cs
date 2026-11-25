@@ -19,6 +19,7 @@ public sealed record DeviceDashboardState(string Name, string Transport,
     DeviceDashboardStatus Status, int? Percent, DateTimeOffset? MeasuredAt)
 {
     public static readonly TimeSpan MaximumFreshAge = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan MaximumScheduledAge = TimeSpan.FromMinutes(3);
 
     public static DeviceDashboardState FromPoll(string name, string transport,
         bool checkedOnce, bool presenceKnown, bool present, int? fresh,

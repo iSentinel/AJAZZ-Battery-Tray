@@ -2141,3 +2141,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       hidden/absent exclusion, preferred identity and ordinal tie-break
       in both iteration orders. No change to the ranking policy.
 - [ ] Native CI and physical multi-receiver validation.
+
+### Scheduled snapshot retention consistency
+
+- [x] #259 exact 5/5 native CI PASS, merged b39ebd4 after tested-tree
+      equality. Physical multi-receiver testing remains open.
+- [x] Share the existing three-minute scheduled display retention
+      ceiling with local API projection and read-time aging. A
+      scheduled snapshot cannot retain a numeric value for 24h
+      after publication. Five C# assertions cover boundaries and
+      immutable generation. Keep ordinary historical and cached
+      policies, HID parser and alerts unchanged.
+- [ ] Native Windows and HA preview CI; release hold unchanged.

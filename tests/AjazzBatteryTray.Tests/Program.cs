@@ -1983,6 +1983,15 @@ Check("API old fresh measurement demoted to stale", apiOld.Status == "stale" && 
 var apiCache = SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-2));
 Check("API cached data never current", apiCache.Status == "cached" && apiCache.BatteryPercent is null && apiCache.LastKnownPercent == 70);
 Check("API scheduled data never current", SnapshotRow(DeviceDashboardStatus.Scheduled, 70, snapshotNow).BatteryPercent is null);
+Check("API and tray share the scheduled retention ceiling",
+    DeviceDashboardState.MaximumScheduledAge == TimeSpan.FromMinutes(3) &&
+    ApexDisplayPolicy.ScheduledLifetime == DeviceDashboardState.MaximumScheduledAge);
+Check("API scheduled observation retained exactly through its deadline",
+    SnapshotRow(DeviceDashboardStatus.Scheduled, 71, snapshotNow.AddMinutes(-3)) is
+        { Status: "scheduled", BatteryPercent: null, LastKnownPercent: 71 });
+Check("API scheduled observation past deadline removes all numeric data",
+    SnapshotRow(DeviceDashboardStatus.Scheduled, 71, snapshotNow.AddMinutes(-3).AddTicks(-1)) is
+        { Status: "unavailable", BatteryPercent: null, LastKnownPercent: null, MeasuredAt: null });
 Check("API expired data unavailable", SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-25)).LastKnownPercent is null);
 Check("API future measurement unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, snapshotNow.AddSeconds(1)).BatteryPercent is null);
 Check("API missing timestamp unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, null).BatteryPercent is null);
@@ -2017,6 +2026,15 @@ Check("Snapshot read automatically ages fresh value", agedSnapshot?.Devices[0].L
 Check("Snapshot read does not rewrite generation or measurement time",
     agedSnapshot?.GeneratedAt == snapshotNow && agedSnapshot.Devices[0].MeasuredAt == snapshotNow);
 Check("Snapshot read expires old values", snapshotStore.Read(snapshotNow.AddHours(25))?.Devices[0].LastKnownPercent is null);
+var scheduledStore = new LocalSnapshotStore();
+scheduledStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Scheduled, 71, snapshotNow) });
+Check("Snapshot read retains scheduled value at deadline without publishing again",
+    scheduledStore.Read(snapshotNow.AddMinutes(3))?.Devices[0] is
+        { Status: "scheduled", BatteryPercent: null, LastKnownPercent: 71 });
+Check("Snapshot read expires scheduled value without extending generation",
+    scheduledStore.Read(snapshotNow.AddMinutes(3).AddTicks(1)) is { } expiredScheduled &&
+    expiredScheduled.GeneratedAt == snapshotNow && expiredScheduled.Devices[0] is
+        { Status: "unavailable", BatteryPercent: null, LastKnownPercent: null, MeasuredAt: null });
 Check("Snapshot clock rollback unavailable", snapshotStore.Read(snapshotNow.AddSeconds(-1)) is null);
 bool invalidSnapshotPublish = false;
 try { snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 1, snapshotNow, 0) }); }
