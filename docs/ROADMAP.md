@@ -28,7 +28,7 @@ See [standard](engineering-standards.md), [audit and exception register](ENGINEE
 and [AGENTS](../AGENTS.md). Priority order:
 - [ ] ENG-01/02: adopt standards and hold unsafe release workflows; review CI.
 - [ ] ENG-03: Python production/test source debt reduced to zero locally; exact empty-baseline gate implemented. Hosted verification and native equivalent, lint/static typing remain open.
-- [ ] ENG-04/08/16: portable offline QA, JUnit/JSON, private immutable evidence and catalog.
+- [ ] ENG-04/08/16: local Python QA entrypoint with JUnit/JSON and required file digest inventory implemented; hosted qualification, native wrappers, stronger evidence validation and case catalog remain open.
 - [ ] ENG-05/15: safe logging and external transport security review.
 - [ ] ENG-06/12: pin and review dependencies/actions, upstream inventory, SBOM/license/advisories.
 - [ ] ENG-07/14: CLI contracts, bounded inputs, installer dry-run and rollback.

@@ -99,3 +99,18 @@ an earlier failing step. This is a source audit, not full PEP 8 lint, type
 checking, native-language audit or hardware validation.
 GitHub write access remains blocked by HTTP 401; hosted CI for local
 commits not run. No branch protection or release setting changed.
+
+## ENG-04 first offline QA candidate
+
+Provider-independent Python runner tools/run_offline_qa.py and sanitized
+unittest JUnit writer added. Gate requires complete nonempty non-skipped
+suite, clean source, exact zero-debt audit and all CLI help checks;
+independent inventory has sizes and SHA-256. Unique owner-private POSIX
+directory, create-new files, subprocess timeouts, no raw stdout/stderr
+in shared evidence. Negative tests cover fail/skip/empty, missing
+inventory, immutable report and JUnit mismatch. Local regression 111/111,
+AST zero before final clean candidate run. See OFFLINE_QA.md for commands.
+GitHub wrapper replaced direct test/help/audit commands with common
+entrypoint; hosted execution NOT_RUN due to existing authorization blocker.
+No native build/hardware, full atomicity, Windows ACL or JUnit UI import
+qualification claimed. Next: clean committed local end-to-end gate.

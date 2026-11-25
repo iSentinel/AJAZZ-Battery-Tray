@@ -46,7 +46,7 @@ class SharedApexCorpusTests(unittest.TestCase):
             library = Path(temp) / "decoder.so"
             subprocess.run(["cc", "-std=c11", "-shared", "-fPIC", "-x", "c",
                             "-I", str(ROOT / "macos"), "-", "-o", str(library)],
-                           input=wrapper, text=True, check=True)
+                           input=wrapper, text=True, check=True, timeout=15)
             decode = ctypes.CDLL(str(library)).decode
             decode.argtypes = (ctypes.c_char_p, ctypes.c_size_t)
             decode.restype = ctypes.c_int

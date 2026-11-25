@@ -1,3 +1,14 @@
+# Resume — ENG-04 first offline QA candidate
+
+Source: 342824d exact zero-debt gate, 106 local tests PASS.
+New runner and sanitized JUnit writer, fixed help commands, required
+digest inventory, private unique directories, no raw shared exceptions.
+Local regressions 111/111 PASS before final clean-candidate check.
+Next: execute common runner from committed clean tree and inspect manifest.
+GitHub HTTP 401 remains unresolved; local commits not pushed, hosted
+qualification NOT_RUN. No publication or hardware approval.
+Native evidence wrappers, stronger atomic evidence and case catalog open.
+
 # Resume — ENG-03 zero Python source debt
 
 Source: f2553e6 (81 production findings removed), 949665a (247 test
