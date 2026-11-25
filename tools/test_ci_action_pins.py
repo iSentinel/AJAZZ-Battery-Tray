@@ -92,7 +92,12 @@ class CiActionPinTests(unittest.TestCase):
             self.assertEqual(source.count("uses: actions/download-artifact@"),
                              source.count("digest-mismatch: error"))
         qa = (ROOT / ".github/workflows/test-tools.yml").read_text()
-        self.assertIn("pattern: ci-roundtrip-*", qa)
+        self.assertIn("artifact-ids: ${{ needs.python.outputs.a-id }},${{ needs.python.outputs.b-id }}", qa)
+        self.assertIn("actions: read", qa)
+        self.assertIn("for attempt in {1..12}", qa)
+        self.assertIn(".digest == $digest", qa)
+        self.assertIn("steps.upload-b.outputs.artifact-digest", qa)
+        self.assertIn("if [[ \"$attempt\" == 12 ]]; then", qa)
         self.assertIn("merge-multiple: true", qa)
         self.assertIn("PASS: synthetic merged artifact roundtrip", qa)
 

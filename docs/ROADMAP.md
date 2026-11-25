@@ -1062,6 +1062,30 @@ configuration commands. USB `VersionNumber` is a device revision,
       license review, trusted signatures, candidate-bound SBOM and advisories.
       Release hold unchanged.
 
+### ENG-06/12 distribution notice preparation
+
+- [x] Stage exact five notice files from pinned packages; verify lengths and hashes.
+- [x] Review official Windows SDK REDIST and .NET Windows product license
+      guidance; record net9.0 path discrepancy and single-file terms.
+- [ ] Resolve exact redistribution coverage, downstream terms, installer and
+      portable notice inclusion, signature trust and SBOM/advisory evidence.
+      Release hold unchanged.
+
+### ENG-06 bounded exact-ID CI artifact visibility
+
+- [x] Diagnose recurrent missing synthetic artifact from actual logs.
+- [x] Require exact upload IDs/digests and bounded REST visibility before
+      pinned download, preserving both file comparisons and digest failure.
+- [ ] Hosted exact-head roundtrip and integration acceptance.
+
+### ENG-12 scoped Windows CycloneDX inventory
+
+- [x] Verify pinned packs and scoped host reconstruction before BOM generation.
+- [x] Cover actual embedded file hashes and source pack identities; refuse omissions.
+- [x] Historical Tray 265 and HA 184 files; both CycloneDX 1.6 schema PASS.
+- [ ] Hosted QA, exact release candidate, full graph and distribution/toolchain
+      coverage, signature trust, advisory disposition and release admission.
+
 ### ENG-12 scoped pinned NuGet advisory audit
 
 - [x] Check official two-page NuGet VulnerabilityInfo snapshot against four

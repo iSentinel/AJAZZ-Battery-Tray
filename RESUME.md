@@ -1,3 +1,10 @@
+# Resume — advisory audit stacked on joined scoped SBOM
+
+#167 integrated e00b229, #164 joined 9b64aa9 with 192/192 local QA.
+#165 now builds on that exact SBOM/notice/roundtrip candidate; retain
+all three tool checks and histories. Hosted qualification and release hold
+remain open. Do not merge until #164 has been integrated and base aligned.
+
 # Resume — scoped NuGet advisory audit
 
 #162 merged d01ca8a after exact 4/4 CI. #163 joined d75b620,
@@ -6,6 +13,46 @@ NuGet versions checked against both official feed pages on 2026-11-25:
 211 ranges, zero matching; OSV exact queries also returned no IDs.
 New offline CLI and six synthetic tests. Not full vulnerability clearance;
 feed freshness/authentication and all other release gates remain open.
+
+# Resume — SBOM with exact artifact roundtrip
+
+#167 merged e00b229 after exact-head 3/3 CI PASS. #164 prior native
+checks passed but artifact roundtrip failed; both roadmap histories
+retained. Requalify the joined head. No release admission.
+
+# Resume — exact CI artifact identities
+
+Base 5d965ce. #164 and #166 had synthetic artifact-roundtrip failures
+(only one downloaded, digest matched). New bounded REST visibility gate
+requires both exact IDs/digests before pinned action and original byte
+checks. Local mock delayed/missing/wrong-digest and source checks PASS.
+#166 scalar path bug corrected separately at 89acdb4, native CI pending.
+Release hold unchanged.
+
+# Resume — combined notice and scoped SBOM candidate
+
+#163 merged 5d965ce, #164 exact 40af0e4 CI 4/4 PASS. Resolve
+three content conflicts preserving notice and SBOM tools/checkpoints.
+Fresh combined QA required. No release admission.
+
+# Resume — scoped Windows CycloneDX inventory
+
+#161 merged a98cb0d after exact 4/4 CI. #162 joined at 6728a01;
+combined QA 185/185 PASS. New scoped BOM generator verified historical
+Tray 265 and HA 184 embedded files, both official CycloneDX 1.6 schema
+PASS, with composition explicitly incomplete. Full distribution coverage,
+licenses, signatures, advisories and release admission remain open.
+
+# Resume — notice staging and field evidence
+
+New stacked notice preparation: five exact files from four pinned packs,
+all five hashes and sizes verified. SDK REDIST lists net8.0/net6.0 paths,
+actual package has net9.0; .NET Windows single-file product terms require
+separate review. No distribution workflow change or legal clearance.
+Owner report 2026-11-25 04:30 UTC: shared receiver candidate 96, 6/6
+agreement, 0/6 validated; AULA fresh 66, zero misses. Prior owner-confirmed
+AJ179 field 97; new report model provisional. No raw report committed,
+no telemetry promotion. #99 comment 7152938353. Release hold unchanged.
 
 # Resume — merge license inventory with resource serialization
 
