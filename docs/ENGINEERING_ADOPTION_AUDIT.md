@@ -164,3 +164,18 @@ Operational logging is not hardened against an adversarial same-user
 filesystem race, nor a crash-durable evidence system. Windows ACL, Apple
 logging, measured operation duration, broader UI/diagnostic redaction and
 external transport review remain separate. No hardware behavior changed.
+
+## ENG-15 next independent candidate
+
+#138 merged b22535d after verified 4/4 CI. ENG-05 candidate #139 head
+9b1b917, source tree a57db6c, local common QA PASS (117 tests).
+Source network-boundary audit in NETWORK_BOUNDARY_AUDIT.md: actual HA
+preview has no MQTT client or dependency; offline MQTT preflight requires
+TLS and certificate verification, so the initial plaintext concern was
+a future connector risk, not an observed transmission. Fixed loopback
+host metrics is a documented credential-free exception. UpdateClient
+fixed HTTPS endpoint/default trust and bounded response reviewed.
+Added rejection of duplicate top-level release-object keys and repeated
+supported tags, preserving unique additive metadata and fixed local URL
+construction. Four synthetic native checks prepared, native CI pending.
+No live network test, external request, MQTT connection, or release action.

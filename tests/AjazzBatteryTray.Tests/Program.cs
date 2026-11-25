@@ -1452,6 +1452,23 @@ Check("Release decoder rejects absent flags",
 Check("Release decoder rejects nonboolean flags",
     RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":"false","prerelease":false}]""")));
 Check("Release decoder rejects over-limit body", RejectReleaseJson(new byte[2 * 1024 * 1024 + 1]));
+Check("Release decoder rejects ambiguous duplicate known fields",
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":true,"draft":false,"prerelease":false}]""")) &&
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","tag_name":"v9.0.0","draft":false,"prerelease":false}]""")) &&
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":false,"prerelease":true,"prerelease":false}]""")));
+Check("Release decoder rejects duplicate additive fields and escaped equivalent name",
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":false,"prerelease":false,"id":1,"id":2}]""")) &&
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":true,"dr\u0061ft":false,"prerelease":false}]""")));
+Check("Release decoder rejects repeated supported release tags",
+    RejectReleaseJson(ReleaseJson("""
+        [{"tag_name":"v0.3.0","draft":true,"prerelease":false},
+         {"tag_name":"v0.3.0","draft":false,"prerelease":false}]
+        """)));
+Check("Release decoder accepts unique additive metadata without trusting its URL",
+    UpdateClient.Parse(ReleaseJson("""
+        [{"tag_name":"v0.3.0","draft":false,"prerelease":false,"id":1,"html_url":"https://example.invalid"}]
+        """), installedVersion, false)?.Page == UpdateClient.ReleasesPage + "/tag/v0.3.0");
+
 var ordinaryApexPlan = ApexProtocolMatrix.Build(65, false);
 Check("Ordinary APEX retains original two lengths and 30ms", ordinaryApexPlan.SequenceEqual(new[] { (65, 30), (67, 30) }));
 var fullApexPlan = ApexProtocolMatrix.Build(65, true);

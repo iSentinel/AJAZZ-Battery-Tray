@@ -12,6 +12,8 @@
 ## Implemented manual lookup
 - Fixed GitHub API requests, no authentication or cookies, no redirects.
 - Overall 15-second cancellation deadline, 2 MiB response limit, first 100 releases.
+- Candidate rejects duplicate top-level release-object property names and
+  repeated supported tags before selection; unique additive metadata allowed.
 - Explicit tray dialog, EN/RU/UK, session channel selector and release-page link.
 - No automatic check, download, installer execution, or use of remote URL fields.
 - 26 pure version/checksum/metadata checks; CI pending. HTTP errors are shown

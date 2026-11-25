@@ -1,3 +1,16 @@
+# Resume — ENG-15 network metadata candidate
+
+#138 merged b22535d into draft #99 after 4/4 hosted CI; downloaded QA
+manifest verified (117 tests, 14 steps). #139 Windows journal candidate
+9b1b917 / tree a57db6c, local QA PASS; native checks pending.
+Local independent follow-up branch fix/network-metadata-validation is
+based on #139 candidate, not pushed or merged. Source boundary audit and
+duplicate release metadata/tag rejection; four new native checks require
+Windows CI. No real MQTT connector exists. Do not stack-publish before
+#139 passes and merges; rebase/cherry-pick to verified matching tree.
+Next: inspect #139 CI, integrate if PASS and exact head, then submit
+ENG-15 follow-up. No main merge, release or hardware approval.
+
 # Resume — ENG-05 Windows operational journal
 
 #138 eaa150c four hosted checks PASS, downloaded QA artifact independently
