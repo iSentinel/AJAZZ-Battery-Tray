@@ -1,3 +1,13 @@
+# Resume — .NET 11 WinForms analyzer remediation
+
+PR #145 initial 4c6101a: SDK 11.0.100 selected in HA and upgrade
+logs; offline QA PASS. HA 45518748728 and upgrade 45518748754
+failed WFO1000 on runtime-only BatteryGraphPanel Samples/PeriodStart/
+PeriodEnd. Apply explicit DesignerSerializationVisibility.Hidden to
+all three properties; no global warning suppression or behavior change.
+New exact-head CI required. Independent NuGet inventory #146 is separate;
+no publication, main merge, hardware claim or release hold change.
+
 # Resume — owner-selected .NET 11 migration candidate
 
 #143 merged 48b1fff after six successful hosted checks, identical
