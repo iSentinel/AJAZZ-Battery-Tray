@@ -132,3 +132,28 @@ fixture exercises install/hash/uninstall with lowest privileges
 and no application launch. Only JSON evidence retained.
 Native compiler probe result pending. Production wrapper and
 release workflows remain pinned to 6.7.1.
+
+## Native 6.7.4 compiler fixture and product qualification
+
+PR #236 head 6fb7aa8021b1725b8b04342726435930d5b7d64f,
+hosted checkout b93e9f21cfd73824372a9f4ee7f0c8369614abcc,
+run 45638049761, job 139288731383: PASS. Artifact 15034126967
+SHA-256 ff5ca8dba9e4f69bf967511d17bd3a040d3b549766ed1648a10f3082f138550d
+matches REST; exact three JSON members. Component evidence before
+and after compilation byte-identical, all 38 inputs MATCH.
+Inert fixture setup SHA-256
+35fbcfdaadabff34563a72d91bc31efd84d1df0b2128df87f8c02b432b248a94;
+payload MATCH, uninstall REMOVED, product_installed=false.
+
+The next hosted qualification extends the isolated portable 6.7.4
+job with the same pinned .NET 11 SDK, notice staging and product
+clean/upgrade/repair/uninstall checks as the 6.7.1 notice workflow.
+The explicit compiler directory and /F output override distinguish
+the unpublished 6.7.4 probe. Inputs checked before and after actual
+product compilation, exact engine banner required. The existing
+upgrade script accepts only two explicitly enumerated probe filenames;
+default behavior unchanged. A separate JSON binding ties component
+observations to product setup, app, BOM and checkout identity.
+Only JSON artifacts are uploaded, no release binaries or production
+compiler changes. The new product probe result is pending, as are
+interactive UAC observations and exact generated binary attribution.

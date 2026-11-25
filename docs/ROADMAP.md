@@ -1884,3 +1884,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native compiler result, separate product-probe qualification,
       actual interactive observations and physical acceptance.
       Release hold; no RedirectionGuard bypass.
+
+### Inno 6.7.4 product lifecycle qualification
+
+- [x] #236 merged 0a5e715 after exact 7/7 CI and tested tree match.
+- [x] Native inert compiler fixture archive digest verified; all
+      38 pre/post inputs match, install/uninstall PASS.
+- [x] Add separate 6.7.4 product probe with pinned inputs and unique
+      filename, reuse beta.60 upgrade and notice repair, verify
+      synthetic data and no launch; bind scoped SBOM to compiler evidence.
+- [ ] Hosted result and integration; new exact loader/engine/uninstaller
+      attribution, interactive UAC, legal and physical gates.
+      Production 6.7.1 and release hold unchanged.

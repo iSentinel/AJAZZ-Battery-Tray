@@ -1,3 +1,12 @@
+# Resume — Inno 6.7.4 product lifecycle qualification
+
+#236 merged 0a5e715, 7/7 CI. Stacked on #237. Exact native fixture
+evidence verified, 38 inputs match before/after. Separate product
+probe with portable 6.7.4 compiler, pinned SDK/notices, clean/upgrade/
+repair/uninstall and scoped SBOM with compiler binding; hosted
+result pending. Interactive UAC, exact binary attribution, legal
+and physical gates remain open. Production pin and release hold unchanged.
+
 # Resume — Inno 6.7.4 interactive launch acceptance boundary
 
 Stacked on #236. Exact source comparison confirms elevation-path

@@ -6,7 +6,11 @@ Use the pinned published beta.60 baseline and synthetic user-data fixtures.
 No hardware access, tray launch, release publication or real-user migration.
 #>
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$ProbeRoot)
+param(
+    [Parameter(Mandatory)][string]$ProbeRoot,
+    [ValidateSet('AJAZZBatteryTray-Notice-Probe-win-x64.exe','AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe')]
+    [string]$CandidateName = 'AJAZZBatteryTray-Notice-Probe-win-x64.exe'
+)
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -cne 'true' -or !$env:RUNNER_TEMP) {
     throw 'This probe is restricted to GitHub Actions runners'
@@ -16,7 +20,7 @@ if ([IO.Path]::GetFullPath($ProbeRoot) -cne [IO.Path]::GetFullPath($expectedRoot
     throw 'Unexpected probe root'
 }
 $baseline = Join-Path $ProbeRoot 'beta60-baseline.exe'
-$candidate = Join-Path $ProbeRoot 'AJAZZBatteryTray-Notice-Probe-win-x64.exe'
+$candidate = Join-Path $ProbeRoot $CandidateName
 $target = Join-Path $ProbeRoot 'upgrade-installed'
 $app = Join-Path $target 'AJAZZBatteryTray.exe'
 $uninstaller = Join-Path $target 'unins000.exe'
