@@ -1707,3 +1707,50 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Integrate and continue distribution notice coverage, transitive
       licensing, remaining advisory scope and physical acceptance.
       Release hold.
+
+### Combined Windows notice staging
+
+- [x] Stage nine exact reviewed notice files from repository and pinned
+      packages; verify reread bytes and manifest; reject replacement.
+- [x] Actual replay and three synthetic regressions.
+- [ ] Hosted checks and integration, resolve remaining licensing terms,
+      design candidate-bound installed/portable notice transport and
+      qualify new binaries. Release hold.
+
+### Exact Windows notice transport
+
+- [x] Verify immutable local notice tree against pinned manifest.
+- [x] Create canonical stored ZIP and independently verify all members;
+      actual replay and three regressions PASS.
+- [ ] Hosted checks, candidate-bound portable and installed notice
+      coverage, outstanding legal terms, physical acceptance.
+      Release hold.
+
+### Candidate-bound portable notice prototype
+
+- [x] #221 merged 6f9f2fd, #222 merged 56b40f1 into parent after
+      exact 5/5 CI and tested tree matches.
+- [x] Recover exact #206 application from qualified solid stream;
+      bind portable identity and all nine reviewed notices.
+- [x] Build local unpublished ZIP and reread exact member hashes;
+      actual replay and three regressions PASS.
+- [ ] Hosted CI, integration, installed notice packaging prototype,
+      remaining terms and hardware acceptance. Release hold.
+
+### Isolated installed-notice transport probe
+
+- [x] #223 merged 5a723a6 into parent after exact 5/5 CI.
+- [x] Preserve canonical notice manifest bytes on Windows and Linux.
+- [x] Add isolated notice-only installer and separate hosted test,
+      verify explicit source and destination scope in two regressions.
+- [ ] Actual native install/uninstall evidence, integration, reviewed
+      product distribution design, outstanding terms and hardware
+      acceptance. Release hold.
+
+### Native isolated notice evidence
+
+- [x] #225 merged 95b1990 into parent after exact 6/6 hosted CI.
+- [x] Retrieve native evidence by ID, match artifact digest, compare
+      staged/installed records and check removal observation.
+- [ ] Candidate-only product notice packaging test; legal terms and
+      physical acceptance. Release hold.

@@ -1,0 +1,107 @@
+name: Test isolated Windows notice transport
+
+on:
+  pull_request:
+    paths:
+      - 'installer/NoticeTransportProbe.iss'
+      - 'tools/stage_windows_notices.py'
+      - 'tools/verify_windows_notice_transport.py'
+      - '.github/workflows/test-notice-install.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notice-install:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
+      - name: Stage exact reviewed notices
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          New-Item -ItemType Directory -Path $root | Out-Null
+          $packs = [ordered]@{
+            host = 'microsoft.netcore.app.host.win-x64/11.0.0'
+            core = 'microsoft.netcore.app.runtime.win-x64/11.0.0'
+            desktop = 'microsoft.windowsdesktop.app.runtime.win-x64/11.0.0'
+            sdk = 'microsoft.windows.sdk.net.ref/10.0.19041.87'
+          }
+          foreach ($entry in $packs.GetEnumerator()) {
+            $parts = $entry.Value.Split('/')
+            $url = "https://api.nuget.org/v3-flatcontainer/$($entry.Value)/$($parts[0]).$($parts[1]).nupkg"
+            $path = Join-Path $root "$($entry.Key).nupkg"
+            curl.exe --fail --silent --show-error --location --max-redirs 3 --proto '=https' --proto-redir '=https' --tlsv1.2 --max-time 120 --max-filesize 268435456 --output $path $url
+            if ($LASTEXITCODE -ne 0) { throw 'Pinned pack download failed' }
+          }
+          python tools/stage_windows_notices.py --host (Join-Path $root 'host.nupkg') --core (Join-Path $root 'core.nupkg') --desktop (Join-Path $root 'desktop.nupkg') --sdk (Join-Path $root 'sdk.nupkg') --output (Join-Path $root 'staged')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice staging failed' }
+          python tools/verify_windows_notice_transport.py --tree (Join-Path $root 'staged') --output (Join-Path $root 'staged-evidence.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice identity failed' }
+      - name: Compile isolated fixture with pinned compiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $candidates = @(@(
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -Unique)
+          if ($candidates.Count -ne 1) { throw 'Expected exactly one reviewed compiler' }
+          $iscc = $candidates[0]
+          if ((Get-FileHash -LiteralPath $iscc -Algorithm SHA256).Hash.ToLowerInvariant() -cne 'eb6f4410c8db367a5f74127e8025ad2ccacc0afabbe783959d237df3050f97fb') {
+            throw 'Compiler digest differs'
+          }
+          $lines = @(& $iscc "/DNoticeRoot=$(Join-Path $root 'staged')" "/O$root" 'installer/NoticeTransportProbe.iss')
+          $code = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0 -or @($lines | Where-Object { $_ -ceq 'Compiler engine version: Inno Setup 6.7.1' }).Count -ne 1) {
+            throw 'Fixture compilation failed or engine differs'
+          }
+      - name: Install, verify and uninstall isolated notice-only fixture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $setup = Join-Path $root 'AJAZZ-Notice-Transport-Probe.exe'
+          $target = Join-Path $root 'installed'
+          if (!(Test-Path -LiteralPath $setup -PathType Leaf) -or (Test-Path -LiteralPath $target)) {
+            throw 'Missing fixture or nonempty installation target'
+          }
+          $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',"/DIR=`"$target`"") -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Notice fixture installation failed' }
+          $uninstaller = Join-Path $target 'unins000.exe'
+          if (!(Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw 'Fixture uninstaller missing' }
+          python tools/verify_windows_notice_transport.py --tree (Join-Path $target 'Notices') --output (Join-Path $root 'installed-evidence.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Installed notice mismatch' }
+          $p = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or (Test-Path -LiteralPath (Join-Path $target 'Notices'))) {
+            throw 'Fixture uninstall did not remove notice tree'
+          }
+          $record = [ordered]@{
+            schema = 'notice-install-probe-v1'
+            source_sha = (git rev-parse HEAD)
+            setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+            installed_notices = 'MATCH'
+            uninstalled_notices = 'REMOVED'
+            application_installed = $false
+            release_admission = 'NOT_VERIFIED'
+          }
+          $record | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'lifecycle.json') -Encoding utf8
+      - name: Retain scoped JSON evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: isolated-notice-install-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/staged-evidence.json
+            ${{ runner.temp }}/ajazz-notice-probe/installed-evidence.json
+            ${{ runner.temp }}/ajazz-notice-probe/lifecycle.json
+          if-no-files-found: error
+          retention-days: 7

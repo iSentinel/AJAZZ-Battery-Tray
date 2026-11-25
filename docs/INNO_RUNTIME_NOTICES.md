@@ -52,3 +52,81 @@ References:
 - https://github.com/jrsoftware/issrc/tree/cfdf48923178df4b4f040e038b423aa555a61ffc
 - https://github.com/remobjects/pascalscript/blob/d6e25439080c37e15af23badb48c39760a2b8d4d/LICENSE.md
 - https://github.com/jrsoftware/issrc/blob/cfdf48923178df4b4f040e038b423aa555a61ffc/Components/Lzma2/7zC.txt
+
+## Combined local Windows notice staging
+
+`tools/stage_windows_notices.py` stages the exact repository MIT license,
+three pinned Inno-related files and five root notices from the four pinned
+.NET/SDK packs. All input identities are checked before creating the
+output directory; existing output is rejected. Nine files are reread
+and a manifest records their SHA-256 and lengths. The SDK pack contains
+no root notice in the reviewed inventory, not a waiver of its terms.
+
+Actual replay on the four retained pinned packs: nine files PASS;
+manifest SHA-256
+b151b2a7ed4f40ef0859b2f846c87b4211290751b8092eba0aac69bdaac0649c.
+No installer or portable artifact changed; this is preparation only.
+
+## Exact notice transport
+
+`tools/verify_windows_notice_transport.py` checks a local immutable
+notice directory against the exact reviewed manifest digest, rejects
+extra entries, links and reparse points, and can generate a canonical
+stored ZIP with fixed metadata. The same verifier checks the ZIP
+without extracting it. No existing archive or evidence is overwritten.
+The caller must keep the inspected local tree immutable during review.
+Actual replay on nine staged notice files and manifest: PASS,
+ZIP SHA-256 76a16fd9f5b929398a27932c866ad77d56e01d23f79023aa7495a15e37f67fdb.
+No claim of legal compliance, candidate inclusion or release admission.
+
+## Candidate-bound local portable prototype
+
+The exact historical #206 candidate archive is pinned by SHA-256
+7c0739db76e39b01d55585ef9001a1eba144bd82ea61c4419abe2fdd1d45f557.
+The portable prototype revalidates its setup, all five solid-stream
+file digests and the application identity before constructing a ZIP
+containing the exact EXE, nine reviewed notices, notice manifest and
+portable identity manifest. It does not execute the EXE. The optional
+solid-decoder sink is used only for in-memory staging before validation.
+Actual local replay ZIP SHA-256
+a9dc6ecc4ff08edbd55c9344c35fb4db61f3860a15297f55b44d0dfdff236758;
+evidence SHA-256
+397c65aa705263f7a6c418f1f80d8c0c5bd53670d7d60270f610cc2f72fb6ddf.
+This historical prototype is not a published portable candidate.
+Installed notice coverage and complete redistribution terms are open.
+
+## Isolated installed-notice transport probe
+
+A separate CI-only Inno script contains precisely the nine reviewed
+notice files and their manifest, with explicit destination directories.
+No application, custom code, Run entry, elevated privileges or release
+workflow integration. The hosted job downloads exact reviewed NuGet
+packs, stages and verifies them, checks the preinstalled compiler hash
+and engine version, installs into a fresh runner-temporary directory,
+verifies the complete installed notice tree and requires removal of the
+tree by the fixture uninstaller. Only JSON evidence is uploaded.
+The fixture is not the AJAZZ installer and does not qualify its payload.
+The manifest writer uses explicit UTF-8 LF bytes and Git preserves the
+project license bytes across checkout platforms. Actual Linux staging
+replay retains the original pinned manifest SHA-256. Native Windows
+fixture result is pending.
+
+First hosted attempt (job 139195725680) failed in setup-python before
+notice acquisition: 3.12.16 unavailable on Windows x64. The official
+python-versions manifest lists stable 3.13.17 for Windows x64; pin that
+version for this job only. No fallback or verification bypass.
+
+## Native isolated probe result
+
+Exact PR #225 head e1959445c214c8040b95b5a564a4a4817c81439b,
+hosted checkout a51078eb5be539d077e9da132f115b46ace88bae,
+run 45611754794, job 139196798479: PASS.
+Evidence artifact 15019649566 ZIP SHA-256
+75a11fe8ce97c3e319dc761b70a0af21fba7923d4454d4d1518fb56df42164f0
+matches REST. Exactly staged-evidence.json, installed-evidence.json
+and lifecycle.json; the staged and installed JSON records are equal,
+all nine sizes/hashes and manifest pin match, lifecycle records
+installed MATCH, uninstalled REMOVED, application_installed=false.
+Fixture setup SHA-256
+5edb9559372f6276115e48ab79bdf4e33bbc3cdb725b74c084655048695cf6d6.
+No product installer qualification or release admission.

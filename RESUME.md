@@ -1,3 +1,42 @@
+# Resume — native isolated notice evidence
+
+#225 merged 95b1990 into parent after 6/6 CI. Exact native evidence
+archive digest matches REST; staged/installed notice records equal,
+removal PASS, no application installed. Next: separate opt-in product
+notice candidate, not release admission. Legal and hardware gates open.
+
+# Resume — isolated installed-notice transport probe
+
+#223 merged 5a723a6 into parent, exact 5/5 CI. Stacked on #224.
+Separate notice-only fixture and hosted install/verify/uninstall job.
+Canonical LF manifest and project license checkout preserved; real
+Linux staging replay retains exact pin. Two source regressions.
+Native Windows result pending; release installer unchanged.
+Outstanding distribution terms and hardware acceptance; release hold.
+
+# Resume — candidate-bound portable notice prototype
+
+#221 merged 6f9f2fd, #222 merged 56b40f1 into parent, exact CI 5/5 each.
+Stacked on #223. Exact #206 app recovered from solid stream and local
+portable ZIP verified with nine notices and two manifests. Three tests.
+No binary publication, runtime acceptance or release admission.
+Next: installed notice packaging prototype and outstanding terms.
+
+# Resume — exact Windows notice transport
+
+Nine exact staged files plus manifest verified in a canonical ZIP;
+actual tree and ZIP replay match, three regressions. No candidate
+payload changes. Remaining distribution terms, candidate inclusion,
+hardware acceptance and release hold unchanged.
+
+# Resume — combined Windows notice staging
+
+Stacked on #221. Nine reviewed notice files staged from pinned
+repository and four retained NuGet packs; actual replay PASS.
+Three regressions. No installer or release workflow changed.
+Remaining SDK/single-file/RTL and transitive terms, distribution
+coverage and hardware acceptance remain open. Release hold.
+
 # Resume — native upstream publisher evidence
 
 #220 merged fc81aaa into parent after 5/5 CI. Verified exact native
@@ -1484,3 +1523,7 @@ physical acceptance remain open; public release held.
 Retain exact upgrade uninstaller before execution; separate CI artifact
 with candidate and baseline digests, no uninstall data/log. Hosted
 upgrade run and independent engine attribution pending. Release hold.
+
+Notice probe CI bootstrap correction: Windows x64 Python 3.12.16 is
+unavailable; pin verified available stable 3.13.17 for this job only.
+#224 merged 18118e1 after 5/5 CI. Native install evidence still pending.
