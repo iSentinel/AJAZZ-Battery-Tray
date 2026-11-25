@@ -2311,3 +2311,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       Revalidate original checklists; reject mixed generation or
       missing profile. Four synthetic groups plus real blank replay.
 - [ ] Hosted CI and physical acceptance; release hold unchanged.
+
+### Interactive acceptance local binary binding
+
+- [x] Add paired optional setup/app paths to the existing local
+      interactive checklist validator. Match actual bounded local
+      bytes to both candidate SHA-256 values before writing output;
+      review records MATCH or NOT_PROVIDED. Preserve original
+      checklist schema and independent acceptance hold.
+- [x] Two synthetic test groups for valid pairs, swapped/changed
+      bytes, missing partner and CLI output behavior.
+- [ ] Hosted CI and exact installer bytes for real interactive
+      acceptance; compiler migration and release remain on hold.

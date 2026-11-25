@@ -1,9 +1,12 @@
 """Regression guards for local interactive acceptance records."""
 
 import json
+from pathlib import Path
+import tempfile
 import unittest
 
-from verify_interactive_acceptance import CASES, template, verify
+from verify_interactive_acceptance import CASES, main, template, verify
+from validate_scoped_sbom_schema import digest
 
 
 def encode(row: dict) -> bytes:
@@ -40,6 +43,50 @@ class InteractiveAcceptanceTests(unittest.TestCase):
         del data['cases']['RG01']
         with self.assertRaises(ValueError):
             verify(raw, encode(data))
+
+    def test_local_binary_binding(self) -> None:
+        """Require exact setup and app bytes, without claiming signature trust."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            setup, app = root / 'setup.exe', root / 'app.exe'
+            setup.write_bytes(b'synthetic setup')
+            app.write_bytes(b'synthetic app')
+            row = json.loads(fixture())
+            row.update(setup_sha256=digest(setup.read_bytes()),
+                       app_sha256=digest(app.read_bytes()))
+            raw = encode(row)
+            checklist = encode(template(raw))
+            self.assertEqual(verify(raw, checklist)['local_binary_binding'], 'NOT_PROVIDED')
+            result = verify(raw, checklist, setup, app)
+            self.assertEqual(result['local_binary_binding'], 'MATCH')
+            self.assertEqual(result['release_admission'], 'NOT_VERIFIED')
+            self.assertEqual(result['counts']['NOT_RUN'], 6)
+            for left, right in ((setup, None), (None, app), (app, setup)):
+                with self.assertRaises(ValueError):
+                    verify(raw, checklist, left, right)
+            app.write_bytes(b'changed app')
+            with self.assertRaises(ValueError):
+                verify(raw, checklist, setup, app)
+
+    def test_cli_paired_binary_options(self) -> None:
+        """Fail without creating output when a binary is missing or mismatched."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            raw, setup, app = root / 'candidate.json', root / 'setup.exe', root / 'app.exe'
+            setup.write_bytes(b'synthetic setup')
+            app.write_bytes(b'synthetic app')
+            row = json.loads(fixture())
+            row.update(setup_sha256=digest(setup.read_bytes()),
+                       app_sha256=digest(app.read_bytes()))
+            raw.write_bytes(encode(row))
+            output = root / 'checklist.json'
+            args = ['--candidate', str(raw), '--output', str(output)]
+            self.assertEqual(main(args + ['--setup', str(setup)]), 2)
+            self.assertFalse(output.exists())
+            self.assertEqual(main(args + ['--setup', str(setup), '--app', str(setup)]), 2)
+            self.assertFalse(output.exists())
+            self.assertEqual(main(args + ['--setup', str(setup), '--app', str(app)]), 0)
+            self.assertEqual(json.loads(output.read_text()), template(raw.read_bytes()))
 
     def test_reported_pass_not_admitted(self) -> None:
         """Complete self-reports do not establish independent acceptance."""
