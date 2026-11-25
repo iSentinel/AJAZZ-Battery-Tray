@@ -9,6 +9,9 @@ on:
       - 'global.json'
       - 'tools/test_product_notice_probe.py'
       - 'tools/Test-ProductNoticeUpgrade.ps1'
+      - 'tools/build_product_notice_sbom.py'
+      - 'tools/build_scoped_windows_sbom.py'
+      - 'tools/test_build_product_notice_sbom.py'
       - 'tools/stage_windows_notices.py'
       - 'tools/verify_windows_notice_transport.py'
       - '.github/workflows/test-notice-install.yml'
@@ -216,5 +219,25 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-notices.json
             ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json
             ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-lifecycle.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Bind scoped SBOM to exercised product probe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $source = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $source -cnotmatch '^[0-9a-f]{40}$') { throw 'Checkout identity unavailable' }
+          python tools/build_product_notice_sbom.py --app dist/app/AJAZZBatteryTray.exe --setup (Join-Path $root 'AJAZZBatteryTray-Notice-Probe-win-x64.exe') --clean (Join-Path $root 'product-lifecycle.json') --upgrade (Join-Path $root 'product-upgrade-lifecycle.json') --source-sha $source --host (Join-Path $root 'host.nupkg') --core (Join-Path $root 'core.nupkg') --desktop (Join-Path $root 'desktop.nupkg') --sdk (Join-Path $root 'sdk.nupkg') --sbom (Join-Path $root 'product-scoped-sbom.json') --output (Join-Path $root 'product-sbom-binding.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Scoped product SBOM failed' }
+      - name: Retain candidate-bound SBOM evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: product-notice-sbom-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/product-scoped-sbom.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-sbom-binding.json
           if-no-files-found: error
           retention-days: 7
