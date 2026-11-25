@@ -2221,3 +2221,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       short/null/compact cases. Historical corpus and admission parity
       unchanged. Passive report normalizer still excludes active trace.
 - [ ] Native macOS CI and physical acceptance; release hold unchanged.
+
+### Reported F7 policy sequence analysis
+
+- [x] #265 exact 5/5 CI including Universal and High Sierra,
+      merged 31f2ec7 after tested-tree equality.
+- [x] Extend existing local diagnostic timeline with separate
+      ordinary and active reported policy gate counts and within-
+      collection transitions. Reset on failed or unlabeled transfers
+      and collection changes; exclude interrupted active captures.
+      Reject unknown, duplicate and orphan labels. No raw bytes,
+      device identity or physical sleep-state claims exported.
+      Three new synthetic test groups.
+- [ ] Hosted Python/roundtrip CI and hardware acceptance.

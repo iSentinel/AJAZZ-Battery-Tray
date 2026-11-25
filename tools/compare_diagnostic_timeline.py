@@ -4,6 +4,8 @@
 import argparse
 from datetime import datetime
 import json
+import re
+from collections import Counter
 from pathlib import Path
 import sys
 import zipfile
@@ -12,7 +14,7 @@ import zlib
 from analyze_aula_sleep import parse_summary
 from compare_apex_reports import read_report
 from compare_ready_clear import disagreement, parse_matrix
-from normalize_device_diagnostics import FULL, normalize
+from normalize_device_diagnostics import FULL, MATRIX, ORDINARY, TRACE, normalize
 from read_diagnostic_session import load_session
 
 MAX_REPORTS = 32
@@ -64,10 +66,74 @@ def ready_observation(text: str, normalized: dict) -> dict | None:
     return {'matrix_field': matrix[1], 'ordinary_field': ordinary, 'conflict': conflict}
 
 
+F7_GATES = frozenset((
+    'Unrecognized', 'KeyboardOnly', 'InvalidStatus', 'ReadUnavailable',
+    'Offline', 'CannotSend', 'RadioBoot', 'ZeroField', 'OutOfRange', 'Accepted',
+))
+F7_LABEL = 'F7 policy gate: '
+WIN_GET = re.compile(r'SET F7 / GET 05 \(\d+ bytes\): OK; .*')
+APPLE_GET = re.compile(r'05\.get\.result=0x00000000 length=(?:[0-9]|[1-5][0-9]|6[0-7])')
+
+
+def gate_sequences(block: str, apple: bool) -> dict:
+    """Summarize attached policy labels, not raw fields or physical states."""
+    counts: Counter = Counter()
+    transitions: Counter = Counter()
+    previous = None
+    pending = False
+    scoped = False
+    for raw in block.splitlines():
+        line = raw.strip()
+        if line.startswith(('Interface:', '[Receiver #', 'STEP: collection.open')):
+            previous, pending, scoped = None, False, True
+        if line.startswith(('SET F7 / GET', '05.get.result=', 'SET F7 (', 'SET F7 OK; GET',
+                            'STEP: F7.set.', 'F7.set.length=')):
+            if pending or line.startswith(('SET F7 (', 'SET F7 OK; GET')):
+                previous = None
+            if line.startswith('F7.set.length=') and not line.endswith('result=0x00000000'):
+                previous = None
+            pending = bool(scoped and (APPLE_GET if apple else WIN_GET).fullmatch(line))
+            if not pending and not line.startswith(('STEP: F7.set.', 'F7.set.length=')):
+                previous = None
+        if not line.startswith(F7_LABEL):
+            if pending and not ((APPLE_GET if apple else WIN_GET).fullmatch(line)
+                                or (apple and line.startswith('05.reply.first_bytes='))):
+                previous, pending = None, False
+            continue
+        gate = line[len(F7_LABEL):]
+        if not pending or gate not in F7_GATES:
+            raise ValueError('invalid or orphan F7 classification')
+        counts[gate] += 1
+        if previous is not None and gate != previous:
+            transitions[(previous, gate)] += 1
+        previous, pending = gate, False
+    return {'reported_gate_counts': dict(sorted(counts.items())),
+            'reported_transitions': [
+                {'from': a, 'to': b, 'count': count}
+                for (a, b), count in sorted(transitions.items())],
+            'independent_verification': 'NOT_VERIFIED'}
+
+
+def f7_sequences(text: str, row: dict) -> dict:
+    """Keep ordinary and active traces separate and exclude interrupted capture."""
+    ordinary, active = '', ''
+    if row['edition'] == 'windows':
+        ordinary = text.split(ORDINARY, 1)[1].split('\n\n', 1)[0]
+        if text.splitlines()[0] == FULL:
+            active = text.split(MATRIX, 1)[1]
+    elif TRACE in text:
+        active = text.split(TRACE, 1)[1]
+    if row['active_capture']['outcome'] not in ('reported_valid', 'inconclusive'):
+        active = ''
+    return {'ordinary': gate_sequences(ordinary, False),
+            'active': gate_sequences(active, row['edition'] != 'windows')}
+
+
 def snapshot(text: str) -> dict:
     """Project one report without paths, raw bytes, names or inferred identity."""
     text = text.replace('\r\n', '\n').rstrip('\n')
     row = normalize(text)
+    row['f7_policy_sequences'] = f7_sequences(text, row)
     stamp = datetime.fromisoformat(row['snapshot_utc'])
     if row['edition'] == 'windows':
         row['aula'] = aula_observation(text, stamp)
