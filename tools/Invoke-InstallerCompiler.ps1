@@ -22,8 +22,9 @@ if (@($candidates).Count -ne 1) { throw 'Expected exactly one preinstalled ISCC;
 $iscc = $candidates[0]
 $version = (Get-Item -LiteralPath $iscc).VersionInfo
 $actual = "$($version.FileMajorPart).$($version.FileMinorPart).$($version.FileBuildPart)"
-if ($actual -ne $expected) { throw "Unexpected ISCC file version: $actual" }
-Write-Host "ISCC file version: $actual"
+# ISCC is a frontend; its file version can be absent (observed 0.0.0).
+# Require the actual compiler engine banner below, not frontend metadata.
+Write-Host "ISCC frontend file version observation: $actual"
 Write-Host "ISCC SHA256: $((Get-FileHash -LiteralPath $iscc -Algorithm SHA256).Hash.ToLowerInvariant())"
 Write-Host "ISCC Authenticode observation: $((Get-AuthenticodeSignature -LiteralPath $iscc).Status); trust not qualified"
 if ($LifecycleProbe -and $AppVersion -ne '0.3.0-beta.62') { throw 'Lifecycle probe restricted to the CI fixture version' }

@@ -1,3 +1,10 @@
+# Resume — native Inno compiler correction
+
+#166 native CI 45548932515 scalar path fixed at 89acdb4;
+45550141138 then observed frontend FileVersion 0.0.0.
+Require actual compiler engine banner 6.7.1, log frontend metadata only.
+Native CI still pending; trust/admission not qualified.
+
 # Resume — reviewed Inno Setup compiler selection
 
 #163 merged 5d965ce after exact 4/4 CI. Actual prior upgrade log

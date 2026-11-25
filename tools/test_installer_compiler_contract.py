@@ -33,6 +33,13 @@ class InstallerCompilerContractTests(unittest.TestCase):
         self.assertIn("Select-Object -Unique)", raw)
         self.assertIn("$iscc = $candidates[0]", raw)
 
+    def test_engine_gate_not_frontend_metadata(self) -> None:
+        """ISCC frontend version is observational; engine must match exactly."""
+        raw = (ROOT / "tools/Invoke-InstallerCompiler.ps1").read_text()
+        self.assertIn("frontend file version observation", raw)
+        self.assertNotIn("if ($actual -ne $expected)", raw)
+        self.assertIn(' -cne "Compiler engine version: Inno Setup $expected"', raw)
+
     def test_version_observation_contract(self) -> None:
         """Retain reviewed version and identity observations, not a trust claim."""
         raw = (ROOT / "tools/Invoke-InstallerCompiler.ps1").read_text()

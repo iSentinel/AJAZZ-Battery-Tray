@@ -5,8 +5,9 @@ The integrated #99 upgrade run 45548252489 reported the Windows
 beta.62 installer compiles. Previously the workflows selected the first
 ISCC found and silently installed a floating Chocolatey version if absent.
 Replace that fallback with a common preinstalled-compiler wrapper; require
-exactly one compiler at the reviewed Program Files locations, exact file
-version 6.7.1, successful compilation, exact engine banner and fresh output.
+exactly one compiler at the reviewed Program Files locations, successful
+compilation, exact engine banner 6.7.1 and fresh output. Frontend file
+version is recorded as an observation only.
 Record SHA-256 of the compiler and Setup and Authenticode status as an
 observation only. No compiler download, installation, signer trust decision,
 version upgrade or release admission is performed. A runner image update
@@ -21,7 +22,7 @@ that removes the compiler or changes its version intentionally blocks the job.
 
 Release workflow remains explicitly held. No compilation or native
 PowerShell execution on Gateway (pwsh absent); hosted installer CI must
-verify the exact FileVersion metadata and engine banner assumptions, both
+verify the exact engine banner and observed frontend metadata, both
 upgrade cases and ordinary release-path wrapper invocation before release.
 Three local source contract tests cover shared selection, probe isolation and
 release hold, not actual compiler trust.
@@ -42,3 +43,13 @@ References:
 - https://github.com/jrsoftware/issrc/blob/is-6_7_1/license.txt
 - https://jrsoftware.org/inno-setup/purchase
 - https://jrsoftware.org/files/is6-whatsnew.htm
+
+## Native CI findings
+
+Run 45548932515 failed because a single pipeline result became a string,
+so indexing selected the character C rather than the path. Fixed at
+89acdb4 by forcing array semantics. Run 45550141138 then reported
+frontend file version 0.0.0; upstream ISCC.dpr uses ISDllGetVersion for
+the loaded compiler engine, distinct from frontend file metadata. Record
+frontend version only; require the exact actual compilation engine banner.
+No compiler trust claim or fallback installation. Repeat native CI.
