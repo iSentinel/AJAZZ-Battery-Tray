@@ -11,26 +11,60 @@ internal static class FullHidCapture
     internal const string Worker = "--internal-full-hid-worker";
     private const string SampleWorker = "--internal-full-hid-sample-worker";
     private const string TestWorker = "--internal-full-hid-test-worker";
+    private const string ParentHangWorker = "--internal-full-hid-parent-hang";
+    private const string ParentWorker = "--internal-full-hid-parent-test";
+    private const int StartToken = 0x41;
     internal sealed record Result(string Inventory, string Summary, string Matrix);
 
     internal static async Task<Result> ReadAsync(CancellationToken closing,
-        string mode = Worker)
+        string mode = Worker, Action<int>? started = null)
+    {
+        closing.ThrowIfCancellationRequested();
+        using HidWorkerJob job = new();
+        using Process child = StartWorker(mode);
+        try
+        {
+            job.Assign(child);
+            closing.ThrowIfCancellationRequested();
+            child.StandardInput.BaseStream.WriteByte(StartToken);
+            child.StandardInput.BaseStream.Flush();
+            child.StandardInput.Close();
+            started?.Invoke(child.Id);
+            return await ReadAssignedAsync(child, job, closing, mode).ConfigureAwait(false);
+        }
+        finally
+        {
+            job.Dispose();
+            if (!child.HasExited)
+            {
+                StopWorker(child);
+                await child.WaitForExitAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static Process StartWorker(string mode)
     {
         ProcessStartInfo start = new(Environment.ProcessPath!)
         {
             UseShellExecute = false, CreateNoWindow = true,
-            RedirectStandardOutput = true, StandardOutputEncoding = Encoding.UTF8
+            RedirectStandardInput = true, RedirectStandardOutput = true,
+            StandardInputEncoding = new UTF8Encoding(false),
+            StandardOutputEncoding = Encoding.UTF8
         };
         start.ArgumentList.Add(mode);
-        closing.ThrowIfCancellationRequested();
-        using Process child = Process.Start(start) ?? throw new IOException("Worker start failed");
+        return Process.Start(start) ?? throw new IOException("Worker start failed");
+    }
+
+    private static async Task<Result> ReadAssignedAsync(Process child, HidWorkerJob job,
+        CancellationToken closing, string mode)
+    {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(closing);
         deadline.CancelAfter(TimeSpan.FromSeconds(mode == TestWorker ? 2 : TimeoutSeconds));
         using var stop = deadline.Token.Register(() =>
         {
-            try { child.Kill(entireProcessTree: true); }
-            catch (InvalidOperationException) { /* Process already exited. */ }
-            catch (System.ComponentModel.Win32Exception) { /* Child also has a watchdog. */ }
+            job.Dispose();
+            StopWorker(child);
         });
         Task<string> output = child.StandardOutput.ReadToEndAsync();
         await child.WaitForExitAsync().ConfigureAwait(false);
@@ -41,15 +75,25 @@ internal static class FullHidCapture
         return JsonSerializer.Deserialize<Result>(body) ?? throw new InvalidDataException();
     }
 
+    private static void StopWorker(Process child)
+    {
+        try { child.Kill(entireProcessTree: true); }
+        catch (InvalidOperationException) { /* Process already exited. */ }
+        catch (System.ComponentModel.Win32Exception) { /* Child also has a watchdog. */ }
+    }
+
     internal static int RunWorker(string mode)
     {
-        if (!Console.IsOutputRedirected) return 1;
+        if (!Console.IsOutputRedirected || !Console.IsInputRedirected) return 1;
         // Also bound the child if its parent terminates during a native call.
         using var watchdog = new System.Threading.Timer(_ => Environment.Exit(124),
             null, TimeSpan.FromSeconds(TimeoutSeconds + 2), Timeout.InfiniteTimeSpan);
-        if (mode == TestWorker) Thread.Sleep(Timeout.Infinite);
         try
         {
+            if (mode == ParentWorker) return ParentExitSupervisor();
+            using Stream input = Console.OpenStandardInput();
+            if (input.ReadByte() != StartToken) return 1;
+            if (mode is TestWorker or ParentHangWorker) Thread.Sleep(Timeout.Infinite);
             using Stream output = Console.OpenStandardOutput();
             if (mode == SampleWorker)
             {
@@ -83,5 +127,46 @@ internal static class FullHidCapture
         return 1;
     }
 
-    internal static bool IsWorker(string mode) => mode is Worker or TestWorker or SampleWorker;
+    private static int ParentExitSupervisor()
+    {
+        using StreamWriter writer = new(Console.OpenStandardOutput(),
+            new UTF8Encoding(false)) { AutoFlush = true };
+        ReadAsync(CancellationToken.None, ParentHangWorker, pid => writer.WriteLine(pid))
+            .GetAwaiter().GetResult();
+        return 1;
+    }
+
+    internal static int SelfTestParentExit()
+    {
+        using Process parent = StartWorker(ParentWorker);
+        try
+        {
+            parent.StandardInput.Close();
+            string? line = parent.StandardOutput.ReadLineAsync()
+                .WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult();
+            if (!int.TryParse(line, out int pid)) return 1;
+            using Process child = Process.GetProcessById(pid);
+            _ = child.SafeHandle;
+            if (child.HasExited) return 1;
+            parent.Kill();
+            return parent.WaitForExit(5000) && child.WaitForExit(5000) ? 0 : 1;
+        }
+        catch (Exception) { return 1; }
+        finally { if (!parent.HasExited) StopWorker(parent); }
+    }
+
+    internal static int SelfTestStartGate()
+    {
+        using Process child = StartWorker(SampleWorker);
+        try
+        {
+            child.StandardInput.Close();
+            return child.WaitForExit(5000) && child.ExitCode == 1 &&
+                child.StandardOutput.ReadToEnd().Length == 0 ? 0 : 1;
+        }
+        finally { if (!child.HasExited) StopWorker(child); }
+    }
+
+    internal static bool IsWorker(string mode) =>
+        mode is Worker or TestWorker or SampleWorker or ParentWorker or ParentHangWorker;
 }

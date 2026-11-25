@@ -1,3 +1,19 @@
+# Resume — consolidated full capture job lifetime
+
+- #155 exact head 4973b71 all four CI PASS; merged into draft #99 at
+  78d3958. PE resource payload scope only; header/signature/license gates open.
+- #156 ddf32fe Windows/macOS PASS, including synthetic parent termination;
+  separate branch overlaps #99 and must not be independently merged to main.
+- Follow-up branch fix/audit-full-hid-job-lifetime ports only the job lifetime
+  and start gate into #99, preserving existing JSON, cancellation, child
+  watchdog, shared I/O lease and installer pin/settings preservation.
+- Portable and installed synthetic watchdog, missing-token and parent-exit
+  cases require exact CI. No device I/O or release dispatch.
+- Owner confirmed AJ179 field 97 in two 2026-11-25 reports, 12/12 agreement,
+  0/12 validated F7 replies; AULA cache 68 to fresh 68, 24 failures to zero.
+  Existing BLE 97 reference is not simultaneous. No telemetry promotion.
+- Keep release hold; native/physical acceptance and supply-chain work open.
+
 # Resume — PE resource overlay
 
 #154 merged 9b8d184 after 5/5 CI, identical tree 71068d0.
