@@ -1292,25 +1292,24 @@ public sealed class TrayAppContext : ApplicationContext
         _timer.Stop();
         try
         {
-            var capture = await Task.Run(() =>
-            {
-                string inventory = ExtendedDeviceDiagnostics.ReadInventory();
-                var batch = _reader.ReadAll(captureProtocol: true);
-                return (Inventory: inventory, Batch: batch);
-            });
+            var capture = await RunFullCaptureWithStatusAsync();
             if (_closing) return;
-            var batch = capture.Batch;
+            if (capture.ExitCode == 124)
+            {
+                MessageBox.Show(UiText.Get("HID capture timed out. No battery level was verified."),
+                    "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (capture.ExitCode != 0) throw new InvalidOperationException("HID worker failed");
             string report = "AJAZZ APEX full comparison report (one capture)\n" +
                 $"Version: {Application.ProductVersion}\nUTC: {DateTimeOffset.UtcNow:O}\n" +
                 "Model labels are provisional. USB feature buffers are not USB wire captures.\n" +
                 "Only the existing F7/05 query; no RTC or configuration writes.\n" +
                 "Raw vendor bytes may contain undocumented data. Review before sharing.\n" +
                 "Official application traffic is NOT acquired by this report.\n" +
-                "All existing valid length/delay combinations attempted, including after success.\n" +
-                $"Fresh enumeration known={batch.Summary.PresenceKnown}; receiver count={batch.Receivers.Count}; first valid battery={batch.Summary.Percent?.ToString() ?? "unavailable"}\n\n" +
-                BuildExtendedReport(capture.Inventory) +
-                "\n\n[Fresh APEX protocol matrix — full vendor buffers]\n" +
-                (batch.Summary.Attempts is { } trace ? string.Join("\n", trace) : "No trace");
+                "All existing valid length/delay combinations attempted, including after success.\n\n" +
+                BuildExtendedReport("See fresh inventory in the explicitly consented capture below.") +
+                "\n\n" + capture.Report;
             using DiagnosticReportForm review = new(report);
             review.ShowDialog();
         }
@@ -1330,6 +1329,39 @@ public sealed class TrayAppContext : ApplicationContext
                 _timer.Interval = _forcePoll ? 100 : DiscoveryInterval();
                 _timer.Start();
             }
+        }
+    }
+
+    private bool _fullCaptureRunning;
+
+    private async Task<FullHidCapture.Result> RunFullCaptureWithStatusAsync()
+    {
+        using Form progress = new()
+        {
+            Text = UiText.Get("Extended device diagnostics"),
+            ClientSize = new Size(430, 105),
+            StartPosition = FormStartPosition.CenterScreen,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            ControlBox = false, ShowInTaskbar = true
+        };
+        using Label status = new()
+        {
+            Dock = DockStyle.Fill, Padding = new Padding(14),
+            Text = UiText.Get("Collecting full HID report. Deadline: 40 seconds.")
+        };
+        progress.Controls.Add(status);
+        progress.FormClosing += (_, e) => { if (_fullCaptureRunning) e.Cancel = true; };
+        _fullCaptureRunning = true;
+        try
+        {
+            progress.Show();
+            return await FullHidCapture.RunAsync("--full-hid-worker", FullHidCapture.TimeoutSeconds,
+                () => status.Text = UiText.Get("Deadline reached. Waiting for HID worker termination."));
+        }
+        finally
+        {
+            _fullCaptureRunning = false;
+            progress.Close();
         }
     }
 
@@ -1770,6 +1802,8 @@ public sealed class TrayAppContext : ApplicationContext
 
     protected override void ExitThreadCore()
     {
+        // Retain the single-instance mutex and I/O exclusion while the worker is alive.
+        if (_fullCaptureRunning) return;
         _closing = true;
         _localApiWindow?.Close();
         _localSnapshot?.Clear();
