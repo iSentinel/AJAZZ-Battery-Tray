@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <math.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
@@ -522,6 +523,12 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 @property(nonatomic, assign) BOOL polling;
 @property(nonatomic, assign) BOOL isolatedPolling;
 @property(nonatomic, assign) BOOL closing;
+@property(nonatomic, assign) AjazzDiagnosticSession *diagnosticSession;
+@property(nonatomic, strong) NSMenuItem *sessionStatusItem;
+@property(nonatomic, strong) NSMenuItem *sessionStartItem;
+@property(nonatomic, strong) NSArray<NSMenuItem *> *sessionCaptureItems;
+@property(nonatomic, strong) NSMenuItem *sessionSaveItem;
+@property(nonatomic, strong) NSMenuItem *sessionDiscardItem;
 @property(nonatomic, assign) BOOL diagnosticRunning;
 @property(nonatomic, strong) LegacyPollCancellation *diagnosticCancellation;
 @property(nonatomic, strong) NSMenuItem *runDiagnosticItem;
@@ -541,6 +548,8 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 @end
 
 @implementation LegacyTray
+
+- (void)dealloc { AjazzSessionDestroy(self.diagnosticSession); }
 
 - (NSString *)word:(NSString *)english ru:(NSString *)russian uk:(NSString *)ukrainian {
     NSString *language = [[NSUserDefaults standardUserDefaults] stringForKey:@"LegacyLanguage"];
@@ -564,6 +573,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     self.tray = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     self.tray.button.title = @"AJAZZ ?";
     self.latest = (BatteryReading){BatteryChecking, -1, 0};
+    self.diagnosticSession = AjazzSessionCreate();
     NSApp.applicationIconImage = AppearanceAppIcon(AppearanceChoice(@"ApplicationIconColor"));
     [self buildMenu];
     [self scheduleTimer];
@@ -634,6 +644,10 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     [self updateDiagnosticMenu];
     [self item:diagnostics title:[self word:@"Copy diagnostics" ru:@"Копировать диагностику" uk:@"Копіювати діагностику"]
                    action:@selector(copyDiagnostics:)];
+    NSMenuItem *session = [diagnostics addItemWithTitle:
+        [self word:@"Diagnostic session" ru:@"Сеанс диагностики" uk:@"Сеанс діагностики"]
+        action:NULL keyEquivalent:@""];
+    session.submenu = [self buildDiagnosticSessionMenu];
     NSMenuItem *diagnosticItem = [menu addItemWithTitle:
         [self word:@"Diagnostics" ru:@"Диагностика" uk:@"Діагностика"] action:NULL keyEquivalent:@""];
     diagnosticItem.submenu = diagnostics;
@@ -907,6 +921,103 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     [self buildMenu];
 }
 
+- (NSMenu *)buildDiagnosticSessionMenu {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Diagnostic session"];
+    menu.autoenablesItems = NO;
+    self.sessionStatusItem = [menu addItemWithTitle:@"" action:NULL keyEquivalent:@""];
+    self.sessionStatusItem.enabled = NO;
+    self.sessionStartItem = [self item:menu
+        title:[self word:@"Start diagnostic session" ru:@"Начать сеанс диагностики" uk:@"Почати сеанс діагностики"]
+        action:@selector(startDiagnosticSession:)];
+    NSArray *labels = @[
+        [self word:@"Capture baseline" ru:@"Снять исходное состояние" uk:@"Зняти початковий стан"],
+        [self word:@"Mark 2.4 GHz selected" ru:@"Отметить выбор 2,4 ГГц" uk:@"Позначити вибір 2,4 ГГц"],
+        [self word:@"Mark Bluetooth selected" ru:@"Отметить выбор Bluetooth" uk:@"Позначити вибір Bluetooth"],
+        [self word:@"Mark sleep" ru:@"Отметить сон" uk:@"Позначити сон"],
+        [self word:@"Mark wake" ru:@"Отметить пробуждение" uk:@"Позначити пробудження"],
+        [self word:@"Capture another snapshot" ru:@"Снять ещё один снимок" uk:@"Зняти ще один знімок"]
+    ];
+    NSMutableArray *items = [NSMutableArray array];
+    for (NSUInteger i = 0; i < labels.count; i++) {
+        NSMenuItem *item = [self item:menu title:labels[i] action:@selector(captureDiagnosticMarker:)];
+        item.tag = (NSInteger)i;
+        [items addObject:item];
+    }
+    self.sessionCaptureItems = items;
+    self.sessionSaveItem = [self item:menu
+        title:[self word:@"Save diagnostic session…" ru:@"Сохранить сеанс диагностики…" uk:@"Зберегти сеанс діагностики…"]
+        action:@selector(saveDiagnosticSession:)];
+    self.sessionDiscardItem = [self item:menu
+        title:[self word:@"Discard diagnostic session" ru:@"Удалить сеанс диагностики" uk:@"Видалити сеанс діагностики"]
+        action:@selector(discardDiagnosticSession:)];
+    [self updateSessionMenu];
+    return menu;
+}
+
+- (void)updateSessionMenu {
+    BOOL active = AjazzSessionActive(self.diagnosticSession);
+    unsigned count = AjazzSessionCount(self.diagnosticSession);
+    self.sessionStatusItem.title = [NSString stringWithFormat:@"%@: %u/32",
+        [self word:@"Snapshots" ru:@"Снимки" uk:@"Знімки"], count];
+    self.sessionStartItem.enabled = !self.closing && !active && self.diagnosticSession != NULL;
+    for (NSMenuItem *item in self.sessionCaptureItems)
+        item.enabled = !self.closing && active && count < AJAZZ_SESSION_LIMIT;
+    self.sessionSaveItem.enabled = !self.closing && active && count >= 2;
+    self.sessionDiscardItem.enabled = !self.closing && active;
+}
+
+- (void)startDiagnosticSession:(id)sender {
+    (void)sender;
+    if (self.closing) return;
+    AjazzSessionStart(self.diagnosticSession);
+    [self updateSessionMenu];
+}
+
+- (void)addSessionReport:(NSString *)report marker:(unsigned)marker {
+    if (self.closing || !AjazzSessionActive(self.diagnosticSession)) return;
+    NSData *data = [report dataUsingEncoding:NSUTF8StringEncoding];
+    BOOL added = AjazzSessionAdd(self.diagnosticSession, marker, data.bytes, data.length);
+    [self updateSessionMenu];
+    [self message:added ? [self word:@"Snapshot added" ru:@"Снимок добавлен" uk:@"Знімок додано"] :
+        [self word:@"Snapshot not added; wait a second or check session limits"
+            ru:@"Снимок не добавлен; подождите секунду или проверьте лимиты сеанса"
+            uk:@"Знімок не додано; зачекайте секунду або перевірте ліміти сеансу"]];
+}
+
+- (void)captureDiagnosticMarker:(NSMenuItem *)sender {
+    if (self.closing || sender.tag < 0 || sender.tag > 5) return;
+    [self addSessionReport:[self diagnostics] marker:(unsigned)sender.tag];
+}
+
+- (void)discardDiagnosticSession:(id)sender {
+    (void)sender;
+    if (self.closing || !AjazzSessionActive(self.diagnosticSession)) return;
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = [self word:@"Discard all session snapshots?" ru:@"Удалить все снимки сеанса?" uk:@"Видалити всі знімки сеансу?"];
+    [alert addButtonWithTitle:[self word:@"Discard" ru:@"Удалить" uk:@"Видалити"]];
+    [alert addButtonWithTitle:[self word:@"Close" ru:@"Закрыть" uk:@"Закрити"]];
+    [NSApp activateIgnoringOtherApps:YES];
+    if ([alert runModal] == NSAlertFirstButtonReturn && !self.closing) {
+        AjazzSessionClear(self.diagnosticSession);
+        [self updateSessionMenu];
+    }
+}
+
+- (void)saveDiagnosticSession:(id)sender {
+    (void)sender;
+    if (self.closing || AjazzSessionCount(self.diagnosticSession) < 2) return;
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.nameFieldStringValue = @"ajazz-high-sierra-diagnostic-session.zip";
+    panel.allowedFileTypes = @[@"zip"];
+    panel.message = [self word:@"Session may contain reply bytes. Review before sharing."
+        ru:@"Сеанс может содержать байты ответа. Проверьте перед отправкой."
+        uk:@"Сеанс може містити байти відповіді. Перевірте перед надсиланням."];
+    [NSApp activateIgnoringOtherApps:YES];
+    if ([panel runModal] != NSModalResponseOK || !panel.URL || self.closing) return;
+    if (!AjazzSessionSave(self.diagnosticSession, panel.URL.path.fileSystemRepresentation))
+        [self message:[self word:@"Unable to save a new diagnostic file" ru:@"Не удалось сохранить новый файл отчёта" uk:@"Не вдалося зберегти новий файл звіту"]];
+}
+
 - (NSString *)diagnostics {
     NSString *state = self.latest.state == BatteryValid ? @"valid" :
         (self.latest.state == BatteryChecking ? @"not checked yet" :
@@ -929,7 +1040,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
          @"Firmware and device serial numbers were not queried.",
          [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
          [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"],
-         [utc stringFromDate:[NSDate date]], [[NSProcessInfo processInfo] operatingSystemVersionString],
+         [utc stringFromDate:[NSDate dateWithTimeIntervalSince1970:floor([[NSDate date] timeIntervalSince1970])]], [[NSProcessInfo processInfo] operatingSystemVersionString],
          state, battery, (long)self.latest.collections, sample,
          self.polling ? @"True" : @"False", self.isolatedPolling ? @"True" : @"False",
          self.bluetoothDiscovery ?: @"not requested", self.selectedPeripheral ? @"True" : @"False",
@@ -970,10 +1081,13 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     [alert addButtonWithTitle:[self word:@"Copy report" ru:@"Копировать" uk:@"Копіювати"]];
     [alert addButtonWithTitle:[self word:@"Save report…" ru:@"Сохранить…" uk:@"Зберегти…"]];
     [alert addButtonWithTitle:[self word:@"Close" ru:@"Закрыть" uk:@"Закрити"]];
+    if (AjazzSessionActive(self.diagnosticSession))
+        [alert addButtonWithTitle:[self word:@"Add report to diagnostic session" ru:@"Добавить отчёт в сеанс" uk:@"Додати звіт до сеансу"]];
     [NSApp activateIgnoringOtherApps:YES];
     NSModalResponse result = [alert runModal];
     if (result == NSAlertFirstButtonReturn) [self copyReport:report];
     if (result == NSAlertSecondButtonReturn) [self saveReport:report];
+    if (result == NSAlertThirdButtonReturn + 1) [self addSessionReport:report marker:6];
 }
 
 - (void)showDiagnostics:(id)sender { [self reviewReport:[self diagnostics]]; }
