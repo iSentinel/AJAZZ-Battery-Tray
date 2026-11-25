@@ -68,10 +68,11 @@ def normalized_header(raw: bytes, info: dict) -> bytes:
     return bytes(data)
 
 
-def compare(template: bytes, actual: bytes) -> dict:
+def compare(template: bytes, actual: bytes, *, overlay_expected: bool = True) -> dict:
     """Require exact non-resource bytes and header invariants, not engine trust."""
     a, b = layout(template), layout(actual)
-    if a['end'] != len(template) or b['end'] >= len(actual):
+    if (a['end'] != len(template) or
+            (b['end'] < len(actual)) != overlay_expected):
         raise ValueError('unexpected template or installer overlay')
     ar, br = a['sections']['.rsrc'], b['sections']['.rsrc']
     if normalized_header(template, a) != normalized_header(actual, b):
