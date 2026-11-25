@@ -1,6 +1,7 @@
 """Replay sanitized HID reports against offline and production Apple decoders."""
 
 import csv
+from collections.abc import Callable
 import ctypes
 from pathlib import Path
 import shutil
@@ -18,7 +19,7 @@ CORPUS = ROOT / "tests" / "fixtures" / "apex-f7-v1.csv"
 class SharedApexCorpusTests(unittest.TestCase):
     """Keep Windows-numbered and Apple-stripped expectations explicit."""
 
-    def replay(self, decode, platform):
+    def replay(self, decode: Callable[[bytes], int | None], platform: str) -> None:
         """Check every corpus row, including its origin and expected result."""
         with CORPUS.open(encoding="utf-8", newline="") as stream:
             rows = list(csv.DictReader(stream))
@@ -31,12 +32,12 @@ class SharedApexCorpusTests(unittest.TestCase):
                 self.assertEqual(decode(bytes.fromhex(row["hex"])),
                                  None if expected == "unknown" else int(expected))
 
-    def test_current_windows_replay(self):
+    def test_current_windows_replay(self) -> None:
         """Use the same numbered reports as the C# unit suite."""
         self.replay(current_percent, "windows")
 
     @unittest.skipUnless(shutil.which("cc"), "a C compiler is required")
-    def test_apple_decoder(self):
+    def test_apple_decoder(self) -> None:
         """Call the actual shared header used by both native Mac binaries."""
         wrapper = ('#include "AjazzBatteryReport.h"\n'
                    'int decode(const uint8_t *p, size_t n) {\n'
@@ -50,7 +51,8 @@ class SharedApexCorpusTests(unittest.TestCase):
             decode.argtypes = (ctypes.c_char_p, ctypes.c_size_t)
             decode.restype = ctypes.c_int
 
-            def apple(data):
+            def apple(data: bytes) -> int | None:
+                """Translate the shared C decoder's negative result to unavailable."""
                 value = decode(data, len(data))
                 return None if value < 0 else value
 

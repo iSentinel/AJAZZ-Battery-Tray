@@ -7,32 +7,37 @@ from compare_apex_reports import legacy_percent, vendor_candidate, read_attempts
 class ApexComparisonTests(unittest.TestCase):
     """No hardware or network needed."""
 
-    def test_legacy(self):
+    def test_legacy(self) -> None:
+        """Accept historical compact framing only with the required prefix."""
         self.assertEqual(legacy_percent(bytes([5, 0, 0, 83])), 83)
         self.assertIsNone(legacy_percent(bytes([5, 1, 0, 83])))
 
-    def test_vendor_alternative(self):
+    def test_vendor_alternative(self) -> None:
+        """Keep a plausible vendor field separate from legacy telemetry."""
         data = bytes([5, 1, 54, 83, 0, 0, 1, 3, 0, 0])
         self.assertIsNone(legacy_percent(data))
         self.assertEqual(vendor_candidate(data), ("candidate-only", 83))
 
-    def test_offline_and_boot(self):
+    def test_offline_and_boot(self) -> None:
+        """Reject candidate fields for offline mouse or boot mode."""
         self.assertEqual(vendor_candidate(bytes([5, 1, 0, 83, 0, 1, 1, 2, 0, 0]))[1], None)
         self.assertEqual(vendor_candidate(bytes([5, 1, 0, 83, 0, 0, 1, 2, 0, 1]))[1], None)
 
-    def test_invalid_or_nonmouse(self):
+    def test_invalid_or_nonmouse(self) -> None:
+        """Reject excessive charge, keyboard-only slot and short buffers."""
         self.assertIsNone(vendor_candidate(bytes([5, 1, 0, 101, 0, 0, 1, 2, 0, 0]))[1])
         self.assertIsNone(vendor_candidate(bytes([5, 1, 0, 83, 0, 0, 1, 1, 0, 0]))[1])
         self.assertIsNone(vendor_candidate(bytes([5, 0, 0, 83]))[1])
 
-    def test_capture_section(self):
+    def test_capture_section(self) -> None:
+        """Ignore old poll buffers and associate fresh RX with its attempt."""
         report = ("RX buffer[4]=05000064\n" + SECTION +
                   "\n[Receiver #1]\n  Attempt UTC=example; delay=30ms; TX[4]=00F70000\n"
                   "  RX buffer[4]=05000053\n")
         self.assertEqual(list(read_attempts(report)), [
             ("1", 30, 4, None), ("1", 30, 4, bytes.fromhex("05000053"))])
 
-    def test_aj179_reference_prefix(self):
+    def test_aj179_reference_prefix(self) -> None:
         """Reconstruct the observed status prefix; do not store raw captures."""
         prefix = bytes([5, 0, 0, 100, 1, 0, 1, 2, 0, 0])
         for size in (65, 67):
@@ -41,7 +46,7 @@ class ApexComparisonTests(unittest.TestCase):
                 self.assertEqual(legacy_percent(data), 100)
                 self.assertEqual(vendor_candidate(data), ("candidate-only", 100))
 
-    def test_aj179_bridge_flags(self):
+    def test_aj179_bridge_flags(self) -> None:
         """Observed flag variants; normalization is offline hypothetical only."""
         for ready, send, count in ((0, 1, 258), (1, 1, 6), (0, 0, 2)):
             with self.subTest(ready=ready, send=send, count=count):
@@ -52,7 +57,8 @@ class ApexComparisonTests(unittest.TestCase):
                 self.assertEqual(legacy_percent(windows), None if ready else 100)
                 self.assertEqual(vendor_candidate(windows), ("candidate-only", 100))
 
-    def test_malformed(self):
+    def test_malformed(self) -> None:
+        """Reject absent matrix and mismatched reported buffer lengths."""
         with self.assertRaises(ValueError):
             list(read_attempts("no capture"))
         with self.assertRaises(ValueError):
