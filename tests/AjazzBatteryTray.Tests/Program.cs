@@ -1,5 +1,7 @@
 using AjazzBatteryTray;
 
+if (args.Length != 0) return DiagnosticSessionInterop.Run(args);
+
 // Dependency-free tests run on Windows, macOS or Linux with .NET 8.
 int passed = 0;
 int failed = 0;

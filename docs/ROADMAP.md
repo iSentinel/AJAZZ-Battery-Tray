@@ -1400,3 +1400,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       timestamps, invalid marker, corruption and initial passive state.
 - [ ] Native Windows archive interoperability and hardware acceptance.
 - [ ] macOS interactive collection, release admission.
+
+### Native exporter/importer interoperability
+
+- [x] Integrate #193 after exact hosted CI.
+- [x] Add synthetic test-only C# export mode using the production
+      DiagnosticSession.Export; fixed baseline and Bluetooth annotation,
+      unchecked AULA then fresh AULA, separate historical GATT.
+- [x] Require Python verification of actual native ZIP in Windows CI;
+      no hardware I/O and no real user reports.
+- [ ] Hosted exact CI result and physical menu/export acceptance.
+- [ ] macOS interactive collection.

@@ -1231,3 +1231,10 @@ and physical acceptance remain open.
 fixed member names, CRC, UTF-8, owner annotation chronology. Initial
 unchecked AULA remains not_checked. Synthetic exporter-layout fixtures;
 real Windows ZIP interoperability and physical acceptance pending.
+
+## Native session roundtrip checkpoint
+
+#193 merged 544bb8f; stacked on #194 9faa2b6. Windows CI now requires
+test-only C# export through actual DiagnosticSession.Export and Python
+verification of synthetic states/markers. No real captures or device
+I/O. Native roundtrip result pending CI; macOS session next.
