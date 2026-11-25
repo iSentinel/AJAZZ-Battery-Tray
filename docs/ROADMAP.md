@@ -869,3 +869,23 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] AJ159 owner acceptance issue #53 remains open. The owner's
       real Windows GearHub and beta.59 status replies contained
       zero battery fields; this release does not assert a fix.
+
+
+## Full-vendor HID capture watchdog (issue #93 candidate, 2026-11-25)
+
+- [x] Isolate explicitly consented F7/05 full-report capture in the same
+      executable as a separate worker; transfer report via anonymous stdout
+      pipe rather than creating raw temporary files.
+- [x] Show 40-second deadline and termination status in EN/RU/UA;
+      discard partial reports on timeout or worker failure.
+- [x] Keep normal AJAZZ polling paused and prevent tray Exit while
+      worker is still active. Resume only after confirmed worker exit.
+- [x] Add packaged-executable CI cases for a completed report and
+      synthetic hang; neither case issues hardware commands.
+- [ ] Windows CI and macOS regression checks; verify the Windows WinExe
+      redirected pipe and timeout behavior in the actual runner.
+- [ ] Manual GUI consent, deadline/recovery, install/upgrade validation;
+      assess hard parent termination and failed worker termination.
+- [ ] Release only after CI and packaging gates; retain beta.60 as Latest
+      until a verified replacement. Hardware issue #53 and High Sierra
+      acceptance remain independent.
