@@ -24,7 +24,7 @@ METRICS = (
 )
 
 
-def number(row, key):
+def number(row: dict[str, str], key: str) -> float:
     """Read a finite nonnegative numeric field."""
     value = float(row[key])
     if not math.isfinite(value) or value < 0:
@@ -32,7 +32,7 @@ def number(row, key):
     return value
 
 
-def read_rows(path):
+def read_rows(path: Path) -> tuple[list[dict[str, str]], str, bool]:
     """Read bounded UTF-8 CSV and validate its exact schema."""
     with path.open("rb") as source:
         raw = source.read(2 * 1024 * 1024 + 1)
@@ -59,7 +59,7 @@ def read_rows(path):
     return rows, hashlib.sha256(raw).hexdigest(), gui_enabled
 
 
-def read_run(path):
+def read_run(path: Path) -> dict[str, str | float | bool]:
     """Validate and summarize one bounded sampler export."""
     rows, digest, gui_enabled = read_rows(path)
     versions = {row["version"] for row in rows}
@@ -92,7 +92,10 @@ def read_run(path):
     return result
 
 
-def compare(baseline, candidate):
+def compare(
+    baseline: list[dict[str, str | float | bool]],
+    candidate: list[dict[str, str | float | bool]],
+) -> list[tuple[str, float, float, float | None]]:
     """Compare medians of independent, similarly timed runs."""
     if not baseline or not candidate:
         raise ValueError("both groups require at least one run")
@@ -115,7 +118,7 @@ def compare(baseline, candidate):
     return output
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Run the comparison; PASS denotes valid inputs, not a performance gate."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", nargs="+", type=Path, required=True)

@@ -70,3 +70,80 @@ reviewed exact baseline is not established yet and no debt PASS claimed.
 Temporary release hold regression checks source triggers, read permissions,
 absence of clobber and fail-closed first steps. They do not qualify
 GitHub's live release admission; no workflow publication was dispatched.
+
+## ENG-03 production-tool annotation remediation
+
+PR #137 head 0e140d3 passed four checks (Windows 45514692984, Universal
+45514692708, High Sierra 45514692557, Python 45514692310, 104 tests).
+Merge attempt returned HTTP 401 Bad credentials. No alternate credential
+or bypass was attempted. Local work continues from the exact tested head.
+
+Seven existing production Python tools received explicit public parameter
+and return annotations based on their actual inputs/outputs, preserving
+runtime behavior and existing CLI exits. Mixed metric mapping remains
+a typed union, not a claim of full static type checking. No Python
+dependency added. Next: remediate test fixture and test method docs/types,
+then activate exact zero-debt gate without adopting a blanket baseline.
+Native audit/lint/type analysis remain separate ENG-03 work.
+
+## ENG-03 exact zero-debt gate
+
+Local commits f2553e6 and 949665a eliminated all 81 production and 247 test
+source findings by explicit annotations and scenario-specific documentation.
+No assertions or test bodies weakened. Python 3.13.5, 104/104 tests passed
+after each commit; AST inventory zero. No legacy debt entries accepted.
+The next local candidate enables the empty versioned exact baseline and
+recursive tools/**/*.py scanning, with tests for nested sources and symlinks.
+CI workflow requires the baseline check and preserves its report even after
+an earlier failing step. This is a source audit, not full PEP 8 lint, type
+checking, native-language audit or hardware validation.
+GitHub write access remains blocked by HTTP 401; hosted CI for local
+commits not run. No branch protection or release setting changed.
+
+## ENG-04 first offline QA candidate
+
+Provider-independent Python runner tools/run_offline_qa.py and sanitized
+unittest JUnit writer added. Gate requires complete nonempty non-skipped
+suite, clean source, exact zero-debt audit and all CLI help checks;
+independent inventory has sizes and SHA-256. Unique owner-private POSIX
+directory, create-new files, subprocess timeouts, no raw stdout/stderr
+in shared evidence. Negative tests cover fail/skip/empty, missing
+inventory, immutable report and JUnit mismatch. Local regression 111/111,
+AST zero before final clean candidate run. See OFFLINE_QA.md for commands.
+GitHub wrapper replaced direct test/help/audit commands with common
+entrypoint; hosted execution NOT_RUN due to existing authorization blocker.
+No native build/hardware, full atomicity, Windows ACL or JUnit UI import
+qualification claimed. Next: clean committed local end-to-end gate.
+
+## ENG-04 clean local run and ENG-16 manifest verifier
+
+Clean source 09e8d3d682bf25a50be323c320e8f600b38ab3e0, tree
+1590ec8fb4e2e5a2e1a64cee48aa5a4f9feed31a; Linux x86_64,
+Python 3.13.5, cc Debian 14.2.0. Command python3 tools/run_offline_qa.py:
+exit 0, 14 steps, 111 tests, zero failures/errors/skips. Reopened all four
+required files and verified exact inventory, sizes and SHA-256.
+Private local run ID offline-qa-awurdq9m. Hosted/native/hardware NOT_RUN.
+Next local ENG-16 change adds explicit --verify, fixed complete inventory,
+strict manifest schema, per-file identity/metadata checks and rejection of
+symlinks/hardlinks. It is local integrity only, not authentication,
+durability or an atomic multi-file snapshot. No source push due to 401.
+
+ENG-16 clean local QA at 09b9a47 / tree b76c9c4, 114/114 tests,
+14 steps, zero errors/failures/skips, verified manifest on reopen
+(private run offline-qa-aainipi4). Next ENG-14 fixes the unbounded
+APEX comparator input: one MiB cap, regular local file only, descriptor
+identity check, safe ordinal/error type on failed input. Existing
+success output, positional CLI and exit 0/1 retained; successful
+local reports still show user-selected basename. Broader CLI/output
+privacy review remains open. No runtime or HID changes.
+
+## Integrated policy and current candidate
+
+PR #137 merged 4099ae4 after all four hosted checks PASS and successful
+normal retry of previously failed authorization. Six local commits copied
+onto the same tested tree, original local branch preserved. PR #138 at
+0b1ed6d (tree c230ebc9c073a3c1db1dbca45794dce645f93265) passed clean
+local common QA: 117 tests, 14 steps, zero errors/failures/skips; manifest
+verified on reopen, private run offline-qa-m7fozn0p. Hosted candidate
+checks pending; no native/runtime claims or publication. Release hold is
+in draft #99, not main. ENG-05 is the next independent remediation.

@@ -8,7 +8,9 @@ from compare_ready_clear import compare, disagreement, ordinary_field, parse_mat
 from compare_apex_reports import SECTION
 
 
-def report(field=100, time="21:22:33", omit=None, altered=None):
+def report(field: int = 100, time: str = "21:22:33",
+           omit: tuple[int, int] | None = None,
+           altered: tuple[int, int] | None = None) -> str:
     """Reconstruct only the observed 10-byte prefix, not the private capture."""
     lines = ["AJAZZ APEX full comparison report (one capture)",
              f"UTC: 2026-11-24T{time}+00:00", SECTION,
@@ -35,7 +37,8 @@ def report(field=100, time="21:22:33", omit=None, altered=None):
 class ReadyClearTests(unittest.TestCase):
     """Compare observations without inferring battery validity."""
 
-    def test_changed_and_unchanged(self):
+    def test_changed_and_unchanged(self) -> None:
+        """Distinguish changing and equal unverified fields in full matrices."""
         first = parse_matrix(report())
         self.assertEqual(first[1], 100)
         self.assertEqual(compare(first, parse_matrix(report(98, "21:35:12"))),
@@ -43,44 +46,51 @@ class ReadyClearTests(unittest.TestCase):
         self.assertEqual(compare(first, parse_matrix(report(100, "21:35:12"))),
                          "UNCHANGED FIELD")
 
-    def test_missing_and_disagreeing_response(self):
+    def test_missing_and_disagreeing_response(self) -> None:
+        """Missing or conflicting replies cannot establish matrix agreement."""
         for text in (report(omit=(30, 65)), report(altered=(250, 67))):
             self.assertIsNone(parse_matrix(text)[1])
 
-    def test_nonmatching_identity(self):
+    def test_nonmatching_identity(self) -> None:
+        """Require revision 0002, one receiver and the expected descriptor size."""
         for before, after in (("0x0002", "0x0300"), ("paths: 1", "paths: 2"),
                               ("Feature report size: 65", "Feature report size: 67")):
             self.assertIsNone(parse_matrix(report().replace(before, after))[1])
 
-    def test_bad_link_and_range(self):
+    def test_bad_link_and_range(self) -> None:
+        """Reject non-ready-clear flags, wrong slots and invalid charge fields."""
         for offset, value in ((1, 1), (3, 0), (3, 101), (4, 2),
                               (5, 1), (6, 0), (7, 3), (9, 1)):
             data = bytearray([5, 0, 0, 100, 1, 0, 1, 2, 0, 0])
             data[offset] = value
             self.assertIsNone(ready_clear(data))
 
-    def test_duplicate_response(self):
+    def test_duplicate_response(self) -> None:
+        """Reject multiple RX buffers associated with one probe."""
         lines = report().splitlines()
         index = next(i for i, line in enumerate(lines) if line.startswith("RX buffer"))
         lines.insert(index, lines[index])
         with self.assertRaises(ValueError):
             parse_matrix(chr(10).join(lines))
 
-    def test_duplicate_attempt(self):
+    def test_duplicate_attempt(self) -> None:
+        """Reject repeated attempts at the same timing and length."""
         lines = report().splitlines()
         index = next(i for i, line in enumerate(lines) if line.startswith("Attempt UTC"))
         lines.insert(index, lines[index])
         with self.assertRaises(ValueError):
             parse_matrix(chr(10).join(lines))
 
-    def test_timestamp_and_incomplete(self):
+    def test_timestamp_and_incomplete(self) -> None:
+        """Reject equal timestamps; incomplete later evidence is inconclusive."""
         first = parse_matrix(report())
         with self.assertRaises(ValueError):
             compare(first, first)
         self.assertEqual(compare(first, parse_matrix(report(time="21:35:12",
                                  omit=(30, 65)))), "INCONCLUSIVE")
 
-    def test_wrong_request_and_header(self):
+    def test_wrong_request_and_header(self) -> None:
+        """Reject non-F7 requests, wrong GET ID and mismatched RX header."""
         text = report()
         for old, new in (("TX[65]=00F7", "TX[65]=00F6"),
                          ("GET request buffer[65]=05", "GET request buffer[65]=00"),
@@ -88,14 +98,16 @@ class ReadyClearTests(unittest.TestCase):
             with self.subTest(old=old), self.assertRaises(ValueError):
                 parse_matrix(text.replace(old, new, 1))
 
-    def test_failed_or_missing_get(self):
+    def test_failed_or_missing_get(self) -> None:
+        """A failed GET or missing request marker cannot establish agreement."""
         text = report()
         self.assertIsNone(parse_matrix(text.replace("): OK; header=", "): FAILED; header=", 1))[1])
         lines = [line for line in text.splitlines()
                  if not line.startswith("GET request buffer")]
         self.assertIsNone(parse_matrix(chr(10).join(lines))[1])
 
-    def test_wrong_order_and_orphan(self):
+    def test_wrong_order_and_orphan(self) -> None:
+        """Reject out-of-order or unassociated response evidence."""
         lines = report().splitlines()
         index = next(i for i, line in enumerate(lines) if line.startswith("RX buffer"))
         lines[index], lines[index - 1] = lines[index - 1], lines[index]
@@ -104,15 +116,17 @@ class ReadyClearTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_matrix(chr(10).join(lines))
 
-    def test_owner_prefix_replay(self):
+    def test_owner_prefix_replay(self) -> None:
         # Sanitized reconstruction of the two reported times and identical
         # ten-byte prefixes; no claim of independently read device data.
+        """Replay two reconstructed owner prefixes without claiming a fresh sample."""
         first = parse_matrix(report(100, "21:22:33"))
         second = parse_matrix(report(100, "21:35:12"))
         self.assertEqual(compare(first, second), "UNCHANGED FIELD")
 
     @staticmethod
-    def with_ordinary(text, field):
+    def with_ordinary(text: str, field: int) -> str:
+        """Add a synthetic prior ordinary poll with two matching headers."""
         prefix = chr(10).join([
             "[AJAZZ last ordinary poll — not a fresh request]",
             "Receiver present: True; presence known: True",
@@ -125,23 +139,28 @@ class ReadyClearTests(unittest.TestCase):
             "[Independent AJAZZ receivers]", SECTION])
         return text.replace(SECTION, prefix)
 
-    def test_ordinary_full_disagreement(self):
+    def test_ordinary_full_disagreement(self) -> None:
+        """Flag a prior ordinary field of 98 against a full matrix of 100."""
         text = self.with_ordinary(report(100), 98)
         self.assertEqual(disagreement(text, parse_matrix(text)), (98, True))
 
-    def test_ordinary_full_agreement(self):
+    def test_ordinary_full_agreement(self) -> None:
+        """Matching prior and full observations do not flag a conflict."""
         text = self.with_ordinary(report(100), 100)
         self.assertEqual(disagreement(text, parse_matrix(text)), (100, False))
 
-    def test_ordinary_invalid_header(self):
+    def test_ordinary_invalid_header(self) -> None:
+        """Do not trust the prior field if one stated header disagrees."""
         text = self.with_ordinary(report(100), 98).replace("header=05000062", "header=05000063", 1)
         self.assertIsNone(ordinary_field(text))
 
-    def test_missing_ordinary_is_not_conflict(self):
+    def test_missing_ordinary_is_not_conflict(self) -> None:
+        """An absent prior poll is not evidence of a conflicting value."""
         text = report()
         self.assertEqual(disagreement(text, parse_matrix(text)), (None, False))
 
-    def test_size_guard(self):
+    def test_size_guard(self) -> None:
+        """Reject a local full diagnostic report larger than one MiB."""
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "report.txt"
             path.write_bytes(b"x" * 1048577)

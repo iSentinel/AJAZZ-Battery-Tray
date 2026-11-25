@@ -1,3 +1,74 @@
+# Resume — ENG-03/04/14/16 candidate PR #138
+
+#137 all four checks PASS, normal retry of merge succeeded after prior
+HTTP 401, merged into draft #99 at 4099ae4. No main merge or release.
+Six local commits preserved and cherry-picked into fix/engineering-offline-qa.
+Candidate #138 source 0b1ed6d / tree c230ebc9c073a3c1db1dbca45794dce645f93265.
+Common QA clean run: Python 3.13.5, Linux x86_64, cc 14.2.0,
+117/117 tests, 14 steps, zero failures/errors/skips; AST zero and required
+manifest verified on reopen. Private run ID offline-qa-m7fozn0p.
+ENG-03 Python AST gate, ENG-04 runner, ENG-16 verifier, ENG-14 first
+bounded report fix implemented; hosted checks pending. Full native audit,
+lint/type analysis, atomic evidence publication and release gates open.
+Next: inspect exact #138 CI and merge only on success; ENG-05 safe native
+logging remediation and regression tests. No new HID or publication.
+
+# Resume — ENG-14 bounded local APEX analysis
+
+Source 09b9a47 / tree b76c9c4; common local QA 114/114,
+14 steps, manifest verified on reopen (offline-qa-aainipi4).
+ENG-14 bounded APEX report reader and sanitized failure output
+candidate; existing comparison semantics retained. Regression pending.
+GitHub auth status reports available again, but previous merge failed
+HTTP 401; no alternate credentials or write permission assumed.
+Next: run local common QA, verify current PR head/checks and retry
+normal merge only if authorization and exact reviewed head permit.
+ENG-05 native logging still requires hosted Windows verification.
+
+# Resume — ENG-16 local evidence verification
+
+Source 09e8d3d / tree 1590ec8: common Python QA PASS from clean checkout,
+111/111 tests, 14 steps, no skipped; four file digests checked.
+Private run ID offline-qa-awurdq9m; Python 3.13.5, cc 14.2.0 Linux.
+New explicit --verify and strict required inventory, symlink/hardlink
+and per-file mutation checks. Run regression and clean candidate QA.
+GitHub HTTP 401 remains unresolved, local-only branch; hosted NOT_RUN.
+Next independent action: safe FileLog remediation / native test preparation,
+then dependency pin review, CLI bounds and native QA evidence wrappers.
+No hardware, release or publication authorization.
+
+# Resume — ENG-04 first offline QA candidate
+
+Source: 342824d exact zero-debt gate, 106 local tests PASS.
+New runner and sanitized JUnit writer, fixed help commands, required
+digest inventory, private unique directories, no raw shared exceptions.
+Local regressions 111/111 PASS before final clean-candidate check.
+Next: execute common runner from committed clean tree and inspect manifest.
+GitHub HTTP 401 remains unresolved; local commits not pushed, hosted
+qualification NOT_RUN. No publication or hardware approval.
+Native evidence wrappers, stronger atomic evidence and case catalog open.
+
+# Resume — ENG-03 zero Python source debt
+
+Source: f2553e6 (81 production findings removed), 949665a (247 test
+findings removed). Local Python 3.13.5 regression 104/104 after each.
+Stage: exact empty baseline, recursive source audit and CI gate.
+No reviewed legacy debt entries required. Native audit/lint/types pending.
+GitHub HTTP 401 at #137 merge; local branch fix/engineering-python-types
+not pushed. No hosted evidence for local commits. Release hold unmerged.
+Next independent action: ENG-04 dependency-free offline QA result contract,
+then native wrappers and evidence validation. No production/hardware work.
+
+# Resume — ENG-03 Python annotations
+
+Source: PR #137 tested head 0e140d3 / tree ad04238d1f7d9dc9f5668257bb57335b80824434.
+Four hosted checks PASS, 104 Python tests. Merge returned HTTP 401.
+Local branch only; no alternate credential, push or merge assumed.
+Stage: explicit annotations in seven production tools. Test source
+debt remains; no blanket baseline. Run exact inventory and regression.
+Next: test source debt remediation, then zero-debt gate and QA evidence.
+Release workflow hold remains unmerged to main. No publication.
+
 # Resume — portable engineering policy adoption
 
 Source: c416b3f / tree 101f0ce13fdac2d3c0f08a4fd1bab04bb44945df.

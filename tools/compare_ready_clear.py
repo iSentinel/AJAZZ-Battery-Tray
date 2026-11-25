@@ -9,6 +9,9 @@ import re
 from compare_apex_reports import SECTION, current_percent
 
 LIMIT = 1024 * 1024
+Matrix = tuple[datetime, int | None]
+Report = tuple[Matrix, int | None, bool]
+ProbeEntries = dict[tuple[int, int], bytes | None]
 EXPECTED = {(delay, length) for delay in (30, 100, 250)
             for length in (65, 67)}
 MARKER = re.compile(r"^UTC: (.+)$", re.MULTILINE)
@@ -18,7 +21,7 @@ RX = re.compile(r"RX buffer\[(65|67)\]=([0-9A-F]+)")
 SUCCESS = re.compile(r"SET F7 / GET 05 \((65|67) bytes\): OK; header=([0-9A-F]{8}); no valid battery")
 
 
-def ready_clear(data):
+def ready_clear(data: bytes | bytearray) -> int | None:
     """Mirror the narrow Windows display-only field predicate."""
     if (len(data) >= 10 and data[0] == 5 and data[7] == 2
             and data[1] == 0 and data[4] <= 1 and data[5] == 0
@@ -27,7 +30,7 @@ def ready_clear(data):
     return None
 
 
-def parse_matrix(text):
+def parse_matrix(text: str) -> Matrix:
     """Require a completed, consistent, rev 0002, 65-byte descriptor matrix."""
     if text.count(SECTION) != 1:
         raise ValueError("Expected one fresh full matrix")
@@ -60,7 +63,7 @@ def parse_matrix(text):
     return stamp, levels.pop()
 
 
-def parse_probe(lines, length):
+def parse_probe(lines: list[str], length: int) -> bytes | None:
     """Require the exact GET buffer, successful chain and response in order."""
     relevant = [line for line in lines if line.startswith(
         ("GET request buffer", "SET F7 / GET", "RX buffer"))]
@@ -83,7 +86,7 @@ def parse_probe(lines, length):
     return data
 
 
-def collect_attempts(text):
+def collect_attempts(text: str) -> ProbeEntries:
     """Reject orphan evidence, duplicate probes and non-F7 requests."""
     entries = {}
     active = None
@@ -115,7 +118,7 @@ def collect_attempts(text):
     return entries
 
 
-def ordinary_field(text):
+def ordinary_field(text: str) -> int | None:
     """Read only the ordinary summary; never treat its field as fresh capture."""
     heading = "[AJAZZ last ordinary poll — not a fresh request]"
     end = "[Independent AJAZZ receivers]"
@@ -146,13 +149,13 @@ def ordinary_field(text):
     return value
 
 
-def disagreement(text, matrix):
+def disagreement(text: str, matrix: Matrix) -> tuple[int | None, bool]:
     """Keep ordinary and full-capture observations independent."""
     ordinary = ordinary_field(text)
     return ordinary, matrix[1] is not None and ordinary is not None and ordinary != matrix[1]
 
 
-def read_report(path):
+def read_report(path: Path) -> Report:
     """Read bounded local data only."""
     with path.open("rb") as stream:
         raw = stream.read(LIMIT + 1)
@@ -164,7 +167,7 @@ def read_report(path):
     return matrix, ordinary, conflict
 
 
-def compare(first, second):
+def compare(first: Matrix, second: Matrix) -> str:
     """A change in the field is an observation, never a validated percentage."""
     if first[0] >= second[0]:
         raise ValueError("Reports must have distinct chronological timestamps")
@@ -173,7 +176,7 @@ def compare(first, second):
     return "CHANGED FIELD" if first[1] != second[1] else "UNCHANGED FIELD"
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """0 = complete comparison, 2 = inconclusive, 1 = invalid input."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--earlier", type=Path, required=True)

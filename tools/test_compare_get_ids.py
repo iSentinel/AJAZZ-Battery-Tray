@@ -3,7 +3,7 @@ import unittest
 from compare_get_ids import MODE, END, parse, summarize
 
 
-def fixture(missing=False, changed=False):
+def fixture(missing: bool = False, changed: bool = False) -> str:
     """Build the documented 65/67-byte comparison matrix."""
     lines = ["BEGIN: UTC=2026-11-24T00:00:00Z timeout=40s", MODE,
              "STEP: found 1 matching MI_02 paths",
@@ -26,34 +26,42 @@ def fixture(missing=False, changed=False):
 class GetIdTests(unittest.TestCase):
     """No HID or live logs are required for these tests."""
 
-    def test_complete_same_status(self):
+    def test_complete_same_status(self) -> None:
+        """Require twelve observations and identical non-ID status bytes."""
         self.assertEqual(len(parse(fixture())), 12)
         self.assertTrue(all(row[-1] == "SAME STATUS BYTES"
                             for row in summarize(parse(fixture()))))
 
-    def test_different_status(self):
+    def test_different_status(self) -> None:
+        """Detect distinct payloads even when report IDs are expected."""
         self.assertTrue(all(row[-1] == "DIFFERENT STATUS BYTES"
                             for row in summarize(parse(fixture(changed=True)))))
 
-    def test_missing_reply(self):
+    def test_missing_reply(self) -> None:
+        """An unanswered probe leaves its timing/length pair incomplete."""
         self.assertEqual(summarize(parse(fixture(missing=True)))[0][-1],
                          "INCOMPLETE")
 
-    def test_timeout(self):
+    def test_timeout(self) -> None:
+        """A timed-out experimental worker cannot establish a complete matrix."""
         self.assertIsNone(parse(fixture().replace(END, "TIMEOUT: worker exceeded 40s")))
 
-    def test_multiple_receivers_inconclusive(self):
+    def test_multiple_receivers_inconclusive(self) -> None:
+        """Reject comparison scope with more than one receiver."""
         self.assertIsNone(parse(fixture().replace("found 1", "found 2")))
 
-    def test_duplicate_probe_rejected(self):
+    def test_duplicate_probe_rejected(self) -> None:
+        """Reject a repeated delay, length and report-ID probe."""
         marker = "PAIR: delay=30ms length=65 request=05"
         with self.assertRaises(ValueError):
             parse(fixture().replace(marker, marker + "\n" + marker))
 
-    def test_wrong_association_rejected(self):
+    def test_wrong_association_rejected(self) -> None:
+        """Reject observations assigned to the wrong requested report ID."""
         with self.assertRaises(ValueError):
             parse(fixture().replace("request=05 returned=05", "request=00 returned=05", 1))
 
-    def test_wrong_returned_id_rejected(self):
+    def test_wrong_returned_id_rejected(self) -> None:
+        """Require the observed prefix to match the stated returned ID."""
         with self.assertRaises(ValueError):
             parse(fixture().replace("returned=05", "returned=00", 1))

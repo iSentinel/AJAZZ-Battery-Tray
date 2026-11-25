@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tools/**'
+      - 'config/code-audit-baseline.json'
       - '.github/workflows/release-*.yml'
       - 'tests/fixtures/**'
       - 'macos/AjazzBatteryReport.h'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - 'tools/**'
+      - 'config/code-audit-baseline.json'
       - '.github/workflows/release-*.yml'
       - 'tests/fixtures/**'
       - 'macos/AjazzBatteryReport.h'
@@ -30,26 +32,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run offline regressions
-        run: python -m unittest discover -s tools -p 'test_*.py' -v
-      - name: Validate help
-        run: |
-          python tools/compare_apex_reports.py --help
-          python tools/compare_tray_resources.py --help
-          python tools/compare_job_cpu.py --help
-          python tools/analyze_aula_sleep.py --help
-          python tools/compare_windows_hid_logs.py --help
-          python tools/compare_get_ids.py --help
-          python tools/compare_ready_clear.py --help
-          python tools/code_audit.py --help
-      - name: Inventory Python engineering debt (not qualification)
-        run: |
-          mkdir -p artifacts
-          python tools/code_audit.py --inventory > artifacts/code-audit.json
-      - name: Preserve source-only audit inventory
+      - name: Run provider-independent offline QA
+        run: python tools/run_offline_qa.py
+      - name: Preserve sanitized required QA evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: code-audit-inventory
-          path: artifacts/code-audit.json
+          name: offline-python-qa
+          path: artifacts/offline-qa-*/*
           if-no-files-found: error
