@@ -1932,3 +1932,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native solid payload and IFPS result; full Setup.0 destinations,
       wizard/source attribution, integration into #99.
 - [ ] Interactive UAC, legal and hardware gates. Release hold.
+
+### Native solid payload and complete Setup.0 qualification
+
+- [x] #241 merged 3c9dbb0 into draft #99 after exact 7/7 checks and
+      tested tree comparison.
+- [x] Match three native evidence archive digests and binding;
+      15/15 source files, both compressed blocks, scoped IFPS PASS.
+- [x] Add complete scoped Setup.0 policy verification and both
+      pinned wizard resources, two regressions PASS.
+- [ ] Native Setup.0 result, exact evidence review and integration;
+      migration of production compiler and notice distribution
+      only after remaining gates.
+- [ ] Interactive UAC, legal and physical acceptance. Release hold.
