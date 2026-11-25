@@ -1,3 +1,14 @@
+# Resume — expanded managed runtime provenance
+
+#151 unified diagnostics merged f1e1ec3 (916 C# checks; integrated 7/7 CI).
+#152 merged f061d62 after 5/5 CI, tree 5d7e9c8. Independent #147
+artifact comparison found Desktop 81, Core Tray 179 and HA 181, SDK 2
+exact upstream byte matches; no mismatches. Expand existing comparator
+with explicit reviewed package selection and missing embedded handling.
+Require exact candidate CI and real CLI comparison. Next inspect native
+AppHost, package signatures and license/notices, then scoped SBOM.
+No main merge, release or hardware acceptance claim.
+
 # Resume — unified diagnostics and historical transport evidence
 
 #150 merged b5b5c53 after 5/5 checks, identical tree 9a2bfc0.
