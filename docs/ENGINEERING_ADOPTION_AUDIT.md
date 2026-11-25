@@ -185,3 +185,14 @@ Windows run 45516691219 confirms 12/12 journal assertions, total
 903 C# PASS, zero FAIL. ENG-15 follow-up cherry-picked onto matching
 merged tree; source 5e7559f. This confirms scoped Windows logging
 behavior, not Apple parity, adversarial same-user resistance or ACLs.
+
+## ENG-06 first pinning candidate
+
+#140 passed Windows/macOS/upgrade checks; four metadata assertions
+and 907 total C# checks PASS. Merged 17a65b8, exact source tree.
+ENG-06 reviewed actual action SHA identities and pinned all 26 uses,
+added finite job budgets, fixed Python 3.12.16 to previous hosted
+version, and added source regression checks. See CI_DEPENDENCY_REVIEW.md.
+Held release-only download-artifact identity resolved upstream, not
+executed; no release permission change. Toolchain/transitive/security
+qualification remains open. Local offline QA and hosted CI required.

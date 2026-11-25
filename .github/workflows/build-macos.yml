@@ -21,10 +21,11 @@ jobs:
   build-macos:
     # Intel macOS runner avoids arm64 queue saturation; swiftc cross-builds both architectures.
     runs-on: macos-15-intel
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Build universal menu-bar app
         run: bash macos/build-macos.sh
       - name: Verify shared vendor I/O gate without HID
@@ -34,13 +35,13 @@ jobs:
         run: |
           python3 tools/measure_apple_worker.py --dry-run
           python3 tools/measure_apple_worker.py --exe "dist/mac/AJAZZ Battery Tray.app/Contents/MacOS/AJAZZBatteryTray" --output "$RUNNER_TEMP/macos-universal-worker.csv"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: macos-universal-worker-startup-baseline
           path: ${{ runner.temp }}/macos-universal-worker.csv
           if-no-files-found: error
       - name: Upload macOS ZIP (one extraction)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: AJAZZBatteryTray-macOS-universal-experimental
           path: |
