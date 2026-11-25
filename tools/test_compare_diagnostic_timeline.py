@@ -25,6 +25,7 @@ class DiagnosticTimelineTests(unittest.TestCase):
     def test_gate_sequences_scoped(self) -> None:
         """Keep transitions within one observed collection and completed exchange."""
         def pair(gate: str) -> str:
+            """Build a synthetic successful Apple GET and its classification."""
             return ('05.get.result=0x00000000 length=65\n'
                     '05.reply.first_bytes=omitted\nF7 policy gate: ' + gate)
         text = '\n'.join(('STEP: collection.open', pair('ReadUnavailable'),
