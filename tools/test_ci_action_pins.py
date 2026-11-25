@@ -70,6 +70,8 @@ class CiActionPinTests(unittest.TestCase):
         for entry in pins.values():
             self.assertIsNotNone(SHA.fullmatch(entry["sha"]))
             self.assertTrue(entry["evidence"])
+            self.assertEqual(entry["node_runtime"], "node24")
+            self.assertEqual(entry["license"], "MIT")
         allowed = {name + "@" + entry["sha"] for name, entry in pins.items()}
         seen = set()
         paths = sorted((ROOT / ".github/workflows").glob("*.y*ml"))
@@ -80,6 +82,19 @@ class CiActionPinTests(unittest.TestCase):
             seen.update(action_refs(source))
             self.assertTrue(job_budgets(source))
         self.assertEqual(seen, allowed)
+
+    def test_artifact_transport_is_explicit(self) -> None:
+        """Require ZIP upload and fail-closed download digest handling."""
+        for path in (ROOT / ".github/workflows").glob("*.yml"):
+            source = path.read_text()
+            self.assertEqual(source.count("uses: actions/upload-artifact@"),
+                             source.count("archive: true"))
+            self.assertEqual(source.count("uses: actions/download-artifact@"),
+                             source.count("digest-mismatch: error"))
+        qa = (ROOT / ".github/workflows/test-tools.yml").read_text()
+        self.assertIn("pattern: ci-roundtrip-*", qa)
+        self.assertIn("merge-multiple: true", qa)
+        self.assertIn("PASS: synthetic merged artifact roundtrip", qa)
 
     def test_dotnet_sdk_selection_is_exact(self) -> None:
         """Require matching global SDK selection, setup pin and version check."""

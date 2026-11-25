@@ -1,3 +1,22 @@
+# Resume — Node24 artifact roundtrip correction
+
+#148 initial 14c2eb4 clean isolated Gateway QA 133/133 PASS, tree
+2a6ac7c. Hosted offline QA and both synthetic uploads succeeded, but
+same-job pattern download found one archive, and the two-file assertion
+failed. Move download to a dependent job to mirror release topology;
+exact content and digest checks remain. Full exact-head CI required.
+
+# Resume — ENG-06/12 Node24 candidate
+
+#147 merged 91138db after 4/4 CI, exact tested tree 4e75375.
+Native restore archives 14979074416 and 14979424535 verified by SHA-256
+and exact six reports; all assets v4. Build graph contains ILLink 11.0.0;
+SDK requests .NET runtime packs 11.0.0, Windows ref 10.0.19041.87.
+Requested packs are not packaged-file proof. Candidate updates five
+reviewed action identities to Node24, explicit ZIP/digest policies,
+synthetic merged artifact roundtrip. SDKs and release hold unchanged.
+Next: exact candidate CI, then runtime/SBOM/advisories. No release.
+
 # Resume — .NET 11 WinForms analyzer remediation
 
 PR #145 initial 4c6101a: SDK 11.0.100 selected in HA and upgrade
