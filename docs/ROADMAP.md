@@ -2133,3 +2133,11 @@ configuration commands. USB `VersionNumber` is a device revision,
       Two C# regression assertions for rank and invalid observations.
 - [ ] Native Windows tests and physical multiple-receiver acceptance.
 - [ ] Integrate after parent #257 qualification; release hold unchanged.
+
+### Receiver selection regression coverage
+
+- [x] Extract the actual visible-candidate decision into a pure helper
+      used by ReceiverMonitor. Five C# assertions cover rank precedence,
+      hidden/absent exclusion, preferred identity and ordinal tie-break
+      in both iteration orders. No change to the ranking policy.
+- [ ] Native CI and physical multi-receiver validation.

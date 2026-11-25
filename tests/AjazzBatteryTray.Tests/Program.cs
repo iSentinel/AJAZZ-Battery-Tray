@@ -382,6 +382,19 @@ Check("APEX missing presence and invalid values have no selection priority",
         false, 71, scheduleMeasurement, scheduleMeasurement)) == 0 &&
     ApexDisplayPolicy.SelectionRank(receiverFresh with { Percent = 0 }) == 0 &&
     ApexDisplayPolicy.SelectionRank(receiverFresh with { Percent = null }) == 0);
+Check("APEX fresh visible candidate replaces preferred scheduled receiver",
+    ApexDisplayPolicy.PreferCandidate("b", 2, true, false, "a", 1, "a"));
+Check("APEX old preferred receiver cannot replace fresh receiver",
+    !ApexDisplayPolicy.PreferCandidate("a", 1, true, false, "b", 2, "a"));
+Check("APEX hidden and absent candidates cannot win",
+    !ApexDisplayPolicy.PreferCandidate("a", 2, true, true, null, -1, "a") &&
+    !ApexDisplayPolicy.PreferCandidate("a", 2, false, false, null, -1, "a"));
+Check("APEX equal rank keeps preferred identity in either iteration order",
+    ApexDisplayPolicy.PreferCandidate("b", 0, true, false, "a", 0, "b") &&
+    !ApexDisplayPolicy.PreferCandidate("a", 0, true, false, "b", 0, "b"));
+Check("APEX equal rank without preferred candidate uses ordinal order",
+    ApexDisplayPolicy.PreferCandidate("a", 2, true, false, "b", 2, "c") &&
+    !ApexDisplayPolicy.PreferCandidate("b", 2, true, false, "a", 2, "c"));
 Check("APEX expired USB allows linked fresh BLE selection",
     TransportLinks.Select(ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
         scheduleMeasurement, scheduleMeasurement.AddMinutes(6)).Percent, 77, null) is
