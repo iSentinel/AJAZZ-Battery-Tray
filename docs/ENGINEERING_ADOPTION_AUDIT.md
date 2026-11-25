@@ -179,3 +179,9 @@ Added rejection of duplicate top-level release-object keys and repeated
 supported tags, preserving unique additive metadata and fixed local URL
 construction. Four synthetic native checks prepared, native CI pending.
 No live network test, external request, MQTT connection, or release action.
+
+ENG-05 #139 passed Windows/macOS/upgrade CI and merged d665299.
+Windows run 45516691219 confirms 12/12 journal assertions, total
+903 C# PASS, zero FAIL. ENG-15 follow-up cherry-picked onto matching
+merged tree; source 5e7559f. This confirms scoped Windows logging
+behavior, not Apple parity, adversarial same-user resistance or ACLs.

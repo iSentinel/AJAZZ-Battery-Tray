@@ -18,7 +18,7 @@ Bearer token, read-only, no external bind/CORS, no TLS on loopback only.
 External update/MQTT traffic must use verified TLS where applicable;
 any existing plaintext MQTT preview limitation requires explicit review
 before broader exposure. Do not log credentials, private device IDs,
-aliases, paths or raw exceptions. Windows FileLog candidate uses closed structured events; see
+aliases, paths or raw exceptions. Windows FileLog uses closed structured events (draft #99; #139 CI passed); see
 [operational journal](docs/WINDOWS_OPERATIONAL_LOG.md). Existing legacy
 app.log can contain private data and is left untouched; never upload it. Do not upload raw logs or histories.
 No unverified or stale AJAZZ field as fresh telemetry, alerts or estimates.
