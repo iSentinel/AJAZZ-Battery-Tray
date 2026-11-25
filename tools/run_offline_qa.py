@@ -24,6 +24,7 @@ CLI = ("analyze_aula_sleep", "check_apple_io_lease", "code_audit",
        "compare_ready_clear", "compare_tray_resources",
        "compare_windows_hid_logs", "inventory_dotnet_bundle",
        "inventory_dotnet_components",
+       "verify_windowsdesktop_provenance",
        "inventory_nuget_assets",
        "measure_apple_worker", "qa_unittest",
        "run_offline_qa")
