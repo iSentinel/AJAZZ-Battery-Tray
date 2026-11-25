@@ -1334,3 +1334,10 @@ actual metadata and ECDSA scalars using OpenSSL. Actual 18/18 replay
 PASS. Four synthetic regressions, including real OpenSSL P-256
 verification. Key trust, Authenticode, engine and release admission
 remain NOT_VERIFIED. No application runtime dependency added.
+
+#202 merged b35316e; #203 verifier branch 76272ce. New #201 candidate
+15004565401 independently extracted in fresh isolated chroot; exact
+five declared files match, EXE hash fcf1831766b88236908da0286827a615600ae85eef56c51a0efd697da9a1376b.
+Scoped PE/.NET and 269-component CycloneDX schema PASS. Private
+evidence /root/ajazz-201-payload.Lb7VSIiW. No engine/signature trust
+or physical acceptance claim; public release hold unchanged.

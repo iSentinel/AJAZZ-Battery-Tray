@@ -328,3 +328,24 @@ requires OpenSSL availability. This is verification against pinned
 keys from the reviewed source commit, not an independent publisher
 trust anchor, revocation check, Authenticode validation, or release
 admission.
+
+### Independent replay of the newer #201 installer
+
+Artifact 15004565401 from run 45575117356 was independently extracted
+in a fresh minimal systemd chroot using the previously pinned
+innoextract 1.13.0, unprivileged, network-isolated, with no execution
+of the Windows installer. The exact five declared files match the
+new candidate manifest and reviewed source icon bytes.
+Extracted EXE SHA-256:
+`fcf1831766b88236908da0286827a615600ae85eef56c51a0efd697da9a1376b`.
+Payload verifier JSON SHA-256:
+`652d407d3d98fc2aeceb78005f6f9de5f43afe2599114db7506d9ddefc01043b`.
+Scoped PE/.NET inventory, attribution, host sections, resource payload,
+conditional header reconstruction and serialization all PASS.
+Scoped CycloneDX 1.6 SBOM (269 components) schema PASS; SHA-256:
+`ebfc5056fa8d1a5e0ca3759165ca6469e2d5d53db9ff9c5261138d6f4fe11410`.
+EXE certificate table absent. This evidence qualifies only the exact
+#201 candidate bytes and declared application payload, not future
+builds, embedded installer engine, publisher trust or physical tests.
+The OpenSSL ISSig replay evidence SHA-256 is
+`f70f2e72f6362fc7affc69e14f3b7091f637821448c2b3228c0c306e8ed106d0`.

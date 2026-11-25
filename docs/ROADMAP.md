@@ -1518,3 +1518,9 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted exact CI, independent publisher-key trust qualification.
 - [ ] Independently verify new #201 candidate payload, embedded engine
       and uninstaller, licensing/notice coverage and physical acceptance.
+
+- [x] Merge #202 after exact 4/4 CI, b35316e.
+- [x] Independently extract exact #201 installer, verify five files;
+      replay scoped PE/.NET/SBOM on actual new beta.61 EXE.
+- [ ] Hosted CI of reusable ISSig verifier, embedded engine attribution,
+      independent key trust, licensing and physical acceptance.
