@@ -1,3 +1,10 @@
+# Resume — Apple self-test attribution
+
+Integrated #99 21dd502 run 45554473404 failed aggregate self-test
+after successful build/signing/icons; no Apple source delta. Add
+15 fixed group outcomes without modifying predicates or aggregate exit.
+Native CI required; cause remains unknown. Release hold unchanged.
+
 # Resume — scoped Apple CycloneDX inventory
 
 #169 merged 21dd502 after exact 4/4 CI. #170 joined 5d308f1,

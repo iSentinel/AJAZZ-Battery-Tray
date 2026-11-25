@@ -971,15 +971,26 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
         ApexBattery.noSampleStatus(matched: false, opened: false) == .unsupportedCollection
     let corpusValid = ProcessInfo.processInfo.environment["AJAZZ_TEST_CORPUS"]
         .map(verifyObservationCorpus) ?? true
-    let valid = corpusValid && provenanceValid && sharedFrameValid && presenceValid && localizationValid && bluetoothValid && alertTests && timeoutValid &&
-                selectedTests && jumpTests &&
-                chartValid && historyValid &&
-                clockValid && guardValid &&
-                ApexBattery.parse([5, 0, 0, 73]) == 73 &&
-                ApexBattery.parse([0, 0, 73]) == 73 &&
-                ApexBattery.parse([5, 0, 0, 0]) == nil &&
-                ApexBattery.parse([5, 0, 0, 255]) == nil &&
-                ApexBattery.parse([4, 0, 0, 30]) == nil
+    let legacyParserValid = ApexBattery.parse([5, 0, 0, 73]) == 73 &&
+        ApexBattery.parse([0, 0, 73]) == 73 &&
+        ApexBattery.parse([5, 0, 0, 0]) == nil &&
+        ApexBattery.parse([5, 0, 0, 255]) == nil &&
+        ApexBattery.parse([4, 0, 0, 30]) == nil
+    // Stable synthetic group labels only; do not emit device data or raw reports.
+    let checks: [(String, Bool)] = [
+        ("observation-corpus", corpusValid), ("provenance", provenanceValid),
+        ("shared-frame", sharedFrameValid), ("presence", presenceValid),
+        ("localization", localizationValid), ("bluetooth-payload", bluetoothValid),
+        ("alerts", alertTests), ("timeout-alerts", timeoutValid),
+        ("selected-alerts", selectedTests), ("jump-alerts", jumpTests),
+        ("history-chart", chartValid), ("history-writer", historyValid),
+        ("clock-payload", clockValid), ("clock-guard", guardValid),
+        ("legacy-parser", legacyParserValid)
+    ]
+    for (name, passed) in checks {
+        print("\(passed ? "PASS" : "FAIL"): self-test \(name)")
+    }
+    let valid = checks.allSatisfy { $0.1 }
     print(valid ? "PASS: HID report parser" : "FAIL: HID report parser")
     if !valid { exit(1) }
 } else if CommandLine.arguments.contains("--diagnose") {
