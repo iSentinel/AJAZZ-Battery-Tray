@@ -1,6 +1,7 @@
 # Resume — receiver selection regression coverage
 
-#258 initial hosted CI still running. Child change extracts the
+#258 exact 5/5 CI PASS, merged afd1b8a after tested-tree equality.
+Child change extracts the
 visible-candidate decision to a pure helper, five additional
 native assertions for rank, eligibility and deterministic ties.
 No HID, history, alert or release changes.

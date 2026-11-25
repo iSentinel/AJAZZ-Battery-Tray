@@ -2132,7 +2132,7 @@ configuration commands. USB `VersionNumber` is a device revision,
       multiple-icon primary and exclude hidden/linked receivers.
       Two C# regression assertions for rank and invalid observations.
 - [ ] Native Windows tests and physical multiple-receiver acceptance.
-- [ ] Integrate after parent #257 qualification; release hold unchanged.
+- [x] #258 exact 5/5 CI, merged afd1b8a; release hold unchanged.
 
 ### Receiver selection regression coverage
 
