@@ -1945,3 +1945,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       migration of production compiler and notice distribution
       only after remaining gates.
 - [ ] Interactive UAC, legal and physical acceptance. Release hold.
+
+### Single-run 6.7.4 migration evidence
+
+- [x] #242 exact 6/6 CI and tested tree; merged dfa8202 into draft #99.
+- [x] Retrieve seven original native archives and verify exact hashes;
+      complete scoped Setup.0, 16 file records, two wizard images PASS.
+- [x] Join 12 same-run JSON documents and eleven hash edges; actual
+      replay PASS; add fail-closed CI and two regression tests.
+- [ ] Native joined evidence rerun and independent exact BOM schema
+      and dated advisory replay; review migration prerequisites.
+- [ ] Production compiler selection, legal, signing, interactive UAC
+      and physical acceptance; release hold unchanged.

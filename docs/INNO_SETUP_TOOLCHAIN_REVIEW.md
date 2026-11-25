@@ -315,3 +315,33 @@ file records including the generated uninstaller, two shortcuts,
 one launch record, both images, and exact end of the decoded block.
 Two synthetic regressions PASS. Native verification pending.
 No release compiler change, interactive acceptance or legal clearance.
+
+## Native Setup.0 result and single-run migration evidence
+
+PR #242 head af8eeb8e005890a3822570991f03d9423dcff5e4,
+hosted checkout aac75c9b5d419d7e12756bc59fb56e4cad2a35db,
+run 45642394292, job 139304257773, 6/6 checks PASS.
+Merged into draft #99 at dfa8202 after exact tested tree comparison.
+Setup SHA-256 d59e5797b5c7c2bb86d83f4b416ff028892e6dad74a0b63dc6c11140a99ec911.
+App SHA-256 dca7a7b287d8ffa7cdc7929a03337497d8041e5c4315d56a94b47ac34d1a9c26.
+Setup.0: all 48397 decoded header bytes accounted for, 16 file records,
+two shortcuts, one run entry, 281 standard and 12 custom messages,
+both pinned wizard images, zero trailing bytes. Evidence SHA-256
+503632572297a34d67a6f5377ab53327900e5317165c66e0a23b0bfcc5b3076a.
+
+The seven same-run archives were downloaded and checked against
+REST SHA-256 digests (artifact IDs 15036381320, 15036146531,
+15036156393, 15035757566, 15036361306, 15036835658, 15036116452).
+Twelve exact JSON documents were joined using the new
+verify_inno674_migration_evidence.py, verifying eleven raw digest
+edges, shared setup/app/source identities, lifecycle outcomes,
+compiler evidence, scoped SBOM binding, binary/resource/solid and
+Setup.0 attribution. Actual replay PASS; joined evidence SHA-256
+fce873d5d3ac5953e01aa0a20448f768da472dc79cc3eb932b8a2ad8206030c0.
+This is a scoped consistency check of reviewed native evidence,
+not independent authentication or complete distribution clearance.
+New CI emits only the joined JSON. Mixed/missing evidence regression
+tests pass. Native rerun pending. Production compiler remains 6.7.1;
+migration, signing, advisory freshness, independent schema check of
+the new exact BOM, distribution terms and interactive/hardware
+acceptance remain separate gates. Release hold unchanged.
