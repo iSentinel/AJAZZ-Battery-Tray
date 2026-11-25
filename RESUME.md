@@ -1,3 +1,13 @@
+# Resume — ENG-03 Python annotations
+
+Source: PR #137 tested head 0e140d3 / tree ad04238d1f7d9dc9f5668257bb57335b80824434.
+Four hosted checks PASS, 104 Python tests. Merge returned HTTP 401.
+Local branch only; no alternate credential, push or merge assumed.
+Stage: explicit annotations in seven production tools. Test source
+debt remains; no blanket baseline. Run exact inventory and regression.
+Next: test source debt remediation, then zero-debt gate and QA evidence.
+Release workflow hold remains unmerged to main. No publication.
+
 # Resume — portable engineering policy adoption
 
 Source: c416b3f / tree 101f0ce13fdac2d3c0f08a4fd1bab04bb44945df.

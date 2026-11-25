@@ -13,9 +13,11 @@ from pathlib import Path
 
 FIELDS = ("utc", "version", "sha256", "mode", "elapsed_seconds",
           "job_cpu_seconds", "total_processes", "active_processes")
+Sample = tuple[float, float, int, int]
+Run = tuple[str, str, float, float, int, str]
 
 
-def read_run(path, mode):
+def read_run(path: Path, mode: str) -> Run:
     """Validate schema, provenance and cumulative counters."""
     with path.open("rb") as source:
         raw = source.read(2 * 1024 * 1024 + 1)
@@ -56,7 +58,7 @@ def read_run(path, mode):
             previous[2] - first[2], hashlib.sha256(raw).hexdigest())
 
 
-def validate_sample(sample, previous):
+def validate_sample(sample: Sample, previous: Sample | None) -> None:
     """Reject inconsistent or impossible cumulative accounting."""
     elapsed, cpu, total, active = sample
     if (not math.isfinite(elapsed) or not math.isfinite(cpu) or
@@ -67,7 +69,7 @@ def validate_sample(sample, previous):
         raise ValueError("Nonmonotonic job counters")
 
 
-def compare(normal, isolated):
+def compare(normal: list[Run], isolated: list[Run]) -> tuple[float, float]:
     """Require same executable and comparable run durations."""
     runs = normal + isolated
     if not normal or not isolated:
@@ -83,7 +85,7 @@ def compare(normal, isolated):
             statistics.median(r[3] for r in isolated))
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Print a descriptive comparison, never a performance gate."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--normal", nargs="+", required=True, type=Path)

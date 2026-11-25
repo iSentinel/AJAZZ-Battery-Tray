@@ -3,6 +3,7 @@
 
 import argparse
 from collections import Counter
+from collections.abc import Iterator
 from pathlib import Path
 import re
 
@@ -12,7 +13,7 @@ RECEIVER = re.compile(r"^\[Receiver #(\d+)\]$")
 SECTION = "[Fresh APEX protocol matrix — full vendor buffers]"
 
 
-def legacy_percent(data):
+def legacy_percent(data: bytes) -> int | None:
     """Decode the historical compact layout used before beta.60."""
     if len(data) >= 4 and data[:3] == b"\x05\x00\x00":
         if 1 <= data[3] <= 100:
@@ -20,7 +21,7 @@ def legacy_percent(data):
     return None
 
 
-def current_percent(data):
+def current_percent(data: bytes) -> int | None:
     """Replay the current Windows parser on a numbered HID response."""
     if len(data) < 10 or data[0] != 5 or data[7] not in (1, 2, 3):
         return legacy_percent(data)
@@ -30,7 +31,7 @@ def current_percent(data):
     return data[3] if 1 <= data[3] <= 100 else None
 
 
-def vendor_candidate(data):
+def vendor_candidate(data: bytes) -> tuple[str, int | None]:
     """Hypothetical Windows alignment of GearHub F7 fields, not live parser."""
     if len(data) < 10 or data[0] != 5:
         return "unrecognized", None
@@ -48,7 +49,7 @@ def vendor_candidate(data):
     return "candidate-only", mouse
 
 
-def read_attempts(text):
+def read_attempts(text: str) -> Iterator[tuple[str, int, int, bytes | None]]:
     """Read only fresh capture lines; do not count the prior monitor state."""
     if SECTION not in text:
         raise ValueError("beta.41 fresh matrix section not found")
@@ -69,7 +70,7 @@ def read_attempts(text):
             yield receiver, delay, length, data
 
 
-def inspect(path):
+def inspect(path: Path) -> None:
     """Summarize each returned buffer and distinguish no-RX attempts."""
     attempts = Counter()
     received = Counter()
@@ -96,7 +97,7 @@ def inspect(path):
     print(f"Attempts={sum(attempts.values())}; RX={sum(received.values())}; current valid={valid}")
 
 
-def main():
+def main() -> int:
     """Command line entry point; return nonzero on malformed input."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reports", nargs="+", type=Path)

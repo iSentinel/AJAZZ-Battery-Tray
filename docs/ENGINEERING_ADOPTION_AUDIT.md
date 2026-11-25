@@ -70,3 +70,18 @@ reviewed exact baseline is not established yet and no debt PASS claimed.
 Temporary release hold regression checks source triggers, read permissions,
 absence of clobber and fail-closed first steps. They do not qualify
 GitHub's live release admission; no workflow publication was dispatched.
+
+## ENG-03 production-tool annotation remediation
+
+PR #137 head 0e140d3 passed four checks (Windows 45514692984, Universal
+45514692708, High Sierra 45514692557, Python 45514692310, 104 tests).
+Merge attempt returned HTTP 401 Bad credentials. No alternate credential
+or bypass was attempted. Local work continues from the exact tested head.
+
+Seven existing production Python tools received explicit public parameter
+and return annotations based on their actual inputs/outputs, preserving
+runtime behavior and existing CLI exits. Mixed metric mapping remains
+a typed union, not a claim of full static type checking. No Python
+dependency added. Next: remediate test fixture and test method docs/types,
+then activate exact zero-debt gate without adopting a blanket baseline.
+Native audit/lint/type analysis remain separate ENG-03 work.

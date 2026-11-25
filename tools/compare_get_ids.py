@@ -14,9 +14,12 @@ OBSERVED = re.compile(
 MODE = "MODE: experimental GET 05 versus GET 00; no battery claimed"
 END = "END: worker exited 2"
 LIMIT = 1024 * 1024
+ProbeKey = tuple[int, int, str]
+Observation = tuple[str, str] | None
+ProbeEntries = dict[ProbeKey, Observation]
 
 
-def parse(data):
+def parse(data: str) -> ProbeEntries | None:
     """Read pair markers and observations for exactly one receiver."""
     lines = data.splitlines()
     if lines.count(MODE) != 1 or sum(
@@ -36,7 +39,7 @@ def parse(data):
     return parse_pairs(lines)
 
 
-def parse_pairs(lines):
+def parse_pairs(lines: list[str]) -> ProbeEntries | None:
     """Require unique pair keys and consistent observation association."""
     entries = {}
     current = None
@@ -66,7 +69,7 @@ def parse_pairs(lines):
     return entries
 
 
-def summarize(entries):
+def summarize(entries: ProbeEntries) -> list[tuple[int, int, Observation, Observation, str]]:
     """Compare returned status fields without normalizing or decoding IDs."""
     rows = []
     for delay, length in sorted({key[:2] for key in entries}):
@@ -81,7 +84,7 @@ def summarize(entries):
     return rows
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Return 0 for complete observations, 2 for incomplete, 1 for invalid."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--log", required=True, type=Path)

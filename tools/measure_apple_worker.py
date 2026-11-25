@@ -13,7 +13,7 @@ from pathlib import Path
 EXPECTED = {"kind": "synthetic", "percent": None, "presence": "unknown"}
 
 
-def measure(executable, timeout):
+def measure(executable: Path, timeout: float) -> tuple[float, int]:
     """Run one fixed synthetic sample with a bounded deadline."""
     started = time.monotonic()
     result = subprocess.run(
@@ -26,12 +26,13 @@ def measure(executable, timeout):
     return elapsed, len(result.stdout)
 
 
-def quantile(values, fraction):
+def quantile(values: list[float], fraction: float) -> float:
     """Return the nearest-rank quantile."""
     return sorted(values)[math.ceil(len(values) * fraction) - 1]
 
 
-def collect(executable, output, iterations, timeout):
+def collect(executable: Path, output: Path, iterations: int,
+            timeout: float) -> list[float]:
     """Store measurements incrementally and never overwrite existing CSV."""
     values = []
     with output.open("x", encoding="utf-8", newline="") as handle:
@@ -49,7 +50,7 @@ def collect(executable, output, iterations, timeout):
     return values
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Validate options, support a side-effect-free dry run."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--exe", type=Path)
