@@ -1,3 +1,13 @@
+# Resume — hardware acceptance artifact binding
+
+#251 merged 0b4dec7 after exact 5/5 CI, eight archive digests
+and 14-document independent replay. New local hardware acceptance
+validator separates AJ179, AJ159, AULA, Universal and High Sierra
+profiles; three real CI archive digests and five blank checklists
+validated (57 NOT_RUN). Four regressions. Hosted tool QA pending.
+Exact installer remains unavailable; no physical acceptance, signing,
+distribution approval or production compiler migration. Release hold.
+
 # Resume — native shared compiler evidence binding
 
 #250 merged fb48770 after exact 6/6 CI, eight archive digests,

@@ -613,3 +613,55 @@ sizes match the exact named resources. Actual replay SHA-256
 0f4c32a1deabb1482c29930a3fb019efb5b27c0f768c8fb71983643c6cc1e4c8.
 This closes scoped wizard payload attribution, not independent
 publisher trust, complete licensing or release admission.
+
+## Local hardware checklist contract and newer artifact generation
+
+The original #196 artifact table above is historical, not the current
+candidate. The local validator supports separate Windows AJ179 APEX,
+AJ159 APEX and AULA L99 profiles, and independent Universal and High
+Sierra macOS profiles. W14 is reserved for AULA; W01-W13 and W15-W18
+are recorded separately for each APEX model. Each Apple profile
+contains M01-M11 and requires the actual tested device model.
+This records only the listed scenario coverage; it does not replace
+other hardware, DPI, launch, or release acceptance requirements.
+
+The following original CI archives were verified against REST digests
+from integration head fb48770dab9ea3a1d7f1e5ca2d34bdcf8b18ef84:
+
+| Edition | Run | Artifact ID | Outer ZIP SHA-256 |
+| --- | --- | --- | --- |
+| Windows | 45670506518 | 15049477637 | 1f9d670857047103295a7058a5054bf6e72436afad9e7a9500db2fb2af3606a7 |
+| Universal | 45670506188 | 15049821325 | af546243e5e95a5fdabf7ed44f7c83fee94e0b9bae3845125478b00eeb5fe00e |
+| High Sierra | 45670506560 | 15049053639 | 6b54161d1e6ea52cca255c0175c0b5f135e5478cd870d6894f6f2b857dd5dc70 |
+
+Windows portable app beta.61 SHA-256
+f1869432eac3e5b6a8ec3d3d33576d3335e99bb03b9a0e743721a3cd5d485e96.
+Universal build 65 executable SHA-256
+7abecbf32f3bba5a8f664dd239bbf0fadd015004cf84867d1b497678af6d5297.
+High Sierra CI build 1 executable SHA-256
+a417c7b0adb0af46105f69e7e3137b40ead2dfbeb90972b0f3840b7883797b7a.
+The latter is an experimental CI build, not a new High Sierra release.
+The archive hashes and executable identities differ from other builds;
+do not transfer results to a separately compiled installer.
+
+Generate a blank checklist from the original outer CI ZIP, not the
+extracted executable or inner Apple ZIP:
+
+```sh
+python3 tools/verify_hardware_acceptance.py --archive windows.zip --archive-sha256 1f9d670857047103295a7058a5054bf6e72436afad9e7a9500db2fb2af3606a7 --source-sha fb48770dab9ea3a1d7f1e5ca2d34bdcf8b18ef84 --profile windows-aj179 --output checklist.json
+```
+
+Use the corresponding archive and profile for each edition. After
+authorized real-device testing, record the actual OS build, device
+model, status and brief redacted observation. Re-run the command
+with --checklist checklist.json and a fresh --output review.json.
+No device requests, archive extraction, execution, network access
+or uploads occur in this tool. The input source revision is a
+caller-reviewed CI head assertion, not verified source provenance.
+Exit zero verifies record structure, not that physical tests passed.
+
+Actual blank review: five profiles, 57 NOT_RUN, zero PASS.
+All three outer archive digests match; both Apple companion inner
+ZIP checksums and scoped bundle layout match. No physical acceptance
+or release authorization. Keep the records private; do not include
+serials, raw HID buffers, addresses or personal information.

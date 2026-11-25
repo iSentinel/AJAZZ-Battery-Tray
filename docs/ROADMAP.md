@@ -2044,3 +2044,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Exact fresh test artifact, distribution terms, signing,
       interactive/hardware acceptance and production migration.
       Release hold unchanged.
+
+### Hardware acceptance artifact binding
+
+- [x] #251 exact 5/5 CI, eight archive digests and fourteen-document
+      independent replay verified; merged 0b4dec7 into draft #99.
+- [x] Separate hardware checklist profiles and exact archive validation,
+      Windows bundle identity and Apple inner ZIP/architecture checks.
+      Actual three CI archives, five blank profiles, 57 NOT_RUN.
+      Four regressions.
+- [ ] Hosted validation of new hardware checklist tool.
+- [ ] Authorized real-device observations and exact interactive
+      installer acceptance; separate licensing/signing decisions.
+      Release hold unchanged.

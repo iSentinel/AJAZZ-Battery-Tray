@@ -165,3 +165,21 @@ apart from the two added fields. Extended JSON SHA-256
 This is scoped evidence validation, not source provenance,
 distribution clearance or release admission. No new setup binary
 retained for owner testing.
+
+## Native mandatory local-build evidence
+
+PR #251 head a9692e9e7415ae284471bb72a1aa21c36984fa9c,
+hosted checkout 214f1a94ef47d6ccc82a1be5c909da47f0768efb,
+run 45670706118, job 139404883402, 5/5 CI PASS.
+Eight original archive digests matched REST; joined artifact
+15049686861 ZIP SHA-256
+faa66496bcd8eca81b83adb0d976e6ed1dc14eeadb0ef4baadb614841821018e.
+Fourteen-document independent replay matched hosted JSON after LF
+normalization; hosted JSON SHA-256
+486b98b6678372cad6f65883af58f26a993302bb461afae48d496d392717afef.
+Setup SHA-256
+4acd52ee50feb9c0447e6e6aa464db40cd68dadb7330944a7c7fd209270149f6.
+Application SHA-256
+d0245fbc1bdba8a8f0496a97fb8e9f761153fa04690a819769df396312e18e1e.
+Merged 0b4dec7 into draft #99 after tested-tree equality.
+No setup bytes retained; no new release or distribution clearance.
