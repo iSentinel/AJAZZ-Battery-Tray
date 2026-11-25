@@ -1503,3 +1503,8 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Qualify ISSig cryptographic verification and publisher keys;
       attribute embedded engine/uninstaller and review licensing.
 - [ ] Exact new candidate payload and physical acceptance.
+
+- [x] Exploratory actual ISSig v2 ECDSA P-256 verification: official
+      installer and 17 observed sidecars valid for pinned source keys.
+- [ ] Commit bounded reproducible ISSig verifier with negative tests;
+      independently qualify publisher key trust. No release admission.

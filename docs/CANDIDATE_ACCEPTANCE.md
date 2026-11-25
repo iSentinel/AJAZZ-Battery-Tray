@@ -279,3 +279,26 @@ component set, source/setup binding, official package digest, and
 extracted file hashes. Actual replay PASS. The CLI does not perform
 extraction, authenticate the publisher, or attribute embedded code;
 the caller must establish directory provenance. No release admission.
+
+### ISSig cryptographic observation
+
+Reviewed ISSigFunc.pas and ECDSA.pas from pinned official commit
+cfdf48923178df4b4f040e038b423aa555a61ffc. For the observed issig-v2
+empty-tag records, reproduced the SHA-256 signed message using
+little-endian UTF-8 filename/tag lengths, filename, empty tag, signed
+64-bit file length and binary SHA-256. Recomputed each key ID from
+the concatenated 32-byte big-endian public coordinates, then verified
+ECDSA P-256/SHA-256 with the already installed cryptography 43.0.0.
+The two key files def01.ispublickey and def02.ispublickey were fetched
+from the same pinned source commit; their SHA-256 values are respectively
+`3b0b7e1e478c9ab327746a990512e2b245c9231e88a7fdd60d7874dd439db562`
+and `32bea6bceb4ac7c4e6b3becdf3fb38de77378c5e76d494ab907d87cfab9e597b`.
+All 18 observed signatures verified against those keys: the official
+installer and 17 sidecars, 11 using def01 and seven using def02.
+The signed names, actual lengths and actual hashes agreed.
+Private observation JSON SHA-256
+`0e060fdc66c0fa6bf550fa1a5461ed12fccc60f51e57fdd26662cfc477683ea2`.
+This is a local exploratory cryptographic replay, not yet a committed
+general verifier or independent publisher-key trust anchor. Authenticode,
+embedded engine attribution, revocation policy, redistribution and
+physical acceptance remain unqualified.

@@ -1320,3 +1320,8 @@ isolated unprivileged chroot. 38/38 observed components (21 inputs,
 Private evidence /root/ajazz-inno-official.kZflC3tb. Cryptographic
 signature/publisher qualification, embedded engine attribution,
 new candidate payload, licensing and hardware acceptance remain open.
+
+ISSig exploratory replay on official package plus 17 sidecars:
+18/18 ECDSA P-256 signatures valid for def01/def02 from pinned source
+commit. Private issig-observations.json in official evidence directory.
+Committed reusable verifier and independent key trust still open.
