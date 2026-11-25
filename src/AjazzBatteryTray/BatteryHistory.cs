@@ -80,12 +80,7 @@ public sealed class BatteryHistory
             if (!BatteryHistoryRules.ShouldRecord(_last, timestamp, percent, state)) return;
             BatterySample sample = new(timestamp, percent, state);
             Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
-            bool needsHeader = !File.Exists(_filePath);
-            using (StreamWriter writer = new(_filePath, append: true))
-            {
-                if (needsHeader) writer.WriteLine(BatteryHistoryCsv.Header);
-                writer.WriteLine(BatteryHistoryCsv.Format(sample));
-            }
+            Append(sample);
 
             _last = sample;
             if (_lastPrune.Date != now.UtcDateTime.Date) Prune(now);
@@ -96,17 +91,43 @@ public sealed class BatteryHistory
         }
     }
 
+    private void Append(BatterySample sample)
+    {
+        using FileStream file = new(_filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+        bool empty = file.Length == 0;
+        int lastByte = -1;
+        if (!empty)
+        {
+            file.Seek(-1, SeekOrigin.End);
+            lastByte = file.ReadByte();
+        }
+
+        using StreamWriter writer = new(file);
+        if (empty) writer.WriteLine(BatteryHistoryCsv.Header);
+        else if (lastByte != '\n' && lastByte != '\r') writer.WriteLine();
+        writer.WriteLine(BatteryHistoryCsv.Format(sample));
+    }
+
     public IReadOnlyList<BatterySample> ReadRecent()
     {
+        TryReadRecent(out var samples);
+        return samples;
+    }
+
+    internal bool TryReadRecent(out IReadOnlyList<BatterySample> samples)
+    {
+        samples = Array.Empty<BatterySample>();
         try
         {
-            if (!File.Exists(_filePath)) return Array.Empty<BatterySample>();
-            return BatteryHistoryRules.Retain(ReadFile(), DateTimeOffset.UtcNow);
+            samples = BatteryHistoryRules.Retain(ReadFile(), DateTimeOffset.UtcNow);
+            return true;
         }
+        catch (FileNotFoundException) { return true; }
+        catch (DirectoryNotFoundException) { return true; }
         catch (Exception error)
         {
             FileLog.Write(LogEvent.HistoryReadFailed, error);
-            return Array.Empty<BatterySample>();
+            return false;
         }
     }
 

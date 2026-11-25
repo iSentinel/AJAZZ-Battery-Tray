@@ -88,7 +88,8 @@ public sealed class BatteryHistoryForm : Form
         int days = _range.SelectedIndex switch { 0 => 1, 1 => 7, _ => 30 };
         DateTimeOffset now = DateTimeOffset.UtcNow;
         DateTimeOffset cutoff = now.AddDays(-days);
-        _visible = _history.ReadRecent().Where(x => x.Timestamp >= cutoff && x.Timestamp <= now).ToArray();
+        _graph.ReadFailed = !_history.TryReadRecent(out var samples);
+        _visible = samples.Where(x => x.Timestamp >= cutoff && x.Timestamp <= now).ToArray();
         _graph.PeriodStart = cutoff;
         _graph.PeriodEnd = now;
         _graph.Samples = _visible;
@@ -98,6 +99,12 @@ public sealed class BatteryHistoryForm : Form
 
     private void UpdateSummary()
     {
+        _analytics.Visible = _estimateEnabled && !_graph.ReadFailed;
+        if (_graph.ReadFailed)
+        {
+            _summary.Text = _history.FileName;
+            return;
+        }
         UpdateAnalytics();
         BatterySample? latest = _visible.LastOrDefault();
         if (latest is null)

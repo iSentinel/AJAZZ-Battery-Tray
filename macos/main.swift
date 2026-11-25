@@ -1070,6 +1070,38 @@ private func corpusFailure(_ stage: String, row: Int? = nil) -> Bool {
     return false
 }
 
+private func verifyHistoryRecovery() -> Bool {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let writer = BatteryHistoryWriter(directory: dir)
+    defer { try? FileManager.default.removeItem(at: dir) }
+    let header = "utc_timestamp,percent,state\r\n"
+    let date = ISO8601DateFormatter().date(from: "2026-11-25T10:00:10Z")!
+    let from = date.addingTimeInterval(-60)
+    let imported = "2026-11-25T12:00:00.1234567+02:00,70,online"
+    do {
+        let absent = try BatteryHistoryReader.load(writer.file, from: from, through: date)
+        guard absent.isEmpty else { return false }
+        let original = header + imported + "\r\n2026-11-25T10:00:03Z,,unavailable"
+        try original.write(to: writer.file, atomically: true, encoding: .utf8)
+        let before = try BatteryHistoryReader.load(writer.file, from: from, through: date)
+        guard before.map(\.state) == ["online", "unavailable"] else { return false }
+        writer.record(.battery(69), at: date)
+        let after = try BatteryHistoryReader.load(writer.file, from: from, through: date)
+        guard after.map(\.percent) == [70, nil, 69] else { return false }
+
+        let partial = try String(contentsOf: writer.file, encoding: .utf8) + "interrupted,row"
+        try partial.write(to: writer.file, atomically: true, encoding: .utf8)
+        writer.record(.notConnected, at: date.addingTimeInterval(1))
+        let recovered = try BatteryHistoryReader.load(writer.file, from: from, through: date.addingTimeInterval(1))
+        guard recovered.map(\.state) == ["online", "unavailable", "online", "disconnected"] else { return false }
+        try Data([0xff, 0xfe, 0xff]).write(to: writer.file)
+        do {
+            _ = try BatteryHistoryReader.load(writer.file, from: from, through: date)
+            return false
+        } catch { return true }
+    } catch { return false }
+}
+
 private func verifyCorpusHistory(_ status: ApexBattery.Status, percent: Int?,
                                  directory: URL, now: Date, row: Int) -> Bool {
     let writer = BatteryHistoryWriter(directory: directory)
@@ -1324,7 +1356,7 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
         ("localization", localizationValid), ("bluetooth-payload", bluetoothValid),
         ("alerts", alertTests), ("timeout-alerts", timeoutValid),
         ("selected-alerts", selectedTests), ("jump-alerts", jumpTests),
-        ("history-chart", chartValid), ("history-writer", historyValid),
+        ("history-recovery", verifyHistoryRecovery()), ("history-chart", chartValid), ("history-writer", historyValid),
         ("clock-payload", clockValid), ("clock-guard", guardValid),
         ("legacy-parser", legacyParserValid)
     ]

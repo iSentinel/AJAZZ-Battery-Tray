@@ -28,3 +28,49 @@ The AJ159 field remained zero in the available captures. A synthetic gated 83% r
 5. **Consolidate behavioral fixtures.** Run the same versioned, sanitized report corpus against C#, the Apple decoder and offline analysis. Mark a case as physical evidence or synthetic, distinguish legacy interpretation from the current parser, and assert history/notification side effects. Preserve the distinction between 0–100 BLE GATT and the receiver's 1–100 validated HID range.
 
 Visual findings come from the layout and rendering code. The hardware matrix, interactive Windows DPI checks, and an in-place installer upgrade require a separate acceptance run.
+
+## Follow-up review, 25 November 2026
+
+Reviewed the integrated development branch at c105bbf, including per-receiver
+presentation, ordinary poll diagnostics, snapshot projection, history storage,
+chart summaries and locale changes. The public beta.60 release and draft PR 99
+represent different code. The open Apple F7 trace work in PR 265 is separate.
+
+### Evidence and behavior
+
+The owner's two Windows reports from 25 November show a fresh AULA L99 charge
+of 70%. The APEX capture contains six completed replies, zero validated
+percentages and an unverified mouse field of 99 in all six. The reports identify
+a shared rev 0002 receiver. Its model and actual charge cannot be established
+from that field. The current Windows code has independent paths for presentation
+(including cached or unverified data), history and alert evaluation. Snapshot
+projection also distinguishes current charge from last-known values. Keep this
+distinction when presenting a dashboard row or a copied diagnostic.
+
+### History and interface defects
+
+| Defect | Reproduction and impact | Correction |
+| --- | --- | --- |
+| Next observation lost after an interrupted or unterminated CSV row | Append a new percentage after a valid row without a final newline. The concatenated line fails CSV validation and the next retention pass can drop both samples. A malformed tail can also swallow a disconnect event. | The Windows and universal Mac writers delimit the old tail before appending a whole new observation. Native tests exercise a valid tail, a damaged tail, a charge and a disconnect. |
+| Universal Mac fails to read Windows-formatted history | The Swift reader split on a newline character and used a whole-second formatter. CRLF rows or Windows fractional UTC timestamps could be skipped, including during pruning. | The reader and pruner recognize newline variants and use the same whole/fractional timestamp decoder. An end-to-end fixture retains a seven-digit timestamp with an explicit offset across an append and a prune. |
+| Unreadable history looks like zero observations | A locked Windows file or unreadable Mac CSV produced the same empty plot as a new installation. This can lead the user to investigate the receiver when the failure is in storage. | Distinguish a missing history file from a read failure. Show a localized read error and clear obsolete summaries. A subsequent refresh retries the read. |
+| Universal Mac history takes extra work and leaks English labels | The first window open read the file twice, parsing allocated a formatter per row, and a disconnected final reading displayed the raw CSV state. The rightmost axis label used a fixed offset and could clip. | Load once on opening, reuse formatters for the scan, translate the state, and place time labels using their measured width. |
+
+### Priorities after the fixes
+
+1. Obtain a second known charge for the same physical mouse and compare it
+   with the manufacturer's display, ready flag and connection state. Record
+   exact build and transport. A stable raw 99 by itself is insufficient.
+2. Measure chart open and refresh on 20,000 rows at 24 hours, seven days and
+   thirty days. Run on Windows and universal Mac. If the UI stalls, move CSV
+   loading off the UI thread and discard outdated results after range changes.
+3. Check the graph in Windows high-contrast themes and at 125–200% scaling.
+   The Windows plot uses fixed colors. Test grid, labels, focus and series
+   visibility against system colors before adopting a new palette.
+4. Include an interrupted-write/reopen case in installer-upgrade acceptance
+   using a disposable data directory. Confirm the prior observations still
+   appear and a fresh measurement appends exactly once.
+
+Physical USB/BLE behavior, actual charge, visual appearance on an owner's
+desktop and installer upgrade need independent field evidence. The separate
+High Sierra edition has no history chart in this change.

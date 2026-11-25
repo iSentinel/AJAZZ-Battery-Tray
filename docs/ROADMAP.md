@@ -1,5 +1,13 @@
 # AJAZZ Battery Tray — Product Roadmap
 
+## 25 November review — history recovery and chart acceptance
+
+- Development changes cover Windows and universal Mac CSV tail recovery,
+  Windows-format history replay on Mac, localized read failures and Mac chart
+  rendering. See the [findings and reproduction cases](BATTERY_TRAY_AUDIT_20261124.md#follow-up-review-25-november-2026).
+- Open checks cover a known second charge for the same mouse, UI timing on
+  20,000 rows, Windows high contrast and DPI, and post-upgrade history recovery.
+
 ## Scope and safety contract
 
 - Keep the Windows and macOS applications independent of official AJAZZ software.
