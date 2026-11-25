@@ -1725,3 +1725,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted checks, candidate-bound portable and installed notice
       coverage, outstanding legal terms, physical acceptance.
       Release hold.
+
+### Candidate-bound portable notice prototype
+
+- [x] #221 merged 6f9f2fd, #222 merged 56b40f1 into parent after
+      exact 5/5 CI and tested tree matches.
+- [x] Recover exact #206 application from qualified solid stream;
+      bind portable identity and all nine reviewed notices.
+- [x] Build local unpublished ZIP and reread exact member hashes;
+      actual replay and three regressions PASS.
+- [ ] Hosted CI, integration, installed notice packaging prototype,
+      remaining terms and hardware acceptance. Release hold.

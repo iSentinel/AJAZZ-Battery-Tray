@@ -78,3 +78,19 @@ The caller must keep the inspected local tree immutable during review.
 Actual replay on nine staged notice files and manifest: PASS,
 ZIP SHA-256 76a16fd9f5b929398a27932c866ad77d56e01d23f79023aa7495a15e37f67fdb.
 No claim of legal compliance, candidate inclusion or release admission.
+
+## Candidate-bound local portable prototype
+
+The exact historical #206 candidate archive is pinned by SHA-256
+7c0739db76e39b01d55585ef9001a1eba144bd82ea61c4419abe2fdd1d45f557.
+The portable prototype revalidates its setup, all five solid-stream
+file digests and the application identity before constructing a ZIP
+containing the exact EXE, nine reviewed notices, notice manifest and
+portable identity manifest. It does not execute the EXE. The optional
+solid-decoder sink is used only for in-memory staging before validation.
+Actual local replay ZIP SHA-256
+a9dc6ecc4ff08edbd55c9344c35fb4db61f3860a15297f55b44d0dfdff236758;
+evidence SHA-256
+397c65aa705263f7a6c418f1f80d8c0c5bd53670d7d60270f610cc2f72fb6ddf.
+This historical prototype is not a published portable candidate.
+Installed notice coverage and complete redistribution terms are open.

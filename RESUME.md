@@ -1,3 +1,11 @@
+# Resume — candidate-bound portable notice prototype
+
+#221 merged 6f9f2fd, #222 merged 56b40f1 into parent, exact CI 5/5 each.
+Stacked on #223. Exact #206 app recovered from solid stream and local
+portable ZIP verified with nine notices and two manifests. Three tests.
+No binary publication, runtime acceptance or release admission.
+Next: installed notice packaging prototype and outstanding terms.
+
 # Resume — exact Windows notice transport
 
 Nine exact staged files plus manifest verified in a canonical ZIP;
