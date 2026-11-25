@@ -1,6 +1,6 @@
 # AJAZZ Battery Tray architecture
 
-- Windows .NET 8 WinForms (Windows 10 19041+ target): TrayAppContext
+- Windows .NET 11 WinForms candidate (Windows API target 10.0.19041; supported OS and field acceptance pending): TrayAppContext
   orchestrates settings, scheduling and presentation; AjazzHidReader/HidNative
   transport and HidFeaturePolicy write allowlist; BatteryReportParser validates
   data; ReceiverMonitor owns per-receiver observation/history/notifications.
@@ -12,7 +12,7 @@
   same conservative parser and lease. Native hosted Intel CI is not
   physical High Sierra or arm64 acceptance.
 - LocalBatterySnapshot and LocalApiServer: session-only opt-in authenticated
-  IPv4 loopback read-only sanitized projection. HA preview is .NET 8 consumer;
+  IPv4 loopback read-only sanitized projection. HA preview is .NET 11 consumer;
   unverified values never enter shared telemetry.
 - AppSettings, BatteryHistory: local user persistence; installer per-machine
   Inno Setup, portable EXE and Apple ZIP distributions. No global database.

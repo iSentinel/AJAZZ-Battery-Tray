@@ -84,7 +84,7 @@ class CiActionPinTests(unittest.TestCase):
     def test_dotnet_sdk_selection_is_exact(self) -> None:
         """Require matching global SDK selection, setup pin and version check."""
         sdk = json.loads((ROOT / "global.json").read_text())["sdk"]
-        self.assertRegex(sdk["version"], r"^8\.0\.[0-9]+$")
+        self.assertRegex(sdk["version"], r"^11\.0\.[0-9]+$")
         self.assertEqual(sdk["rollForward"], "disable")
         self.assertIs(sdk["allowPrerelease"], False)
         observed = set()
@@ -96,9 +96,27 @@ class CiActionPinTests(unittest.TestCase):
             self.assertIn("dotnet-version: '" + sdk["version"] + "'", source)
             self.assertIn("$actual = dotnet --version", source)
             self.assertIn("$actual -ne '" + sdk["version"] + "'", source)
-            self.assertNotIn("dotnet-version: '8.0.x'", source)
+            self.assertNotIn("dotnet-version: '11.0.x'", source)
         self.assertEqual(observed, {"build.yml", "test-ha-preview.yml",
                                    "test-installer-upgrade.yml", "release-beta.yml"})
+
+    def test_dotnet_project_targets_match_migration(self) -> None:
+        """Check every reviewed project and the HA preview output path."""
+        targets = {
+            "src/AjazzBatteryTray/AjazzBatteryTray.csproj":
+                "net11.0-windows10.0.19041.0",
+            "tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj":
+                "net11.0",
+            "tests/AjazzDashboard.Smoke/AjazzDashboard.Smoke.csproj":
+                "net11.0-windows",
+            "integrations/home-assistant/AjazzHaPreview.csproj": "net11.0",
+        }
+        for path, target in targets.items():
+            source = (ROOT / path).read_text()
+            self.assertIn(f"<TargetFramework>{target}</TargetFramework>", source)
+        workflow = (ROOT / ".github/workflows/test-ha-preview.yml").read_text()
+        self.assertIn("/Release/net11.0/AjazzHaPreview.dll", workflow)
+        self.assertNotIn("/Release/net8.0/", workflow)
 
     def test_reject_floating_or_unreviewed(self) -> None:
         """A full hash alone is insufficient without a reviewed lock entry."""

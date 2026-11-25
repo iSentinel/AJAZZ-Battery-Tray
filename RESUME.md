@@ -1,3 +1,16 @@
+# Resume — owner-selected .NET 11 migration candidate
+
+#143 merged 48b1fff after six successful hosted checks, identical
+source tree 258249f. Owner explicitly chooses .NET 11 instead of 10.
+#144 tracks direct migration: SDK 11.0.100, all four project TFMs,
+matching CI inputs and checks, HA output path and regression coverage.
+.NET 8 is EOL; the previous pin is a development baseline only.
+Candidate not locally executed; require exact-head hosted checks,
+resolved runtime, OS lifecycle and physical device qualification.
+Native macOS and High Sierra, HID protocol, public releases and
+release hold unchanged. Continue #142 supply-chain inventory after
+migration verification. No main merge or release dispatch.
+
 # Resume — ENG-06 SDK lock candidate after action integration
 
 #141 merged 364fe76 into draft #99, all six hosted checks PASS.
