@@ -1,3 +1,11 @@
+# Resume — Node24 artifact roundtrip correction
+
+#148 initial 14c2eb4 clean isolated Gateway QA 133/133 PASS, tree
+2a6ac7c. Hosted offline QA and both synthetic uploads succeeded, but
+same-job pattern download found one archive, and the two-file assertion
+failed. Move download to a dependent job to mirror release topology;
+exact content and digest checks remain. Full exact-head CI required.
+
 # Resume — ENG-06/12 Node24 candidate
 
 #147 merged 91138db after 4/4 CI, exact tested tree 4e75375.

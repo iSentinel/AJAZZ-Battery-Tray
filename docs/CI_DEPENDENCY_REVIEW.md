@@ -78,3 +78,11 @@ read-only offline QA job exercises upload/download without release or
 production permissions. Native CI and exact artifact re-open required.
 This is scoped compatibility review, not transitive advisory clearance;
 release workflows remain fail-closed, actual release path unexecuted.
+
+First hosted candidate 14c2eb4: offline QA and both synthetic uploads
+passed, but immediate same-job listing found only one matching archive;
+the exact two-file check failed (run 45521697394, job 138894889761).
+This is consistent with artifact listing propagation, not a digest failure.
+Move download to a bounded dependent job, as used by the held release
+workflow, retaining exact filenames, bytes and digest checks. Require
+new CI; no retry that would hide missing artifacts or publish a release.
