@@ -1196,3 +1196,12 @@ Hardware acceptance and native CI pending.
 #188 integrated 64635db; stacked on #189 4d2b466. Keep linked primary
 selected until hidden/unlinked even when unrelated USB or BLE appears.
 Other icons remain independent. Hosted CI and physical acceptance open.
+
+## Diagnostic timeline checkpoint
+
+#189/#190 merged bda4dc0. New tools/compare_diagnostic_timeline.py accepts
+2–32 existing local reports, sorts timestamps, rejects duplicate captures,
+projects AULA cache separately and compares complete ready-clear matrices
+as unverified observations only. No raw buffers, paths, names or inferred
+identity in JSON. No hardware I/O. Hosted CI and actual multi-report
+replay / interactive capture workflow remain open.

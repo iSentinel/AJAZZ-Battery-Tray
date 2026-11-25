@@ -305,3 +305,22 @@ of an unrelated mouse or changes in transport availability do not
 replace it. Hiding/unlinking the linked primary permits a new selection.
 Other independently monitored devices remain separate extra icons in
 multiple-icon mode. No local receiver key is added to diagnostics.
+
+## Offline diagnostic timeline
+
+Compare existing reports without issuing any new requests:
+
+```sh
+python3 tools/compare_diagnostic_timeline.py before.txt switched.txt after.txt
+```
+
+Accepts 2–32 bounded local reports supported by the common normalizer,
+including the exact beta.60 Windows legacy layout. Sorts by normalized
+UTC, rejects duplicate timestamps, and emits a redacted JSON timeline.
+Windows AULA cache observations are independently validated. Complete
+single-receiver F7 ready-clear matrices can be compared as unverified
+fields, never as battery telemetry. Apple reports retain their existing
+normalized USB and historical manual GATT observations. No automatic
+identity matching, physical transport inference, raw buffer export,
+device requests or uploads. Exit 0 means the reports parsed, not hardware
+acceptance; exit 2 means invalid or unsupported input.
