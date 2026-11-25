@@ -339,6 +339,7 @@ static NSInteger TraceFeature(IOHIDDeviceRef device) {
             continue;
         }
         PrintHIDPrefix(reply, actual);
+        printf("F7 policy gate: %s\n", AjazzF7ReplyGateName(reply, (size_t)actual));
         NSInteger percent = ParseBattery(reply, actual);
         if (percent >= 0) return percent;
     }

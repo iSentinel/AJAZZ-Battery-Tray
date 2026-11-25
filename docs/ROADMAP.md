@@ -2209,3 +2209,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       No change to accepted/provisional fields, history, or alerts.
       Add diagnostic-label regression.
 - [ ] Native Windows CI and real-device acceptance.
+
+### Apple bounded F7 trace classifications
+
+- [x] #264 exact 5/5 CI, merged c105bbf after tested-tree equality.
+- [x] Add matching F7 policy gate names to Universal and High Sierra
+      bounded active traces, using the shared C classifier and existing
+      optional report-ID handling. No extra USB commands, no expanded
+      raw-byte output, no change to ordinary measurement or IPC.
+- [x] Native C formatter test: 20 numbered/unnumbered cases and four
+      short/null/compact cases. Historical corpus and admission parity
+      unchanged. Passive report normalizer still excludes active trace.
+- [ ] Native macOS CI and physical acceptance; release hold unchanged.
