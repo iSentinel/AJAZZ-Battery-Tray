@@ -1823,3 +1823,26 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted QA/integration, independent advisory cross-check,
       remaining installer/Apple/OS and toolchain scope, legal terms,
       hardware acceptance. Release hold.
+
+### Exact candidate OSV cross-check
+
+- [x] Query the same four exact public NuGet versions via OSV;
+      all four results complete, no IDs returned.
+- [x] Bind exact ordered request and response hashes to the native
+      BOM; reject wrong versions/order, missing and paginated results;
+      two regressions and actual replay PASS.
+- [ ] Hosted checks and integration; remaining installer, Apple,
+      OS and toolchain advisory scope, legal and hardware gates.
+      Release hold.
+
+### Inno 6.7.4 upstream delta and migration qualification
+
+- [x] #232 merged a85079d (5/5), #233 merged ed26f10 into parent (5/5).
+- [x] Review official 6.7.2–6.7.4 changes and product relevance;
+      RedirectionGuard child inheritance requires separate qualification.
+- [x] Download immutable 6.7.4 asset and ISSig; exact SHA-256 and
+      pinned key verification PASS.
+- [x] Add separate read-only publisher trust workflow and two regressions.
+- [ ] Native publisher verification, component and license delta,
+      separate updated compiler and interactive lifecycle qualification.
+      Existing 6.7.1 pin and release hold unchanged.

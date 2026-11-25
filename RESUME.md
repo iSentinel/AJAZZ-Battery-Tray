@@ -1,3 +1,20 @@
+# Resume — Inno 6.7.4 upstream delta
+
+#232 merged a85079d; #233 merged ed26f10 into parent, both 5/5.
+Official 6.7.4 asset and ISSig match immutable release and pinned key.
+RedirectionGuard inheritance correction potentially relevant to product
+runasoriginaluser; separate native publisher verification added.
+Compiler migration, interactive lifecycle, legal and physical gates
+remain open. No release change.
+
+# Resume — exact candidate OSV cross-check
+
+Stacked on #232. Dated OSV querybatch returns four complete results,
+zero IDs for exact NuGet versions; local replay binds request/response
+hashes to native BOM. Two regressions. NuGet and OSV scoped results
+agree, not full vulnerability clearance. Remaining advisory coverage,
+legal terms and physical acceptance open. Release hold.
+
 # Resume — native candidate SBOM and scoped advisory binding
 
 #230 merged 2a7137a (6/6), #231 merged b2430ad into parent (5/5).

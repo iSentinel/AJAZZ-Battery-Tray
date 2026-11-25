@@ -161,3 +161,21 @@ This is a dated snapshot observation, not an authenticated signed feed,
 freshness gate, complete dependency graph, absence of vulnerabilities,
 or release admission. Installer, Apple, OS and other advisory
 coverage, license terms and physical acceptance remain open.
+
+## OSV cross-check of exact native candidate packages
+
+At 2026-11-25T13:53:44Z, an HTTPS certificate-validated OSV querybatch
+for the same four public NuGet package/version identities returned
+four complete results with no advisory IDs and no continuation token.
+Exact request SHA-256
+d914d09b638060b6114aa4d8bd10a104c4f476df6430537695ecb7bac38f62b7;
+response SHA-256
+1d3b3028309f42f104f47f2023c84a49d3582b917a8eede35750fec991a596cf.
+The local crosscheck CLI revalidates the exact BOM binding, four
+package identities, ordered requests and response count; actual bound
+evidence SHA-256
+1a0353cfb387984b0255ede8fb8303bf86c401e2462cabddd00edf62da54eae6.
+NuGet and OSV observations agree within this scope. They may share
+upstream advisory sources and are not independent completeness proofs.
+No signed response, freshness gate, installer/OS/Apple advisory
+coverage, legal compliance or release admission is asserted.
