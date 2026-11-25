@@ -23,3 +23,14 @@ Example:
 ```sh
 python tools/verify_dotnet_host_sections.py --exe AJAZZBatteryTray.exe --package host.nupkg --application tray --output host.json
 ```
+
+## Actual qualification (2026-11-25)
+
+#153 macOS retry succeeded, 4/4 hosted checks; merged c15cb7e with
+identical tree 5577d97. #154 original 397e1da clean Gateway QA 152/152
+PASS, zero failures/errors/skips. Both #147 ZIP SHA256 reverified, pinned
+Host pack and host template verified; real CLI exit 0 for both EXEs.
+Six exact sections each, exact reconstructed .data (67 Tray/65 HA changed
+bytes, zero unexpected), correct subsystem. Resources unresolved, headers
+partial, signatures not verified. Join integrated #153 parent and rerun
+exact candidate checks; no native Windows execution or hardware claim.

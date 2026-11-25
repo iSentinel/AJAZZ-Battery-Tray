@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare embedded WindowsDesktop files with a hash-pinned local NuGet pack."""
+"""Compare embedded runtime files with a hash-pinned reviewed NuGet pack."""
 
 import argparse
 import hashlib
@@ -17,6 +17,9 @@ from run_offline_qa import write_json
 
 PACK = "Microsoft.WindowsDesktop.App.Runtime.win-x64"
 PREFIX = "runtimes/win-x64/lib/net11.0/"
+CORE = "Microsoft.NETCore.App.Runtime.win-x64"
+SDK = "Microsoft.Windows.SDK.NET.Ref"
+PACK_PREFIXES = {PACK: PREFIX, CORE: PREFIX, SDK: "lib/net9.0/"}
 SHA = re.compile(r"[0-9a-f]{64}")
 MAX_MEMBER = 32 * 1024 * 1024
 
@@ -44,7 +47,8 @@ def member_bytes(archive: zipfile.ZipFile, info: zipfile.ZipInfo,
     return raw
 
 
-def validate_identity(archive: zipfile.ZipFile, version: str) -> None:
+def validate_identity(archive: zipfile.ZipFile, version: str,
+                      package: str = PACK) -> None:
     """Require the reviewed package identity and exact declared version."""
     specs = [info for info in archive.infolist()
              if info.filename.lower().endswith(".nuspec")]
@@ -59,11 +63,11 @@ def validate_identity(archive: zipfile.ZipFile, version: str) -> None:
     ids = metadata.findall("{*}id")
     versions = metadata.findall("{*}version")
     if (len(ids) != 1 or len(versions) != 1
-            or ids[0].text != PACK or versions[0].text != version):
+            or ids[0].text != package or versions[0].text != version):
         raise BundleError("Package identity mismatch")
 
 
-def package_index(archive: zipfile.ZipFile) -> dict:
+def package_index(archive: zipfile.ZipFile, prefix: str = PREFIX) -> dict:
     """Index exact package-relative paths and notice hashes, not guessed owners."""
     entries = archive.infolist()
     if len(entries) > 10000 or sum(item.file_size for item in entries) > LIMIT:
@@ -76,8 +80,8 @@ def package_index(archive: zipfile.ZipFile) -> dict:
         seen.add(name.casefold())
         if info.is_dir():
             continue
-        if name.startswith(PREFIX) and name.endswith(".dll"):
-            path = name[len(PREFIX):]
+        if name.startswith(prefix) and name.endswith(".dll"):
+            path = name[len(prefix):]
             assets[relative_name(path)] = hashlib.sha256(
                 member_bytes(archive, info)).hexdigest()
         elif name.rsplit("/", 1)[-1].lower() in (
@@ -88,24 +92,13 @@ def package_index(archive: zipfile.ZipFile) -> dict:
     return {"assets": assets, "notices": sorted(notices, key=lambda x: x["path"])}
 
 
-def compare(attribution: dict, pack: bytes, expected: str) -> dict:
-    """Compare claimed WindowsDesktop and unresolved resources independently."""
-    digest = hashlib.sha256(pack).hexdigest()
-    if not SHA.fullmatch(expected) or digest != expected:
-        raise BundleError("Package SHA-256 mismatch")
-    components = [item for item in attribution["components"]
-                  if item["id"] == "runtimepack." + PACK
-                  and item["type"] == "runtimepack"]
-    if len(components) != 1:
-        raise BundleError("Expected one WindowsDesktop runtimepack claim")
-    component = components[0]
-    version = token(component["version"], VERSION)
-    with zipfile.ZipFile(io.BytesIO(pack)) as archive:
-        validate_identity(archive, version)
-        index = package_index(archive)
+def compare_files(attribution: dict, component: dict, index: dict,
+                  package: str) -> list[dict]:
+    """Report both declared and unresolved evidence without ignoring absences."""
     candidates = [(item, "declared") for item in component["files"]]
-    candidates += [(item, "unclaimed") for item in attribution["unmatched_files"]
-                   if item["path"].endswith(".resources.dll")]
+    if package == PACK:
+        candidates += [(item, "unclaimed") for item in attribution["unmatched_files"]
+                       if item["path"].endswith(".resources.dll")]
     results = []
     for item, origin in candidates:
         actual = index["assets"].get(item["path"])
@@ -114,8 +107,39 @@ def compare(attribution: dict, pack: bytes, expected: str) -> dict:
         results.append({"path": item["path"], "origin": origin,
                         "embedded_sha256": item["sha256"],
                         "package_sha256": actual, "status": status})
-    return {"schema": 1, "scope": "WindowsDesktop byte comparison only",
-            "exe_sha256": attribution["exe_sha256"], "package": PACK,
+    library = "runtimepack." + package + "/" + component["version"]
+    for item in attribution.get("missing_declared_files", []):
+        if item["library"] == library:
+            results.append({"path": item["path"], "origin": "declared",
+                            "embedded_sha256": None,
+                            "package_sha256": index["assets"].get(item["path"]),
+                            "status": "missing_embedded"})
+    return results
+
+
+def compare(attribution: dict, pack: bytes, expected: str,
+            package: str = PACK) -> dict:
+    """Compare a reviewed package against its actual embedded payloads."""
+    if package not in PACK_PREFIXES:
+        raise BundleError("Unreviewed package layout")
+    digest = hashlib.sha256(pack).hexdigest()
+    if not SHA.fullmatch(expected) or digest != expected:
+        raise BundleError("Package SHA-256 mismatch")
+    components = [item for item in attribution["components"]
+                  if item["id"] == "runtimepack." + package
+                  and item["type"] == "runtimepack"]
+    if len(components) != 1:
+        raise BundleError("Expected one reviewed runtimepack claim")
+    component = components[0]
+    version = token(component["version"], VERSION)
+    with zipfile.ZipFile(io.BytesIO(pack)) as archive:
+        validate_identity(archive, version, package)
+        index = package_index(archive, PACK_PREFIXES[package])
+    results = compare_files(attribution, component, index, package)
+    scope = ("WindowsDesktop byte comparison only" if package == PACK
+             else "Selected runtimepack byte comparison only")
+    return {"schema": 1, "scope": scope,
+            "exe_sha256": attribution["exe_sha256"], "package": package,
             "version": version, "package_sha256": digest,
             "notices": index["notices"], "files": results}
 
@@ -126,21 +150,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--exe", type=Path, required=True)
     parser.add_argument("--package", type=Path, required=True)
     parser.add_argument("--package-sha256", required=True)
+    parser.add_argument("--pack-id", choices=sorted(PACK_PREFIXES), default=PACK)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         result = compare(report(read_local(args.exe)), read_local(args.package),
-                         args.package_sha256)
+                         args.package_sha256, args.pack_id)
         write_json(args.output, result)
         if not result["files"] or any(x["status"] != "match" for x in result["files"]):
-            print("FAIL: WindowsDesktop byte comparison", file=sys.stderr)
+            print("FAIL: runtimepack byte comparison", file=sys.stderr)
             return 2
     except (OSError, ValueError, KeyError, TypeError, RuntimeError,
             zipfile.BadZipFile, ET.ParseError) as error:
         print(f"ERROR: runtime provenance ({type(error).__name__})",
               file=sys.stderr)
         return 2
-    print("PASS: WindowsDesktop byte comparison (not complete SBOM)")
+    print("PASS: runtimepack byte comparison (not complete SBOM)")
     return 0
 
 
