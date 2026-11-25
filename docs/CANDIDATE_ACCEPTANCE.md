@@ -219,3 +219,27 @@ The EXE certificate table is absent. These checks cover the declared
 application files and scoped .NET provenance, not installer bootstrap
 code, embedded uninstall engine, compiled script semantics, extractor
 trust, complete distribution licensing or physical acceptance.
+
+### Installer compiler input inventory
+
+The #198 upgrade job 139061565151 logged compiler 6.7.1 and ISCC
+SHA-256 `eb6f4410c8db367a5f74127e8025ad2ccacc0afabbe783959d237df3050f97fb`,
+with runner Authenticode status Valid; no independent signer review.
+Official Inno Setup tag is-6_7_1 resolves to commit
+`cfdf48923178df4b4f040e038b423aa555a61ffc`. Its setup.iss lists
+the compiler frontend, engine, preprocessor, setup/loader templates,
+compression helpers and signed-input sidecars. The reviewed license
+text SHA-256 is
+`2e5346868c2a18434489824e11d65c3031620f792fefc415d05f19cd441abf5c`.
+It permits redistribution subject to notice retention, accurate origin
+and modification marking. Separate component terms still need review.
+
+The CI-only inventory option compares a bounded explicit set of
+top-level files before and after the ordinary beta.61 compilation,
+records present/absent, size and SHA-256 and links the observation to
+checkout and resulting setup digest. It refuses reparse points and
+existing output, and does not run for the synthetic probe or release
+workflow. The separate seven-day evidence artifact is not a full
+compiler directory inventory, module load trace, signed-input
+verification, embedded engine attribution or licensing clearance.
+Native execution and review of the observed inventory remain pending.
