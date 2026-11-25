@@ -324,17 +324,15 @@ public sealed class TrayAppContext : ApplicationContext
         List<DeviceDashboardForm.Entry> entries = new();
         foreach (var receiver in _receivers.Devices)
         {
-            var reading = receiver.Reading;
-            var item = DeviceDashboardState.FromPoll(receiver.DisplayLabel, "2.4 GHz",
-                true, reading.PresenceKnown, receiver.Present, reading.Percent,
-                receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
+            var now = DateTimeOffset.UtcNow;
+            var item = ReceiverMonitor.Dashboard(receiver, now);
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
                 () => ToggleTrayVisibility(receiver.Key),
                 () => EditTrayColor(receiver.Key, receiver.DisplayLabel),
                 () => EditDeviceAlerts(receiver.Key, receiver.DisplayLabel),
                 () => EditDeviceInterval(receiver.Key, receiver.DisplayLabel),
-                UnverifiedPercent: receiver.ScheduledSkip ? null : reading.UnverifiedPercent));
+                UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now)));
         }
         if (entries.Count == 0)
         {
@@ -372,10 +370,7 @@ public sealed class TrayAppContext : ApplicationContext
         foreach (var receiver in _receivers.Devices)
         {
             int slot = slots.Apex(receiver.Key);
-            var reading = receiver.Reading;
-            var state = DeviceDashboardState.FromPoll("", "", true,
-                reading.PresenceKnown, receiver.Present, reading.Percent,
-                receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
+            var state = ReceiverMonitor.Dashboard(receiver, DateTimeOffset.UtcNow);
             inputs.Add(new(LocalBatterySource.ApexReceiver, slot, state));
         }
         var aula = !_settings.MonitorAulaL99
@@ -1948,7 +1943,10 @@ public sealed class TrayAppContext : ApplicationContext
         var aulaState = AulaDashboardState();
         int? aulaLevel = aulaState.Percent;
         bool aulaStale = aulaState.Status == DeviceDashboardStatus.Cached;
-        int? usbPercent = reading.PresenceKnown ? receiver?.Reading.Percent : null;
+        var usbNow = DateTimeOffset.UtcNow;
+        var usbDisplay = receiver is not null && reading.PresenceKnown
+            ? ReceiverMonitor.Dashboard(receiver, usbNow) : null;
+        int? usbPercent = usbDisplay?.Percent;
         bool retainCachedBle = primaryBle is not null && _lastSource == "Bluetooth" &&
             _lastDevice == BleLabel(_bleSlots[primaryBle]) &&
             _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow).HasValue &&
@@ -1966,8 +1964,7 @@ public sealed class TrayAppContext : ApplicationContext
 
         string device = bluetoothPrimary && primaryBle is not null ? BleLabel(_bleSlots[primaryBle]) :
             receiver?.Label ?? "AJAZZ APEX";
-        int? displayPercent = bluetoothPrimary ? blePercent :
-            reading.PresenceKnown ? receiver?.Reading.Percent : null;
+        int? displayPercent = bluetoothPrimary ? blePercent : usbPercent;
         string source = bluetoothPrimary ? "Bluetooth" : "2.4 GHz";
         if (aulaIsPrimary)
         {
@@ -2013,11 +2010,11 @@ public sealed class TrayAppContext : ApplicationContext
             aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device);
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
-        else if (displayConnected && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null && receiver?.ScheduledSkip == true)
+        else if (displayConnected && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null && usbDisplay?.Status == DeviceDashboardStatus.Scheduled)
             value += " (" + UiText.Get("Last scheduled reading") + ")";
         bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null;
-        int? unverified = unknownUsb && receiver is { ScheduledSkip: false } && reading.PresenceKnown
-            ? receiver.Reading.UnverifiedPercent : null;
+        int? unverified = unknownUsb && receiver is not null && reading.PresenceKnown
+            ? ReceiverMonitor.Unverified(receiver, usbNow) : null;
         if (unknownUsb)
         {
             var usb = receiver?.Reading ?? reading;
@@ -2061,11 +2058,9 @@ public sealed class TrayAppContext : ApplicationContext
             if (!IsTrayVisible(pair.Value)) continue;
             var usb = _receivers.Devices.FirstOrDefault(x => x.Key == pair.Value);
             _bleSlots.TryGetValue(pair.Key, out var ble);
-            int? usbValue = usb is { Present: true, Reading.PresenceKnown: true, ScheduledSkip: false }
-                ? usb.Reading.Percent : null;
-            int? scheduled = usb is { Present: true, Reading.PresenceKnown: true, ScheduledSkip: true,
-                MeasuredAt: { } at } && now >= at && now - at <= TimeSpan.FromMinutes(3)
-                ? usb.Reading.Percent : null;
+            var state = usb is null ? null : ReceiverMonitor.Dashboard(usb, now);
+            int? usbValue = state?.Status == DeviceDashboardStatus.Fresh ? state.Percent : null;
+            int? scheduled = state?.Status == DeviceDashboardStatus.Scheduled ? state.Percent : null;
             var display = TransportLinks.Select(usbValue,
                 _ble.VisiblePercent(pair.Key, true, false, now), _ble.CachedPercent(pair.Key, now), scheduled);
             string name = usb?.DisplayLabel ?? (ble is not null ? BleDisplayLabel(ble) :

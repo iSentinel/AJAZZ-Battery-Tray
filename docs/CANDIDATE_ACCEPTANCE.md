@@ -665,3 +665,18 @@ All three outer archive digests match; both Apple companion inner
 ZIP checksums and scoped bundle layout match. No physical acceptance
 or release authorization. Keep the records private; do not include
 serials, raw HID buffers, addresses or personal information.
+
+## APEX retained USB display age
+
+When refreshing the UI or local snapshot, an ordinary valid USB
+sample is eligible through five minutes from its measurement;
+a scheduled retained sample is eligible through three minutes
+and labeled scheduled. Later, missing, or future timestamps do
+not provide a displayed percentage. Presence must be confirmed.
+The unverified field is display-only on a current ordinary observation,
+never on scheduled, expired, disconnected or unknown-presence data.
+A linked mouse can select a fresh BLE reply when the USB sample
+expires. No new HID request, history record or alert is generated
+by a presentation refresh. Validate actual Windows suspension,
+resume, linked transport selection and multi-icon display separately.
+This does not qualify ready-clear data as a battery reading.

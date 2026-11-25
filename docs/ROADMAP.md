@@ -2067,3 +2067,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Windows native CI and physical sleep/resume acceptance.
 - [ ] AJ159/AJ179 ready-clear comparison at two verified charge levels;
       do not promote unverified fields or change HID commands.
+
+### APEX presentation age consistency
+
+- [x] #253 native 5/5 CI, tested tree equality, merged c2061d3 into
+      draft #99. AULA physical sleep/resume remains pending.
+- [x] Centralize APEX ordinary/scheduled USB presentation age checks
+      across dashboard, API, primary/extra icons, menus and linked
+      USB/BLE selection. Preserve five-minute ordinary and three-minute
+      scheduled ceilings; reject missing/future timestamps, zero,
+      unknown presence and expired unverified display fields.
+      Seven new C# assertions. No protocol or history/alert changes.
+- [ ] Native CI and physical validation of new projection.
+- [ ] AJ159/AJ179 ready-clear comparison with official utility at two
+      verified charge levels per device; no unverified field promotion.
