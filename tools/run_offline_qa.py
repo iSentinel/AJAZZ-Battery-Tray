@@ -36,6 +36,7 @@ CLI = ("analyze_aula_sleep", "check_apple_io_lease", "code_audit",
        "audit_pinned_nuget_advisories",
        "inventory_apple_archive",
        "inventory_apple_load_commands",
+       "verify_apple_resource_seal",
        "inventory_nuget_assets",
        "measure_apple_worker", "qa_unittest",
        "run_offline_qa")

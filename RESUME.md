@@ -1,3 +1,12 @@
+# Resume — scoped Apple ad-hoc hash integrity
+
+#168 merged f53a8c4 after exact 4/4 CI. #169 joined bbed1df with
+identical tested tree; fresh exact-head CI required. New stacked tool
+checks 221 Mach-O pages, nine special slots and 16 resource hashes
+across two historical Apple archives, all match. Ad-hoc empty CMS,
+not publisher trust, notarization or general signature validation.
+Native acceptance and release hold unchanged.
+
 # Resume — direct Apple load-command inventory
 
 #166 merged 4eecf64 after 4/4 CI, #168 joined a9e3a95 with 209/209
