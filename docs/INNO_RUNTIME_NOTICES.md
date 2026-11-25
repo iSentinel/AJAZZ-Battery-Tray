@@ -130,3 +130,17 @@ installed MATCH, uninstalled REMOVED, application_installed=false.
 Fixture setup SHA-256
 5edb9559372f6276115e48ab79bdf4e33bbc3cdb725b74c084655048695cf6d6.
 No product installer qualification or release admission.
+
+## Opt-in product notice qualification
+
+The product .iss has a separate ProductNoticeProbe mode requiring
+NoticeRoot and rejecting combination with InstallerLifecycleProbe.
+It uses the same explicit ten notice entries as the native isolated
+fixture and a distinct output filename. The default product payload
+and release workflows are unchanged. Hosted CI builds a fresh beta.61
+app and compiles the probe with the pinned compiler; verifies app hash,
+registered version, icons and complete installed notice tree, and
+requires uninstall cleanup without launch or user-data creation.
+Only JSON evidence is uploaded. This is an unpublished qualification
+probe, not the historical #206 artifact or a release candidate.
+Legal terms, upgrade with notices, and physical acceptance remain open.

@@ -1754,3 +1754,12 @@ configuration commands. USB `VersionNumber` is a device revision,
       staged/installed records and check removal observation.
 - [ ] Candidate-only product notice packaging test; legal terms and
       physical acceptance. Release hold.
+
+### Opt-in product notice qualification
+
+- [x] Add separate product probe flag, explicit notice entries and
+      distinct output filename; leave release workflow unchanged.
+- [x] Add native product install/hash/notice/uninstall CI with no tray
+      launch and two source regressions.
+- [ ] Hosted evidence and integration, upgrade lifecycle with notices,
+      full distribution terms and physical acceptance. Release hold.
