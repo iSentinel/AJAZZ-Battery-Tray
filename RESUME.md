@@ -1,3 +1,16 @@
+# Resume — issue #93 full-vendor GUI watchdog candidate (2026-11-25)
+
+- Branch fix/full-hid-watchdog-93, based on main 95cdf35ad9e18a814c9ee9d24378232bbf51ba8e.
+- New FullHidCapture worker isolates synchronous full-report HID I/O;
+  stdout pipe carries report in memory, with no temporary raw report file.
+- Consent gate retained, 40s deadline, kill attempt and confirmed exit before
+  polling resumes. If termination fails, polling remains excluded.
+- Added EN/RU/UA status and packaged Windows synthetic success/hang tests.
+- CI, GUI verification, install/upgrade and hard parent-exit behavior still
+  pending. Issue #93 remains open; no release/version change yet.
+- Latest beta.60, High Sierra .5; AJ159, AULA and iMac hardware acceptance
+  remain pending. No new HID opcodes or report IDs.
+
 # Resume — beta.60 released; AJ159 physical battery acceptance open
 
 - PR #97 merged e9c1f21acee64e51b7b064a97492e434ad41b52f.
