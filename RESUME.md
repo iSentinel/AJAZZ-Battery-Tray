@@ -1,3 +1,11 @@
+# Resume — candidate-bound product notice SBOM
+
+#229 merged 492b8a2 after 2/2 hosted checks. New hosted SBOM binding
+after clean and upgrade/repair: source/app/setup hashes and lifecycle
+document digests, four pinned packages and exact BOM SHA. Three
+regressions. Native result, schema validation, advisories, legal terms
+and physical acceptance remain open. Release hold.
+
 # Resume — native product upgrade evidence and historical SBOM
 
 #228 merged 2610603 after 6/6 CI. Two exact evidence ZIPs match;

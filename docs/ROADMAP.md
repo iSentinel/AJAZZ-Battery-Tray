@@ -1789,3 +1789,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Independent schema validation, final candidate-bound SBOM,
       remaining legal terms and actual physical acceptance.
       Release hold.
+
+### Candidate-bound product notice SBOM
+
+- [x] #229 merged 492b8a2 after exact 2/2 hosted checks.
+- [x] Add scoped SBOM generation and exact product lifecycle binding
+      after native clean/upgrade/reinstall CI; three regressions.
+- [ ] Exact-head hosted result and evidence retrieval; independent
+      schema validation and candidate-bound advisory coverage.
+- [ ] Remaining legal terms and physical acceptance. Release hold.

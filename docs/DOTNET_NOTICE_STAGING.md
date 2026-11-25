@@ -82,3 +82,16 @@ The Windows SDK REDIST list still identifies the reviewed October
 2024 version. Exact SDK net9.0 coverage, downstream terms, privacy
 assessment and complete notices need owner/legal review. Technical
 notice transport success is not acceptance of license terms.
+
+## Candidate-bound product notice SBOM
+
+The separate hosted product notice workflow now invokes
+`build_product_notice_sbom.py` after clean, upgrade and repair
+lifecycle verification. It requires exact app, setup and checkout
+hashes in both lifecycle records, builds a scoped CycloneDX 1.6 BOM
+from the actual published-by-CI EXE and four pinned packages, and
+checks the root application digest. A separate binding records exact
+BOM bytes and both lifecycle document digests. Only JSON artifacts
+are retained. Composition is explicitly incomplete; independent
+schema validation, advisories, distribution compliance, physical
+acceptance and release admission remain unverified. Native CI pending.
