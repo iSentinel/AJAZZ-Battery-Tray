@@ -1145,3 +1145,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       previous successful f53a8c4. Root cause not established.
 - [x] Emit fixed synthetic group outcomes without changing the checks.
 - [ ] Native CI and actual failing group attribution; do not waive failures.
+
+### Owner extended reports: AULA partial acceptance and AJAZZ field change
+
+- [x] Review beta.60 05:39 and 05:43 UTC reports; ready-clear 95 -> 94,
+      ordinary/full agreement per capture, 0/6 verified each.
+- [x] Observe AULA cached 66 (22 misses) -> fresh 66 (zero misses).
+- [x] Extend offline analyzer to extract AULA fields from one extended
+      report per file and distinguish partial two-state evidence.
+- [ ] Exact hosted CI; independent awake snapshot and full A01-A14.
+- [ ] Same-device multi-level direct GATT comparison and no-power-cycle
+      evidence; keep unverified field outside telemetry. Release hold.
