@@ -1,3 +1,9 @@
+# Resume — F7 parity test compile correction
+
+#261 exact 5/5 CI merged c7264b9. #262 initial Windows test compile
+failed with CS0136 (online local shadowing). Correct matrix names;
+no decoder policy change. Native rerun required. Release hold.
+
 # Resume — typed F7 observation classification
 
 #260 exact 6/6 CI merged 4276f8f after tested-tree equality.
