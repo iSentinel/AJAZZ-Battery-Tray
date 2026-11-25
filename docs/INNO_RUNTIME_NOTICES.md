@@ -94,3 +94,24 @@ evidence SHA-256
 397c65aa705263f7a6c418f1f80d8c0c5bd53670d7d60270f610cc2f72fb6ddf.
 This historical prototype is not a published portable candidate.
 Installed notice coverage and complete redistribution terms are open.
+
+## Isolated installed-notice transport probe
+
+A separate CI-only Inno script contains precisely the nine reviewed
+notice files and their manifest, with explicit destination directories.
+No application, custom code, Run entry, elevated privileges or release
+workflow integration. The hosted job downloads exact reviewed NuGet
+packs, stages and verifies them, checks the preinstalled compiler hash
+and engine version, installs into a fresh runner-temporary directory,
+verifies the complete installed notice tree and requires removal of the
+tree by the fixture uninstaller. Only JSON evidence is uploaded.
+The fixture is not the AJAZZ installer and does not qualify its payload.
+The manifest writer uses explicit UTF-8 LF bytes and Git preserves the
+project license bytes across checkout platforms. Actual Linux staging
+replay retains the original pinned manifest SHA-256. Native Windows
+fixture result is pending.
+
+First hosted attempt (job 139195725680) failed in setup-python before
+notice acquisition: 3.12.16 unavailable on Windows x64. The official
+python-versions manifest lists stable 3.13.17 for Windows x64; pin that
+version for this job only. No fallback or verification bypass.

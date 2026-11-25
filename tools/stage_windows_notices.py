@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import json
 from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
@@ -10,7 +11,6 @@ import zipfile
 
 from inventory_dotnet_bundle import BundleError
 from inventory_dotnet_pack_licenses import PACKS
-from run_offline_qa import write_json
 from stage_dotnet_notices import collect
 from verify_windowsdesktop_provenance import read_local
 
@@ -83,7 +83,8 @@ def stage(packs: dict, output: Path, root: Path = ROOT) -> dict:
               'distribution_compliance': 'NOT_VERIFIED',
               'sdk_terms': 'REVIEW_REQUIRED', 'windows_single_file_terms': 'REVIEW_REQUIRED',
               'transitive_inno_terms': 'REVIEW_REQUIRED', 'release_admission': 'NOT_VERIFIED'}
-    write_json(output / 'manifest.json', result)
+    with (output / 'manifest.json').open('xb') as stream:
+        stream.write((json.dumps(result, indent=2, sort_keys=True) + '\n').encode('utf-8'))
     return result
 
 
