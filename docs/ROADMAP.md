@@ -891,6 +891,11 @@ configuration commands. USB `VersionNumber` is a device revision,
       including nested CI job compatibility and no-HID-on-assignment-failure.
 - [ ] Manual GUI consent, deadline/recovery, install/upgrade validation;
       verify failed termination behavior on real Windows.
+- [x] Extend release CI with clean install/uninstall, checksum-verified
+      previous Latest installer, in-place upgrade, installed EXE hash match,
+      and three synthetic installed watchdog checks.
+- [ ] Execute the upgraded release workflow; validate clean install,
+      previous Latest upgrade and removal on a disposable Windows runner.
 - [ ] Release only after CI and packaging gates; retain beta.60 as Latest
       until a verified replacement. Hardware issue #53 and High Sierra
       acceptance remain independent.
