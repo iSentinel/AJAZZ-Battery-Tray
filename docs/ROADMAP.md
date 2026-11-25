@@ -1846,3 +1846,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native publisher verification, component and license delta,
       separate updated compiler and interactive lifecycle qualification.
       Existing 6.7.1 pin and release hold unchanged.
+
+### Current Apple SBOM and external OS scope
+
+- [x] Download exact High Sierra and universal CI artifacts at
+      integration head 2a7137a, match REST and inner sidecar digests.
+- [x] Recompute both scoped SBOMs and validate CycloneDX schema.
+- [x] Classify shipped versus external OS dependency scope; actual
+      replay on both editions and two regressions PASS.
+- [ ] Installed OS build-specific advisory evaluation, native hardware
+      compatibility and trusted signing; legacy risk remains open.
+- [ ] Hosted checks/integration, proposed Inno 6.7.4 qualification,
+      legal and release gates. Release hold.
