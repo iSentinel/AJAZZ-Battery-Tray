@@ -1,3 +1,13 @@
+# Resume — candidate distribution review
+
+#248 merged dd38bf4 after exact 5/5 CI. Compared two actual #246
+embedded SDK DLLs to exact pinned net9.0 NuGet archive; both match.
+Official REDIST wording and explicit older paths reviewed, applicable
+license URL unavailable; no redistribution conclusion. New review
+matrix captures remaining terms, notice, signing and exact binary
+test-channel decisions. Release hold active; physical/interactive
+acceptance remains NOT RUN. Production compiler remains 6.7.1.
+
 # Resume — exact native version-default and interactive checklist
 
 #246 merged d68b7e0 after exact 7/7 CI, eight archive digests,
