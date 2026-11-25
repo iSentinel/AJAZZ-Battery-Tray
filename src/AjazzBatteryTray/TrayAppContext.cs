@@ -80,6 +80,7 @@ public sealed class TrayAppContext : ApplicationContext
     private DateTimeOffset? _latestUsbReadAt;
     private readonly UsbDiagnosticHistory _usbDiagnosticHistory = new();
     private bool _diagnosticsBusy;
+    private readonly DiagnosticSession _diagnosticSession = new();
     private ToolStripMenuItem _bluetoothStatus = new();
     private ToolStripMenuItem _disableBluetooth = new();
     private ToolStripMenuItem _refreshBluetooth = new();
@@ -1131,11 +1132,89 @@ public sealed class TrayAppContext : ApplicationContext
         ToolStripMenuItem menu = new(UiText.Get("Diagnostics"));
         menu.DropDownItems.Add(UiText.Get("Collect full diagnostics..."), null,
             (_, _) => _ = ShowProtocolDiagnosticsAsync());
+        menu.DropDownItems.Add(BuildDiagnosticSessionMenu());
         menu.DropDownItems.Add(new ToolStripSeparator());
         menu.DropDownItems.Add(UiText.Get("Local battery API..."), null, (_, _) => ShowLocalApi());
         menu.DropDownItems.Add(UiText.Get("Copy local battery snapshot"), null, (_, _) => CopyLocalSnapshot());
         menu.DropDownItems.Add(UiText.Get("Open log folder"), null, (_, _) => OpenLogFolder());
         return menu;
+    }
+
+    private ToolStripMenuItem BuildDiagnosticSessionMenu()
+    {
+        var menu = new ToolStripMenuItem(UiText.Get("Diagnostic session"));
+        menu.DropDownItems.Add(new ToolStripMenuItem(UiText.Get("Start diagnostic session")));
+        menu.DropDownOpening += (_, _) =>
+        {
+            foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray()) old.Dispose();
+            menu.DropDownItems.Clear();
+            menu.DropDownItems.Add(new ToolStripMenuItem(UiText.Format("Snapshots: {0}/{1}",
+                _diagnosticSession.Count, DiagnosticSession.MaximumReports)) { Enabled = false });
+            var start = new ToolStripMenuItem(UiText.Get("Start diagnostic session")) { Enabled = !_diagnosticSession.Active };
+            start.Click += (_, _) => _diagnosticSession.Start();
+            menu.DropDownItems.Add(start);
+            foreach (var (marker, label) in new[] {
+                (DiagnosticMarker.Baseline, "Capture baseline"),
+                (DiagnosticMarker.UsbSelected, "Mark 2.4 GHz selected"),
+                (DiagnosticMarker.BluetoothSelected, "Mark Bluetooth selected"),
+                (DiagnosticMarker.Sleep, "Mark sleep"),
+                (DiagnosticMarker.Wake, "Mark wake"),
+                (DiagnosticMarker.Other, "Capture another snapshot")
+            })
+            {
+                var item = new ToolStripMenuItem(UiText.Get(label)) {
+                    Enabled = _diagnosticSession.Active && _diagnosticSession.Count < DiagnosticSession.MaximumReports
+                };
+                item.Click += (_, _) => AddSessionSnapshot(marker,
+                    BuildExtendedReport("HID inventory not requested (session snapshot)."));
+                menu.DropDownItems.Add(item);
+            }
+            var export = new ToolStripMenuItem(UiText.Get("Save diagnostic session...")) { Enabled = _diagnosticSession.Count >= 2 };
+            export.Click += (_, _) => SaveDiagnosticSession();
+            menu.DropDownItems.Add(export);
+            var discard = new ToolStripMenuItem(UiText.Get("Discard diagnostic session")) { Enabled = _diagnosticSession.Active };
+            discard.Click += (_, _) =>
+            {
+                if (MessageBox.Show(UiText.Get("Discard all session snapshots?"), UiText.Get("Diagnostics"),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes) _diagnosticSession.Clear();
+            };
+            menu.DropDownItems.Add(discard);
+        };
+        return menu;
+    }
+
+    private void AddSessionSnapshot(DiagnosticMarker marker, string report)
+    {
+        if (_closing) return;
+        bool added = _diagnosticSession.Add(marker, report, DateTimeOffset.UtcNow);
+        MessageBox.Show(added ? UiText.Format("Snapshot added ({0}).", _diagnosticSession.Count) :
+            UiText.Get("Snapshot not added: session inactive, full or clock changed."),
+            UiText.Get("Diagnostics"), MessageBoxButtons.OK,
+            added ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+    }
+
+    private void SaveDiagnosticSession()
+    {
+        if (_closing || _diagnosticSession.Count < 2) return;
+        if (MessageBox.Show(UiText.Get("Session may contain raw vendor buffers. Save locally and review before sharing?"),
+            UiText.Get("Diagnostics"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+        using SaveFileDialog dialog = new()
+        {
+            FileName = $"ajazz-diagnostic-session-{DateTime.Now:yyyyMMdd-HHmmss}.zip",
+            Filter = "ZIP (*.zip)|*.zip", DefaultExt = "zip", AddExtension = true, OverwritePrompt = true
+        };
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
+        try
+        {
+            // Refuse an existing target; a failed save keeps the session in memory.
+            using var stream = new FileStream(dialog.FileName, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            _diagnosticSession.Export(stream);
+        }
+        catch (Exception)
+        {
+            MessageBox.Show(UiText.Get("Unable to save diagnostic report."), UiText.Get("Diagnostics"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private ToolStripMenuItem BuildBatteryThresholdMenu()
@@ -1507,7 +1586,8 @@ public sealed class TrayAppContext : ApplicationContext
     private void ShowDiagnosticReview(string report)
     {
         if (_closing) return;
-        using DiagnosticReportForm review = new(report);
+        using DiagnosticReportForm review = new(report, _diagnosticSession.Active
+            ? () => AddSessionSnapshot(DiagnosticMarker.ReviewedReport, report) : null);
         review.ShowDialog();
     }
 
@@ -2043,6 +2123,7 @@ public sealed class TrayAppContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         _closing = true;
+        _diagnosticSession.Clear();
         _captureClosing.Cancel();
         _captureClosing.Dispose();
         _localApiWindow?.Close();

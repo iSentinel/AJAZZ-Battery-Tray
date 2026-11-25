@@ -324,3 +324,20 @@ normalized USB and historical manual GATT observations. No automatic
 identity matching, physical transport inference, raw buffer export,
 device requests or uploads. Exit 0 means the reports parsed, not hardware
 acceptance; exit 2 means invalid or unsupported input.
+
+### Collect a Windows diagnostic session from the tray
+
+Diagnostics > Diagnostic session > Start diagnostic session. Capture
+a baseline, then select a marker after actually changing transport or
+observing sleep/wake. Markers describe owner actions, not independently
+detected hardware events. Passive markers copy existing monitoring
+state, without new HID access. Existing full diagnostic review offers
+an explicit Add report to diagnostic session button. Those reviewed
+reports may include raw vendor buffers if previously authorized.
+Save at least two snapshots to a new local ZIP and review before sharing.
+The archive contains separate snapshot-NN.txt files and manifest.json;
+extract locally and pass the texts to compare_diagnostic_timeline.py.
+The current importer does not read ZIP directly. No automatic uploads,
+no persisted in-memory session after app exit. Limits: 32 reports,
+one MiB per report, eight MiB total UTF-8. A failed export may leave
+a partial file; the session remains available for retry at a new path.
