@@ -1308,3 +1308,20 @@ beta.61-only inventory option records scoped top-level input files
 before/after compile and separate artifact, source SHA/setup SHA,
 NOT_VERIFIED trust. Actual native qualification pending. This does
 not establish which modules were loaded or embedded.
+
+## Official compiler comparison checkpoint
+
+#200 merged 2ed65a7, #201 merged c7f44c7 after 4/4 CI each.
+Exact #201 inventory artifact 15003144789 and candidate 15004565401
+bound to checkout d03bbd8; tree equals 098ec00/c7f44c7. Official
+Inno 6.7.1 release asset 357294783 independently extracted in
+isolated unprivileged chroot. 38/38 observed components (21 inputs,
+17 ISSig sidecars) match. compare_inno_compiler.py actual replay PASS.
+Private evidence /root/ajazz-inno-official.kZflC3tb. Cryptographic
+signature/publisher qualification, embedded engine attribution,
+new candidate payload, licensing and hardware acceptance remain open.
+
+ISSig exploratory replay on official package plus 17 sidecars:
+18/18 ECDSA P-256 signatures valid for def01/def02 from pinned source
+commit. Private issig-observations.json in official evidence directory.
+Committed reusable verifier and independent key trust still open.
