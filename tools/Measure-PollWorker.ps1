@@ -4,7 +4,9 @@
 Measure synthetic HID-worker process startup and stdout round-trip latency.
 .DESCRIPTION
 No HID, network, tray instance or device settings are accessed.
-Use an executable built from PR 99 or a descendant.
+Use a candidate with the full HID worker start gate (PR 157 or descendant).
+The synthetic benchmark supplies the one-byte start token; no real HID runs.
+Timing includes the new handshake and is not an identical historical baseline.
 .EXAMPLE
 .\Measure-PollWorker.ps1 -ExePath .\AJAZZBatteryTray.exe -DryRun
 .EXAMPLE
@@ -29,14 +31,22 @@ function Invoke-SampleWorker {
     $info.Arguments = '--internal-full-hid-sample-worker'
     $info.UseShellExecute = $false
     $info.CreateNoWindow = $true
+    $info.RedirectStandardInput = $true
+    $info.StandardInputEncoding = [Text.UTF8Encoding]::new($false)
     $info.RedirectStandardOutput = $true
     $info.StandardOutputEncoding = [Text.Encoding]::UTF8
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $info
     $timer = [Diagnostics.Stopwatch]::StartNew()
+    $started = $false
     try {
         if (-not $process.Start()) { throw 'Worker start failed' }
+        $started = $true
         $stdout = $process.StandardOutput.ReadToEndAsync()
+        # The sample worker is synthetic only; real capture requires supervisor job assignment.
+        $process.StandardInput.BaseStream.WriteByte(0x41)
+        $process.StandardInput.BaseStream.Flush()
+        $process.StandardInput.Close()
         if (-not $process.WaitForExit($DeadlineMs)) {
             try { $process.Kill() } catch { }
             [void]$process.WaitForExit(1000)
@@ -56,7 +66,13 @@ function Invoke-SampleWorker {
             elapsed_ms = [Math]::Round($timer.Elapsed.TotalMilliseconds, 3)
             stdout_bytes = [Text.Encoding]::UTF8.GetByteCount($payload)
         }
-    } finally { $process.Dispose() }
+    } finally {
+        if ($started -and -not $process.HasExited) {
+            try { $process.Kill() } catch { }
+            [void]$process.WaitForExit(1000)
+        }
+        $process.Dispose()
+    }
 }
 
 function Get-NearestRank {
