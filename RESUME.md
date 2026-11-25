@@ -1,3 +1,11 @@
+# Resume — direct Apple load-command inventory
+
+#166 merged 4eecf64 after 4/4 CI, #168 joined a9e3a95 with 209/209
+local QA. New stacked Mach-O verifier checks both historical archives:
+Universal 13.0.0, SDK 15.5.0, 15 required/9 weak per slice; High Sierra
+10.13.0, SDK 15.5.0, seven required. Both final CLI PASS. Native
+compatibility, symbol availability, signatures and release admission open.
+
 # Resume — Apple archive audit on integrated toolchain base
 
 #166 integrated 4eecf64 after 4/4 exact CI PASS. #168 previous
