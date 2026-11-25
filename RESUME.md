@@ -1,3 +1,10 @@
+# Resume — Setup.0 framing and inventory
+
+#213 merged d40f0a6 into parent after 4/4 CI. Actual #206 Setup.0
+header, CRC chunks, LZMA1 terminal state and file location records PASS.
+644-byte IFPS isolated; semantics and remaining header entries unverified.
+Four regressions, exact artifact replay. Release hold unchanged.
+
 # Resume — resource serialization reconstruction
 
 Stacked on #212. Actual #206 loader and inner .rsrc areas and

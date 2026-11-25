@@ -1627,3 +1627,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI and integration; inspect compiled setup script and
       remaining installer overlay, licensing, independent key trust
       and physical acceptance. No release admission.
+
+### Scoped Setup.0 framing and file location inventory
+
+- [x] #213 merged d40f0a6 into parent after exact 4/4 hosted CI.
+- [x] Validate exact #206 Setup.0 encryption header CRC, two framed
+      LZMA1 blocks, EOS and bounds, setup identity and entry counts.
+- [x] Isolate 644-byte IFPS code and match five file location records
+      to retained app and icon hashes, sizes and solid offsets.
+- [x] Add four regressions and offline CLI gate; actual replay PASS.
+- [ ] Hosted CI/integration, independently review IFPS bytecode and
+      remaining setup header records, solid stream, licensing/trust,
+      physical acceptance. Release hold.
