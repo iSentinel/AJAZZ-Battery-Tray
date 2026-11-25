@@ -1,3 +1,22 @@
+# Resume — Inno 6.7.4 exact input and portable compiler qualification
+
+#234 merged abfd739 (6/6); #235 merged b64201e into parent (5/5).
+Native upstream publisher artifact verified. Independent extraction:
+38 inputs, 25 identical, 13 changed; 17 signed components PASS.
+Three notice texts unchanged. Exact pin manifest and separate
+portable compiler CI fixture, no product installation yet.
+Native compiler result, actual product migration, legal/hardware gates
+remain open. Production pin 6.7.1 and release hold unchanged.
+
+# Resume — current Apple SBOM and external OS scope
+
+Stacked on #234. Both actual integration 2a7137a Apple archives
+matched REST and internal sidecar SHA; scoped SBOM and independent
+schema validation PASS. Seven shipped files per edition; external OS
+dependencies classified without inferring installed versions.
+Two regressions. Installed OS advisories, native compatibility,
+trusted signing, Inno 6.7.4 qualification and release gates open.
+
 # Resume — Inno 6.7.4 upstream delta
 
 #232 merged a85079d; #233 merged ed26f10 into parent, both 5/5.

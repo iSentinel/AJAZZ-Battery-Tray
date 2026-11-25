@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/test-inno-674-trust.yml'
+      - 'config/inno-674-component-pins.json'
+      - 'tools/verify_inno674_components.py'
+      - 'installer/Inno674CompilerProbe.iss'
   workflow_dispatch:
 
 permissions:
@@ -12,8 +15,12 @@ permissions:
 jobs:
   inno-674-publisher:
     runs-on: windows-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
       - name: Acquire exact official asset without execution
         shell: pwsh
         run: |
@@ -78,5 +85,78 @@ jobs:
           archive: true
           name: inno-6.7.4-publisher-evidence
           path: ${{ runner.temp }}/ajazz-inno-674-publisher/*.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Deploy verified upstream portable compiler on ephemeral runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher'
+          $asset = Join-Path $root 'innosetup-6.7.4.exe'
+          $compiler = Join-Path $root 'portable-compiler'
+          if ($env:GITHUB_ACTIONS -cne 'true' -or (Test-Path -LiteralPath $compiler)) {
+            throw 'Expected fresh ephemeral runner target'
+          }
+          if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant() -cne 'a549929319f9120716677c685535ca4671e4b937b5fdc87e2585f32d8eb30e8c') {
+            throw 'Verified asset changed'
+          }
+          $p = Start-Process -FilePath $asset -ArgumentList @('/PORTABLE=1','/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/NOICONS',"/DIR=`"$compiler`"") -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Portable compiler deployment failed' }
+          python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'components-before.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Compiler input identity failed' }
+      - name: Compile and exercise inert installer fixture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher'
+          $compiler = Join-Path $root 'portable-compiler'
+          $iscc = Join-Path $compiler 'ISCC.exe'
+          $fixture = Join-Path $root 'AJAZZ-Inno674-Compiler-Probe.exe'
+          $target = Join-Path $root 'fixture-installed'
+          if ((Test-Path $fixture) -or (Test-Path $target)) { throw 'Expected fresh fixture' }
+          $lines = @(& $iscc "/O$root" 'installer/Inno674CompilerProbe.iss')
+          $code = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0 -or @($lines | Where-Object { $_ -ceq 'Compiler engine version: Inno Setup 6.7.4' }).Count -ne 1) {
+            throw 'Unexpected compiler result or engine banner'
+          }
+          python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'components-after.json')
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash (Join-Path $root 'components-before.json')).Hash -cne (Get-FileHash (Join-Path $root 'components-after.json')).Hash) {
+            throw 'Compiler inputs changed'
+          }
+          $uninstaller = Join-Path $target 'unins000.exe'
+          try {
+            $p = Start-Process -FilePath $fixture -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',"/DIR=`"$target`"") -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or !(Test-Path -LiteralPath $uninstaller -PathType Leaf) -or (Get-FileHash (Join-Path $target 'LICENSE')).Hash -cne (Get-FileHash LICENSE).Hash) {
+              throw 'Fixture installation or payload differs'
+            }
+            $p = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or (Test-Path (Join-Path $target 'LICENSE'))) { throw 'Fixture removal failed' }
+            [ordered]@{
+              schema = 'inno-674-compiler-probe-v1'
+              source_sha = (git rev-parse HEAD)
+              engine_version = '6.7.4'
+              setup_sha256 = (Get-FileHash -LiteralPath $fixture).Hash.ToLowerInvariant()
+              components = 38
+              component_identity = 'MATCH'
+              installed_payload = 'MATCH'
+              uninstalled_payload = 'REMOVED'
+              product_installed = $false
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'compiler-probe.json') -Encoding utf8
+          } finally {
+            if (Test-Path -LiteralPath $uninstaller -PathType Leaf) {
+              Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait
+            }
+          }
+      - name: Retain isolated compiler qualification evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno-6.7.4-compiler-probe-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-inno-674-publisher/components-before.json
+            ${{ runner.temp }}/ajazz-inno-674-publisher/components-after.json
+            ${{ runner.temp }}/ajazz-inno-674-publisher/compiler-probe.json
           if-no-files-found: error
           retention-days: 7
