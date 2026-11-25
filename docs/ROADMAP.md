@@ -1121,6 +1121,23 @@ configuration commands. USB `VersionNumber` is a device revision,
       resource seal/signatures, native High Sierra and distribution SBOM.
       Release hold unchanged.
 
+### ENG-12 scoped Apple ad-hoc hash integrity
+
+- [x] Verify actual historical archive resource hashes, page hashes and
+      special slots: 16 resource, 221 page, nine special-slot matches.
+- [x] Identify ad-hoc empty-CMS signatures without signer trust claims.
+- [ ] Hosted QA, native codesign/OS acceptance, signing/notarization,
+      resource rule semantics and distribution SBOM. Release hold unchanged.
+
+### ENG-12 scoped Apple CycloneDX inventory
+
+- [x] Bind archive, direct Mach-O linkage and resource seal evidence to one ZIP.
+- [x] Generate both reviewed Apple BOMs; 7 shipped files each, 24/7 external
+      OS dependencies; official CycloneDX 1.6 schema PASS.
+- [ ] Hosted QA, exact release artifacts, transitive/system symbol review,
+      full distribution inventory, signatures and physical acceptance.
+      Release hold unchanged.
+
 ### ENG-12 Apple self-test failure attribution
 
 - [x] Inspect failed integrated run 45554473404: build/signing/icons PASS,

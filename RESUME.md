@@ -5,6 +5,23 @@ after successful build/signing/icons; no Apple source delta. Add
 15 fixed group outcomes without modifying predicates or aggregate exit.
 Native CI required; cause remains unknown. Release hold unchanged.
 
+# Resume — scoped Apple CycloneDX inventory
+
+#169 merged 21dd502 after exact 4/4 CI. #170 joined 5d308f1,
+identical tested tree; repeat exact CI. New stacked Apple SBOM generator
+verified two historical ZIPs and official CycloneDX 1.6 schema: Universal
+31 components (7 shipped, 24 external), High Sierra 14 (7 shipped,
+7 external). Incomplete composition, no trust/compatibility/admission.
+
+# Resume — scoped Apple ad-hoc hash integrity
+
+#168 merged f53a8c4 after exact 4/4 CI. #169 joined bbed1df with
+identical tested tree; fresh exact-head CI required. New stacked tool
+checks 221 Mach-O pages, nine special slots and 16 resource hashes
+across two historical Apple archives, all match. Ad-hoc empty CMS,
+not publisher trust, notarization or general signature validation.
+Native acceptance and release hold unchanged.
+
 # Resume — direct Apple load-command inventory
 
 #166 merged 4eecf64 after 4/4 CI, #168 joined a9e3a95 with 209/209
