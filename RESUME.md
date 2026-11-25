@@ -1,3 +1,11 @@
+# Resume — combined Windows notice staging
+
+Stacked on #221. Nine reviewed notice files staged from pinned
+repository and four retained NuGet packs; actual replay PASS.
+Three regressions. No installer or release workflow changed.
+Remaining SDK/single-file/RTL and transitive terms, distribution
+coverage and hardware acceptance remain open. Release hold.
+
 # Resume — native upstream publisher evidence
 
 #220 merged fc81aaa into parent after 5/5 CI. Verified exact native
