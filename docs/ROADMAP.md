@@ -1536,3 +1536,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       engine; reverse documented call transform, verify CRC and
       compare with official template. Uninstaller attribution pending.
 - [ ] Independent key trust, licensing and hardware acceptance.
+
+### Inner setup engine recovery and attribution
+
+- [x] Parse unique PE RCDATA/11111 v2 offset table, validate CRC and bounds.
+- [x] Verify compressed header and 325 chunk CRCs; bounded LZMA1 decode,
+      reverse documented call transform and check recovered EXE CRC.
+- [x] Match recovered #201 engine non-resource bytes to official Setup.e32;
+      leave resource contents and script unqualified.
+- [x] Add reproducible verifier and five negative/format regressions.
+- [ ] Hosted exact CI, uninstaller attribution, resource reconstruction,
+      licensing, independent key trust and hardware acceptance.

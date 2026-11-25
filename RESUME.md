@@ -1353,3 +1353,14 @@ resource and overlay explicitly unqualified. Evidence
 /root/ajazz-201-payload.Lb7VSIiW/loader-comparison.json.
 Inner engine offset table/LZMA/call transform, uninstaller, trust,
 licensing and physical acceptance remain open.
+
+## Inner engine checkpoint
+
+Stacked on #204 904b1b1. Actual #201 unique RCDATA/11111 table CRC
+PASS; 325 chunk CRCs, bounded LZMA EOS, recovered engine CRC PASS.
+Recovered EXE SHA256 b22936d9f95b3c088ad7d5cb3f39c17983353849c966e266c2bcb29666baa873.
+Ten non-resource sections and gaps match pinned official Setup.e32.
+New verify_inno_inner_engine.py actual replay PASS, five regressions.
+Evidence /root/ajazz-201-payload.Lb7VSIiW/inner-engine-verification.json.
+Resources, compiled script, actual uninstaller, trust/licensing and
+physical acceptance remain open; public release held.

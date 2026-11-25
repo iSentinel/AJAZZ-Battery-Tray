@@ -385,3 +385,42 @@ Actual replay PASS. Evidence JSON SHA-256
 `5e95b06d4cf04fb38932644416075b293507e83a2c820c14d7e15920688c4fa0`.
 This is a scoped loader attribution only, not verification of the
 compressed inner engine, uninstaller, resources, script or trust.
+
+### Scoped inner setup engine recovery and attribution
+
+The #201 exact setup's unique RCDATA/11111/1033 resource was parsed
+using the v2 64-byte record documented in Shared.Struct.pas from
+official commit cfdf48923178df4b4f040e038b423aa555a61ffc.
+Verified table CRC, exact total size, offset ordering and single-file
+bounds. Table SHA-256:
+`d91c966a492ade523dbfb2ced6e9042cd19bc641087671f009070c688d0e09e8`.
+The compressed header and all 325 chunk CRCs passed.
+Bounded LZMA1 decode (2 MiB dictionary) reached EOS at the exact
+expected size, no unused bytes. Reversing the documented version-3
+CALL/JMP transform from Compression.Base.pas recovered the 4494848-byte
+PE; final CRC32 b1d79b3c matched the loader's record. Recovered SHA-256:
+`b22936d9f95b3c088ad7d5cb3f39c17983353849c966e266c2bcb29666baa873`.
+
+The recovered engine's ten non-resource section records, file-backed
+bytes, gaps, entry point and normalized headers match official
+Setup.e32 (SHA-256
+`34105d458e138b5af63a1bea82b6519856f309904e1e2b0ed7cebed52c7a374b`),
+not SetupCustomStyle.e32. The same five resource-growth header fields
+differ. Both official templates are from the matched 6.7.1 distribution
+and have verified ISSig sidecars. Resource content and compiled setup
+script semantics remain unqualified.
+
+```sh
+python3 tools/verify_inno_inner_engine.py --setup setup.exe \
+  --setup-sha256 68ff9d3f9c87c9ea611a0d7e4cb04bac1314aed5b92dbd566bddadae49a279ef \
+  --loader-template SetupLdr.e32 --engine-template Setup.e32 \
+  --output inner-engine-verification.json
+```
+
+Actual replay PASS. JSON SHA-256:
+`e44c31e74bb42424062b9979727e685bf98bcd31687e7881b8333bd542b411fa`.
+The new verifier performs no execution or extraction to disk; bounded
+in-memory recovery, five regressions for table/chunk CRC, LZMA
+properties/terminal state, transform and exact inner PE extent.
+This is scoped engine attribution, not uninstaller verification,
+signature trust, redistribution clearance or physical acceptance.
