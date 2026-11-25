@@ -1,3 +1,10 @@
+# Resume — active diagnostic outcome normalization
+
+Stacked on #182 1d897ef. Common envelope now reports independent
+active capture outcome and reported percentage, never raw buffers
+or ordinary telemetry promotion. Native CI and hardware open.
+Release hold unchanged.
+
 # Resume — High Sierra interactive cancellation
 
 #180/#181 merged; integrated b9cb5bb. Legacy GUI direct worker

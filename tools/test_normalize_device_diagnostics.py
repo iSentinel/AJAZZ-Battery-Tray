@@ -84,6 +84,57 @@ class NormalizeDiagnosticsTests(unittest.TestCase):
         self.assertIsNone(result['manual_gatt']['last_direct'])
         self.assertFalse(result['active_trace_present'])
 
+    def test_universal_active_outcome(self) -> None:
+        """Keep active reported value distinct from the ordinary snapshot."""
+        trace = "\n\nFresh bounded F7/05 trace:\n"
+        result = normalize(report() + trace +
+                           "Battery status: battery\nVerified battery: 83%\nElapsed ms: 12")
+        self.assertEqual(result["active_capture"]["outcome"], "reported_valid")
+        self.assertEqual(result["active_capture"]["reported_percent"], 83)
+        self.assertIsNone(result["usb"]["percent"])
+        self.assertEqual(result["active_capture"]["independent_verification"], "NOT_VERIFIED")
+
+    def test_incomplete_overrides_terminal_claim(self) -> None:
+        """Timeout or cancellation must never import a terminal percentage."""
+        for reason in ("cancelled", "timeout", "worker failed"):
+            text = report() + "\n\nFresh bounded F7/05 trace:\n"
+            text += f"INCOMPLETE: {reason}; no fresh battery claimed\n"
+            text += "Battery status: battery\nVerified battery: 83%\nElapsed ms: 12"
+            result = normalize(text)["active_capture"]
+            self.assertEqual(result["outcome"], reason if reason != "worker failed" else "incomplete")
+            self.assertIsNone(result["reported_percent"])
+        legacy = report(True) + "\n\nFresh bounded F7/05 trace:\n"
+        legacy += "PASS: battery=83%\n[Output truncated]\nDiagnostic exit: 0\nElapsed ms: 12"
+        self.assertEqual(normalize(legacy)["active_capture"]["outcome"], "incomplete")
+        self.assertIsNone(normalize(legacy)["active_capture"]["reported_percent"])
+
+    def test_legacy_active_exit(self) -> None:
+        """Interpret only coherent legacy exit status and final percentage."""
+        prefix = report(True) + "\n\nFresh bounded F7/05 trace:\n"
+        for code, outcome, value in ((0, "reported_valid", 83), (2, "inconclusive", None),
+                                      (124, "timeout", None), (125, "cancelled", None)):
+            detail = "PASS: battery=83%\n" if code == 0 else ""
+            result = normalize(prefix + detail + f"Diagnostic exit: {code}\nElapsed ms: 12")
+            self.assertEqual(result["active_capture"]["outcome"], outcome)
+            self.assertEqual(result["active_capture"]["reported_percent"], value)
+
+    def test_windows_active_summary(self) -> None:
+        """Use only the typed summary preceding the extended snapshot."""
+        prefix = FULL + "\nFresh enumeration known=True; receiver count=1; first valid battery=83\n"
+        result = normalize(prefix + windows_report() + "\n" + MATRIX + "\nRX buffer[2]=dead")
+        self.assertEqual(result["active_capture"]["reported_percent"], 83)
+        self.assertIsNone(result["usb"]["percent"])
+        self.assertNotIn("dead", json.dumps(result))
+        text = windows_report() + "\n[Fresh APEX protocol matrix] NOT_RUN: worker timed out."
+        self.assertEqual(normalize(text)["active_capture"]["outcome"], "timeout")
+
+    def test_unrecognized_terminal_fields(self) -> None:
+        """Missing or duplicate terminal fields do not imply success."""
+        prefix = report() + "\n\nFresh bounded F7/05 trace:\n"
+        for detail in ("Verified battery: 83%", "Battery status: battery\nVerified battery: 83%",
+                       "Battery status: battery\nBattery status: battery\nVerified battery: 83%\nElapsed ms: 1"):
+            self.assertEqual(normalize(prefix + detail)["active_capture"]["outcome"], "unrecognized")
+
     def test_invalid_sources_and_framing(self) -> None:
         """Reject duplicate fields, contradictory levels and wrong sources."""
         base = windows_report()

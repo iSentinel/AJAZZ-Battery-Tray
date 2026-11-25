@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import sys
 
-from analyze_apple_diagnostics import HEADERS, MAX_SIZE, field, level, parse, utc
+from analyze_apple_diagnostics import HEADERS, MAX_SIZE, TRACE, field, level, parse, utc
 from compare_apex_reports import read_report
 
 WINDOWS = 'AJAZZ Battery Tray extended diagnostic report'
@@ -115,6 +115,98 @@ def parse_windows(text: str) -> dict:
             'identity_binding': 'NOT_VERIFIED', 'simultaneous': 'NOT_VERIFIED'}
 
 
+def capture(outcome: str, percent: int | None = None) -> dict:
+    """Represent reported capture status, never independently verified telemetry."""
+    return {'outcome': outcome, 'reported_percent': percent,
+            'independent_verification': 'NOT_VERIFIED'}
+
+
+def apple_capture(text: str, edition: str) -> dict:
+    """Read only bounded terminal fields; incomplete status takes precedence."""
+    _, marker, trace = text.partition(TRACE)
+    if not marker:
+        return capture('not_requested')
+    lines = trace.splitlines()
+    interrupted = any(line.startswith(('INCOMPLETE:', 'TIMEOUT:', 'FAIL:',
+                                        'Diagnostic outcome:', '[Output truncated]')) for line in lines)
+    if interrupted:
+        if any(line.startswith('INCOMPLETE: cancelled;') or
+               line == 'Diagnostic outcome: cancelled' for line in lines):
+            return capture('cancelled')
+        if any(line.startswith(('INCOMPLETE: timeout;', 'TIMEOUT:')) or
+               line == 'Diagnostic outcome: timeout' for line in lines):
+            return capture('timeout')
+        return capture('incomplete')
+    if edition == 'high-sierra':
+        return legacy_capture(lines)
+    return universal_capture(lines)
+
+
+def universal_capture(lines: list[str]) -> dict:
+    """Require one coherent rendered Universal terminal state and timing."""
+    states = [line.removeprefix('Battery status: ') for line in lines
+              if line.startswith('Battery status: ')]
+    values = [line.removeprefix('Verified battery: ') for line in lines
+              if line.startswith('Verified battery: ')]
+    if (not lines or not re.fullmatch(r'Elapsed ms: \d{1,10}', lines[-1])
+            or len(states) != 1):
+        return capture('unrecognized')
+    if states == ['battery'] and len(values) == 1:
+        value = level(values[0], 1)
+        if value is not None:
+            return capture('reported_valid', value)
+    if states[0] in ('unknown', 'absent', 'unsupported', 'unavailable') and not values:
+        return capture('inconclusive')
+    return capture('unrecognized')
+
+
+def legacy_capture(lines: list[str]) -> dict:
+    """Require a matching High Sierra process result and terminal battery."""
+    codes = [line.removeprefix('Diagnostic exit: ') for line in lines
+             if line.startswith('Diagnostic exit: ')]
+    values = [line.removeprefix('PASS: battery=') for line in lines
+              if line.startswith('PASS: battery=')]
+    if (len(codes) != 1 or not lines or
+            not re.fullmatch(r'Elapsed ms: \d{1,10}', lines[-1])):
+        return capture('unrecognized')
+    if codes == ['124']:
+        return capture('timeout')
+    if codes == ['125']:
+        return capture('cancelled')
+    if codes == ['0'] and len(values) == 1:
+        value = level(values[0], 1)
+        if value is not None:
+            return capture('reported_valid', value)
+    if codes == ['2'] and not values:
+        return capture('inconclusive')
+    return capture('unrecognized')
+
+
+def windows_capture(text: str) -> dict:
+    """Inspect only the reviewed fresh summary, never the vendor buffers."""
+    lines = text.splitlines()
+    if lines[0] != FULL:
+        if '[Fresh APEX protocol matrix] NOT_RUN: worker timed out.' in lines:
+            return capture('timeout')
+        if '[Fresh APEX protocol matrix] unavailable.' in lines:
+            return capture('incomplete')
+        return capture('not_reported')
+    prefix = lines[:lines.index(WINDOWS)]
+    matches = [line for line in prefix if line.startswith('Fresh enumeration known=')]
+    if len(matches) != 1:
+        return capture('unrecognized')
+    match = re.fullmatch(r'Fresh enumeration known=(True|False); receiver count=(\d{1,5}); first valid battery=(unavailable|\d{1,3})', matches[0])
+    if not match:
+        return capture('unrecognized')
+    known, count, battery = match.groups()
+    value = windows_level(battery, 1)
+    if value is None:
+        return capture('inconclusive')
+    if known == 'True' and int(count) > 0:
+        return capture('reported_valid', value)
+    return capture('unrecognized')
+
+
 def normalize(text: str) -> dict:
     """Dispatch by exact report title and emit a common evidence envelope."""
     text = text.replace('\r\n', '\n').rstrip('\n')
@@ -125,9 +217,12 @@ def normalize(text: str) -> dict:
         if len(text.encode('utf-8')) > MAX_SIZE:
             raise ValueError('Apple report exceeds size budget')
         result = parse(text)
+        active = apple_capture(text, result['edition'])
     else:
         result = parse_windows(text)
-    return {'format': 'device-diagnostics-summary-v1', **result}
+        active = windows_capture(text)
+    return {'format': 'device-diagnostics-summary-v1', **result,
+            'active_capture': active}
 
 
 def main(argv: list[str] | None = None) -> int:
