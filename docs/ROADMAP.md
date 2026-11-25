@@ -2153,3 +2153,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       immutable generation. Keep ordinary historical and cached
       policies, HID parser and alerts unchanged.
 - [ ] Native Windows and HA preview CI; release hold unchanged.
+
+### Bounded last-verified APEX display cache
+
+- [x] Introduce a session-only per-receiver presentation cache populated
+      exclusively from accepted ordinary USB measurements. Retain the
+      original timestamp and visibly label cached values after temporary
+      no-reply, at most five minutes from measurement. Clear on absence
+      or uncertain presence. Do not extend scheduled observations.
+      Fresh linked BLE outranks USB cache. Strict API projection,
+      diagnostic raw fields, history and alerts remain independent.
+      Nine C# regression assertions.
+- [ ] Native Windows CI and real-device loss/recovery acceptance.
+- [ ] Integrate after parent #260 passes; release hold unchanged.

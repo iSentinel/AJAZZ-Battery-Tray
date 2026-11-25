@@ -395,6 +395,40 @@ Check("APEX equal rank keeps preferred identity in either iteration order",
 Check("APEX equal rank without preferred candidate uses ordinal order",
     ApexDisplayPolicy.PreferCandidate("a", 2, true, false, "b", 2, "c") &&
     !ApexDisplayPolicy.PreferCandidate("b", 2, true, false, "a", 2, "c"));
+var apexCache = new ApexVerifiedDisplayCache();
+var noReplyView = ApexDisplayPolicy.Dashboard("Mouse", true, true, false, null,
+    scheduleMeasurement, scheduleMeasurement);
+Check("APEX display cache cannot invent an initial value",
+    apexCache.Present(noReplyView, scheduleMeasurement).Percent is null);
+apexCache.Observe(true, true, 68, scheduleMeasurement);
+apexCache.Observe(true, true, null, scheduleMeasurement.AddMinutes(1));
+var cachedView = apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(1));
+Check("APEX display cache retains verified percent and original timestamp",
+    cachedView is { Status: DeviceDashboardStatus.Cached, Percent: 68 } &&
+    cachedView.MeasuredAt == scheduleMeasurement);
+Check("APEX display cache leaves strict API observation unchanged",
+    LocalBatterySnapshot.Create(scheduleMeasurement.AddMinutes(1), new[] {
+        new LocalBatterySnapshot.Input(LocalBatterySource.ApexReceiver, 1, noReplyView)
+    }).Devices[0] is { BatteryPercent: null, LastKnownPercent: null });
+Check("APEX cache expires without renewal from failed observations",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(5)).Percent == 68 &&
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(5).AddTicks(1)).Percent is null &&
+    apexCache.Present(noReplyView, scheduleMeasurement.AddTicks(-1)).Percent is null);
+Check("APEX cache cannot extend an expired scheduled observation",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(4), scheduled: true).Percent is null);
+Check("APEX cache never replaces a fresh or scheduled observation",
+    apexCache.Present(receiverFresh, scheduleMeasurement) == receiverFresh &&
+    apexCache.Present(receiverScheduled, scheduleMeasurement) == receiverScheduled);
+apexCache.Observe(false, true, null, scheduleMeasurement.AddMinutes(2));
+Check("APEX unknown presence clears display cache",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(2)).Percent is null);
+apexCache.Observe(true, true, 67, scheduleMeasurement.AddMinutes(2));
+apexCache.Observe(true, false, null, scheduleMeasurement.AddMinutes(3));
+Check("APEX disconnect clears display cache",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(3)).Percent is null);
+Check("APEX linked cache remains subordinate to fresh BLE",
+    TransportLinks.Select(null, 62, null, null, 67) is { Bluetooth: true, Cached: false, Percent: 62 } &&
+    TransportLinks.Select(null, null, null, null, 67) is { Bluetooth: false, Cached: true, Percent: 67 });
 Check("APEX expired USB allows linked fresh BLE selection",
     TransportLinks.Select(ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
         scheduleMeasurement, scheduleMeasurement.AddMinutes(6)).Percent, 77, null) is

@@ -17,6 +17,7 @@ internal sealed class ReceiverMonitor : IDisposable
         internal AlertPolicy Alerts { get; } = new();
         internal ConnectionAlertPolicy Connection { get; } = new();
         internal UnverifiedObservationStreak UnverifiedStreak { get; } = new();
+        internal ApexVerifiedDisplayCache VerifiedDisplay { get; } = new();
         internal AjazzHidReader.Reading Reading { get; set; }
         internal bool Present { get; set; } = true;
         internal DateTimeOffset? MeasuredAt { get; set; }
@@ -59,7 +60,7 @@ internal sealed class ReceiverMonitor : IDisposable
         {
             bool excluded = hidden.Contains(state.Key);
             int rank = multiple || !state.Present || excluded
-                ? 0 : ApexDisplayPolicy.SelectionRank(Dashboard(state, now));
+                ? 0 : PresentationRank(state, now);
             if (ApexDisplayPolicy.PreferCandidate(state.Key, rank, state.Present,
                 excluded, best?.Key, bestRank, preferred))
             {
@@ -68,6 +69,13 @@ internal sealed class ReceiverMonitor : IDisposable
             }
         }
         return best;
+    }
+
+    private static int PresentationRank(State state, DateTimeOffset now)
+    {
+        var display = Presentation(state, now);
+        return display.Status == DeviceDashboardStatus.Cached
+            ? 1 : ApexDisplayPolicy.SelectionRank(display) * 2;
     }
 
     internal void Apply(AjazzHidReader.Batch batch, AppSettings settings,
@@ -94,6 +102,8 @@ internal sealed class ReceiverMonitor : IDisposable
                 state.Reading = item.Reading;
                 state.MeasuredAt = item.MeasuredAt ?? now;
                 state.UnverifiedStreak.Observe(item.Reading.UnverifiedPercent, state.MeasuredAt.Value);
+                state.VerifiedDisplay.Observe(item.Reading.PresenceKnown, item.Reading.ReceiverPresent,
+                    item.Reading.Percent, state.MeasuredAt.Value);
                 if (item.Reading.Percent.HasValue) state.LastVerifiedAt = state.MeasuredAt;
                 Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
             }
@@ -106,6 +116,7 @@ internal sealed class ReceiverMonitor : IDisposable
                 missing.ScheduledSkip = false;
                 missing.MeasuredAt = null;
                 missing.UnverifiedStreak.Reset();
+                missing.VerifiedDisplay.Reset();
                 Record(missing, settings, notifier,
                     bluetoothEnabled && batch.Receivers.Count == 0, now);
             }
@@ -136,6 +147,7 @@ internal sealed class ReceiverMonitor : IDisposable
             // A missing/unknown/missing sequence is not two consecutive absences.
             state.Connection.ObserveUnknown();
             state.UnverifiedStreak.Reset();
+            state.VerifiedDisplay.Reset();
             if (!state.Present) continue;
             state.Reading = issue is UsbReadIssue.Busy or UsbReadIssue.Timeout
                 ? UnknownReading with { Issue = issue } : UnknownReading;
@@ -199,6 +211,9 @@ internal sealed class ReceiverMonitor : IDisposable
         => ApexDisplayPolicy.Dashboard(state.DisplayLabel, state.Reading.PresenceKnown,
             state.Present, state.ScheduledSkip, state.Reading.Percent, state.MeasuredAt, now);
 
+    internal static DeviceDashboardState Presentation(State state, DateTimeOffset now)
+        => state.VerifiedDisplay.Present(Dashboard(state, now), now, state.ScheduledSkip);
+
     internal static int? Unverified(State state, DateTimeOffset now)
         => ApexDisplayPolicy.Unverified(state.Reading.PresenceKnown, state.Present,
             state.ScheduledSkip, state.Reading.UnverifiedPercent, state.MeasuredAt, now);
@@ -208,9 +223,9 @@ internal sealed class ReceiverMonitor : IDisposable
 
     private static string Status(State state, DateTimeOffset now)
     {
-        var display = Dashboard(state, now);
+        var display = Presentation(state, now);
         if (display.Percent is int level)
-            return display.Status == DeviceDashboardStatus.Scheduled
+            return display.Status is DeviceDashboardStatus.Scheduled or DeviceDashboardStatus.Cached
                 ? display.MenuStatus() : $"{level}%";
         if (Unverified(state, now) is int raw) return UsbTrayStatus.UnverifiedField(raw);
         return UsbTrayStatus.WithLastVerified(
@@ -288,9 +303,10 @@ internal sealed class ReceiverMonitor : IDisposable
                 if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
                 var now = DateTimeOffset.UtcNow;
-                var display = Dashboard(pair.Value, now);
+                var display = Presentation(pair.Value, now);
                 int? raw = display.Percent.HasValue ? null : Unverified(pair.Value, now);
                 SetIcon(pair.Key, pair.Value.DisplayLabel, display.Percent ?? raw, menu, refresh,
+                    stale: display.Status == DeviceDashboardStatus.Cached,
                     color: color(pair.Key), status: display.Status == DeviceDashboardStatus.Fresh ? null : Status(pair.Value, now),
                     mouseStyle: mouseStyle, unverified: raw.HasValue);
             }

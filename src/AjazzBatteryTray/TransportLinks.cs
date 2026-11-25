@@ -33,12 +33,13 @@ public static class TransportLinks
     public sealed record Display(int? Percent, bool Cached, bool Bluetooth);
 
     /// <summary>Choose a source without treating either transport's raw field as telemetry.</summary>
-    public static Display Select(int? usb, int? ble, int? cached, int? scheduledUsb = null)
+    public static Display Select(int? usb, int? ble, int? cached, int? scheduledUsb = null, int? cachedUsb = null)
     {
         if (usb is >= 1 and <= 100) return new(usb, false, false);
         if (ble is >= 0 and <= 100) return new(ble, false, true);
         if (scheduledUsb is >= 1 and <= 100) return new(scheduledUsb, true, false);
         if (cached is >= 0 and <= 100) return new(cached, true, true);
+        if (cachedUsb is >= 1 and <= 100) return new(cachedUsb, true, false);
         return new(null, false, false);
     }
 }

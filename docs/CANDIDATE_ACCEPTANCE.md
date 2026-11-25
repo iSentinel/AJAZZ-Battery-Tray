@@ -706,3 +706,19 @@ then the first receiver. This changes presentation/summary selection,
 not HID requests, alerts, history, or per-receiver polling.
 Test with two physical receivers and unequal intervals, then disconnect
 or hide the fresh receiver and verify the remaining display.
+
+## APEX verified display-only cache
+
+For a continuously detected receiver, obtain a verified ordinary
+measurement. When an ordinary poll yields no validated charge,
+the tray and dashboard may show the prior verified value marked
+cached, with the original measurement timestamp in the dashboard.
+The cache expires five minutes after the original measurement,
+not five minutes after a failed poll. Confirm that unplugging or
+unknown enumeration clears the cache; a new unverified observation
+cannot seed it. A skipped poll cannot extend the three-minute
+scheduled limit. Fresh linked BLE remains preferred to USB cache.
+Verify that failed polls do not append cached percentages to history,
+trigger battery-level alerts, or expose cached numbers as API data.
+A subsequent verified measurement replaces the cache. This is a
+presentation mitigation, not evidence of a new hardware measurement.
