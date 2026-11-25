@@ -1,3 +1,18 @@
+# Resume — SBOM with exact artifact roundtrip
+
+#167 merged e00b229 after exact-head 3/3 CI PASS. #164 prior native
+checks passed but artifact roundtrip failed; both roadmap histories
+retained. Requalify the joined head. No release admission.
+
+# Resume — exact CI artifact identities
+
+Base 5d965ce. #164 and #166 had synthetic artifact-roundtrip failures
+(only one downloaded, digest matched). New bounded REST visibility gate
+requires both exact IDs/digests before pinned action and original byte
+checks. Local mock delayed/missing/wrong-digest and source checks PASS.
+#166 scalar path bug corrected separately at 89acdb4, native CI pending.
+Release hold unchanged.
+
 # Resume — combined notice and scoped SBOM candidate
 
 #163 merged 5d965ce, #164 exact 40af0e4 CI 4/4 PASS. Resolve

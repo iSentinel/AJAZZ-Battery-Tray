@@ -1071,6 +1071,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       portable notice inclusion, signature trust and SBOM/advisory evidence.
       Release hold unchanged.
 
+### ENG-06 bounded exact-ID CI artifact visibility
+
+- [x] Diagnose recurrent missing synthetic artifact from actual logs.
+- [x] Require exact upload IDs/digests and bounded REST visibility before
+      pinned download, preserving both file comparisons and digest failure.
+- [ ] Hosted exact-head roundtrip and integration acceptance.
+
 ### ENG-12 scoped Windows CycloneDX inventory
 
 - [x] Verify pinned packs and scoped host reconstruction before BOM generation.

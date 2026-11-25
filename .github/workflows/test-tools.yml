@@ -29,6 +29,11 @@ jobs:
   python:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      a-id: ${{ steps.upload-a.outputs.artifact-id }}
+      b-id: ${{ steps.upload-b.outputs.artifact-id }}
+      a-digest: ${{ steps.upload-a.outputs.artifact-digest }}
+      b-digest: ${{ steps.upload-b.outputs.artifact-digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -52,6 +57,7 @@ jobs:
           printf '%s\n' 'ajazz-synthetic-a' > "$RUNNER_TEMP/ajazz-ci-roundtrip/a.txt"
           printf '%s\n' 'ajazz-synthetic-b' > "$RUNNER_TEMP/ajazz-ci-roundtrip/b.txt"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: upload-a
         with:
           archive: true
           name: ci-roundtrip-a
@@ -59,6 +65,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: upload-b
         with:
           archive: true
           name: ci-roundtrip-b
@@ -70,11 +77,44 @@ jobs:
     needs: python
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     steps:
+      - name: Wait for both exact uploaded artifacts in REST listing
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          A_ID: ${{ needs.python.outputs.a-id }}
+          B_ID: ${{ needs.python.outputs.b-id }}
+          A_DIGEST: ${{ needs.python.outputs.a-digest }}
+          B_DIGEST: ${{ needs.python.outputs.b-digest }}
+        run: |
+          set -euo pipefail
+          [[ "$A_ID" =~ ^[1-9][0-9]*$ && "$B_ID" =~ ^[1-9][0-9]*$ && "$A_ID" != "$B_ID" ]]
+          [[ "$A_DIGEST" =~ ^[a-f0-9]{64}$ && "$B_DIGEST" =~ ^[a-f0-9]{64}$ ]]
+          # Only missing metadata may be retried. Wrong identity/digest is fatal.
+          for attempt in {1..12}; do
+            listing="$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100")"
+            for suffix in a b; do
+              if [[ "$suffix" == a ]]; then id="$A_ID"; digest="$A_DIGEST"; else id="$B_ID"; digest="$B_DIGEST"; fi
+              count="$(jq --arg id "$id" '[.artifacts[] | select((.id | tostring) == $id)] | length' <<< "$listing")"
+              if [[ "$count" == 0 ]]; then continue; fi
+              [[ "$count" == 1 ]]
+              jq -e --arg id "$id" --arg name "ci-roundtrip-$suffix" --arg digest "sha256:$digest" '.artifacts[] | select((.id | tostring) == $id) | .name == $name and .digest == $digest and .expired == false' <<< "$listing" >/dev/null
+            done
+            if jq -e --arg a "$A_ID" --arg b "$B_ID" '([.artifacts[].id | tostring] | index($a) != null and index($b) != null)' <<< "$listing" >/dev/null; then
+              echo 'PASS: exact uploaded artifact identities and digests visible'
+              break
+            fi
+            if [[ "$attempt" == 12 ]]; then echo 'Missing expected artifact metadata'; exit 1; fi
+            sleep 5
+          done
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           digest-mismatch: error
-          pattern: ci-roundtrip-*
+          github-token: ${{ github.token }}
+          artifact-ids: ${{ needs.python.outputs.a-id }},${{ needs.python.outputs.b-id }}
           merge-multiple: true
           path: ${{ runner.temp }}/ajazz-ci-roundtrip-download
       - name: Verify synthetic artifact roundtrip
