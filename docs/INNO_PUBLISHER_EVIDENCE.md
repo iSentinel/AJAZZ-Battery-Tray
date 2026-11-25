@@ -46,3 +46,23 @@ References:
 - https://github.com/jrsoftware/issrc/releases/tag/is-6_7_1
 - https://cli.github.com/manual/gh_release_verify-asset
 - https://learn.microsoft.com/powershell/module/microsoft.powershell.security/get-authenticodesignature
+
+## Native CI result — 2026-11-25
+
+PR #220 exact head df95dab6dee7bb049f50ce93898ca86597cd2f2d,
+run 45596849671, job 139145066333: PASS. Evidence artifact 15013306813,
+ZIP SHA-256 3e74914c736f544708cf602902e21fc0d969472503c4427b04e6af03c5611e9a
+matches REST digest; exactly authenticode.json and release-attestation.json.
+
+Native Authenticode Valid, embedded Authenticode, publisher Pyrsys B.V.,
+issuer Sectigo Public Code Signing CA R36, signer certificate SHA-256
+4efd84e6f1091b19321231743b9aa86482effd6d0bea9f7a44db6211154616f3.
+Timestamp certificate present, SHA-256
+a1275b9c448e09844a9c729d623ae5718d84733e0477b86a451895c5fe909ead.
+GitHub release verification succeeded; verified identity
+https://dotcom.releases.github.com, Fulcio Intermediate l1,
+timestamp 2026-02-17T11:31:00Z. Verified statement names repository
+jrsoftware/issrc, tag is-6_7_1 and both exact EXE and ISSig hashes
+listed above. This is upstream release asset trust evidence on
+the hosted runner, not an independent reproduction of the compiler
+or trust/signature admission for the AJAZZ candidate.

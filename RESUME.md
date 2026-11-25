@@ -1,3 +1,10 @@
+# Resume — native upstream publisher evidence
+
+#220 merged fc81aaa into parent after 5/5 CI. Verified exact native
+publisher evidence artifact digest and reviewed Authenticode and
+attestation JSON. Licensing, distribution notice coverage and physical
+acceptance remain open. Release hold.
+
 # Resume — independent Inno publisher evidence
 
 Stacked on #219. #218 merged 4a38184 (5/5). Vendor HTTPS key

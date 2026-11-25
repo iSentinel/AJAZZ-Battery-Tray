@@ -1698,3 +1698,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add separate read-only hosted Authenticode/attestation test.
 - [ ] Hosted exact-head publisher evidence, integration, remaining
       licensing, advisories and physical acceptance. Release hold.
+
+### Native upstream publisher evidence
+
+- [x] #220 merged fc81aaa into parent after exact 5/5 CI.
+- [x] Retrieve exact native publisher evidence archive by artifact ID;
+      SHA-256 matches REST, review Authenticode and attestation JSON.
+- [ ] Integrate and continue distribution notice coverage, transitive
+      licensing, remaining advisory scope and physical acceptance.
+      Release hold.
