@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'tools/**'
+      - '.github/workflows/release-*.yml'
       - 'tests/fixtures/**'
       - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/test-tools.yml'
   pull_request:
     paths:
       - 'tools/**'
+      - '.github/workflows/release-*.yml'
       - 'tests/fixtures/**'
       - 'macos/AjazzBatteryReport.h'
       - '.github/workflows/test-tools.yml'
@@ -22,6 +24,7 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,3 +41,15 @@ jobs:
           python tools/compare_windows_hid_logs.py --help
           python tools/compare_get_ids.py --help
           python tools/compare_ready_clear.py --help
+          python tools/code_audit.py --help
+      - name: Inventory Python engineering debt (not qualification)
+        run: |
+          mkdir -p artifacts
+          python tools/code_audit.py --inventory > artifacts/code-audit.json
+      - name: Preserve source-only audit inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-audit-inventory
+          path: artifacts/code-audit.json
+          if-no-files-found: error

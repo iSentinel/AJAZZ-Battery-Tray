@@ -1,3 +1,16 @@
+# Resume — portable engineering policy adoption
+
+Source: c416b3f / tree 101f0ce13fdac2d3c0f08a4fd1bab04bb44945df.
+Stage: ENG-01/02 initial audit, adapted standards and release safety hold.
+Actual baseline: #99 six CI PASS; Python 3.13.5 unittest 97 PASS.
+Changes: AGENTS, standard/audit, architecture, security, roadmap pointer;
+release workflows fail closed; no existing releases or settings changed.
+Candidate CI pending. No release, production change or hardware fault approved.
+ENG-03 source-only audit, exact comparator and release-hold tests added.
+Inventory-only CI until exact baseline review; no claim of debt gate PASS.
+Next: review baseline and activate exact no-new-debt gate, then ENG-04. Native tooling via hosted CI only.
+Owner 99 appeared without power cycle; ready-clear not verified telemetry.
+
 # Resume — ordinary unverified observation streak
 
 - #135 all three CI PASS (97 Python tests), merged 99a271a.
