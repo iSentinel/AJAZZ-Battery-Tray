@@ -1,3 +1,14 @@
+# Resume — scoped native host verification
+
+#153 merged c15cb7e after macOS artifact DNS retry succeeded, 4/4 checks,
+identical tree 5577d97. #154 original 397e1da local QA 152/152 PASS;
+actual pinned Host pack and both #147 EXEs scoped CLI PASS: six raw
+sections, exact SDK .data patches (67/65 changes, zero unexpected),
+correct subsystem. Resources unresolved, headers partial, signatures
+not verified. Join integrated parent and require new exact CI. Next
+resource/header review and license/signature/advisory evidence.
+No release or hardware acceptance claim.
+
 # Resume — expanded managed runtime provenance
 
 #151 unified diagnostics merged f1e1ec3 (916 C# checks; integrated 7/7 CI).
