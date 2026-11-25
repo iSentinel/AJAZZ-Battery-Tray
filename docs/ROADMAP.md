@@ -1110,3 +1110,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Inventory seven files per app and verify reviewed Mach-O architecture layout.
 - [ ] Hosted QA, load-command deployment and framework inventory, signing and
       distribution SBOM, physical High Sierra acceptance. Release hold unchanged.
+
+### ENG-12 direct Apple Mach-O deployment and libraries
+
+- [x] Decode real reviewed Universal and High Sierra deployment commands;
+      both match plist target, SDK 15.5.0, Universal linker 1167.5.0.
+- [x] Verify direct library identities/linkage: 24 per Universal slice,
+      seven High Sierra; verify both historical archives with final CLI.
+- [ ] Hosted QA, symbol availability and transitive dependency review,
+      resource seal/signatures, native High Sierra and distribution SBOM.
+      Release hold unchanged.
