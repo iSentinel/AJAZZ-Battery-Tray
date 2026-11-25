@@ -160,6 +160,12 @@ Check("Typed F7 observation excludes keyboard-only and unrecognized frames",
         { Gate: F7MouseGate.KeyboardOnly, ReportedField: null, VerifiedPercent: null, UnverifiedPercent: null } &&
     BatteryReportParser.ObserveSharedF7(new byte[] { 5, 0, 0, 50 }) is null &&
     BatteryReportParser.ObserveSharedF7(new byte[10]) is null);
+Check("F7 ordinary diagnostic reason contains no reported field",
+    BatteryReportParser.DiagnosticF7Gate(BatteryReportParser.ObserveSharedF7(f7Unreadable)) ==
+        "F7 policy gate: ReadUnavailable" &&
+    BatteryReportParser.DiagnosticF7Gate(BatteryReportParser.ObserveSharedF7(syntheticGatedMouse)) ==
+        "F7 policy gate: Accepted" &&
+    BatteryReportParser.DiagnosticF7Gate(null) == "F7 policy gate: Unrecognized");
 // Exhaustively replay a synthetic grid against the previous admission predicates.
 bool f7PolicyParity = true;
 int f7PolicyCases = 0;

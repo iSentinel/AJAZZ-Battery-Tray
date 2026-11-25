@@ -1,3 +1,12 @@
+# Resume — typed F7 ordinary poll diagnostics
+
+#262 exact corrected head 044c3a9 five workflow PASS, including
+4374 native F7 parity combinations, merged 842d44d. #263 exact
+5/5 including both Apple editions merged 1edcedf. Consume typed
+observation in Windows ordinary poll and add privacy-safe gate
+label, no raw-field promotion or HID changes. Native CI pending.
+Physical acceptance and release hold unchanged.
+
 # Resume — Apple F7 observation parity
 
 #262 corrected head 044c3a9 after initial CS0136 in test matrix;

@@ -277,9 +277,11 @@ public sealed class AjazzHidReader
             return null;
         }
 
-        int? percent = BatteryReportParser.ParseWindowsFeature(response);
+        var observation = BatteryReportParser.ObserveSharedF7(response);
+        int? percent = observation is { } shared ? shared.VerifiedPercent :
+            BatteryReportParser.ParseWindowsFeature(response);
         if (!comparison && reportId == 0x05 && percent is null)
-            candidate = BatteryReportParser.UnverifiedMouseField(response);
+            candidate = observation?.UnverifiedPercent;
         if (comparison)
         {
             string observed = $"OBSERVED: request={getId} returned={response[0]:X2} " +
@@ -291,6 +293,8 @@ public sealed class AjazzHidReader
             $"header={DiagnosticHidIdentity.BatteryHeader(response)}; " +
             (comparison ? "experimental observation only" :
                 percent.HasValue ? $"battery={percent}%" : "no valid battery"));
+        if (!comparison)
+            attempts.Add("  " + BatteryReportParser.DiagnosticF7Gate(observation));
         if (captureProtocol)
         {
             attempts.Add(redactRaw ?

@@ -722,3 +722,15 @@ Verify that failed polls do not append cached percentages to history,
 trigger battery-level alerts, or expose cached numbers as API data.
 A subsequent verified measurement replaces the cache. This is a
 presentation mitigation, not evidence of a new hardware measurement.
+
+## Ordinary Windows F7 policy reasons
+
+A successful ordinary HID transfer now includes a typed
+`F7 policy gate:` diagnostic line, even without active protocol
+capture. This is the existing parser's ordered classification, not
+a verified device power or sleep state. Unrecognized means the
+shared F7 format was not identified, not necessarily that the legacy
+parser rejected the response. Transfer failures do not fabricate
+a classification, and experimental GET comparisons do not publish
+ordinary gate lines. Existing charge acceptance, diagnostic fields
+and telemetry policy remain unchanged.
