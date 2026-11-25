@@ -1639,3 +1639,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI/integration, independently review IFPS bytecode and
       remaining setup header records, solid stream, licensing/trust,
       physical acceptance. Release hold.
+
+### Independent solid LZMA2 stream
+
+- [x] Decode the exact #206 solid chunk, reverse per-file call
+      transformation in 64 KiB blocks, match all five SHA-256 hashes.
+- [x] Check exact EOS and no suffix; three regression tests and CLI gate.
+- [ ] Hosted CI/integration; IFPS semantics and setup header entries,
+      licensing, independent trust and hardware acceptance. Release hold.
