@@ -107,6 +107,16 @@ jobs:
             if ((Get-FileHash $settings).Hash -ne $settingsHash -or (Get-FileHash $history).Hash -ne $historyHash) {
               throw 'Upgrade changed user data'
             }
+            foreach ($case in @(
+              @{ Argument = '--self-test-full-hid-watchdog'; Expected = 124 },
+              @{ Argument = '--self-test-full-hid-start-gate'; Expected = 0 },
+              @{ Argument = '--self-test-full-hid-parent-exit'; Expected = 0 }
+            )) {
+              $p = Start-Process -FilePath $installed -ArgumentList $case.Argument -PassThru
+              if (-not $p.WaitForExit(30000)) { $p.Kill($true); throw "Installed synthetic worker test hung" }
+              if ($p.ExitCode -ne $case.Expected) { throw "Installed synthetic worker test failed: $($case.Argument)" }
+            }
+            Write-Host 'PASS: installed synthetic full HID worker lifecycle; no device I/O'
             $p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
             if ($p.ExitCode -ne 0 -or (Test-Path $installed) -or (Test-Path $key)) { throw 'Uninstall failed' }
             if ((Get-FileHash $settings).Hash -ne $settingsHash -or (Get-FileHash $history).Hash -ne $historyHash) { throw 'Uninstall changed user data' }

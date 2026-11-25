@@ -253,6 +253,17 @@ jobs:
           $p = Start-Process -FilePath $exe -ArgumentList '--self-test-full-hid-watchdog' -PassThru
           if (-not $p.WaitForExit(15000)) { $p.Kill($true); throw 'Capture worker hung' }
           if ($p.ExitCode -ne 124 -or $timer.Elapsed.TotalSeconds -lt 1) { throw 'Expected a bounded timeout' }
+      - name: Verify full HID worker start gate and forced parent exit
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          foreach ($argument in @('--self-test-full-hid-start-gate', '--self-test-full-hid-parent-exit')) {
+            $p = Start-Process -FilePath $exe -ArgumentList $argument -PassThru
+            if (-not $p.WaitForExit(30000)) { $p.Kill($true); throw "Test hung: $argument" }
+            if ($p.ExitCode -ne 0) { throw "Test failed: $argument ($($p.ExitCode))" }
+          }
+          echo 'PASS: no start without token and forced parent exit reaps synthetic child'
       - name: Validate owner HID acceptance helper
         shell: pwsh
         run: |

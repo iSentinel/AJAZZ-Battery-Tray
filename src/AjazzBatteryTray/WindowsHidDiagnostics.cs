@@ -18,6 +18,10 @@ internal static class WindowsHidDiagnostics
             return FullHidCapture.RunWorker(args[0]);
         if (args.Length == 1 && args[0] == "--self-test-full-hid-watchdog")
             return FullHidCapture.SelfTest();
+        if (args.Length == 1 && args[0] == "--self-test-full-hid-parent-exit")
+            return FullHidCapture.SelfTestParentExit();
+        if (args.Length == 1 && args[0] == "--self-test-full-hid-start-gate")
+            return FullHidCapture.SelfTestStartGate();
         if (args.Length == 2 && args[0] == "--hid-diag-worker")
             return Capture(args[1], false);
         if (args.Length == 2 && args[0] == "--hid-compare-worker")
