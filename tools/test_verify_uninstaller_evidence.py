@@ -9,7 +9,8 @@ from verify_installer_candidate import digest
 from verify_uninstaller_evidence import EXE, MANIFEST, verify_pair
 
 
-def evidence(changes=None, exe=None, extra=None):
+def evidence(changes: dict | None = None, exe: bytes | None = None,
+             extra: str | None = None) -> bytes:
     """Build a synthetic CI uninstaller archive without executable code."""
     exe = bootstrap() if exe is None else exe
     data = {'schema': 'installer-uninstaller-v1', 'source_sha': SOURCE,
@@ -31,26 +32,26 @@ def evidence(changes=None, exe=None, extra=None):
 class UninstallerEvidenceTests(unittest.TestCase):
     """Ensure artifact integrity is not mistaken for attribution."""
 
-    def verify(self, raw, candidate=None):
+    def verify(self, raw: bytes, candidate: bytes | None = None) -> dict:
         """Use exact synthetic digests and source."""
         candidate = artifact() if candidate is None else candidate
         return verify_pair(raw, digest(raw), candidate, digest(candidate), SOURCE)
 
-    def test_scope(self):
+    def test_scope(self) -> None:
         """Record baseline equality without granting release admission."""
         result = self.verify(evidence({'baseline_uninstaller_sha256': digest(bootstrap())}))
         self.assertTrue(result['same_as_reported_baseline'])
         self.assertEqual(result['engine_attribution'], 'NOT_VERIFIED')
         self.assertEqual(result['release_admission'], 'NOT_VERIFIED')
 
-    def test_cross_artifact_binding(self):
+    def test_cross_artifact_binding(self) -> None:
         """Reject different checkout or candidate binary hashes."""
         for change in ({'source_sha': 'd' * 40}, {'setup_sha256': 'd' * 64},
                        {'app_sha256': 'd' * 64}, {'version': '0.3.0-beta.62'}):
             with self.assertRaises(ValueError):
                 self.verify(evidence(change))
 
-    def test_invalid_scope_and_bytes(self):
+    def test_invalid_scope_and_bytes(self) -> None:
         """Reject false acceptance, mismatched hashes, size or extra members."""
         for change in ({'uninstall_smoke': 'FAIL'}, {'engine_attribution': 'PASS'},
                        {'uninstaller_bytes': True}, {'uninstaller_bytes': 1},
@@ -61,7 +62,7 @@ class UninstallerEvidenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.verify(raw)
 
-    def test_archive_hashes(self):
+    def test_archive_hashes(self) -> None:
         """Require independent digests for both archives."""
         raw, candidate = evidence(), artifact()
         for sha, candidate_sha in (('0' * 64, digest(candidate)),
