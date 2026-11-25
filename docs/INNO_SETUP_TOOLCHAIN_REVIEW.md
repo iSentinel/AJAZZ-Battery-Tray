@@ -459,3 +459,37 @@ actual #245 local replay remains identical. Two metadata regressions
 and release hold tests pass. This is candidate metadata alignment,
 not migration authorization or release admission. The compiler wrapper
 and shipping notice selection remain unchanged. Native rerun required.
+
+## Native version-default result and interactive acceptance contract
+
+PR #246 exact head ec9cab99d9adbc998ab8da62a297f04b3cbebe28,
+hosted checkout f7f205916b27236915e1a39ff4eff73edbd576f5,
+run 45651530471, job 139337021109, 7/7 checks PASS.
+Merged into draft #99 at d68b7e0 after tested tree comparison.
+Eight native archive digests matched REST; joined artifact 15040162254
+ZIP SHA-256 25b7d5d21b275ba33967ae57f68dd149a44e985022bce99607c9533c28beb419.
+All thirteen documents replayed; hosted JSON SHA-256
+d5aa2fdaa74b66ae5aa3f4f0902402b31c4566234e8000604550382d54b2a123.
+Output differs only by CRLF/LF. Setup SHA-256
+26b9962aa8d477ee638e1a12628e0c7636b4eaaba41ca5fb8508056694f214dd;
+app SHA-256 6e04c353170256f6c0f80957a0eb07d6f6ffddf9329a0b2186cd7b7f5f83003d.
+Default beta.61 metadata, normal installer name, Program Files silent
+install, upgrade/repair/removal and scoped attribution PASS.
+Exact BOM SHA-256
+c930862be92aac95b09b84a98fa55756245531114a08a2245e3d4badcb7f9b5d;
+independent schema evidence
+3fa992bc4272cf6ff27b67e45511ecfbc387741a2b5cf78a4c7fecabac8fbe9d.
+Dated NuGet and OSV replay: no scoped matches, evidence SHA-256
+4aa7cd0be40af48c6bf25c95fe5dde3c241302d357fba1939b2fcba54f32feb3
+and 87d94e69117ffc8a9cda598017ceb9241884c99145fcb9f95c94d60f626015cb.
+No fresh advisory acquisition or full compliance clearance.
+
+The local interactive checklist tool binds the raw native evidence
+digest, source commit, setup and application hashes. Actual #246
+blank checklist reviewed: six NOT_RUN, zero PASS. Reject missing
+cases, different candidate identity, missing OS build/observations
+and malformed data. Even complete self-reported observations do not
+authenticate interactive acceptance or authorize release.
+The CI retained JSON only for the 6.7.4 setup; the exact setup binary
+is not currently available for owner testing from this run. A new
+build must be separately qualified and bound to its own checklist.

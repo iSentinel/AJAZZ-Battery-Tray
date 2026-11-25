@@ -1992,3 +1992,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native version-default qualification and integration.
 - [ ] Actual compiler/notice selection, distribution terms, trusted
       signing, interactive and physical acceptance. Release hold.
+
+### Native version-default and interactive checklist
+
+- [x] #246 exact 7/7 CI, eight archives and thirteen documents verified,
+      exact BOM independent schema and dated advisory replay;
+      merged d68b7e0 into draft #99.
+- [x] Local exact candidate-bound RG01–RG06 checklist and validator,
+      three regressions; actual #246 blank checklist six NOT_RUN.
+- [ ] Hosted validation of checklist tool; arrange exact qualified
+      candidate binaries for owner testing after distribution review.
+- [ ] Interactive, hardware, signing, licensing and production
+      compiler/notice selection remain open. Release hold.

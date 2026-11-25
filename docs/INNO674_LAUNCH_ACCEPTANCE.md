@@ -56,3 +56,30 @@ No real hardware or real-user migration is inferred from these cases.
 - Record real interactive acceptance independently of hosted silent CI.
 
 Source: https://github.com/jrsoftware/issrc/compare/cfdf48923178df4b4f040e038b423aa555a61ffc...c2913c993858a781fcb455bac8b8949c1c366cb8
+
+## Local checklist validation
+
+Use the exact joined native qualification JSON, not an unrelated
+portable build or a historical installer. Generate a local checklist:
+
+```sh
+python3 tools/verify_interactive_acceptance.py --candidate migration-evidence.json --output interactive-checklist.json
+```
+
+The generated RG01–RG06 rows are all NOT_RUN. Only after verifying
+the actual setup and app SHA-256, record the actual numeric OS build,
+status and brief redacted observation per tested case. Follow the
+matrix above, not the presence of the form. RG05 hosted silent testing
+does not substitute for RG01–RG04 or RG06. Keep the notes private;
+do not include user names, device paths, serials or credentials.
+Use a private local directory; the tool does not upload any input.
+
+```sh
+python3 tools/verify_interactive_acceptance.py --candidate migration-evidence.json --checklist interactive-checklist.json --output interactive-review.json
+```
+
+Exit 0 means the record structure and candidate identity are valid,
+not that cases passed. The summary omits observation text and always
+retains independent acceptance and release admission as unverified.
+The exact #246 setup is not available for download from its JSON-only
+qualification run. Do not substitute another binary or invent results.
