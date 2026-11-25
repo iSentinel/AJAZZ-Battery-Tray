@@ -40,7 +40,9 @@ jobs:
         with:
           python-version: '3.12.16'
       - name: Run provider-independent offline QA
-        run: python tools/run_offline_qa.py
+        run: |
+          openssl version
+          python tools/run_offline_qa.py
       - name: Preserve sanitized required QA evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
