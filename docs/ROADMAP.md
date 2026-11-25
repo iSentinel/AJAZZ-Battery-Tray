@@ -1070,3 +1070,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Resolve exact redistribution coverage, downstream terms, installer and
       portable notice inclusion, signature trust and SBOM/advisory evidence.
       Release hold unchanged.
+
+### ENG-06 bounded exact-ID CI artifact visibility
+
+- [x] Diagnose recurrent missing synthetic artifact from actual logs.
+- [x] Require exact upload IDs/digests and bounded REST visibility before
+      pinned download, preserving both file comparisons and digest failure.
+- [ ] Hosted exact-head roundtrip and integration acceptance.
