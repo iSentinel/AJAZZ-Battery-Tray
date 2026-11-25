@@ -1,3 +1,12 @@
+# Resume — bounded last-verified APEX display cache
+
+#260 preview passed; remaining native CI pending at initial review.
+Child change retains only last verified ordinary USB percentage
+in a per-receiver session display cache, five-minute original-age
+limit, clear on absence or unknown presence, no scheduled extension.
+Nine C# assertions. Strict API/history/alerts and parser unchanged.
+Native CI and physical acceptance pending. Release hold unchanged.
+
 # Resume — scheduled snapshot retention consistency
 
 #259 exact 5/5 CI PASS, merged b39ebd4 after tested-tree equality.

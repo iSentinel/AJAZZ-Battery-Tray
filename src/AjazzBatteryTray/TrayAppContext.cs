@@ -325,7 +325,7 @@ public sealed class TrayAppContext : ApplicationContext
         foreach (var receiver in _receivers.Devices)
         {
             var now = DateTimeOffset.UtcNow;
-            var item = ReceiverMonitor.Dashboard(receiver, now);
+            var item = ReceiverMonitor.Presentation(receiver, now);
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
                 () => ToggleTrayVisibility(receiver.Key),
@@ -1953,14 +1953,16 @@ public sealed class TrayAppContext : ApplicationContext
         int? aulaLevel = aulaState.Percent;
         bool aulaStale = aulaState.Status == DeviceDashboardStatus.Cached;
         var usbDisplay = receiver is not null && reading.PresenceKnown
-            ? ReceiverMonitor.Dashboard(receiver, usbNow) : null;
+            ? ReceiverMonitor.Presentation(receiver, usbNow) : null;
         int? usbPercent = usbDisplay?.Percent;
+        bool usbCached = usbDisplay?.Status == DeviceDashboardStatus.Cached;
+        int? currentUsbPercent = usbCached ? null : usbPercent;
         bool retainCachedBle = primaryBle is not null && _lastSource == "Bluetooth" &&
             _lastDevice == BleLabel(_bleSlots[primaryBle]) &&
             _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow).HasValue &&
-            !usbPercent.HasValue;
+            !currentUsbPercent.HasValue;
         bool bluetoothPrimary = BatteryDisplayState.PreferIndependentBluetooth(
-            receiver is not null, usbPercent, primaryBle is not null, blePercent) || retainCachedBle;
+            receiver is not null, currentUsbPercent, primaryBle is not null, blePercent) || retainCachedBle;
         // Keep a logical primary across transport and unrelated receiver changes.
         _primaryLinkedUsbKey = TransportLinks.SelectPrimary(_primaryLinkedUsbKey,
             linked.Select(x => x.UsbKey), receiver is not null || bluetoothPrimary);
@@ -1993,7 +1995,8 @@ public sealed class TrayAppContext : ApplicationContext
             displayPercent = null;
         }
         bool displayConnected = displayPercent.HasValue;
-        bool stale = (aulaIsPrimary && aulaStale) || linkedPrimary?.Display.Cached == true;
+        bool stale = (aulaIsPrimary && aulaStale) || linkedPrimary?.Display.Cached == true ||
+            (!aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null && usbCached);
         if (bluetoothPrimary && primaryBle is not null && !blePercent.HasValue)
         {
             displayPercent = _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow);
@@ -2066,11 +2069,12 @@ public sealed class TrayAppContext : ApplicationContext
             if (!IsTrayVisible(pair.Value)) continue;
             var usb = _receivers.Devices.FirstOrDefault(x => x.Key == pair.Value);
             _bleSlots.TryGetValue(pair.Key, out var ble);
-            var state = usb is null ? null : ReceiverMonitor.Dashboard(usb, now);
+            var state = usb is null ? null : ReceiverMonitor.Presentation(usb, now);
             int? usbValue = state?.Status == DeviceDashboardStatus.Fresh ? state.Percent : null;
             int? scheduled = state?.Status == DeviceDashboardStatus.Scheduled ? state.Percent : null;
+            int? cachedUsb = state?.Status == DeviceDashboardStatus.Cached ? state.Percent : null;
             var display = TransportLinks.Select(usbValue,
-                _ble.VisiblePercent(pair.Key, true, false, now), _ble.CachedPercent(pair.Key, now), scheduled);
+                _ble.VisiblePercent(pair.Key, true, false, now), _ble.CachedPercent(pair.Key, now), scheduled, cachedUsb);
             string name = usb?.DisplayLabel ?? (ble is not null ? BleDisplayLabel(ble) :
                 DeviceAliasRules.DisplayName("AJAZZ", _settings.DeviceAliases.GetValueOrDefault(pair.Value)));
             result.Add(new(pair.Value, name, display));

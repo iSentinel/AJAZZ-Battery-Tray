@@ -78,6 +78,42 @@ public static class ApexDisplayPolicy
             field is >= 1 and <= 100 ? field : null;
 }
 
+/// <summary>Session-only display cache for one continuously observed USB receiver.</summary>
+public sealed class ApexVerifiedDisplayCache
+{
+    private int? _percent;
+    private DateTimeOffset? _measured;
+
+    public void Observe(bool known, bool present, int? verified, DateTimeOffset measured)
+    {
+        if (!known || !present || (_measured is { } prior && measured < prior))
+            Reset();
+        if (known && present && verified is >= 1 and <= 100)
+        {
+            _percent = verified;
+            _measured = measured;
+        }
+    }
+
+    public void Reset()
+    {
+        _percent = null;
+        _measured = null;
+    }
+
+    /// <summary>Never alter raw observations, history, alerts, or the strict API projection.</summary>
+    public DeviceDashboardState Present(DeviceDashboardState observation, DateTimeOffset now,
+        bool scheduled = false)
+    {
+        if (scheduled || observation.Status != DeviceDashboardStatus.NoReply ||
+            _percent is not (>= 1 and <= 100) || _measured is not { } stamp ||
+            stamp > now || now - stamp > DeviceDashboardState.MaximumFreshAge)
+            return observation;
+        return observation with { Status = DeviceDashboardStatus.Cached,
+            Percent = _percent, MeasuredAt = stamp };
+    }
+}
+
 /// <summary>Selects a battery source without merging distinct transports.</summary>
 public sealed record BatteryDisplayState(BatteryTransport Source, int? Percent)
 {
