@@ -1,3 +1,13 @@
+# Resume — native shared compiler evidence binding
+
+#250 merged fb48770 after exact 6/6 CI, eight archive digests,
+13-document replay and local compile record match. New explicit
+--local-build verification binds the entire 14th record to
+candidate identity, solid icon/notice hashes and aligned source.
+Actual #250 extended replay PASS, historical result preserved.
+Native CI rerun pending. Exact test artifact not retained,
+distribution terms/signing/interactive/hardware gates remain open.
+
 # Resume — shared local/CI candidate compiler entrypoint
 
 #249 merged f2f338e after exact 2/2 CI. New shared local/CI

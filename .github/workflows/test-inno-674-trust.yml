@@ -457,7 +457,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
-          python tools/verify_inno674_migration_evidence.py --root $root --production-shape --output (Join-Path $root 'migration-evidence.json')
+          python tools/verify_inno674_migration_evidence.py --root $root --production-shape --local-build --output (Join-Path $root 'migration-evidence.json')
           if ($LASTEXITCODE -ne 0) { throw 'Single-run evidence chain failed' }
       - name: Retain migration evidence JSON only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

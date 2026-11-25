@@ -2031,3 +2031,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Review local-use and distribution terms, exact fresh candidate
       lifecycle/interactive/hardware qualification and signing.
       Release hold unchanged.
+
+### Native shared compiler evidence binding
+
+- [x] #250 exact 6/6 CI, eight original archives and thirteen-document
+      replay verified; merged fb48770 into draft #99.
+- [x] Add explicit fourteen-document local compiler binding mode;
+      compare entire record to exact app/setup, aligned source,
+      four icon hashes and notice manifest. Actual #250 extended
+      replay PASS; historical format preserved; regression added.
+- [ ] Native CI rerun with mandatory local-build evidence.
+- [ ] Exact fresh test artifact, distribution terms, signing,
+      interactive/hardware acceptance and production migration.
+      Release hold unchanged.

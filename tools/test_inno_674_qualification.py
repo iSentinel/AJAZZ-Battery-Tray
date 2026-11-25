@@ -51,7 +51,7 @@ class InnoUpgradeTests(unittest.TestCase):
         self.assertIn("default_silent_launch = 'NOT_OBSERVED'", text)
         self.assertIn("$target = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'", text)
         self.assertIn("Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-')", text)
-        self.assertIn('--production-shape --output', text)
+        self.assertIn('--production-shape --local-build --output', text)
         self.assertIn('#error ProductionNoticeCandidate requires ProductNoticeProbe',
                       (ROOT / 'installer/AJAZZBatteryTray.iss').read_text())
         self.assertIn("-CandidateName 'AJAZZBatteryTray-Setup-win-x64.exe'", text)
