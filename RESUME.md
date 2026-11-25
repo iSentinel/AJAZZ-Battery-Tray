@@ -1,3 +1,10 @@
+# Resume — Universal interactive cancellation
+
+Stacked on #180 da1e5ca. Localized menu cancellation uses existing
+supervisor token; keep exclusion until child exit and show partial
+report. High Sierra cancellation, native CI and physical acceptance
+remain open. Release hold unchanged.
+
 # Resume — cross-platform diagnostics summary
 
 #178/#179 merged; integrated ce9a2b6. Windows extended schema marker

@@ -260,6 +260,14 @@ enum ApexBoundedWorker {
               read(mode: traceHangMode, timeout: 3) == .partialTrace("timeout", "STEP: synthetic trace checkpoint"),
               read(mode: traceFailMode) == .partialTrace("worker failed", "STEP: synthetic trace checkpoint")
         else { return false }
+        let traceCancellation = ApexWorkerCancellation()
+        DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(750)) {
+            traceCancellation.cancel()
+        }
+        let cancelledTrace = read(mode: traceHangMode, timeout: 4, cancellation: traceCancellation)
+        guard cancelledTrace == .partialTrace("cancelled", "STEP: synthetic trace checkpoint") ||
+              cancelledTrace == .partialTrace("cancelled", "") || cancelledTrace == .cancelled
+        else { return false }
         let terminal = Data("STEP: before read\nBattery status: battery\nVerified battery: 83%\nEND: trace complete\n".utf8)
         guard traceResult(terminal, failure: "timeout") == .partialTrace("timeout", "STEP: before read"),
               traceResult(Data("Battery status: unknown\n".utf8), failure: nil) == .failed,

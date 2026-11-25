@@ -264,6 +264,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var closing = false
     private var diagnosticRunning = false
     private var diagnosticCancellation: ApexWorkerCancellation?
+    private var runDiagnosticItem: NSMenuItem?
+    private var cancelDiagnosticItem: NSMenuItem?
     private var activeCancellation: ApexWorkerCancellation?
     private let isolatedPolling = CommandLine.arguments == [
         CommandLine.arguments[0], "--experimental-isolated-polling"
@@ -331,12 +333,33 @@ final class TrayController: NSObject, NSApplicationDelegate {
 
     private func buildDiagnosticsMenu() -> NSMenu {
         let menu = NSMenu(title: AppText.text("Diagnostics"))
+        menu.autoenablesItems = false
         menu.addItem(command("Device diagnostics...", #selector(showDiagnostics)))
-        menu.addItem(command("Run HID diagnostics...", #selector(runHIDDiagnostics)))
+        let run = command("Run HID diagnostics...", #selector(runHIDDiagnostics))
+        let cancel = command("Cancel HID diagnostics", #selector(cancelHIDDiagnostics))
+        runDiagnosticItem = run
+        cancelDiagnosticItem = cancel
+        menu.addItem(run)
+        menu.addItem(cancel)
+        updateDiagnosticMenu()
         menu.addItem(command("Copy diagnostic report", #selector(copyDeviceReport)))
         menu.addItem(command("Open battery history folder...",
                               #selector(openHistoryFolder)))
         return menu
+    }
+
+    private func updateDiagnosticMenu() {
+        runDiagnosticItem?.isEnabled = !diagnosticRunning && !closing
+        cancelDiagnosticItem?.isEnabled = diagnosticRunning && !closing &&
+            diagnosticCancellation?.isCancelled == false
+    }
+
+    @objc private func cancelHIDDiagnostics() {
+        guard diagnosticRunning, !closing, let token = diagnosticCancellation,
+              !token.isCancelled else { return }
+        token.cancel()
+        // Keep single-flight until the supervisor confirms the child is reaped.
+        renderStatus(displayedStatus)
     }
 
     private func appearanceMenu(_ title: String, key: String) -> NSMenuItem {
@@ -667,7 +690,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         let token = ApexWorkerCancellation()
         diagnosticCancellation = token
         let snapshot = diagnosticSnapshot()
-        detailItem.title = AppText.text("Running HID diagnostics...")
+        renderStatus(displayedStatus)
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let started = ProcessInfo.processInfo.systemUptime
             let result = ApexBoundedWorker.read(mode: ApexBoundedWorker.traceMode,
@@ -680,6 +703,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     }
 
     private func finishDiagnostic(_ snapshot: String, _ result: ApexBoundedWorker.Result, elapsed: Double) {
+        let cancellationRequested = diagnosticCancellation?.isCancelled == true
         diagnosticCancellation = nil
         if closing {
             diagnosticRunning = false
@@ -688,9 +712,18 @@ final class TrayController: NSObject, NSApplicationDelegate {
         }
         let detail: String
         switch result {
-        case .trace(let text): detail = text
+        case .trace(let text):
+            if cancellationRequested {
+                let partial = ApexBoundedWorker.traceResult(Data((text + "\n").utf8), failure: "cancelled")
+                if case .partialTrace(_, let records) = partial {
+                    detail = "INCOMPLETE: cancelled; no fresh battery claimed\n" + records
+                } else {
+                    detail = "INCOMPLETE: cancelled; no fresh battery claimed"
+                }
+            } else { detail = text }
         case .partialTrace(let reason, let text):
             detail = "INCOMPLETE: \(reason); no fresh battery claimed\n" + text
+        case .cancelled: detail = "INCOMPLETE: cancelled; no fresh battery claimed"
         default: detail = "Diagnostic outcome: \(result)"
         }
         diagnosticRunning = false
@@ -843,6 +876,11 @@ final class TrayController: NSObject, NSApplicationDelegate {
         statusItem.button?.title = ""
         statusItem.button?.image = TrayAppearance.image(level: level, choice: color,
             mouseStyle: TrayAppearance.mouseStyle())
+        if diagnosticRunning {
+            detailItem.title = AppText.text(diagnosticCancellation?.isCancelled == true
+                ? "Cancelling HID diagnostics..." : "Running HID diagnostics...")
+        }
+        updateDiagnosticMenu()
         statusItem.button?.toolTip = detailItem.title + " · " + AppText.text(color.capitalized)
     }
 
