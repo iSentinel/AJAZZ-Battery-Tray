@@ -7,3 +7,14 @@ Upstream: src/installer/managed/Microsoft.NET.HostModel/ResourceUpdater.cs and s
 ```sh
 python tools/verify_dotnet_host_resources.py --exe AJAZZBatteryTray.exe --package host.nupkg --application tray --output resources.json
 ```
+
+## Actual artifact qualification (2026-11-25)
+
+Original 88d23e1 clean Gateway Offline QA 160/160 PASS, tree 33d082a,
+zero failures/errors/skips. #147 archives 14979089598 and 14979677662
+verified by SHA-256, pinned Host pack/template checked. CLI exit 0 for
+both: Tray 3 host + 10 app resource payloads; HA 3 host + 2 app payloads.
+No missing, extra or mismatched entries. Scope is payload equivalence
+with embedded app DLL, not independent app-source provenance. PE headers,
+resource metadata, padding, signatures remain unverified. #154 merged
+9b8d184 after 5/5 CI, identical tree 71068d0. Requalify joined exact head.

@@ -1,3 +1,13 @@
+# Resume — PE resource overlay
+
+#154 merged 9b8d184 after 5/5 CI, identical tree 71068d0.
+#155 88d23e1 local QA 160/160 PASS and actual #147 EXE resource CLI
+2/2 PASS: Tray 3 host + 10 app, HA 3 host + 2 app, no discrepancies.
+Retarget to draft #99, join integrated parent and requalify exact head.
+Resource payload comparison is not PE metadata, padding, independent
+app source provenance, signature or license clearance. Next header and
+license/notices review. No release/hardware approval.
+
 # Resume — scoped native host verification
 
 #153 merged c15cb7e after macOS artifact DNS retry succeeded, 4/4 checks,
