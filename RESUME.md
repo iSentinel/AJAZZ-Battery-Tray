@@ -1,3 +1,11 @@
+# Resume — exact candidate OSV cross-check
+
+Stacked on #232. Dated OSV querybatch returns four complete results,
+zero IDs for exact NuGet versions; local replay binds request/response
+hashes to native BOM. Two regressions. NuGet and OSV scoped results
+agree, not full vulnerability clearance. Remaining advisory coverage,
+legal terms and physical acceptance open. Release hold.
+
 # Resume — native candidate SBOM and scoped advisory binding
 
 #230 merged 2a7137a (6/6), #231 merged b2430ad into parent (5/5).
