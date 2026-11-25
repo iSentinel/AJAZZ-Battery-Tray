@@ -22,7 +22,8 @@ REQUIRED = ("source-toolchain.json", "code-audit.json", "python-results.xml",
 CLI = ("analyze_aula_sleep", "check_apple_io_lease", "code_audit",
        "compare_apex_reports", "compare_get_ids", "compare_job_cpu",
        "compare_ready_clear", "compare_tray_resources",
-       "compare_windows_hid_logs", "inventory_nuget_assets",
+       "compare_windows_hid_logs", "inventory_dotnet_bundle",
+       "inventory_nuget_assets",
        "measure_apple_worker", "qa_unittest",
        "run_offline_qa")
 MAX_EVIDENCE = 2 * 1024 * 1024
