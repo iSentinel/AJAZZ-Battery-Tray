@@ -1823,3 +1823,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted QA/integration, independent advisory cross-check,
       remaining installer/Apple/OS and toolchain scope, legal terms,
       hardware acceptance. Release hold.
+
+### Exact candidate OSV cross-check
+
+- [x] Query the same four exact public NuGet versions via OSV;
+      all four results complete, no IDs returned.
+- [x] Bind exact ordered request and response hashes to the native
+      BOM; reject wrong versions/order, missing and paginated results;
+      two regressions and actual replay PASS.
+- [ ] Hosted checks and integration; remaining installer, Apple,
+      OS and toolchain advisory scope, legal and hardware gates.
+      Release hold.
