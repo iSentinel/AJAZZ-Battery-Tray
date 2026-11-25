@@ -1,3 +1,12 @@
+# Resume — Apple diagnostic age evidence
+
+#255 head 990aac6: High Sierra, Windows, Python and roundtrip
+PASS; Universal pending at initial review. Independent stacked
+parser change preserves reported historical value and classifies
+age at snapshot time, with missing/future/expired and conservative
+300-second boundary. Two new regression groups. No hardware
+evidence or release authorization. Release hold unchanged.
+
 # Resume — Apple retained USB presentation age
 
 #254 corrected head 48a6cf3 passed 6/6 CI, merged df27f42 after
