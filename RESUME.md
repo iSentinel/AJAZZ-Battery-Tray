@@ -1,3 +1,11 @@
+# Resume — receiver selection regression coverage
+
+#258 exact 5/5 CI PASS, merged afd1b8a after tested-tree equality.
+Child change extracts the
+visible-candidate decision to a pure helper, five additional
+native assertions for rank, eligibility and deterministic ties.
+No HID, history, alert or release changes.
+
 # Resume — multi-receiver freshness selection
 
 #257 initially 5/7 CI PASS, Windows native and Python passed.

@@ -57,11 +57,11 @@ internal sealed class ReceiverMonitor : IDisposable
         int bestRank = -1;
         foreach (var state in _states.Values)
         {
-            if (!state.Present || hidden.Contains(state.Key)) continue;
-            int rank = multiple ? 0 : ApexDisplayPolicy.SelectionRank(Dashboard(state, now));
-            if (best is null || rank > bestRank ||
-                (rank == bestRank && (state.Key == preferred ||
-                    (best.Key != preferred && StringComparer.Ordinal.Compare(state.Key, best.Key) < 0))))
+            bool excluded = hidden.Contains(state.Key);
+            int rank = multiple || !state.Present || excluded
+                ? 0 : ApexDisplayPolicy.SelectionRank(Dashboard(state, now));
+            if (ApexDisplayPolicy.PreferCandidate(state.Key, rank, state.Present,
+                excluded, best?.Key, bestRank, preferred))
             {
                 best = state;
                 bestRank = rank;

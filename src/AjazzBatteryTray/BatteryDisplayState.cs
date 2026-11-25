@@ -57,6 +57,17 @@ public static class ApexDisplayPolicy
                 _ => 0
             } : 0;
 
+    /// <summary>Select a visible candidate without allowing an old primary to outrank fresh data.</summary>
+    public static bool PreferCandidate(string key, int rank, bool present, bool hidden,
+        string? bestKey, int bestRank, string? preferred)
+    {
+        if (!present || hidden) return false;
+        if (bestKey is null || rank > bestRank) return true;
+        if (rank < bestRank) return false;
+        return key == preferred ||
+            (bestKey != preferred && StringComparer.Ordinal.Compare(key, bestKey) < 0);
+    }
+
     /// <summary>Report measurement provenance without exporting receiver identity.</summary>
     public static string DiagnosticSample(DateTimeOffset? measured, bool scheduled)
         => $"USB sample UTC: {measured?.ToUniversalTime().ToString("O") ?? "never"}; scheduled: {scheduled}";
