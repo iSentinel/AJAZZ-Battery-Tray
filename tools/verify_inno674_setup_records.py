@@ -26,6 +26,8 @@ from verify_windowsdesktop_provenance import read_local
 
 COMPILER = '236555054ca65194c69544b4ef1d49ea345259745f5c4a2005aca7b5674e7cff'
 SOURCE = 'd2876f4209f244033dd92dd19a6f9e9d641ca3cbed441b4dbd020923492f9ef8'
+PRODUCTION_SOURCE = 'b93648632e4cacdee0b683842d77c0804c0e468a26d7b6de727f8e05c8f34cd0'
+SOURCE_PINS = (SOURCE, PRODUCTION_SOURCE)
 
 def check_header(reader: Reader) -> dict:
     """Validate all reviewed header strings and fixed settings."""
@@ -75,7 +77,8 @@ def verify(setup: bytes, source: bytes, isl: bytes, ids: bytes,
     require(record.get('setup_sha256'), digest(setup), 'setup digest')
     require(record.get('solid_stream'), 'MATCH', 'solid stream')
     require(record.get('release_admission'), 'NOT_VERIFIED', 'admission')
-    require(digest(source.replace(b'\r\n', b'\n')), SOURCE, 'installer source')
+    source_sha = digest(source.replace(b'\r\n', b'\n'))
+    require(source_sha in SOURCE_PINS, True, 'installer source')
     require(digest(isl), ISL_SHA, 'Default.isl digest')
     require(digest(ids), IDS_SHA, 'message enum digest')
     require(digest(compiler), COMPILER, 'compiler digest')
@@ -92,7 +95,7 @@ def verify(setup: bytes, source: bytes, isl: bytes, ids: bytes,
     images = compare(wizard_data(reader), resources(compiler))
     return {'schema': 'inno-674-setup-records-v1', 'setup_sha256': digest(setup),
             'source_sha': record['source_sha'], 'solid_evidence_sha256': digest(prior),
-            'installer_source_lf_sha256': SOURCE, 'compiler_sha256': COMPILER,
+            'installer_source_lf_sha256': source_sha, 'compiler_sha256': COMPILER,
             'header_policy': 'MATCH_REVIEWED_SOURCE_AND_DEFAULTS', 'script': script,
             'language': language, 'file_records': len(destinations()),
             'file_destinations': destinations(), 'shortcut_records': 2, 'run_records': 1,

@@ -1,3 +1,23 @@
+# Resume — production-shaped non-publishing Inno 6.7.4 qualification
+
+#243 merged fab3734 into draft #99 after 6/6; eight native archive
+digests match, independent 12-document replay differs only CRLF/LF.
+#244 merged 8b48fdd into parent after 2/2. New guarded production-shaped
+beta.61 candidate mode uses normal output basename and default silent
+Program Files install, thirteenth exact profile evidence document.
+Historical #242 replay preserved. Native result pending; actual release
+version/selection, signing, legal, interactive and hardware gates open.
+Production 6.7.1 and release hold unchanged.
+
+# Resume — exact #242 BOM migration checkpoint
+
+Stacked on #243. Actual #242 same-run evidence and independent
+CycloneDX schema/binding PASS. Retained Nov25 NuGet and OSV replay:
+no scoped matches, freshness not established. Next: #243 native
+joined rerun and exact production-shaped non-publishing 6.7.4
+qualification; legal/signing/interactive/hardware remain open.
+Release hold and production 6.7.1 unchanged.
+
 # Resume — single-run 6.7.4 migration evidence
 
 #242 merged dfa8202 into draft #99 after 6/6 CI. Seven exact archives

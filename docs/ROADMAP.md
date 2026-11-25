@@ -1957,3 +1957,26 @@ configuration commands. USB `VersionNumber` is a device revision,
       and dated advisory replay; review migration prerequisites.
 - [ ] Production compiler selection, legal, signing, interactive UAC
       and physical acceptance; release hold unchanged.
+
+### Exact #242 BOM migration checkpoint
+
+- [x] Independent schema and candidate binding of the exact #242 BOM.
+- [x] Replay dated NuGet and OSV observations for that BOM.
+- [x] Document non-publishing production-shaped migration requirements.
+- [ ] #243 native joined rerun and integration.
+- [ ] Production-shaped 6.7.4 build qualification, legal/signing,
+      interactive and hardware acceptance. Release hold.
+
+### Production-shaped non-publishing Inno 6.7.4 qualification
+
+- [x] #243 exact native 6/6 CI, eight archive digests verified;
+      independently replay all twelve documents and compare normalized
+      output, then merge fab3734 into draft #99.
+- [x] #244 exact 2/2 CI, merge 8b48fdd into parent.
+- [x] Add explicit production-shaped candidate mode, normal installer
+      filename, default silent Program Files install, exact new source
+      pin and thirteenth evidence document; historical replay preserved.
+- [ ] Native production-shaped verification and integration.
+- [ ] Align actual release version metadata and compiler/notice selection
+      only after signing, legal, interactive and hardware gates.
+      Release hold unchanged.
