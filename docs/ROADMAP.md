@@ -1858,3 +1858,19 @@ configuration commands. USB `VersionNumber` is a device revision,
       compatibility and trusted signing; legacy risk remains open.
 - [ ] Hosted checks/integration, proposed Inno 6.7.4 qualification,
       legal and release gates. Release hold.
+
+### Inno 6.7.4 exact input and portable compiler qualification
+
+- [x] #234 merged abfd739 (6/6), #235 merged b64201e into parent (5/5).
+- [x] Retrieve exact native publisher evidence, verify archive digest
+      and publisher/attestation identity.
+- [x] Independently extract exact upstream asset without execution;
+      compare 38 inputs (25 identical, 13 changed), 17 ISSig PASS.
+- [x] Verify unchanged three notice sources and ChaCha20/Resample
+      source bytes; unresolved terms explicitly retained.
+- [x] Pin exact new input inventory, local replay PASS; add separate
+      portable compiler CI fixture with pre/post checks.
+- [ ] Native compiler fixture result and integration; qualify actual
+      product install/upgrade/repair and interactive launch, and new
+      binary attribution before any production compiler change.
+      Release hold.

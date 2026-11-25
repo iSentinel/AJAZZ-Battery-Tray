@@ -185,3 +185,16 @@ All three notice evidence records (clean installation, upgrade and
 reinstall) are equal. Missing-notice restoration PASS, uninstall
 REMOVED, synthetic user data PRESERVED, tray launch NOT_OBSERVED.
 No real-user migration, hardware acceptance or release admission.
+
+## Inno 6.7.4 notice delta (2026-11-25)
+
+The extracted official 6.7.4 license.txt exactly matches the reviewed
+6.7.1 notice. The exact pinned 6.7.4 source commit
+c2913c993858a781fcb455bac8b8949c1c366cb8 also contains unchanged
+Components/UniPs/LICENSE.md and Components/Lzma2/7zC.txt, matching
+the two retained Pascal Script and LZMA notice copies byte for byte.
+ChaCha20.pas and Resample.pas likewise match the previously reviewed
+6.7.1 source bytes. This does not establish their unresolved
+historical or transitive terms, or legal clearance. Do not change
+the historical notice staging pin or claim full 6.7.4 distribution
+compliance until new candidate packaging is qualified.

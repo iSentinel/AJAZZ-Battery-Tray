@@ -38,6 +38,7 @@ CLI = ("analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease"
        "build_scoped_windows_sbom",
        "build_product_notice_sbom",
        "validate_scoped_sbom_schema",
+       "verify_inno674_components",
        "audit_product_sbom_advisories",
        "crosscheck_product_sbom_osv",
        "audit_apple_os_dependency_scope",

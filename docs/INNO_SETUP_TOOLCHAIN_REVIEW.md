@@ -93,3 +93,42 @@ References:
 - https://jrsoftware.org/files/is6-whatsnew.htm
 - https://github.com/jrsoftware/issrc/releases/tag/is-6_7_4
 - https://jrsoftware.org/inno-setup/downloads/verify
+
+## Native 6.7.4 publisher and exact component delta
+
+PR #234 head b20d37a4843942f4e8dbf484a4a14f3a32a449b4,
+run 45631933833, job 139267148940: PASS.
+Artifact 15032445044 SHA-256
+d4e07fe5e77f57f2e13fc2923912947f9d15ab98a4c7233c0c00afbcc51e0a44
+matches REST. Authenticode Valid, publisher Pyrsys B.V., signer
+certificate matches the reviewed 6.7.1 certificate; timestamp
+certificate SHA-256 d14751ba71cd8883e560166406cf62cd229a5fe91e308d301976feb23ea90156.
+Verified immutable release attestation names jrsoftware/issrc and
+is-6_7_4, exact EXE/ISSig digests and GitHub release identity,
+timestamp 2026-10-28T19:25:10Z. No AJAZZ signer trust asserted.
+
+The previously reviewed innoextract 1.13.0 binary (SHA-256
+c898db2ecc282ff8d943e9868d03dd6f1fc6069ddd40430341b211f93826b360)
+was reused in a fresh unprivileged chroot to unpack the exact vendor
+EXE, without running it. Comparison of the same 38 top-level
+compiler inputs: 25 unchanged, 13 changed (seven executable/engine
+files and six signature sidecars). All 17 extracted signed component
+sidecars verify against the existing pinned vendor public keys.
+Comparison evidence SHA-256
+db75ea31a7b0e078f93aab951e92c5236af61d4e38ac925bd185290717cd9f78.
+The new exact component pin manifest is
+`config/inno-674-component-pins.json`, and the local verification
+evidence SHA-256 is
+3b1b3f84716b5095ad7f1395c1b025f9413d403ee1a6485b33c620207797e6a1.
+This remains scoped input identity, not a loaded-component trace.
+
+A separate hosted probe extends the previously successful trust
+workflow. Only after asset hash, native Authenticode and release
+attestation verification does it deploy the vendor compiler in
+the upstream documented /PORTABLE=1 mode into a fresh runner-temp
+directory. It requires all 38 exact inputs before and after
+compilation and the exact 6.7.4 engine banner. An inert LICENSE-only
+fixture exercises install/hash/uninstall with lowest privileges
+and no application launch. Only JSON evidence retained.
+Native compiler probe result pending. Production wrapper and
+release workflows remain pinned to 6.7.1.
