@@ -163,21 +163,21 @@ Check("Typed F7 observation excludes keyboard-only and unrecognized frames",
 // Exhaustively replay a synthetic grid against the previous admission predicates.
 bool f7PolicyParity = true;
 int f7PolicyCases = 0;
-foreach (byte slot in new byte[] { 1, 2, 3 })
-foreach (byte ready in new byte[] { 0, 1, 2 })
-foreach (byte keyboard in new byte[] { 0, 1, 2 })
-foreach (byte online in new byte[] { 0, 1, 2 })
-foreach (byte send in new byte[] { 0, 1, 2 })
-foreach (byte boot in new byte[] { 0, 1, 2 })
-foreach (byte field in new byte[] { 0, 1, 42, 100, 101, 255 })
+foreach (byte matrixSlot in new byte[] { 1, 2, 3 })
+foreach (byte matrixReady in new byte[] { 0, 1, 2 })
+foreach (byte matrixKeyboard in new byte[] { 0, 1, 2 })
+foreach (byte matrixOnline in new byte[] { 0, 1, 2 })
+foreach (byte matrixSend in new byte[] { 0, 1, 2 })
+foreach (byte matrixBoot in new byte[] { 0, 1, 2 })
+foreach (byte matrixField in new byte[] { 0, 1, 42, 100, 101, 255 })
 {
-    byte[] frame = { 5, ready, 0, field, keyboard, online, send, slot, 0, boot };
-    bool valid = keyboard <= 1 && online == 0 && send == 1 && boot == 0 &&
-        field is >= 1 and <= 100;
-    int? verified = valid && ready == 1 && slot != 1 ? field : null;
-    int? provisional = valid && ready == 0 && slot == 2 ? field : null;
-    f7PolicyParity &= BatteryReportParser.ParseWindowsFeature(frame) == verified &&
-        BatteryReportParser.UnverifiedMouseField(frame) == provisional;
+    byte[] matrixFrame = { 5, matrixReady, 0, matrixField, matrixKeyboard, matrixOnline, matrixSend, matrixSlot, 0, matrixBoot };
+    bool matrixValid = matrixKeyboard <= 1 && matrixOnline == 0 && matrixSend == 1 && matrixBoot == 0 &&
+        matrixField is >= 1 and <= 100;
+    int? matrixVerified = matrixValid && matrixReady == 1 && matrixSlot != 1 ? matrixField : null;
+    int? matrixProvisional = matrixValid && matrixReady == 0 && matrixSlot == 2 ? matrixField : null;
+    f7PolicyParity &= BatteryReportParser.ParseWindowsFeature(matrixFrame) == matrixVerified &&
+        BatteryReportParser.UnverifiedMouseField(matrixFrame) == matrixProvisional;
     f7PolicyCases++;
 }
 Check("Typed F7 preserves previous admission predicates across 4374 synthetic combinations",
