@@ -1182,3 +1182,11 @@ telemetry remains bounded to 120 seconds. Cached state in dashboard,
 local API and both icon paths; retain prior BLE primary during transient
 failure when USB has no verified value. No cached alerts. Native CI,
 explicit association and physical acceptance remain open.
+
+## Explicit transport link checkpoint
+
+Stacked on #188 f4eb298; #187 integrated e1f4ae5. User-confirmed one-to-one
+local BLE/USB display links; one combined tray presentation keyed by
+receiver, fresh USB then fresh GATT then marked cached values, unknown
+otherwise. Separate history, alerts, dashboard and local API retained.
+Hardware acceptance and native CI pending.

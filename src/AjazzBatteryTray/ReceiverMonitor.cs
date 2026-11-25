@@ -249,7 +249,8 @@ internal sealed class ReceiverMonitor : IDisposable
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
         string? visiblePrimaryKey, IReadOnlySet<string> hidden,
         Func<string, string> color,
-        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> bluetooth, bool mouseStyle = false)
+        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> bluetooth, bool mouseStyle = false,
+        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale, string Source)>? linked = null)
     {
         if (!enabled)
         {
@@ -280,6 +281,16 @@ internal sealed class ReceiverMonitor : IDisposable
             {
                 wanted.Add(item.Key);
                 SetIcon(item.Key, item.Name, item.Percent, menu, refresh, stale: item.Stale, color: color(item.Key), mouseStyle: mouseStyle);
+            }
+
+            if (linked is not null)
+            {
+                foreach (var item in linked)
+                {
+                    wanted.Add(item.Key);
+                    SetIcon(item.Key, item.Name + " (" + item.Source + ")", item.Percent,
+                        menu, refresh, stale: item.Stale, color: color(item.Key), mouseStyle: mouseStyle);
+                }
             }
 
             foreach (string key in wanted.Missing(_icons.Keys))

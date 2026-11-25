@@ -1506,6 +1506,41 @@ Check("BLE cached snapshot never exports fresh battery percentage",
     cachedBleSnapshot.Devices[0].LastKnownPercent == 83 &&
     cachedBleSnapshot.Devices[0].Status == "cached");
 
+// Explicit transport associations affect presentation only, not hardware identity.
+string linkBleA = BleConsent.Key("link-ble-a");
+string linkBleB = BleConsent.Key("link-ble-b");
+string linkUsbA = ReceiverIdentity.LocalKey("link-usb-a");
+string linkUsbB = ReceiverIdentity.LocalKey("link-usb-b");
+var linkConsent = new HashSet<string> { linkBleA, linkBleB };
+var transportLinks = new Dictionary<string, string>();
+Check("Explicit link requires consent and different valid keys",
+    TransportLinks.CanLink(transportLinks, linkConsent, linkBleA, linkUsbA) &&
+    !TransportLinks.CanLink(transportLinks, linkConsent, linkBleA, linkBleA) &&
+    !TransportLinks.CanLink(transportLinks, linkConsent, "unknown", linkUsbA));
+transportLinks.Add(linkBleA, linkUsbA);
+Check("Explicit link is one-to-one",
+    !TransportLinks.CanLink(transportLinks, linkConsent, linkBleB, linkUsbA) &&
+    !TransportLinks.CanLink(transportLinks, linkConsent, linkBleA, linkUsbB));
+transportLinks.Add(linkBleB, linkUsbA);
+Check("Duplicate USB target cleaned deterministically",
+    TransportLinks.Clean(transportLinks, linkConsent).Count == 1);
+Check("Unconsented association removed",
+    TransportLinks.Clean(transportLinks, new HashSet<string>()).Count == 0);
+Check("Linked display prefers validated USB",
+    TransportLinks.Select(80, 83, 82) == new TransportLinks.Display(80, false, false));
+Check("Linked display switches to fresh BLE when USB unknown",
+    TransportLinks.Select(null, 83, 82) == new TransportLinks.Display(83, false, true));
+Check("Linked display marks scheduled USB or BLE cache",
+    TransportLinks.Select(null, null, 82, 80) == new TransportLinks.Display(80, true, false) &&
+    TransportLinks.Select(null, null, 82) == new TransportLinks.Display(82, true, true));
+Check("Linked display keeps unknown instead of fabricating charge",
+    TransportLinks.Select(null, null, null).Percent is null);
+Check("Linked display admits zero only on BLE",
+    TransportLinks.Select(0, 0, null) == new TransportLinks.Display(0, false, true));
+var linkSettings = new AppSettings { ConsentedBleEndpoints = linkConsent, BleUsbLinks = transportLinks };
+Check("Portable preferences omit transport links",
+    !System.Text.Encoding.UTF8.GetString(PreferencesBackup.Capture(linkSettings).Export()).Contains(linkUsbA));
+
 // Release checks are local, deterministic, and perform no HTTP requests.
 var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
 Check("Update accepts beta tag", installedVersion.Beta == 41);

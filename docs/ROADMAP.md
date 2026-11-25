@@ -1328,3 +1328,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add native expiry, opt-out, recovery and local snapshot checks.
 - [ ] Hosted CI and physical sleep / switching acceptance.
 - [ ] Explicit USB/BLE device association and stable logical icon slot.
+
+### Explicit one-to-one transport link
+
+- [x] Merge #187 after exact hosted CI.
+- [x] Add local explicit one-to-one association; confirm actual mouse.
+- [x] Project one linked tray device using USB receiver key and source
+      selection without promoting unverified HID values.
+- [x] Unlink / opt-out; preserve independent history, alerts and API.
+- [x] Add policy and source regressions.
+- [ ] Hosted CI and physical switch / restart / multiple-device acceptance.
+- [ ] Stable logical primary selection with multiple devices, diagnostic
+      multi-snapshot capture and release admission.

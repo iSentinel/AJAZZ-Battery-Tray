@@ -280,3 +280,22 @@ A valid USB level still takes priority. No new low-battery alerts
 from cache. No cache survives opt-out or process restart. This is
 not proof of continued physical connectivity. The 30-minute lifetime
 is a candidate default, pending physical acceptance.
+
+## Explicit USB/BLE display association (candidate)
+
+In Bluetooth > Opted-in BLE devices, choose a monitor, Link to USB
+receiver, then the currently enumerated receiver. Confirm only if both
+belong to the same physical mouse. Links are one-to-one, stored locally
+as endpoint and receiver fingerprints, excluded from portable backups
+and diagnostics. Unlink at any time; BLE opt-out also removes the link.
+The receiver key owns the combined tray presentation, including color
+and visibility. Linked endpoints are excluded from standalone icons.
+Prefer a verified USB reading, then fresh direct GATT, then recent
+scheduled USB (marked cached, at most three minutes old), then BLE cache.
+No unverified HID value is promoted. With neither reading, retain the
+linked icon in unknown state. In multiple-icon mode a linked device
+can be an extra icon; a sole linked mouse uses the main icon. Histories,
+notifications, dashboard rows and local API telemetry remain separate.
+Physical identity is user-confirmed, not independently verified; a
+different receiver key requires a new link. Native CI and hardware
+acceptance remain necessary.
