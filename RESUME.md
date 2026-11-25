@@ -1,3 +1,11 @@
+# Resume — opt-in product notice qualification
+
+Stacked on #226. ProductNoticeProbe requires NoticeRoot, cannot combine
+with lifecycle probe; separate filename and CI-only compilation.
+Exact app/icon/notice checks, no tray launch and cleanup required.
+Two regressions; hosted result pending. Default release unchanged.
+Remaining upgrade, legal terms and physical acceptance; release hold.
+
 # Resume — native isolated notice evidence
 
 #225 merged 95b1990 into parent after 6/6 CI. Exact native evidence

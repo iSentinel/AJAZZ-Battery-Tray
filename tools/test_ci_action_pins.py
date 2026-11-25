@@ -118,7 +118,7 @@ class CiActionPinTests(unittest.TestCase):
             self.assertIn("$actual -ne '" + sdk["version"] + "'", source)
             self.assertNotIn("dotnet-version: '11.0.x'", source)
         self.assertEqual(observed, {"build.yml", "test-ha-preview.yml",
-                                   "test-installer-upgrade.yml", "release-beta.yml"})
+                                   "test-installer-upgrade.yml", "release-beta.yml", "test-notice-install.yml"})
 
     def test_dotnet_project_targets_match_migration(self) -> None:
         """Check every reviewed project and the HA preview output path."""
