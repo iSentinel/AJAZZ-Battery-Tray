@@ -1874,3 +1874,61 @@ configuration commands. USB `VersionNumber` is a device revision,
       product install/upgrade/repair and interactive launch, and new
       binary attribution before any production compiler change.
       Release hold.
+
+### Inno 6.7.4 interactive launch acceptance boundary
+
+- [x] Compare exact upstream source commits and identify the
+      InitializeSetup elevation-path change.
+- [x] Record RG01–RG06 launch, privilege and mitigation acceptance
+      matrix; distinguish silent CI and actual UAC interactive path.
+- [ ] Native compiler result, separate product-probe qualification,
+      actual interactive observations and physical acceptance.
+      Release hold; no RedirectionGuard bypass.
+
+### Inno 6.7.4 product lifecycle qualification
+
+- [x] #236 merged 0a5e715 after exact 7/7 CI and tested tree match.
+- [x] Native inert compiler fixture archive digest verified; all
+      38 pre/post inputs match, install/uninstall PASS.
+- [x] Add separate 6.7.4 product probe with pinned inputs and unique
+      filename, reuse beta.60 upgrade and notice repair, verify
+      synthetic data and no launch; bind scoped SBOM to compiler evidence.
+- [ ] Hosted result and integration; new exact loader/engine/uninstaller
+      attribution, interactive UAC, legal and physical gates.
+      Production 6.7.1 and release hold unchanged.
+
+### Inno 6.7.4 scoped product binary attribution
+
+- [x] Check exact new template PE32 layout and reviewed source delta;
+      preserve historical 6.7.1 verification pins.
+- [x] Add exact exercised-uninstaller capture and lifecycle binding;
+      new loader/engine/uninstaller/frame verifier, two regressions.
+- [ ] Native product and binary evidence, then resources, message
+      semantics, compiled script and solid payload attribution.
+- [ ] Interactive UAC, legal and physical gates; release hold.
+
+### Native 6.7.4 product evidence and resource qualification
+
+- [x] #238 merged bfc68a4 after exact 6/6 CI and tested tree match.
+- [x] Verify three exact native archives and lifecycle/compiler/SBOM
+      identities; clean/upgrade/repair/removal PASS, synthetic data preserved.
+- [x] Independent CycloneDX validation and replay retained dated NuGet
+      and OSV observations on exact new BOM; scoped no matches.
+- [x] Compare exact template resource leaves and unchanged English
+      source message inputs; add separate scoped resource verifier.
+      Two regressions PASS.
+- [ ] #239 binary attribution and resource hosted result, solid
+      payload/script attribution, integration, actual interactive UAC,
+      legal and physical gates. Release hold.
+
+### Native 6.7.4 resource and solid payload qualification
+
+- [x] #239 merged ff9c55d and #240 merged 1030524 into respective
+      parent branches after exact 6/6 CI and tested tree comparison.
+- [x] Verify native binary/resource archive digests and binding;
+      scoped loader/engine/uninstaller and message/resource PASS.
+- [x] Add separate 15-file solid stream and IFPS verifier with two
+      regressions; retain existing historical 6.7.1 tools.
+- [ ] Native solid payload and IFPS result; full Setup.0 destinations,
+      wizard/source attribution, integration into #99.
+- [ ] Interactive UAC, legal and hardware gates. Release hold.

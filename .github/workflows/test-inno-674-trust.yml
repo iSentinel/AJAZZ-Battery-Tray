@@ -6,7 +6,18 @@ on:
       - '.github/workflows/test-inno-674-trust.yml'
       - 'config/inno-674-component-pins.json'
       - 'tools/verify_inno674_components.py'
+      - 'tools/verify_inno674_product_binary.py'
+      - 'tools/verify_inno674_product_resources.py'
+      - 'tools/verify_inno674_solid_payload.py'
       - 'installer/Inno674CompilerProbe.iss'
+      - 'installer/AJAZZBatteryTray.iss'
+      - 'src/**'
+      - 'global.json'
+      - 'tools/Test-ProductNoticeUpgrade.ps1'
+      - 'tools/stage_windows_notices.py'
+      - 'tools/verify_windows_notice_transport.py'
+      - 'tools/build_product_notice_sbom.py'
+      - 'tools/build_scoped_windows_sbom.py'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +26,7 @@ permissions:
 jobs:
   inno-674-publisher:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -158,5 +169,253 @@ jobs:
             ${{ runner.temp }}/ajazz-inno-674-publisher/components-before.json
             ${{ runner.temp }}/ajazz-inno-674-publisher/components-after.json
             ${{ runner.temp }}/ajazz-inno-674-publisher/compiler-probe.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '11.0.100'
+      - name: Verify selected .NET SDK
+        shell: pwsh
+        run: |
+          $actual = dotnet --version
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '11.0.100') {
+            throw 'Selected SDK differs from reviewed global.json'
+          }
+      - name: Stage exact reviewed notices
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          New-Item -ItemType Directory -Path $root | Out-Null
+          $packs = [ordered]@{
+            host = 'microsoft.netcore.app.host.win-x64/11.0.0'
+            core = 'microsoft.netcore.app.runtime.win-x64/11.0.0'
+            desktop = 'microsoft.windowsdesktop.app.runtime.win-x64/11.0.0'
+            sdk = 'microsoft.windows.sdk.net.ref/10.0.19041.87'
+          }
+          foreach ($entry in $packs.GetEnumerator()) {
+            $parts = $entry.Value.Split('/')
+            $url = "https://api.nuget.org/v3-flatcontainer/$($entry.Value)/$($parts[0]).$($parts[1]).nupkg"
+            $path = Join-Path $root "$($entry.Key).nupkg"
+            curl.exe --fail --silent --show-error --location --max-redirs 3 --proto '=https' --proto-redir '=https' --tlsv1.2 --max-time 120 --max-filesize 268435456 --output $path $url
+            if ($LASTEXITCODE -ne 0) { throw 'Pinned pack download failed' }
+          }
+          python tools/stage_windows_notices.py --host (Join-Path $root 'host.nupkg') --core (Join-Path $root 'core.nupkg') --desktop (Join-Path $root 'desktop.nupkg') --sdk (Join-Path $root 'sdk.nupkg') --output (Join-Path $root 'staged')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice staging failed' }
+          python tools/verify_windows_notice_transport.py --tree (Join-Path $root 'staged') --output (Join-Path $root 'staged-evidence.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice identity failed' }
+      - name: Build unpublished product notice probe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.61 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
+          if ($LASTEXITCODE -ne 0) { throw 'Product probe publish failed' }
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'product-components-before.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Product compiler input identity failed' }
+          $iscc = Join-Path $compiler 'ISCC.exe'
+          $lines = @(& $iscc '/DAppVersion=0.3.0-beta.61' '/DProductNoticeProbe=1' '/FAJAZZBatteryTray-Inno674-Notice-Probe-win-x64' "/DNoticeRoot=$(Join-Path $root 'staged')" "/O$root" 'installer/AJAZZBatteryTray.iss')
+          $code = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0 -or @($lines | Where-Object { $_ -ceq 'Compiler engine version: Inno Setup 6.7.4' }).Count -ne 1) {
+            throw 'Product probe compilation failed or engine differs'
+          }
+          if (!(Test-Path -LiteralPath (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') -PathType Leaf)) {
+            throw 'Distinct 6.7.4 output missing'
+          }
+          python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'product-components-after.json')
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash (Join-Path $root 'product-components-before.json')).Hash -cne (Get-FileHash (Join-Path $root 'product-components-after.json')).Hash) {
+            throw 'Product compiler inputs changed'
+          }
+      - name: Verify product notice lifecycle without tray launch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $setup = Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe'
+          $target = Join-Path $root 'product-installed'
+          $app = Join-Path $target 'AJAZZBatteryTray.exe'
+          $uninstaller = Join-Path $target 'unins000.exe'
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9829045F-37F0-4AC3-ACBD-1B5E4129A179}_is1'
+          $data = Join-Path $env:APPDATA 'AJAZZBatteryTray'
+          if (!(Test-Path -LiteralPath $setup -PathType Leaf) -or (Test-Path $target) -or (Test-Path $key) -or (Test-Path $data) -or (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue)) {
+            throw 'Expected clean isolated product probe target'
+          }
+          $expected = (Get-FileHash -LiteralPath 'dist/app/AJAZZBatteryTray.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          try {
+            $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LAUNCH=0',"/DIR=`"$target`"") -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or !(Test-Path -LiteralPath $app -PathType Leaf) -or !(Test-Path -LiteralPath $uninstaller -PathType Leaf)) {
+              throw 'Product probe installation failed'
+            }
+            if ((Get-FileHash -LiteralPath $app -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expected -or (Get-ItemProperty -LiteralPath $key).DisplayVersion -cne '0.3.0-beta.61' -or (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) -or (Test-Path $data)) {
+              throw 'Unexpected product identity or launch'
+            }
+            foreach ($name in @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')) {
+              if ((Get-FileHash -LiteralPath (Join-Path $target "Icons/$name")).Hash -cne (Get-FileHash -LiteralPath "src/AjazzBatteryTray/Assets/$name").Hash) { throw 'Product icon differs' }
+            }
+            python tools/verify_windows_notice_transport.py --tree (Join-Path $target 'Notices') --output (Join-Path $root 'product-installed-evidence.json')
+            if ($LASTEXITCODE -ne 0) { throw 'Product notices differ' }
+            $capture = Join-Path $root 'exercised-unins000.exe'
+            if (Test-Path -LiteralPath $capture) { throw 'Uninstaller capture already exists' }
+            $hash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+            Copy-Item -LiteralPath $uninstaller -Destination $capture
+            if ((Get-FileHash -LiteralPath $capture -Algorithm SHA256).Hash.ToLowerInvariant() -cne $hash -or
+                (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant() -cne $hash) {
+              throw 'Uninstaller capture differs'
+            }
+            $p = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or (Test-Path $app) -or (Test-Path $key) -or (Test-Path $data) -or (Test-Path (Join-Path $target 'Icons')) -or (Test-Path (Join-Path $target 'Notices'))) {
+              throw 'Product probe uninstall cleanup failed'
+            }
+            [ordered]@{
+              schema = 'product-notice-probe-v1'
+              source_sha = (git rev-parse HEAD)
+              setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $expected
+              installed_notices = 'MATCH'
+              uninstalled_notices = 'REMOVED'
+              tray_launch = 'NOT_OBSERVED'
+              physical_acceptance = 'NOT_VERIFIED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'product-lifecycle.json') -Encoding utf8
+            [ordered]@{
+              schema = 'inno-674-exercised-uninstaller-v1'
+              source_sha = (git rev-parse HEAD)
+              setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $expected
+              uninstaller_sha256 = $hash
+              uninstall_result = 'REMOVED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'exercised-uninstaller.json') -Encoding utf8
+          } finally {
+            if (Test-Path -LiteralPath $uninstaller -PathType Leaf) {
+              Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait
+            }
+          }
+      - name: Retain product probe JSON evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-notice-probe-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/product-installed-evidence.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-lifecycle.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify upgrade and reinstall with exact notices
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./tools/Test-ProductNoticeUpgrade.ps1 -ProbeRoot (Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe') -CandidateName 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe'
+      - name: Retain upgrade probe JSON evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-notice-upgrade-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-notices.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-lifecycle.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Bind scoped SBOM to exercised product probe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $source = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $source -cnotmatch '^[0-9a-f]{40}$') { throw 'Checkout identity unavailable' }
+          python tools/build_product_notice_sbom.py --app dist/app/AJAZZBatteryTray.exe --setup (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') --clean (Join-Path $root 'product-lifecycle.json') --upgrade (Join-Path $root 'product-upgrade-lifecycle.json') --source-sha $source --host (Join-Path $root 'host.nupkg') --core (Join-Path $root 'core.nupkg') --desktop (Join-Path $root 'desktop.nupkg') --sdk (Join-Path $root 'sdk.nupkg') --sbom (Join-Path $root 'product-scoped-sbom.json') --output (Join-Path $root 'product-sbom-binding.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Scoped product SBOM failed' }
+      - name: Bind reviewed 6.7.4 inputs to product lifecycle
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $binding = Get-Content -Raw -LiteralPath (Join-Path $root 'product-sbom-binding.json') | ConvertFrom-Json
+          $setup = Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe'
+          $setupHash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($binding.setup_sha256 -cne $setupHash -or $binding.source_sha -cne (git rev-parse HEAD)) {
+            throw 'Product lifecycle identity differs'
+          }
+          [ordered]@{
+            schema = 'inno-674-product-binding-v1'
+            source_sha = $binding.source_sha
+            engine_version = '6.7.4'
+            setup_sha256 = $setupHash
+            app_sha256 = $binding.app_sha256
+            sbom_sha256 = $binding.sbom_sha256
+            component_evidence_sha256 = (Get-FileHash -LiteralPath (Join-Path $root 'product-components-after.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+            product_binding_sha256 = (Get-FileHash -LiteralPath (Join-Path $root 'product-sbom-binding.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+            interactive_acceptance = 'NOT_VERIFIED'
+            release_admission = 'NOT_VERIFIED'
+          } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'inno674-product-binding.json') -Encoding utf8
+      - name: Retain candidate-bound SBOM evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-notice-sbom-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/product-scoped-sbom.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-sbom-binding.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-components-before.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-components-after.json
+            ${{ runner.temp }}/ajazz-notice-probe/inno674-product-binding.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Attribute exact product setup and exercised uninstaller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          python tools/verify_inno674_product_binary.py --setup (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') --uninstaller (Join-Path $root 'exercised-unins000.exe') --loader (Join-Path $compiler 'SetupLdr.e32') --engine (Join-Path $compiler 'Setup.e32') --binding (Join-Path $root 'inno674-product-binding.json') --exercised (Join-Path $root 'exercised-uninstaller.json') --output (Join-Path $root 'binary-attribution.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Product binary attribution failed' }
+      - name: Retain scoped binary attribution JSON only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-binary-attribution
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/exercised-uninstaller.json
+            ${{ runner.temp }}/ajazz-notice-probe/binary-attribution.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Attribute exact product resources and English messages
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          python tools/verify_inno674_product_resources.py --setup (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') --uninstaller (Join-Path $root 'exercised-unins000.exe') --loader (Join-Path $compiler 'SetupLdr.e32') --engine (Join-Path $compiler 'Setup.e32') --icon src/AjazzBatteryTray/Assets/AppIcon.ico --previous (Join-Path $root 'binary-attribution.json') --output (Join-Path $root 'resource-attribution.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Product resource attribution failed' }
+      - name: Retain scoped resource attribution JSON only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-resource-attribution
+          path: ${{ runner.temp }}/ajazz-notice-probe/resource-attribution.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify exact product solid payload and scoped IFPS
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          python tools/verify_inno674_solid_payload.py --setup (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') --app dist/app/AJAZZBatteryTray.exe --icons src/AjazzBatteryTray/Assets --notices (Join-Path $root 'staged') --previous (Join-Path $root 'resource-attribution.json') --binding (Join-Path $root 'inno674-product-binding.json') --output (Join-Path $root 'solid-attribution.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Product solid attribution failed' }
+      - name: Retain solid attribution JSON only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-solid-attribution
+          path: ${{ runner.temp }}/ajazz-notice-probe/solid-attribution.json
           if-no-files-found: error
           retention-days: 7

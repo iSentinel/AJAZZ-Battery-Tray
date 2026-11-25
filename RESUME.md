@@ -1,3 +1,47 @@
+# Resume — native 6.7.4 resource and solid payload qualification
+
+#239 merged ff9c55d; #240 merged 1030524 into respective parent branches.
+Exact native binary/resource artifact identities verified; scoped
+resource and 281 English message attribution PASS. New 15-file
+solid stream/IFPS verifier and two regressions; native result pending.
+Full Setup.0 records, integration, interactive, legal and hardware
+gates open. Production 6.7.1, release hold.
+
+# Resume — native 6.7.4 product evidence and resource qualification
+
+#238 merged bfc68a4 into parent after 6/6 CI. Exact three archives
+and compiler/lifecycle/SBOM binding verified, schema PASS. Retained
+Nov25 NuGet/OSV observations replay on exact new BOM, no scoped matches.
+Stacked on #239. New 6.7.4 template resource leaves and English
+source inputs match previous pins; separate resource/message verifier,
+two tests. Hosted binary/resource, solid payload/script, interactive,
+legal and hardware gates open. Production pin 6.7.1, release hold.
+
+# Resume — Inno 6.7.4 scoped product binary attribution
+
+Stacked on #238. New loader and engine pins, actual uninstaller
+capture before execution, binding to successful removal and exact
+product setup/source/app. Scoped PE/frame/message validation,
+two regressions; hosted evidence pending. Resource/solid/script
+and interactive, legal, hardware gates remain open.
+
+# Resume — Inno 6.7.4 product lifecycle qualification
+
+#236 merged 0a5e715, 7/7 CI. Stacked on #237. Exact native fixture
+evidence verified, 38 inputs match before/after. Separate product
+probe with portable 6.7.4 compiler, pinned SDK/notices, clean/upgrade/
+repair/uninstall and scoped SBOM with compiler binding; hosted
+result pending. Interactive UAC, exact binary attribution, legal
+and physical gates remain open. Production pin and release hold unchanged.
+
+# Resume — Inno 6.7.4 interactive launch acceptance boundary
+
+Stacked on #236. Exact source comparison confirms elevation-path
+RedirectionGuardConfigure removal. RG01–RG06 acceptance matrix
+separates real UAC/original-user launch from already-elevated and
+silent CI cases; no mitigation bypass. Native compiler and product
+probe, interactive hardware/OS evidence and legal gates pending.
+
 # Resume — Inno 6.7.4 exact input and portable compiler qualification
 
 #234 merged abfd739 (6/6); #235 merged b64201e into parent (5/5).

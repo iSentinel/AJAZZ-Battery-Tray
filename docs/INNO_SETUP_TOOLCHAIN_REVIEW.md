@@ -132,3 +132,147 @@ fixture exercises install/hash/uninstall with lowest privileges
 and no application launch. Only JSON evidence retained.
 Native compiler probe result pending. Production wrapper and
 release workflows remain pinned to 6.7.1.
+
+## Native 6.7.4 compiler fixture and product qualification
+
+PR #236 head 6fb7aa8021b1725b8b04342726435930d5b7d64f,
+hosted checkout b93e9f21cfd73824372a9f4ee7f0c8369614abcc,
+run 45638049761, job 139288731383: PASS. Artifact 15034126967
+SHA-256 ff5ca8dba9e4f69bf967511d17bd3a040d3b549766ed1648a10f3082f138550d
+matches REST; exact three JSON members. Component evidence before
+and after compilation byte-identical, all 38 inputs MATCH.
+Inert fixture setup SHA-256
+35fbcfdaadabff34563a72d91bc31efd84d1df0b2128df87f8c02b432b248a94;
+payload MATCH, uninstall REMOVED, product_installed=false.
+
+The next hosted qualification extends the isolated portable 6.7.4
+job with the same pinned .NET 11 SDK, notice staging and product
+clean/upgrade/repair/uninstall checks as the 6.7.1 notice workflow.
+The explicit compiler directory and /F output override distinguish
+the unpublished 6.7.4 probe. Inputs checked before and after actual
+product compilation, exact engine banner required. The existing
+upgrade script accepts only two explicitly enumerated probe filenames;
+default behavior unchanged. A separate JSON binding ties component
+observations to product setup, app, BOM and checkout identity.
+Only JSON artifacts are uploaded, no release binaries or production
+compiler changes. The new product probe result is pending, as are
+interactive UAC observations and exact generated binary attribution.
+
+## Scoped 6.7.4 product binary attribution
+
+The reviewed 6.7.4 templates retain the narrow unsigned PE32 layout
+used by the prior verifier. Exact new loader and engine SHA-256 pins
+are respectively:
+998c58046b0808e75a030859962e1fe1ea600e8a5cf4646b09aadce77342c1a9
+and
+0c94d43e2c0f4d8371a2e1813b5446f3bc85ece3211dc4a6676159b534bbc483.
+Source comparison shows the Shared.Struct version constants changed,
+but no offset-table format change in the reviewed delta.
+
+The 6.7.4 product workflow now retains a local copy of the actual
+installed uninstaller immediately before executing it, checks the
+copy hash against the executable, and emits a removal record only
+after successful cleanup. The scoped verifier binds that record to
+the exact product setup/source/application identity, checks pinned
+loader and engine non-resource bytes, validates the offset-table and
+compressed engine CRCs, then attributes the uninstaller PE and
+AppId/message frame to the recovered engine. Existing 6.7.1 pins and
+verifiers are unchanged. Only JSON evidence is uploaded.
+Two regressions pass; actual hosted attribution pending.
+Resource content, message semantics, compiled script, solid payload
+attribution, interactive acceptance and release admission remain open.
+
+## Native 6.7.4 product lifecycle and scoped SBOM result
+
+PR #238 head 63a0f973a2f28d8b7fec19cc068a857ff4c02465,
+hosted checkout bfa6ffcc5225255c008004839fe7fe9718b1ed9a,
+run 45638993065, job 139292075013: PASS. Exact archive digests
+matched REST for these three evidence artifacts:
+
+- Clean 15035156390:
+  29be74e532690fca4c240b3ff0649bd34302d79503cf4b1fc7941b4b7e937417
+- Upgrade 15035006804:
+  e9e3d9e11caf5fd8b0068f41d6362c3d81db33807cf0b89da295d518223c226a
+- SBOM 15033382633:
+  b6fe18d056e4ac303bfab61dc0006730ca00113b47283027c592128eb805b92f
+
+Clean and upgrade lifecycle bytes match the bound hashes; all three
+notice records equal, all 38 compiler inputs match before/after.
+Setup SHA-256 2efcfd3901351a3ba40e9a285cf952a25190b4cc92a1cae1e27674a28361d99e;
+app SHA-256 fd78cc38ec0b26d75a2fc3bf06208027fd5667068eef7db04fb4301ec1553733.
+Repair PASS, synthetic data PRESERVED, uninstall REMOVED, tray launch
+NOT_OBSERVED. Native interactive acceptance remains NOT_VERIFIED.
+
+269-component scoped SBOM SHA-256
+3701b1ec71532830b25b2734633aca6823d9db9fa9bd92fb9ea470feb104026f
+passed independent CycloneDX schema and candidate binding; evidence
+SHA-256 51789a00b7bdc792f38143bd87adeafc42ebb30d1600b6e29bc334e763a264f6.
+Replayed the retained Nov25 NuGet snapshot and OSV response against this
+exact new BOM (no new acquisition): four package identities match;
+no matching ranges/IDs. Evidence SHA-256 respectively
+8c5a7b8d9acf7cd10eb5951a3bd8f4f3660042d56677a6c5e37b3d960b8eb60a
+and b86670a1d2108dfd64e9c32f5b4efe335916947d9d139614f244d350b8fce34e.
+No freshness gate, full vulnerability clearance or legal admission.
+
+## 6.7.4 resource and English message qualification
+
+The actual extracted official loader and engine have respectively 45
+and 81 resource leaves, every key and payload digest identical to the
+reviewed 6.7.1 templates. The observed template comparison is scoped
+to leaf payloads, not a claim of equal PE code or directory serialization.
+Default.isl and Shared.SetupMessageIDs.pas at the pinned 6.7.4 source
+match the prior exact pins; reconstruct the 281 English message
+strings in enum order (25120 bytes), SHA-256
+31b34a6d0f6d21f25e92c7ef6fcb03067654b5dd16df3416374f2d12ed4b3dbd;
+reviewed language options SHA-256
+20818b0695dca2c6bd625d633b29e98f012f3db4e0d16c2c05f447bacb563e0a.
+The current project icon also matches its existing pin.
+
+A separate 6.7.4 verifier checks the actual prior binary evidence,
+pinned template/icon identities, recovered engine, exact leaf changes,
+version and manifest transforms, observed resource serialization
+and English message bytes. Two regressions pass. The actual product
+resource and message result awaits hosted CI, and solid payload,
+compiled script, interactive acceptance and release admission are
+not verified. Production pin remains 6.7.1.
+
+## Native 6.7.4 binary and resource attribution
+
+#239 exact head 7f5b9cb56349dde7ab2e26bc655ca1b7a8f00db2,
+run 45639593361, job 139294214890, passed 6/6. Binary evidence
+artifact 15035475586 ZIP SHA-256
+6bf84d2e73808275d1b88947d41951d31b0987a9ef1da2c24b518fc65b352737;
+binding artifact 15035425989 ZIP SHA-256
+c98767eb322576bbad1149820a81721b56125c8d31a7a64f1d1a6819f72ca9fb.
+Both matched REST; source/setup/app and exercised uninstaller hashes
+match across records. Loader/engine non-resource sections MATCH;
+325 engine chunks CRC-checked, 4496384 decoded bytes. Engine SHA-256
+6a8e8465e229cf2e7d70e698ff4ef9c82a238c31aa0416f79c8cae486793eb53.
+Actual uninstaller PE matches recovered engine except reviewed mode;
+message structure matches. Binary JSON SHA-256
+c8efc297c32a9a825fc2424c12158051dddb8e741d9e132e15bfe056d64ac4fd.
+
+#240 exact head 90a8e189ba8bde7b3f8bb7b67021637c7ad650ae,
+run 45640223414, job 139296497263, passed 6/6. Resource artifact
+15035352163 ZIP SHA-256
+0175f458a579855ed2843ceea4266dae7d90ce099adb3b2979b66a2cad4ddd93;
+binary artifact 15035302431 ZIP SHA-256
+632a3a7d0d45df1dc43c186c1efe95f377ec500c76dc2f033c18638ada125dcf.
+Both matched REST; resource JSON references exact binary JSON hash.
+Resource evidence SHA-256
+1d87cbee8aa5bc2ffcf851c8602c752c952041d02675e99e7801f00c47422e2f.
+Setup SHA-256 ae47ad41b6869168b479bb5058b2f4e53cb4ab9ae983c3ea789afb0cf8c2ed8c.
+Loader 25 leaves, 32 directories; engine 71 leaves, 80 directories.
+All scoped icon, version, manifest, resource serialization and padding
+checks PASS; 281 English messages and language options match.
+No unqualified resource leaves in this scoped observation.
+The distinct candidate setup identities must not be interchanged.
+
+The next probe validates the exact ordered 15 source files (application,
+four icons, nine notices and manifest). The reviewed compiler merges
+duplicate source filenames, not identical contents at distinct paths.
+The verifier requires 16 file records including generated uninstaller,
+15 locations, exact extent/flags/hash, bounded LZMA2 decompression,
+terminal state and per-file hash; checks scoped IFPS launch predicate.
+File destination records and remaining Setup.0 records are not yet
+qualified by this tool. Actual native result pending. No release change.
