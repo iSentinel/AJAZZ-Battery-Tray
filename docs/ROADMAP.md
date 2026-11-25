@@ -1716,3 +1716,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted checks and integration, resolve remaining licensing terms,
       design candidate-bound installed/portable notice transport and
       qualify new binaries. Release hold.
+
+### Exact Windows notice transport
+
+- [x] Verify immutable local notice tree against pinned manifest.
+- [x] Create canonical stored ZIP and independently verify all members;
+      actual replay and three regressions PASS.
+- [ ] Hosted checks, candidate-bound portable and installed notice
+      coverage, outstanding legal terms, physical acceptance.
+      Release hold.

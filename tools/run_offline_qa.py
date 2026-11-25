@@ -33,6 +33,7 @@ CLI = ("analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease"
        "inventory_dotnet_pack_licenses",
        "stage_dotnet_notices",
        "stage_windows_notices",
+       "verify_windows_notice_transport",
        "build_scoped_windows_sbom",
        "audit_pinned_nuget_advisories",
        "inventory_apple_archive",
