@@ -163,7 +163,7 @@ jobs:
           safeguards, bounded HID diagnostics, and local diagnostic
           session export. Unverified APEX fields are not battery readings.
           Real-device acceptance, signing and distribution review remain
-          required. Inno Setup 6.7.4 is being qualified separately;
+          required. The updated installer compiler is being qualified separately;
           the production compiler has not been switched.
           NOTES
           if gh release view "$TAG" >/dev/null 2>&1; then
