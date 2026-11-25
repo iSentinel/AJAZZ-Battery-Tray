@@ -1,3 +1,12 @@
+# Resume — Apple F7 observation parity
+
+#262 corrected head 044c3a9 after initial CS0136 in test matrix;
+native CI pending. Child uses typed classification in shared C
+decoder with unchanged admission gates and framing. Linux native
+C: 4374 synthetic classifications, 8748 decoder evaluations and
+historical corpus PASS. Native macOS CI and physical validation
+pending. No new HID commands or release authorization.
+
 # Resume — F7 parity test compile correction
 
 #261 exact 5/5 CI merged c7264b9. #262 initial Windows test compile
