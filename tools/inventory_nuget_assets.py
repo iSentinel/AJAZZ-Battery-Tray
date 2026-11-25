@@ -12,8 +12,13 @@ from run_offline_qa import read_evidence, write_json
 
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,159}")
 VERSION = re.compile(r"[0-9][A-Za-z0-9.+-]{0,79}")
-TARGET = re.compile(r"[A-Za-z0-9][A-Za-z0-9.,=+/_-]{0,159}")
+TARGET = re.compile(r"[A-Za-z0-9][A-Za-z0-9.,=+_-]{0,159}")
+RID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}")
 RANGE = re.compile(r"(?:[0-9][A-Za-z0-9.+-]{0,79}|[\[(][0-9A-Za-z., +\-]{1,160}[\])])")
+
+
+class InventoryError(ValueError):
+    """Fixed, non-sensitive validation diagnostic."""
 
 
 def unique_pairs(pairs: list[tuple[str, object]]) -> dict:
@@ -21,7 +26,7 @@ def unique_pairs(pairs: list[tuple[str, object]]) -> dict:
     result = {}
     for key, value in pairs:
         if key in result:
-            raise ValueError("Duplicate JSON member")
+            raise InventoryError("Duplicate JSON member")
         result[key] = value
     return result
 
@@ -29,14 +34,14 @@ def unique_pairs(pairs: list[tuple[str, object]]) -> dict:
 def mapping(value: object) -> dict:
     """Require a JSON object."""
     if not isinstance(value, dict):
-        raise ValueError("Expected an object")
+        raise InventoryError("Expected an object")
     return value
 
 
 def token(value: object, pattern: re.Pattern) -> str:
     """Return a limited metadata token, never an arbitrary input string."""
     if not isinstance(value, str) or not pattern.fullmatch(value):
-        raise ValueError("Invalid dependency metadata")
+        raise InventoryError("Invalid dependency metadata")
     return value
 
 
@@ -48,61 +53,87 @@ def package_list(entries: dict, libraries: dict) -> list[dict]:
         library = mapping(libraries[key])
         kind = mapping(info).get("type")
         if kind != library.get("type") or kind not in ("package", "project"):
-            raise ValueError("Inconsistent or unsupported library type")
+            raise InventoryError("Inconsistent or unsupported library type")
         if kind == "project":
             continue
         name, separator, version = key.partition("/")
         if not separator or name.lower() in seen:
-            raise ValueError("Invalid or duplicate package identity")
+            raise InventoryError("Invalid or duplicate package identity")
         seen.add(name.lower())
         result.append({"id": token(name, NAME), "version": token(version, VERSION)})
     return result
 
 
-def framework_list(frameworks: dict) -> list[dict]:
+def framework_list(frameworks: dict, version: int) -> list[dict]:
     """Inventory declared framework references and SDK download requests."""
     result = []
     for name, info in sorted(frameworks.items()):
         details = mapping(info)
+        alias = token(name, TARGET)
+        effective = token(details["framework"], TARGET) if version == 4 else alias
+        if version == 4 and details.get("targetAlias", alias) != alias:
+            raise InventoryError("Inconsistent framework alias")
         refs = mapping(details.get("frameworkReferences", {}))
         downloads = details.get("downloadDependencies", [])
         if not isinstance(downloads, list):
-            raise ValueError("Invalid download dependencies")
+            raise InventoryError("Invalid download dependencies")
         entries = []
         seen = set()
         for item in downloads:
             entry = mapping(item)
             package = token(entry["name"], NAME)
             if package.lower() in seen:
-                raise ValueError("Duplicate download dependency")
+                raise InventoryError("Duplicate download dependency")
             seen.add(package.lower())
             entries.append({"id": package, "requested": token(entry["version"], RANGE)})
         result.append({
-            "framework": token(name, TARGET),
+            "alias": alias,
+            "framework": effective,
             "framework_references": sorted(token(ref, NAME) for ref in refs),
             "download_dependencies": sorted(entries, key=lambda item: item["id"]),
         })
     return result
 
 
+def target_list(targets: dict, libraries: dict, frameworks: list[dict]) -> list[dict]:
+    """Bind each target to its declared framework alias and optional RID."""
+    aliases = {item["alias"]: item["framework"] for item in frameworks}
+    result = []
+    for key, value in sorted(targets.items()):
+        alias, separator, rid = key.partition("/")
+        token(alias, TARGET)
+        if alias not in aliases or (separator and not RID.fullmatch(rid)):
+            raise InventoryError("Invalid target alias or runtime identifier")
+        result.append({
+            "target": key,
+            "framework": aliases[alias],
+            "runtime_identifier": rid if separator else None,
+            "packages": package_list(mapping(value), libraries),
+        })
+    if {item["target"].partition("/")[0] for item in result} != set(aliases):
+        raise InventoryError("Missing target for declared framework")
+    return result
+
+
 def inventory(raw: bytes) -> dict:
-    """Project version-3 assets onto an explicitly limited metadata schema."""
+    """Project known version-3/4 assets onto a limited metadata schema."""
     data = mapping(json.loads(raw, object_pairs_hook=unique_pairs))
-    if type(data.get("version")) is not int or data["version"] != 3:
-        raise ValueError("Unsupported assets schema")
+    version = data.get("version")
+    if type(version) is not int or version not in (3, 4):
+        raise InventoryError("Unsupported assets schema")
     targets = mapping(data["targets"])
     libraries = mapping(data["libraries"])
     frameworks = mapping(mapping(data["project"])["frameworks"])
     if not targets or not frameworks:
-        raise ValueError("Missing restore targets or frameworks")
+        raise InventoryError("Missing restore targets or frameworks")
+    declared = framework_list(frameworks, version)
     return {
-        "schema": 1,
+        "schema": 2,
+        "assets_version": version,
         "scope": "NuGet restore metadata only; not a packaged SBOM",
         "assets_sha256": hashlib.sha256(raw).hexdigest(),
-        "targets": [{"target": token(key, TARGET),
-                     "packages": package_list(mapping(value), libraries)}
-                    for key, value in sorted(targets.items())],
-        "frameworks": framework_list(frameworks),
+        "targets": target_list(targets, libraries, declared),
+        "frameworks": declared,
     }
 
 
@@ -119,6 +150,9 @@ def main(argv: list[str] | None = None) -> int:
         result = inventory(raw)
         stage = "output"
         write_json(args.output, result)
+    except InventoryError as error:
+        print(f"ERROR: restore inventory {stage}: {error}", file=sys.stderr)
+        return 2
     except (OSError, ValueError, KeyError, TypeError, RecursionError) as error:
         print(f"ERROR: restore inventory {stage} ({type(error).__name__})",
               file=sys.stderr)

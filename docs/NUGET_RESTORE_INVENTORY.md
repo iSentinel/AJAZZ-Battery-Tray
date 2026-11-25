@@ -57,3 +57,16 @@ single-link, non-reparse file with identity. Added regression for the
 divergent timestamps and stable rewritten file, native reader tests,
 and input/schema/output diagnostics without private values. Exact root
 cause still requires native CI; no weaker fallback or raw assets upload.
+
+## Assets schema compatibility
+
+The Windows HA job on 2b9f810 completed all 15 targeted Python tests
+but failed the actual inventory at schema validation, not input read.
+Upstream NuGet documents assets v4 from SDKAnalysisLevel 10.0.300:
+https://github.com/NuGet/Home/blob/dev/accepted/2025/Multiple-Equivalent-Framework-Support-TFM-As-Aliases.md
+NuGet.Client LockFileFormat defines legacy 3 and aliased 4. Support both
+known formats, preserve target alias, effective framework and RID in
+inventory schema 2, reject unknown schemas and inconsistent aliases.
+Fixed validation diagnostics contain no raw input values. Synthetic
+v4 tests and native CI required; actual source schema not yet observed
+in the failing run. Earlier Windows metadata hypothesis is not proven.
