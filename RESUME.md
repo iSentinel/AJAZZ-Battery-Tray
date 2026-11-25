@@ -1286,3 +1286,14 @@ native CI checked installed hash. Evidence
 /root/ajazz-beta61-installer-verified.evVtmGsl. Physical acceptance,
 independent installer payload verification and trust/redistribution
 remain open. Release hold unchanged.
+
+## Independent installer payload checkpoint
+
+#199 merged e88676c. Exact #198 setup artifact independently extracted
+using innoextract 1.13.0 pinned asset 519954318, unprivileged minimal
+systemd chroot, no network or installer execution. All five declared
+files match; extracted beta.61 EXE SHA256 f4878037d453719eb017378e32b9320dbe74da7627012e02d4dfb30ab476e33c.
+Replayed scoped PE/.NET/SBOM 269 components, schema PASS. New
+verify_installer_payload.py actual replay PASS; private evidence
+/root/ajazz-inno-payload.jg9QPEie. Setup engine, uninstaller,
+signature/trust, licensing and physical acceptance still open.

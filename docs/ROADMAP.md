@@ -1465,3 +1465,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       verify PE32 bootstrap certificate-table observation.
 - [ ] Independent installer payload verification, toolchain trust and
       redistribution review. No physical acceptance claimed.
+
+### Independent retained installer payload qualification
+
+- [x] Merge #199 after exact CI; e88676c equals a8e3509.
+- [x] Pin third-party innoextract 1.13.0 asset and observe source
+      license; use isolated unprivileged chroot/no network, no install.
+- [x] Recognize exact setup data 6.7.0, list/test/extract all five
+      declared files, compare extracted EXE and ICO SHA-256.
+- [x] Replay scoped PE/.NET and CycloneDX checks on extracted beta.61.
+- [x] Add bounded extracted-tree verifier with four regressions and
+      CLI help, replay actual files.
+- [ ] Hosted exact candidate CI; installer engine/uninstaller
+      attribution, redistribution review and physical acceptance.
