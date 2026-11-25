@@ -62,6 +62,10 @@ public static class BatteryReportParser
         _ => "accepted by gated F7 mouse parser"
     };
 
+    /// <summary>Privacy-safe policy reason, independent of the reported percentage.</summary>
+    public static string DiagnosticF7Gate(F7MouseObservation? observation)
+        => "F7 policy gate: " + (observation?.Gate.ToString() ?? "Unrecognized");
+
     /// <summary>Display-only observation; never use as validated charge or telemetry.</summary>
     public static int? UnverifiedMouseField(ReadOnlySpan<byte> report)
         => ObserveSharedF7(report)?.UnverifiedPercent;

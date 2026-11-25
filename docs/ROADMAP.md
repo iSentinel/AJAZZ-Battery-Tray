@@ -2194,3 +2194,18 @@ configuration commands. USB `VersionNumber` is a device revision,
       corpus PASS. No provisional-field promotion on Apple.
 - [ ] Native macOS CI and integration after corrected #262 passes.
 - [ ] Physical protocol validation and release hold unchanged.
+
+### Typed F7 ordinary poll diagnostics
+
+- [x] #262 exact corrected head 044c3a9: five successful workflows,
+      including 4374 native parity combinations, merged 842d44d.
+      Duplicate cancelled CI runs were superseded by successful runs.
+- [x] #263 exact 5/5 CI including High Sierra and Universal,
+      merged 1edcedf after tested-tree equality.
+- [x] Consume typed F7 observation in the ordinary Windows HID poll.
+      Report one privacy-safe classification per successful ordinary
+      transfer, including Unrecognized for nonshared replies.
+      Transport failures and experimental comparison remain separate.
+      No change to accepted/provisional fields, history, or alerts.
+      Add diagnostic-label regression.
+- [ ] Native Windows CI and real-device acceptance.
