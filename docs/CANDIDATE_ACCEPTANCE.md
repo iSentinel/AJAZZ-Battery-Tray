@@ -424,3 +424,31 @@ in-memory recovery, five regressions for table/chunk CRC, LZMA
 properties/terminal state, transform and exact inner PE extent.
 This is scoped engine attribution, not uninstaller verification,
 signature trust, redistribution clearance or physical acceptance.
+
+### Exercised #206 uninstaller attribution
+
+PR #206 Windows upgrade 45579662246 PASS; actual merge checkout
+3dd4d8477f440691476752cbc124ca3e32a1d8ca, tree 9f15d1b.
+Installer artifact 15006496076 archive SHA-256
+`7c0739db76e39b01d55585ef9001a1eba144bd82ea61c4419abe2fdd1d45f557`;
+uninstaller artifact 15006127324 archive SHA-256
+`d4f1663bcd1be721604214038b184e8840921bd91066a47a0d6e5e55b57a2683`.
+Both REST archive digests and exact cross-manifest bindings PASS.
+Setup SHA-256 b37f077969d01bfbe1b3b1411a53b00ba1baf28b89f33e6fcb0e980b44d7b929.
+Uninstaller SHA-256 9548d6786c0ae2531a4e4bcd183db9805bd88b7c98571fd033f1b4f05967da65;
+4520194 bytes, unsigned PE32 certificate table absent. Baseline hash differs.
+
+Same setup's recovered 4494848-byte engine matches previous recovered
+engine digest b22936d9f95b3c088ad7d5cb3f39c17983353849c966e266c2bcb29666baa873.
+Official Setup.e32 non-resource comparison PASS. The entire uninstaller
+PE equals that engine except offset 0x30, four-byte mode 0x6e556e49.
+This includes resource bytes, but does not establish their provenance.
+Pinned Inno source cfdf48923178df4b4f040e038b423aa555a61ffc:
+Shared.Struct.pas defines marker and tail; Setup.Install.pas calls
+MarkExeHeader and BindUninstallMsgDataToExe. Overlay consists of exact
+UTF-16LE AppId SHA-256, 25302 message bytes, 12-byte tail with ID
+0x67734d49 and offset 4494880. Frame PASS; message semantics NOT_VERIFIED.
+Actual replay via verify_inno_uninstaller.py PASS, evidence SHA-256
+c05499fe53a691806206fc27eca9aa1e3426fa7b6a64b2f6c0a358cf7b12da2c.
+No publisher trust, compiled script, physical acceptance or release
+admission is inferred.

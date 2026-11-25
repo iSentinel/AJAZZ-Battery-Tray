@@ -1,3 +1,12 @@
+# Resume — exercised uninstaller attribution
+
+#206 merged 59b718d, #207 merged d20d2bf into #206 branch, both
+5/5 exact CI. Actual #206 paired archives verified. Entire uninstaller
+PE matches recovered engine except documented 4-byte mode marker;
+AppId hash and message tail verified. Offline reusable comparator
+and four tests added. Message semantics, resource provenance,
+licensing, trust and hardware acceptance open; release hold.
+
 # Resume — absent receiver field evidence
 
 #184 merged d32b845. Owner beta.60 report 06:38 UTC shows known absent

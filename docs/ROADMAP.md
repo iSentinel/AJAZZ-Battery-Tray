@@ -1561,3 +1561,22 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted Windows upgrade job and artifact digest verification.
 - [ ] Offline PE/engine/resource attribution, licensing and hardware
       acceptance. A matching baseline hash is not proof of new engine.
+
+### Offline uninstaller evidence binding
+
+- [x] Validate exact ZIP digest, bounded members, manifest and PE32
+      header; independently verify candidate ZIP and compare checkout,
+      version, app and setup hashes.
+- [x] Record reported baseline equality without inferring engine trust.
+- [x] Add four synthetic regressions and CLI help gate.
+- [ ] Hosted CI and real artifact replay; engine attribution still open.
+
+- [x] #206 exact 5/5 CI merged 59b718d; artifact archive digests and
+      paired manifest binding PASS.
+- [x] #207 exact 5/5 CI merged d20d2bf into #206 branch.
+- [x] Recover exact #206 setup engine; all uninstaller PE bytes match
+      except documented mode marker. AppId hash and message tail match.
+- [x] Reproducible offline attribution CLI; four synthetic regressions.
+- [ ] Integrate stacked verifier and attribution into draft #99 after
+      hosted CI. Review message semantics, resource provenance, script,
+      licensing, independent trust and hardware acceptance.
