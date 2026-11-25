@@ -1,3 +1,28 @@
+# Resume — ENG-15 candidate after ENG-05 integration
+
+#139 merged d665299 into draft #99 after Windows/macOS/upgrade PASS.
+Windows run 45516691219 confirmed all 12 structured log assertions and
+903 total C# checks, zero failures. Tree equals tested 9b1b917.
+ENG-15 follow-up copied onto that exact tree (source 5e7559f, tree
+ e1c467f2a552202ecfd7cab072c54230191c4216). Local Python QA required,
+hosted native checks pending. Network audit corrects future-only MQTT
+risk and rejects ambiguous release metadata. No new hardware I/O.
+Next: verify current ENG-15 PR CI, then ENG-06 supply-chain inventory
+and exact pin review; no publication. Apple logging/ACL/timing open.
+
+# Resume — ENG-15 network metadata candidate
+
+#138 merged b22535d into draft #99 after 4/4 hosted CI; downloaded QA
+manifest verified (117 tests, 14 steps). #139 Windows journal candidate
+9b1b917 / tree a57db6c, local QA PASS; native checks pending.
+Local independent follow-up branch fix/network-metadata-validation is
+based on #139 candidate, not pushed or merged. Source boundary audit and
+duplicate release metadata/tag rejection; four new native checks require
+Windows CI. No real MQTT connector exists. Do not stack-publish before
+#139 passes and merges; rebase/cherry-pick to verified matching tree.
+Next: inspect #139 CI, integrate if PASS and exact head, then submit
+ENG-15 follow-up. No main merge, release or hardware approval.
+
 # Resume — ENG-05 Windows operational journal
 
 #138 eaa150c four hosted checks PASS, downloaded QA artifact independently

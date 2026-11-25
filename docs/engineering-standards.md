@@ -51,7 +51,7 @@ bounded rotation/private files, no private identifiers, paths, aliases,
 credentials, raw exception messages or raw unreviewed payloads. Machine
 output stays on stdout, operational diagnostics on stderr/private logs.
 Preserve CLI compatibility. Test canaries, failures and output separation.
-Windows FileLog has a closed JSONL candidate; native CI, Apple parity,
+Windows FileLog closed JSONL passed #139 native CI; Apple parity,
 operation durations and filesystem/ACL qualification remain separate gates.
 See WINDOWS_OPERATIONAL_LOG.md for the scoped implementation and limitations.
 

@@ -60,16 +60,21 @@ public sealed class UpdateClient
         if (document.RootElement.ValueKind != JsonValueKind.Array)
             throw new InvalidDataException("Invalid release listing.");
         var entries = new List<(string Tag, bool Draft, bool Prerelease)>();
+        var tags = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in document.RootElement.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.Object ||
+            if (item.ValueKind != JsonValueKind.Object || !UniqueProperties(item) ||
                 !item.TryGetProperty("tag_name", out var tag) || tag.ValueKind != JsonValueKind.String ||
                 !item.TryGetProperty("draft", out var draft) || !IsBoolean(draft) ||
                 !item.TryGetProperty("prerelease", out var pre) || !IsBoolean(pre))
                 throw new InvalidDataException("Invalid release metadata.");
             string name = tag.GetString()!;
             if (ReleaseVersion.Parse(name) is not null)
+            {
+                if (!tags.Add(name))
+                    throw new InvalidDataException("Duplicate release tag.");
                 entries.Add((name, draft.GetBoolean(), pre.GetBoolean()));
+            }
         }
         var version = UpdateRules.Newest(installed, entries, experimental);
         if (version is null) return null;
@@ -77,6 +82,14 @@ public sealed class UpdateClient
             (version.Beta.HasValue ? experimental : !x.Prerelease) &&
             ReleaseVersion.Parse(x.Tag) == version);
         return new(version, selected.Tag, ReleasesPage + "/tag/" + Uri.EscapeDataString(selected.Tag));
+    }
+
+    private static bool UniqueProperties(JsonElement item)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in item.EnumerateObject())
+            if (!names.Add(property.Name)) return false;
+        return true;
     }
 
     private static bool IsBoolean(JsonElement item)
