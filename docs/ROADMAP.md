@@ -1595,3 +1595,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI and integrate stacked source verification; inspect
       PE resource provenance, compiled script, licensing, trust and
       hardware acceptance. Release hold unchanged.
+
+### Scoped PE resource and custom icon attribution
+
+- [x] Inventory exact #206 loader and recovered engine resource leaves.
+- [x] Reconstruct seven ICO payloads and MAINICON group for both PEs;
+      exact resource key sets and unchanged qualified leaves match.
+- [x] Add bounded CLI and three synthetic regressions; actual replay PASS.
+- [ ] Hosted CI, integration, loader manifest transformation, version
+      resources and metadata/serialization provenance; release hold.

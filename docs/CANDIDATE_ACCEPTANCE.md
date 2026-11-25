@@ -487,3 +487,21 @@ data is embedded in evidence. Actual paired archive replay SHA-256
 a01b64d9ccf807d01ac54932f05c33cf4690c66486ba6b395b4217e0f6e70d83.
 This establishes scoped English text and appearance equivalence, not
 compiled script execution, resource provenance or release admission.
+
+### Scoped loader and engine resource attribution
+
+Exact #206 setup and both pinned official templates compared at resource
+leaf level. AppIcon.ico SHA-256
+be6d9849acd8c768725d73a4b1a70a4aba9284770dff72bbb5d355694bef3b16
+also matches the actual CI checkout. Reconstruct all seven icon image
+payloads and the complete MAINICON group with IDs 100..106. Both PE
+images match those bytes. Loader: 45 template / 25 actual leaves,
+14 unchanged, 27 removed; engine: 81 / 71, 62 unchanged, 17 removed.
+Require exact key sets after scoped icon replacement and removal of
+obsolete icon groups, rejecting other extra/missing leaves. Offset
+record CRC/bounds were separately verified on this exact setup.
+Remaining modified payloads: loader version and manifest, engine
+version; resource directory metadata and physical serialization remain
+unqualified. Actual replay SHA-256
+b753c41baf7c6514db7b33c17bfe92adbed84f5b59eeede0f85ffa619f03263f.
+No full resource provenance or release admission claim.

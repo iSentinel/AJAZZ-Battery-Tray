@@ -1,3 +1,12 @@
+# Resume — scoped resource icon attribution
+
+Stacked on #210. Actual #206 setup loader 25 leaves, engine 71;
+14/62 unchanged template leaves and seven custom icon images plus
+MAINICON group match. Exact scoped key sets match; loader offset
+CRC/bounds separately verified. Version, manifest, metadata and
+serialization provenance still open. Three regressions added.
+Compiled script, licensing, trust and hardware remain open.
+
 # Resume — exact English message equivalence
 
 #208 merged ecfc636 (5/5); #209 merged 38e03dd into its parent
