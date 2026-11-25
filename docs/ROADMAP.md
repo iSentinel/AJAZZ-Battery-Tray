@@ -1808,3 +1808,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Verify new product probe SBOM evidence and schema, CI and
       integration, advisory coverage and remaining legal/hardware gates.
       Release hold.
+
+### Native candidate SBOM and scoped advisory binding
+
+- [x] #230 merged 2a7137a (6/6), #231 merged b2430ad into parent
+      (5/5) after exact tested tree comparisons.
+- [x] Download exact native SBOM and lifecycle artifacts, match
+      archive and document digests and source/app/setup identity.
+- [x] Independent CycloneDX 1.6 validation of native candidate BOM,
+      including candidate binding.
+- [x] Acquire consistent dated NuGet snapshot; 211 ranges, no matches;
+      bind scoped advisory observations to exact BOM and four packages.
+      Two regressions.
+- [ ] Hosted QA/integration, independent advisory cross-check,
+      remaining installer/Apple/OS and toolchain scope, legal terms,
+      hardware acceptance. Release hold.

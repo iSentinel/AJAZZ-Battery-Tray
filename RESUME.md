@@ -1,3 +1,13 @@
+# Resume — native candidate SBOM and scoped advisory binding
+
+#230 merged 2a7137a (6/6), #231 merged b2430ad into parent (5/5).
+Actual #230 product probe SBOM and both lifecycle archives match
+digests/identity; independent CycloneDX schema and binding PASS.
+Freshly acquired consistent Nov25 NuGet snapshot: 211 ranges, no
+matches for four exact source packs. Two advisory binding tests.
+Other advisory scopes, legal terms and hardware gates open.
+Release hold.
+
 # Resume — independent scoped SBOM schema validation
 
 Stacked on #230. Actual #206 historical BOM passed CycloneDX 1.6

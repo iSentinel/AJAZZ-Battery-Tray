@@ -120,3 +120,44 @@ the verifier. For the new product-probe BOM also supply --binding
 product-sbom-binding.json. Actual historical schema evidence SHA-256
 667623b4bd919c04efcc028a7b55c49b7d1cdd885c98f9a4d99dad3bb10a7d23.
 The new product BOM still requires exact native evidence.
+
+## Native product probe SBOM and scoped advisory replay
+
+PR #230 exact head 533c787d97669ef822b780d756af3dc273254ad5,
+hosted checkout b75f0e07a242f22317821c9007d9f4def067620f,
+run 45626121143, job 139246657930: PASS.
+Downloaded three evidence ZIPs; their SHA-256 digests match REST:
+- SBOM artifact 15028403507:
+  a6b76244e475a47b4e4d673ead188c65a9f5ea1aa47fee43ac8683bcb773e206
+- Clean artifact 15028142667:
+  e1d66e4014c30e26523190fd65f598b2ba51d2567980a894ca8492c212514502
+- Upgrade artifact 15028103439:
+  789468aa14469ea06140b9173c8b8bb80c80508fb0b131b16630f7e7360b8d33
+
+The raw clean/upgrade lifecycle document hashes match the BOM binding.
+Source, app and setup identity agree across the three records.
+App SHA-256 2be82a40ef1c42fca007683e03c50e3ddb6132b8e329e94bf0f2f80ea29943ff;
+setup SHA-256 7871c7f274da2197886e57fdf2bceac3d82f82ae0a24f5aed5b0ab2a559d93c9.
+269 components, BOM SHA-256
+a54d607827ad11c171a5b6fc2689a61b728b7ee1362b8e220941149a48f8bc59.
+Independent local CycloneDX Draft7 schema validation with candidate
+binding PASS; evidence SHA-256
+7e2c735e716bedaff76df91b2a08fdb150d85e7e233c03df7f2acb5e799dd8d5.
+
+NuGet VulnerabilityInfo acquired over certificate-validated HTTPS
+on 2026-11-25. Initial reads returned gzip and inconsistent index
+observations; the successful bounded retry obtained identical
+index bytes before/after page acquisition. Base updated
+2026-11-20T05:34:20.7684268Z, update
+2026-11-25T05:34:51.2524425Z. Index SHA-256
+af1d2487d01953fd5605b58d58a89a440fdca823ba7b370f635f30edc5ff8055.
+Base and update page digests match the earlier snapshot; 211 ranges
+examined (host 1, core 130, desktop 80, SDK 0), no matching ranges.
+The candidate-bound audit verifies the exact four source pack
+identities, package digests, PURLs, schema evidence and BOM identity.
+Actual advisory evidence SHA-256
+f58f61edb38b9e45fe910b7d364dbcac56027af3e4cbdb591954c95d17dfd5e4.
+This is a dated snapshot observation, not an authenticated signed feed,
+freshness gate, complete dependency graph, absence of vulnerabilities,
+or release admission. Installer, Apple, OS and other advisory
+coverage, license terms and physical acceptance remain open.
