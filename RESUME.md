@@ -1190,3 +1190,9 @@ local BLE/USB display links; one combined tray presentation keyed by
 receiver, fresh USB then fresh GATT then marked cached values, unknown
 otherwise. Separate history, alerts, dashboard and local API retained.
 Hardware acceptance and native CI pending.
+
+## Stable linked primary checkpoint
+
+#188 integrated 64635db; stacked on #189 4d2b466. Keep linked primary
+selected until hidden/unlinked even when unrelated USB or BLE appears.
+Other icons remain independent. Hosted CI and physical acceptance open.

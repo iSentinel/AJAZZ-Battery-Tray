@@ -1340,3 +1340,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI and physical switch / restart / multiple-device acceptance.
 - [ ] Stable logical primary selection with multiple devices, diagnostic
       multi-snapshot capture and release admission.
+
+### Stable logical linked primary
+
+- [x] Merge #188 after exact hosted CI.
+- [x] Keep linked primary through transport and unrelated device changes;
+      reselect only if hidden/unlinked. Keep independent extra icons.
+- [x] Add six native policy checks and source integration regression.
+- [ ] Hosted CI and real single/multiple-icon switching acceptance.
+- [ ] Multi-snapshot capture, diagnostic comparison and release admission.

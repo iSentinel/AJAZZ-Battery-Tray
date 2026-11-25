@@ -21,6 +21,15 @@ public static class TransportLinks
         => BleConsent.Valid(ble) && consent.Contains(ble) && BleConsent.Valid(usb) &&
             ble != usb && !links.ContainsKey(ble) && !links.Values.Contains(usb, StringComparer.Ordinal);
 
+    /// <summary>Keep the selected linked primary until hidden or unlinked.</summary>
+    public static string? SelectPrimary(string? current, IEnumerable<string> visibleLinks,
+        bool standaloneSelected)
+    {
+        if (current is not null && visibleLinks.Contains(current, StringComparer.Ordinal))
+            return current;
+        return standaloneSelected ? null : ReceiverIdentity.SelectPrimary(null, visibleLinks);
+    }
+
     public sealed record Display(int? Percent, bool Cached, bool Bluetooth);
 
     /// <summary>Choose a source without treating either transport's raw field as telemetry.</summary>
