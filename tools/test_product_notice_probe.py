@@ -31,6 +31,22 @@ class ProductNoticeProbeTests(unittest.TestCase):
         self.assertIn("name: product-notice-probe-evidence", workflow)
         self.assertIn("release_admission = 'NOT_VERIFIED'", workflow)
 
+    def test_upgrade_probe_scope(self) -> None:
+        """Keep baseline pinned, no launch and repair checks explicit."""
+        source = (ROOT / 'tools/Test-ProductNoticeUpgrade.ps1').read_text()
+        self.assertIn("GITHUB_ACTIONS -cne 'true'", source)
+        self.assertIn("555b957b809c2f1bb4228c10a818abadad2df78e455925871713ee7779970672", source)
+        self.assertIn("Install-Checked $baseline '0.3.0-beta.60'", source)
+        self.assertEqual(source.count("Install-Checked $candidate '0.3.0-beta.61'"), 2)
+        self.assertIn("Check-Candidate 'product-upgrade-notices.json'", source)
+        self.assertIn("Check-Candidate 'product-reinstall-notices.json'", source)
+        self.assertIn("'/LAUNCH=0'", source)
+        self.assertIn("synthetic_user_data = 'PRESERVED'", source)
+        self.assertIn("release_admission = 'NOT_VERIFIED'", source)
+        workflow = (ROOT / '.github/workflows/test-notice-install.yml').read_text()
+        self.assertIn('./tools/Test-ProductNoticeUpgrade.ps1', workflow)
+        self.assertIn('name: product-notice-upgrade-evidence', workflow)
+
 
 if __name__ == '__main__':
     unittest.main()
