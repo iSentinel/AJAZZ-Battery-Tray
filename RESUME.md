@@ -1,3 +1,12 @@
+# Resume — exact acceptance artifact generation checkpoint
+
+#269 exact 4/4 CI merged 5b18c5c after tested-tree equality.
+Verified three original bd84554 CI ZIPs against REST digests,
+actual app identities and five blank/replayed checklists:
+57 NOT_RUN. Later integration source is distinct. Rebind exact
+artifacts for next generation; physical, signing and distribution
+gates open. Release hold unchanged.
+
 # Resume — CLI diagnostic consistency
 
 #268 exact 5/5 CI merged bd84554 after tested-tree equality.
