@@ -1238,3 +1238,14 @@ real Windows ZIP interoperability and physical acceptance pending.
 test-only C# export through actual DiagnosticSession.Export and Python
 verification of synthetic states/markers. No real captures or device
 I/O. Native roundtrip result pending CI; macOS session next.
+
+## Apple diagnostic session checkpoint
+
+#194 merged cf700ab. #195 native Windows C# / Python roundtrip passed;
+Apple session branch stacked on #195 6fd2bcb. Shared C bounded
+session and stored ZIP export, Universal Swift and legacy ObjC menus,
+EN/RU/UK, passive owner markers and explicit reviewed report addition.
+32 x 64 KiB, 0600 exclusive ZIP, no extra HID request, no upload.
+Portable C compile + Python import passes; native CI and physical
+menu acceptance remain open. Duplicate whole-second snapshot UTC is
+rejected; a failed export may leave a partial new ZIP.

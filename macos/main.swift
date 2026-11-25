@@ -262,6 +262,12 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var polling = false
     private var closing = false
+    private let diagnosticSession = AjazzSessionCreate()
+    private var sessionStatusItem: NSMenuItem?
+    private var sessionStartItem: NSMenuItem?
+    private var sessionCaptureItems = [NSMenuItem]()
+    private var sessionSaveItem: NSMenuItem?
+    private var sessionDiscardItem: NSMenuItem?
     private var diagnosticRunning = false
     private var diagnosticCancellation: ApexWorkerCancellation?
     private var runDiagnosticItem: NSMenuItem?
@@ -279,6 +285,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var displayedStatus = ApexBattery.Status.accessUnknown
     private var sessionObservation = ApexSessionObservation()
     private var lastClockSent: Bool?
+
+    deinit { AjazzSessionDestroy(diagnosticSession) }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -342,10 +350,105 @@ final class TrayController: NSObject, NSApplicationDelegate {
         menu.addItem(run)
         menu.addItem(cancel)
         updateDiagnosticMenu()
+        let sessionItem = NSMenuItem(title: AppText.text("Diagnostic session"), action: nil, keyEquivalent: "")
+        sessionItem.submenu = buildDiagnosticSessionMenu()
+        menu.addItem(sessionItem)
         menu.addItem(command("Copy diagnostic report", #selector(copyDeviceReport)))
         menu.addItem(command("Open battery history folder...",
                               #selector(openHistoryFolder)))
         return menu
+    }
+
+    private func buildDiagnosticSessionMenu() -> NSMenu {
+        let menu = NSMenu(title: AppText.text("Diagnostic session"))
+        menu.autoenablesItems = false
+        let count = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        count.isEnabled = false
+        sessionStatusItem = count
+        menu.addItem(count)
+        let start = command("Start diagnostic session", #selector(startDiagnosticSession))
+        sessionStartItem = start
+        menu.addItem(start)
+        sessionCaptureItems = ["Capture baseline", "Mark 2.4 GHz selected",
+            "Mark Bluetooth selected", "Mark sleep", "Mark wake", "Capture another snapshot"]
+            .enumerated().map { index, key in
+                let item = command(key, #selector(captureDiagnosticMarker(_:)))
+                item.tag = index
+                menu.addItem(item)
+                return item
+            }
+        let save = command("Save diagnostic session...", #selector(saveDiagnosticSession))
+        sessionSaveItem = save
+        menu.addItem(save)
+        let discard = command("Discard diagnostic session", #selector(discardDiagnosticSession))
+        sessionDiscardItem = discard
+        menu.addItem(discard)
+        updateSessionMenu()
+        return menu
+    }
+
+    private func updateSessionMenu() {
+        let active = AjazzSessionActive(diagnosticSession)
+        let count = AjazzSessionCount(diagnosticSession)
+        sessionStatusItem?.title = AppText.text("Snapshots") + ": \(count)/32"
+        sessionStartItem?.isEnabled = !closing && !active && diagnosticSession != nil
+        for item in sessionCaptureItems { item.isEnabled = !closing && active && count < 32 }
+        sessionSaveItem?.isEnabled = !closing && active && count >= 2
+        sessionDiscardItem?.isEnabled = !closing && active
+    }
+
+    @objc private func startDiagnosticSession() {
+        guard !closing else { return }
+        AjazzSessionStart(diagnosticSession)
+        updateSessionMenu()
+    }
+
+    @objc private func captureDiagnosticMarker(_ sender: NSMenuItem) {
+        guard (0...5).contains(sender.tag), !closing else { return }
+        addSessionReport(diagnosticSnapshot(), marker: UInt32(sender.tag))
+    }
+
+    private func sessionMessage(_ key: String) {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = AppText.text(key)
+        alert.runModal()
+    }
+
+    private func addSessionReport(_ report: String, marker: UInt32) {
+        guard !closing, AjazzSessionActive(diagnosticSession) else { return }
+        let bytes = Array(report.utf8)
+        let added = bytes.withUnsafeBufferPointer {
+            AjazzSessionAdd(diagnosticSession, marker, $0.baseAddress, $0.count)
+        }
+        updateSessionMenu()
+        sessionMessage(added ? "Snapshot added" : "Snapshot not added; wait a second or check session limits")
+    }
+
+    @objc private func discardDiagnosticSession() {
+        guard !closing, AjazzSessionActive(diagnosticSession) else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = AppText.text("Discard all session snapshots?")
+        alert.addButton(withTitle: AppText.text("Discard diagnostic session"))
+        alert.addButton(withTitle: AppText.text("Close diagnostic report"))
+        if alert.runModal() == .alertFirstButtonReturn && !closing {
+            AjazzSessionClear(diagnosticSession)
+            updateSessionMenu()
+        }
+    }
+
+    @objc private func saveDiagnosticSession() {
+        guard !closing, AjazzSessionCount(diagnosticSession) >= 2 else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "ajazz-macos-diagnostic-session.zip"
+        panel.allowedFileTypes = ["zip"]
+        panel.message = AppText.text("Session may contain reply bytes. Review before sharing.")
+        guard panel.runModal() == .OK, let url = panel.url, !closing else { return }
+        if !url.path.withCString({ AjazzSessionSave(diagnosticSession, $0) }) {
+            sessionMessage("Unable to save diagnostic report")
+        }
     }
 
     private func updateDiagnosticMenu() {
@@ -607,7 +710,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         return "AJAZZ Battery Tray diagnostic report\n" +
             "Report schema: apple-menu-v1\n" +
             "Version: \(version) (\(build))\n" +
-            "UTC: \(ISO8601DateFormatter().string(from: Date()))\n" +
+            "UTC: \(ISO8601DateFormatter().string(from: Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970))))\n" +
             "macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)\n" +
             "VID:PID: 3151:5007; usage FFFF:0002\n" +
             "Last ordinary status: \(last.state); battery: \(battery)\n" +
@@ -649,9 +752,15 @@ final class TrayController: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: AppText.text("Copy diagnostic report"))
         alert.addButton(withTitle: AppText.text("Save diagnostic report..."))
         alert.addButton(withTitle: AppText.text("Close diagnostic report"))
+        if AjazzSessionActive(diagnosticSession) {
+            alert.addButton(withTitle: AppText.text("Add report to diagnostic session"))
+        }
         let result = alert.runModal()
         if result == .alertFirstButtonReturn { copyReport(report) }
         if result == .alertSecondButtonReturn { saveReport(report) }
+        if result.rawValue == NSApplication.ModalResponse.alertThirdButtonReturn.rawValue + 1 {
+            addSessionReport(report, marker: 6)
+        }
     }
 
     private func saveReport(_ report: String) {

@@ -1411,3 +1411,20 @@ configuration commands. USB `VersionNumber` is a device revision,
       no hardware I/O and no real user reports.
 - [ ] Hosted exact CI result and physical menu/export acceptance.
 - [ ] macOS interactive collection.
+
+### Apple interactive diagnostic sessions (Universal and High Sierra)
+
+- [x] Merge #194 after exact hosted CI; verify #195 Windows native
+      C# / Python roundtrip step succeeded.
+- [x] Add shared bounded C session store and stored ZIP writer compatible
+      with the existing Python importer; no new external dependencies.
+- [x] Add EN/RU/UK menu actions to Swift Universal and Objective-C
+      High Sierra; passive owner markers and explicit reviewed report addition.
+- [x] Enforce 32 snapshots, 64 KiB per snapshot, two MiB report payload,
+      unique whole-second report UTC, monotonic annotation UTC, private
+      exclusive export; retain session on failed export.
+- [x] Compile actual shared C code with strict warnings and roundtrip
+      two synthetic Apple-layout snapshots through the common importer.
+- [ ] Hosted native builds, physical menu/ZIP acceptance and actual
+      High Sierra 10.13 runtime verification.
+- [ ] Release admission; no public beta update.

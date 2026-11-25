@@ -238,3 +238,33 @@ Unknown enumeration remains inconclusive; contradictory matrix evidence
 is unrecognized. Universal's explicit absent terminal state is also
 normalized as receiver_absent. This is reported state, not independently
 verified physical removal. Reconnect and independent GATT remain open.
+
+## Interactive diagnostic session (both Apple editions)
+
+Use Diagnostics > Diagnostic session > Start diagnostic session, then
+capture a baseline and mark transport selection or sleep/wake after
+observing the event. These marks are owner annotations, not physical
+hardware proof. Each passive snapshot copies current monitoring state,
+without issuing a fresh HID request. The existing consented HID report
+review can explicitly add a reviewed report to the session. Reports
+may include limited reply bytes; review before sharing.
+
+At least two snapshots are required to export a new local ZIP. The
+shared POSIX C writer emits stored ZIP entries and the same
+diagnostic-session-v1 manifest used by Windows; no external zip process,
+network operation or new library dependency. Report payload limits:
+32 snapshots, 64 KiB each, two MiB total. Files are created exclusively
+with mode 0600, and existing destinations are refused. An incomplete
+new file can remain on I/O failure; the in-memory session is retained.
+Reports have whole-second UTC timestamps; a duplicate timestamp or
+backwards annotation clock is rejected (wait for another second).
+Discard explicitly or quit to clear the session. The importer accepts
+the archive directly:
+
+```sh
+python3 tools/compare_diagnostic_timeline.py --session session.zip
+```
+
+The portable C writer is exercised by offline QA and Python roundtrip
+tests with synthetic Apple reports. Native AppKit CI and actual macOS
+10.13 physical menu/export acceptance are still required.
