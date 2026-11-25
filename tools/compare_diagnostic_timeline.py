@@ -6,11 +6,14 @@ from datetime import datetime
 import json
 from pathlib import Path
 import sys
+import zipfile
+import zlib
 
 from analyze_aula_sleep import parse_summary
 from compare_apex_reports import read_report
 from compare_ready_clear import disagreement, parse_matrix
 from normalize_device_diagnostics import FULL, normalize
+from read_diagnostic_session import load_session
 
 MAX_REPORTS = 32
 
@@ -41,7 +44,8 @@ def aula_observation(text: str, stamp: datetime) -> dict | None:
             < sample.cache_lifetime * 3600):
         raise ValueError('inconsistent AULA cache')
     return {'state': 'fresh' if sample.percent is not None else
-            'cached' if sample.cache_active else 'unavailable',
+            'cached' if sample.cache_active else 'not_checked' if sample.last_read is None
+            and not sample.known else 'unavailable',
             'fresh_percent': sample.percent, 'last_good_percent': sample.last_good,
             'last_good_utc': sample.last_good_at.isoformat() if sample.last_good_at else None,
             'failures': sample.failures, 'receiver_present': sample.present if sample.known else None}
@@ -94,12 +98,19 @@ def change(before: dict, after: dict) -> dict:
             'active_outcome_after': after['active_capture']['outcome']}
 
 
-def timeline(reports: list[str]) -> dict:
+def timeline(reports: list[str], annotations: list[dict] | None = None) -> dict:
     """Order distinct capture times and describe adjacent observations."""
     if not 2 <= len(reports) <= MAX_REPORTS:
         raise ValueError('expected two to 32 reports')
-    rows = sorted((snapshot(text) for text in reports),
-                  key=lambda row: datetime.fromisoformat(row['snapshot_utc']))
+    rows = [snapshot(text) for text in reports]
+    if annotations is not None:
+        if len(annotations) != len(rows):
+            raise ValueError('annotation count mismatch')
+        for row, annotation in zip(rows, annotations):
+            if datetime.fromisoformat(annotation['added_utc']) < datetime.fromisoformat(row['snapshot_utc']):
+                raise ValueError('annotation predates report')
+            row['owner_annotation'] = annotation
+    rows.sort(key=lambda row: datetime.fromisoformat(row['snapshot_utc']))
     stamps = [datetime.fromisoformat(row['snapshot_utc']) for row in rows]
     if len(set(stamps)) != len(stamps):
         raise ValueError('duplicate capture timestamp')
@@ -111,13 +122,21 @@ def timeline(reports: list[str]) -> dict:
 def main(argv: list[str] | None = None) -> int:
     """Print bounded redacted JSON; fail closed without echoing input."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('reports', nargs='+', type=Path)
+    parser.add_argument('reports', nargs='*', type=Path)
+    parser.add_argument('--session', type=Path, help='Read one diagnostic session ZIP without extracting')
     args = parser.parse_args(argv)
     try:
-        if not 2 <= len(args.reports) <= MAX_REPORTS:
-            raise ValueError('invalid report count')
-        result = timeline([read_report(path) for path in args.reports])
-    except (OSError, ValueError, OverflowError, IndexError, TypeError):
+        if args.session is not None:
+            if args.reports:
+                raise ValueError('choose archive or individual reports')
+            entries = load_session(args.session)
+            result = timeline([text for text, _ in entries], [entry for _, entry in entries])
+        else:
+            if not 2 <= len(args.reports) <= MAX_REPORTS:
+                raise ValueError('invalid report count')
+            result = timeline([read_report(path) for path in args.reports])
+    except (OSError, ValueError, OverflowError, IndexError, TypeError,
+            zipfile.BadZipFile, RuntimeError, NotImplementedError, zlib.error, RecursionError):
         print('ERROR: invalid or unsupported diagnostic timeline', file=sys.stderr)
         return 2
     print(json.dumps(result, indent=2, sort_keys=True))

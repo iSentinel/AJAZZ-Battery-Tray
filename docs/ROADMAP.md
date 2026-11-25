@@ -1388,3 +1388,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add nine native policy checks and two offline source regressions.
 - [ ] Hosted CI, physical menu acceptance and direct archive importer.
 - [ ] macOS interactive equivalent and release admission.
+
+### Direct diagnostic session archive import
+
+- [x] Merge #191 after exact CI; verify integration tree.
+- [x] Add --session ZIP input to timeline analyzer, no extraction.
+- [x] Enforce fixed names, exact manifest, strict owner markers and
+      annotation order, UTF-8 size budgets, CRC, no special entries.
+- [x] Handle unchecked AULA initial state without assuming absence.
+- [x] Test archive structure, traversal, duplicates, oversized content,
+      timestamps, invalid marker, corruption and initial passive state.
+- [ ] Native Windows archive interoperability and hardware acceptance.
+- [ ] macOS interactive collection, release admission.
