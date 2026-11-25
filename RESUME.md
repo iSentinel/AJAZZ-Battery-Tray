@@ -1,3 +1,12 @@
+# Resume — exact CI artifact identities
+
+Base 5d965ce. #164 and #166 had synthetic artifact-roundtrip failures
+(only one downloaded, digest matched). New bounded REST visibility gate
+requires both exact IDs/digests before pinned action and original byte
+checks. Local mock delayed/missing/wrong-digest and source checks PASS.
+#166 scalar path bug corrected separately at 89acdb4, native CI pending.
+Release hold unchanged.
+
 # Resume — notice staging and field evidence
 
 New stacked notice preparation: five exact files from four pinned packs,
