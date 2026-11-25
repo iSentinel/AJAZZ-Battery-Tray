@@ -166,3 +166,22 @@ synthetic data integrity after upgrade, reinstall and uninstall, requires
 cleanup of product files/registry and no observed tray launch. Restricted
 to an ephemeral Actions runner with clean preconditions. Only JSON
 evidence uploaded. Native upgrade result pending; release recipe unchanged.
+
+## Native product upgrade and repair result
+
+PR #228 exact head 8ee4a114721e03b0b8226493d81a4dcd544065ae,
+hosted checkout 28f62e40e5df6a71e6fbcd7d23678860276ebcd2,
+run 45616026202, job 139211508782: PASS. Upgrade evidence artifact
+15022585894 ZIP SHA-256
+3d380afa19f87902382f30e3726d1c70fecb7a5a1968ddbd8bd634b0c59ef96f;
+clean product evidence artifact 15023170010 ZIP SHA-256
+5eeb97f4785201e6bdeef0614b22b50cfbe66828ed25e95eefa578b0f4221e49.
+Both downloaded archive digests match REST. Exact source, setup and
+application hashes agree between the two records. Setup SHA-256
+92e057d7512a0453867c469dca4181d37e6a509b267ab16db17f71fa677ece4b;
+application SHA-256
+1b361667f172df6117f5c7bee2901371fbdc6fb0213a08c48c8c80711a43c6d5.
+All three notice evidence records (clean installation, upgrade and
+reinstall) are equal. Missing-notice restoration PASS, uninstall
+REMOVED, synthetic user data PRESERVED, tray launch NOT_OBSERVED.
+No real-user migration, hardware acceptance or release admission.

@@ -1,3 +1,12 @@
+# Resume — native product upgrade evidence and historical SBOM
+
+#228 merged 2610603 after 6/6 CI. Two exact evidence ZIPs match;
+clean/upgrade/reinstall notice records and candidate identity match.
+Repair and removal PASS, synthetic data preserved. Scoped #206
+SBOM replay: 265 files, 269 components, incomplete scope.
+Final candidate SBOM, independent schema check, legal review and
+hardware acceptance pending. Release hold.
+
 # Resume — product notice upgrade and reinstall
 
 #226 merged 06fa60c (7/7); #227 merged df33fd8 into parent (6/6).
