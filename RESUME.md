@@ -1,3 +1,10 @@
+# Resume — beta.60 field report compatibility
+
+#182/#183 merged; integrated c5fb1b3. Owner beta.60 report 06:34 UTC:
+93 unverified USB field; 0/6 valid; AULA fresh 62%. Legacy import
+missing manual inspector and interval= separator fixed. No raw report
+committed. Native CI and physical acceptance remain open.
+
 # Resume — active diagnostic outcome normalization
 
 Stacked on #182 1d897ef. Common envelope now reports independent

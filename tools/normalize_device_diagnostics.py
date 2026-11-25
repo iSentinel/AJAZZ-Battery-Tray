@@ -16,6 +16,8 @@ ORDINARY = '[AJAZZ last ordinary poll — not a fresh request]'
 MANUAL = '[Bluetooth manual inspection — historical, not a fresh request]'
 NOT_OPEN = '[Bluetooth manual inspection — historical] Not opened this session.'
 MATRIX = '[Fresh APEX protocol matrix — full vendor buffers]'
+BETA60 = '0.3.0-beta.60+1f1448d5c83c4dafcfa95d90a5b75c8b3776fdb7'
+FALLBACK = '[Bluetooth fallback state]'
 
 
 def windows_utc(value: str) -> str | None:
@@ -73,10 +75,15 @@ def manual_observation(value: str) -> dict | None:
             'completed_utc': completed}
 
 
-def windows_gatt(lines: list[str]) -> dict:
+def windows_gatt(lines: list[str], legacy_beta60: bool = False) -> dict:
     """Parse one historical inspector section or explicit not-open state."""
     if lines.count(NOT_OPEN) == 1 and MANUAL not in lines:
         return {'pending': None, 'last_manual': None, 'last_direct': None}
+    if (legacy_beta60 and MANUAL not in lines and NOT_OPEN not in lines
+            and lines.count(FALLBACK) == 1
+            and not any(line.startswith('[Bluetooth manual inspection') for line in lines)):
+        return {'pending': None, 'last_manual': None, 'last_direct': None,
+                'evidence': 'NOT_EXPORTED_IN_LEGACY_REPORT'}
     if lines.count(MANUAL) != 1 or NOT_OPEN in lines:
         raise ValueError('missing or duplicate manual inspector')
     block = lines[lines.index(MANUAL) + 1:]
@@ -106,12 +113,14 @@ def parse_windows(text: str) -> dict:
     schema = [line for line in block if line.startswith('Report schema: ')]
     if schema not in ([], ['Report schema: windows-extended-v1']):
         raise ValueError('unsupported Windows schema')
+    version = field(block, 'App version: ')
+    beta60 = not schema and version == BETA60
     stamp = windows_utc(field(block, 'Report UTC: '))
     if stamp is None:
         raise ValueError('missing report UTC')
     return {'schema': 'windows-extended-v1' if schema else 'windows-extended-legacy',
             'edition': 'windows', 'snapshot_utc': stamp, 'usb': windows_usb(block),
-            'manual_gatt': windows_gatt(block), 'active_trace_present': MATRIX in lines,
+            'manual_gatt': windows_gatt(block, beta60), 'active_trace_present': MATRIX in lines,
             'identity_binding': 'NOT_VERIFIED', 'simultaneous': 'NOT_VERIFIED'}
 
 

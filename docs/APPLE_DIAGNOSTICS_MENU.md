@@ -204,3 +204,23 @@ the importer does not replay the wire protocol, bind device identity
 or update ordinary USB or GATT state. Actual hardware report fixtures
 remain required. Five additional synthetic regressions cover the
 new terminal outcome handling.
+
+## Field compatibility: beta.60
+
+Owner report 2026-11-25 06:34:49 UTC, exact build
+0.3.0-beta.60+1f1448d5c83c4dafcfa95d90a5b75c8b3776fdb7:
+the legacy extended layout omits the manual inspector section altogether.
+Accept this absence only for that exact unversioned build with one fallback
+section and no malformed inspector heading. Label the observation
+NOT_EXPORTED_IN_LEGACY_REPORT; do not infer that inspection was never
+performed or that GATT failed. Versioned reports remain strict.
+The AULA extended emitter uses interval=30s; the prior parser expected
+interval: 30s. Accept both exact separators. The regression uses a
+redacted projection of the observed fields, not the full raw report.
+
+Field observation: one rev 0002 3151:5007 MI_02 FFFF:0002 receiver,
+feature 65 bytes; 6/6 successful SET/GET, 0/6 validated replies,
+6/6 ready-clear unverified field 93; ordinary and full capture agree.
+AULA fresh 62%, zero consecutive no-reply polls, cache inactive.
+No independently bound GATT or sleep/wake sequence in this report.
+Do not change parser admission or enable new vendor requests.

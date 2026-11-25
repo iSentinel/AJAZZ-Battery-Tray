@@ -1266,3 +1266,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add five synthetic regressions and malformed/partial controls.
 - [ ] Exact hosted CI, actual native report fixtures and protocol replay.
 - [ ] Multi-snapshot capture, provider dashboard and physical acceptance.
+
+### Field report import regression — 2026-11-25
+
+- [x] Merge #182 and #183 after exact hosted CI.
+- [x] Review exact beta.60 owner report; 93 unverified field, 0/6 valid
+      USB replies; AULA fresh 62%, zero misses.
+- [x] Fix exact legacy missing manual inspector and AULA interval separator.
+- [x] Add three regression tests using redacted field projection.
+- [ ] Hosted CI, independent GATT / same-device evidence and physical
+      sleep/wake acceptance; multi-snapshot capture remains next.
