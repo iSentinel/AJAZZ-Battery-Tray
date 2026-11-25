@@ -86,3 +86,19 @@ This is consistent with artifact listing propagation, not a digest failure.
 Move download to a bounded dependent job, as used by the held release
 workflow, retaining exact filenames, bytes and digest checks. Require
 new CI; no retry that would hide missing artifacts or publish a release.
+
+## Exact roundtrip artifact identity and visibility (2026-11-25)
+
+Runs 45548932475 and 45549003872 had successful Python QA and one
+successful ZIP digest check, but the dependent download action selected
+only one expected synthetic artifact. Both correctly failed the two-file
+content gate. Preserve both upload IDs and digests as job outputs. Give
+only the consumer job actions:read; poll the current run REST listing for
+both exact IDs, names and digest metadata (12 attempts, 5 seconds between
+missing observations). Metadata mismatch is immediately fatal; API errors
+are not retried. Use the pinned download action with those exact IDs and
+REST token, retaining digest-mismatch:error and merge-multiple:true and
+both original byte comparisons. This does not guarantee GitHub consistency;
+if the action still omits an artifact, the existing final gate fails.
+Local Bash syntax and mocked delayed/missing/wrong-digest scenarios passed.
+Hosted end-to-end CI remains required. No release workflow changes here.
