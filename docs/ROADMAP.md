@@ -1306,3 +1306,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Explicit physical-device association, stable icon slot and stale
       display policy; no automatic name-based association.
 - [ ] Multi-snapshot capture and physical sleep/wake acceptance.
+
+### Persistent independent BLE consent
+
+- [x] Merge #186 after exact hosted CI.
+- [x] Store explicit local BLE consent fingerprints, no raw IDs or battery.
+- [x] Restore exact paired LE matches as pending, require fresh direct GATT.
+- [x] Separate BLE timer from USB completion; bounded retry discovery.
+- [x] Revoke saved/active devices; exclude consent from portable backup
+      and diagnostics; localize opt-in and save failure messages.
+- [x] Add native policy and offline source regression checks.
+- [ ] Exact hosted CI and physical restart / opt-out / transport acceptance.
+- [ ] Explicit association and stable per-device icon; stale display policy.

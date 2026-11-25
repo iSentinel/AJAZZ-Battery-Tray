@@ -26,6 +26,19 @@ class IndependentBleMonitorTests(unittest.TestCase):
         self.assertIn('_receivers.Apply(batch, _settings, _tray, false,', code)
         self.assertIn('BatteryDisplayState.PreferIndependentBluetooth(', code)
 
+    def test_persistent_consent_is_local_and_fresh(self) -> None:
+        """Restore only exact consent matches, never cached Windows charge."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        self.assertIn('BleConsent.Key(candidate.DeviceId)', code)
+        self.assertIn('!_settings.ConsentedBleEndpoints.Contains(key) || !_ble.Restore(key)', code)
+        self.assertIn('candidate with { WindowsPercent = null }', code)
+        self.assertIn('_settings.ConsentedBleEndpoints.Remove(key)', code)
+        self.assertIn('_bleTimer.Tick += OnBleTimer', code)
+        self.assertIn('_bleTimer.Dispose()', code)
+        backup = (ROOT / 'src/AjazzBatteryTray/PreferencesBackup.cs').read_text()
+        self.assertNotIn('ConsentedBleEndpoints', backup)
+
+
 
 if __name__ == '__main__':
     unittest.main()

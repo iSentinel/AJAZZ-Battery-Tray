@@ -1441,6 +1441,41 @@ Check("No unverified BLE primary while USB present",
     !BatteryDisplayState.PreferIndependentBluetooth(true, null, true, null));
 independentBle.DisableAll();
 
+// Persistent consent does not persist telemetry or infer identity from names.
+string consentKey = BleConsent.Key("paired-endpoint-A");
+Check("BLE consent fingerprint is canonical and domain separated",
+    BleConsent.Valid(consentKey) && consentKey == BleConsent.Key("PAIRED-ENDPOINT-A") &&
+    consentKey != ReceiverIdentity.LocalKey("paired-endpoint-A"));
+Check("BLE consent rejects raw IDs and invalid hashes",
+    BleConsent.Clean(new[] { consentKey, consentKey, "paired-endpoint-A", new string('G', 64) })
+        .SetEquals(new[] { consentKey }));
+Check("BLE consent collection has a bounded size",
+    BleConsent.Clean(Enumerable.Range(0, 40).Select(x => BleConsent.Key(x.ToString())))
+        .Count == BleConsent.MaximumDevices);
+var consentSettings = new AppSettings { ConsentedBleEndpoints = new() { consentKey } };
+string localConsentJson = System.Text.Json.JsonSerializer.Serialize(consentSettings);
+Check("Local settings preserve fingerprint only",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(localConsentJson)!
+        .ConsentedBleEndpoints.Contains(consentKey) && !localConsentJson.Contains("paired-endpoint-A"));
+Check("Portable backup excludes BLE consent",
+    !System.Text.Encoding.UTF8.GetString(PreferencesBackup.Capture(consentSettings).Export())
+        .Contains(consentKey));
+var restoredBle = new BluetoothMultiSession(independent: true);
+Check("Restored BLE starts without a reading", restoredBle.Restore(consentKey) &&
+    restoredBle.VisiblePercent(consentKey, true, true, multiAt) is null &&
+    restoredBle.LastSuccess(consentKey) is null);
+Check("Restored BLE cannot duplicate its slot", !restoredBle.Restore(consentKey));
+var restoreRequest = restoredBle.TryBegin(true, true, multiAt);
+Check("Restored consent immediately requests new GATT", restoreRequest?.Key == consentKey);
+Check("Restored BLE rejects cached battery as telemetry", restoreRequest is not null &&
+    restoredBle.Complete(restoreRequest, bleCached, multiAt, true, true) &&
+    restoredBle.VisiblePercent(consentKey, true, true, multiAt) is null);
+var pendingConsent = restoredBle.TryBegin(true, true, multiAt, consentKey);
+restoredBle.Disable(consentKey);
+Check("Opt-out invalidates an in-flight restored read", pendingConsent is not null &&
+    !restoredBle.Complete(pendingConsent, bleDirect, multiAt, true, true) &&
+    restoredBle.Count == 0);
+
 // Release checks are local, deterministic, and perform no HTTP requests.
 var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
 Check("Update accepts beta tag", installedVersion.Beta == 41);

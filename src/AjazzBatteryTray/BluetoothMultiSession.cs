@@ -1,7 +1,7 @@
 namespace AjazzBatteryTray;
 
 /// <summary>Session-only scheduling for separately opted-in paired BLE devices.
-/// Keys are opaque local identifiers; never serialize or include them in reports.
+/// Keys are local-only consent fingerprints; never include them in reports.
 /// All methods must be called on the same UI thread.</summary>
 public sealed class BluetoothMultiSession
 {
@@ -30,6 +30,16 @@ public sealed class BluetoothMultiSession
         BluetoothAutoPolicy policy = new();
         policy.Enable(reading.Percent!.Value, now);
         if (_usbBlocked) policy.InvalidateForUsb();
+        _slots[key] = new Slot(++_sequence, policy);
+        return true;
+    }
+
+    /// <summary>Restore a previously consented paired endpoint, with no reading.</summary>
+    public bool Restore(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key) || _slots.ContainsKey(key)) return false;
+        BluetoothAutoPolicy policy = new();
+        policy.EnablePending();
         _slots[key] = new Slot(++_sequence, policy);
         return true;
     }

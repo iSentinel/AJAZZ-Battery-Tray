@@ -32,6 +32,13 @@ public sealed class BluetoothAutoPolicy
         _lastAttempt = now;
     }
 
+    /// <summary>Restore consent without restoring any historical charge.</summary>
+    public void EnablePending()
+    {
+        Disable();
+        Enabled = true;
+    }
+
     public void Disable()
     {
         Generation++;

@@ -1167,3 +1167,10 @@ remains session-only. A valid visible USB reading retains primary priority;
 fresh BLE can become primary if USB lacks a valid reading. Independent
 extra icons and USB disconnect policy are preserved. No physical-device
 association. Hosted Windows CI and persistent consent are next.
+
+## Persistent BLE consent checkpoint
+
+#186 merged d1d53bb. Local consent fingerprints only, no persisted charge,
+exact paired LE matching and pending slots, dedicated BLE timer, local
+opt-out including missing endpoints. Native Windows CI and hardware
+restart/switch acceptance remain open. No automatic USB/BLE association.

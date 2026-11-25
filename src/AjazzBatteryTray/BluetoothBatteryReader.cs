@@ -54,6 +54,14 @@ public static class BluetoothBatteryReader
             results[1].Devices.Count, results[0].Error, results[1].Error);
     }
 
+    /// <summary>Only enumerate already paired LE endpoints for consent restoration.</summary>
+    public static async Task<IReadOnlyList<BluetoothCandidate>> FindPairedLeAsync()
+    {
+        var result = await QuerySafeAsync(
+            BluetoothLEDevice.GetDeviceSelectorFromPairingState(true), true);
+        return result.Devices;
+    }
+
     private sealed record TransportResult(
         IReadOnlyList<BluetoothCandidate> Devices, string? Error);
 

@@ -246,3 +246,22 @@ Only process explicitly selected, paired mice. Do not log or expose Bluetooth
 MAC addresses or system-generated device identifiers. Do not put BLE
 advertisement contents into diagnostic report or GitHub issues. Never write
 to a GATT characteristic in this battery-monitoring workflow.
+
+## Persistent independent BLE monitoring (candidate, supersedes session-only fallback)
+
+Explicit opt-in after a fresh direct GATT read now remembers consent
+on this PC. Local settings contain at most 32 domain-separated SHA-256
+fingerprints of paired LE endpoint IDs (not raw IDs, names or readings).
+Fingerprints are local identifiers, not anonymization against someone
+who already knows the endpoint ID. They are excluded from portable
+preference backup and diagnostic exports. No new pairing or writes.
+A dedicated five-second UI timer schedules due reads independently
+of USB and checks for missing saved endpoints at most every two minutes.
+Discovery enumerates paired LE endpoints only, matches exact fingerprints,
+and restores a pending slot with no historical percentage. Only fresh
+direct GATT is admitted as telemetry; normal single-flight and retry
+backoff remain. Disable individual saved or active slots or disable all.
+If saving opt-out fails, monitoring stops in the current session and
+the UI warns it may resume after restart. No name-based USB association.
+Actual Windows restart, unavailable endpoint, re-pair and transport
+switch acceptance are still required.

@@ -21,6 +21,8 @@ public sealed class AppSettings
     public string DefaultTrayColor { get; set; } = TrayColorRules.Default;
     public bool MouseTrayIcon { get; set; } = true;
     public bool MultipleTrayIcons { get; set; } = true;
+    // Local consent only; no raw endpoint IDs, names or saved battery levels.
+    public HashSet<string> ConsentedBleEndpoints { get; set; } = new(StringComparer.Ordinal);
     // Absent key inherits the global sampling interval.
     public Dictionary<string, int> DevicePollIntervals { get; set; } = new(StringComparer.Ordinal);
     // Absent key inherits global thresholds; zero explicitly mutes this device.
@@ -57,6 +59,7 @@ public sealed class AppSettings
                     result.DeviceTrayColors = TrayColorRules.Clean(result.DeviceTrayColors);
                     result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
                     result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
+                    result.ConsentedBleEndpoints = BleConsent.Clean(result.ConsentedBleEndpoints);
                     result.Language = UiText.Normalize(result.Language);
                     result.PollSeconds = result.PollSeconds is 15 or 30 or 60 or 120
                         ? result.PollSeconds : 30;
