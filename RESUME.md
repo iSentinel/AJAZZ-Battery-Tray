@@ -1,3 +1,11 @@
+# Resume — local Windows CLI diagnostic analysis
+
+#267 exact 4/4 CI merged 3432dc7 after tested-tree equality.
+New local JSON CLI reuses ordinary and experimental parsers and
+scoped gate sequences; no raw payload export or experimental
+percentage promotion. Five synthetic groups and help coverage.
+Hosted CI and physical acceptance pending; release hold unchanged.
+
 # Resume — reported F7 policy sequence analysis
 
 #265 exact 5/5 CI merged 31f2ec7 after tested-tree equality.
