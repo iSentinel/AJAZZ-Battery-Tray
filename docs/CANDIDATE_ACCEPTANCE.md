@@ -162,3 +162,60 @@ CI verified the installed app hash against its own published app
 before the synthetic probe rebuild. No trusted signature, physical
 acceptance, payload-level independent verification, or release admission.
 The artifact is short-lived; expiry requires a new exact candidate.
+
+## Independent installed-file extraction of beta.61
+
+Artifact 15001949427, setup SHA-256
+`0dd93d2e1373121b3007b214a61cc38ba18df4107516aa7f50ec79b9566bb8cd`.
+The Debian 13 innoextract 1.9 candidate was not installed; upstream
+development version table ends at 6.4.0.1. Used the third-party fork
+[crazy-max/innoextract v1.13.0](https://github.com/crazy-max/innoextract/releases/tag/v1.13.0),
+tag commit 21e1fd97083baf2c1ce41afb547ae6d273f4fcfb,
+Linux amd64 asset 519954318 SHA-256
+`c898db2ecc282ff8d943e9868d03dd6f1fc6069ddd40430341b211f93826b360`
+matching GitHub's REST digest. Zlib license text SHA-256
+`7cd6f3bf0c83f2c3ce8438aab20a4827a5de934fb87dd7966f6f3f2651685127`.
+No independent extractor signature or source-to-binary reproducibility
+claim. No system packages installed or extractor redistributed.
+
+Ran the extractor as UID/GID 65534 inside a minimal systemd RootDirectory
+with only the tool, read-only setup and required loader/libc/libm;
+PrivateNetwork, PrivateDevices, NoNewPrivileges, empty capability
+bounding set, strict read-only filesystem except /out and /tmp,
+512 MiB RAM, eight tasks and a 60-second service limit. The Windows
+installer was not executed. The first extraction had a read-only
+output-path error; fixed the chroot-relative writable path without
+disabling the other isolation. Explicit --no-extract-unknown was used.
+List, checksum test and extraction succeeded, reporting setup data
+6.7.0 (Unicode), distinct from compiler engine 6.7.1.
+
+The exact five declared files were recovered; the 149610595-byte
+AJAZZBatteryTray.exe matched the CI manifest SHA-256
+`f4878037d453719eb017378e32b9320dbe74da7627012e02d4dfb30ab476e33c`.
+Four ICO hashes matched the reviewed source tree. No additional files
+were found in the extracted tree.
+
+```sh
+python3 tools/verify_installer_payload.py --archive installer.zip \
+  --sha256 1832b27564fb435d3561a0be3b8786c0e26fbfc0f28b85add9bf937369725661 \
+  --source-sha 57bbbe04f5c85b75dd421b5cb64fed072f6a4354 \
+  --payload-dir extracted --source-icons src/AjazzBatteryTray/Assets \
+  --output payload-verification.json
+```
+
+Use trusted immutable local files and source icons from the reviewed
+checkout. The new verifier neither downloads nor runs an extractor;
+it validates the exact declared tree, rejects extras and final symlinks,
+and checks hashes against the retained installer manifest and source ICOs.
+Actual replay PASS. The caller must establish source icon provenance
+and independently extracted-directory provenance.
+
+Replayed bundle inventory, attribution, host sections, resource payloads,
+conditional header reconstruction, resource serialization and scoped
+Windows SBOM on the **actual extracted beta.61**, all PASS.
+CycloneDX 1.6 validation PASS, 269 components.
+SBOM SHA-256 `1f9839cb2950db27e011946e439b4e8a7b8543c4044e2a96223c8b8cbee78690`.
+The EXE certificate table is absent. These checks cover the declared
+application files and scoped .NET provenance, not installer bootstrap
+code, embedded uninstall engine, compiled script semantics, extractor
+trust, complete distribution licensing or physical acceptance.
