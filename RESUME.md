@@ -1,3 +1,10 @@
+# Resume — native isolated notice evidence
+
+#225 merged 95b1990 into parent after 6/6 CI. Exact native evidence
+archive digest matches REST; staged/installed notice records equal,
+removal PASS, no application installed. Next: separate opt-in product
+notice candidate, not release admission. Legal and hardware gates open.
+
 # Resume — isolated installed-notice transport probe
 
 #223 merged 5a723a6 into parent, exact 5/5 CI. Stacked on #224.

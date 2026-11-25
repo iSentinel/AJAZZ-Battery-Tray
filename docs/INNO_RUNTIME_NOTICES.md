@@ -115,3 +115,18 @@ First hosted attempt (job 139195725680) failed in setup-python before
 notice acquisition: 3.12.16 unavailable on Windows x64. The official
 python-versions manifest lists stable 3.13.17 for Windows x64; pin that
 version for this job only. No fallback or verification bypass.
+
+## Native isolated probe result
+
+Exact PR #225 head e1959445c214c8040b95b5a564a4a4817c81439b,
+hosted checkout a51078eb5be539d077e9da132f115b46ace88bae,
+run 45611754794, job 139196798479: PASS.
+Evidence artifact 15019649566 ZIP SHA-256
+75a11fe8ce97c3e319dc761b70a0af21fba7923d4454d4d1518fb56df42164f0
+matches REST. Exactly staged-evidence.json, installed-evidence.json
+and lifecycle.json; the staged and installed JSON records are equal,
+all nine sizes/hashes and manifest pin match, lifecycle records
+installed MATCH, uninstalled REMOVED, application_installed=false.
+Fixture setup SHA-256
+5edb9559372f6276115e48ab79bdf4e33bbc3cdb725b74c084655048695cf6d6.
+No product installer qualification or release admission.

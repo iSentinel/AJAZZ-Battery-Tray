@@ -1746,3 +1746,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Actual native install/uninstall evidence, integration, reviewed
       product distribution design, outstanding terms and hardware
       acceptance. Release hold.
+
+### Native isolated notice evidence
+
+- [x] #225 merged 95b1990 into parent after exact 6/6 hosted CI.
+- [x] Retrieve native evidence by ID, match artifact digest, compare
+      staged/installed records and check removal observation.
+- [ ] Candidate-only product notice packaging test; legal terms and
+      physical acceptance. Release hold.
