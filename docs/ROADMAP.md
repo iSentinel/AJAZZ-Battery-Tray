@@ -1194,3 +1194,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Versioned redacted cross-platform reports and cancellable partial capture.
 - [ ] Event-based refresh and resource baseline review.
       ENG-12 linker directives and actual OS export evidence remain open.
+
+### Apple provider evidence — manual GATT
+
+- [x] Review existing manual inspector and identify old Universal timer
+      ambiguity plus missing service/characteristic validation.
+- [x] Record independent redacted discovery/read status, pending, UTC,
+      duration and verified value in passive reports in both editions.
+- [x] Keep GATT independent from ordinary USB/alerts/history and no new
+      implicit Bluetooth operation; add source contracts.
+- [ ] Hosted native CI and repeat-read, disconnect, timeout and report
+      privacy acceptance on actual connected mice. No identity pairing
+      or fresh USB calibration claim.

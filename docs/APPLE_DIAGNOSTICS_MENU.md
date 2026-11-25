@@ -77,3 +77,24 @@ field keys remain English to support automated comparisons.
 Native compile/test and real-device UI acceptance required. Linux Gateway
 cannot verify AppKit behavior; no release admission or compatibility
 promotion from this implementation alone.
+
+## Independent manual Bluetooth evidence
+
+The menu report includes the last manual connected-device discovery count,
+whether a selected GATT read is pending, and the most recent completed
+manual 180F/2A19 outcome, verified percent or unknown, UTC and elapsed
+milliseconds. These are session observations without a device identity
+binding. A prior USB and GATT measurement must not be treated as a
+simultaneous same-device calibration. A fresh valid GATT value can be
+0..100 inclusive, unlike the narrower F7 parser. No scan, discovery,
+pairing, connection or GATT read is initiated by copying/viewing reports.
+A failed later read reports unknown rather than presenting the older
+percent as current. Device names, Bluetooth identifiers and raw values
+are not included. No persistent history, alert, tray or fallback mutation.
+
+Universal timeout now checks attempt generation in addition to selected
+peripheral; both editions require matching 180F service and 2A19
+characteristic before decoding. A stale timeout is distinct from
+arbitrary delayed CoreBluetooth callbacks: physical repeat-read and
+disconnect tests are still required. Native self-tests exercise initial
+passive state and existing GATT payload validation.
