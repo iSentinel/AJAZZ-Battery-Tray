@@ -9,6 +9,9 @@ public sealed class TrayAppContext : ApplicationContext
 {
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _timer;
+    private readonly System.Windows.Forms.Timer _bleTimer;
+    private bool _bleRestoreBusy;
+    private long _nextBleDiscoveryTick;
     private System.Windows.Forms.Timer? _aulaTimer;
     private readonly CancellationTokenSource _captureClosing = new();
     private readonly DevicePollSchedule _usbSchedule = new();
@@ -46,7 +49,7 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly Dictionary<string, BleSlot> _bleSlots = new(StringComparer.Ordinal);
     private int _bleSequence;
     private ToolStripMenuItem _bleDevicesMenu = new();
-    private static string BleKey(BluetoothCandidate candidate) => candidate.DeviceId.ToUpperInvariant();
+    private static string BleKey(BluetoothCandidate candidate) => BleConsent.Key(candidate.DeviceId);
     private bool BleEnabled => _bleSlots.Count > 0;
     private string? PrimaryBleKey
     {
@@ -114,6 +117,9 @@ public sealed class TrayAppContext : ApplicationContext
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
         _timer.Tick += OnPollTimer;
         _timer.Start();
+        _bleTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+        _bleTimer.Tick += OnBleTimer;
+        _bleTimer.Start();
         ArmAulaTimer(1000);
         ApplyUpdatePreferences();
     }
@@ -1219,7 +1225,7 @@ public sealed class TrayAppContext : ApplicationContext
         if (_bluetoothWindow is null || _bluetoothWindow.IsDisposed)
         {
             _bluetoothWindow = new BluetoothBatteryForm(EnableBluetooth, DisableBluetooth,
-                candidate => _bleSlots.ContainsKey(BleKey(candidate)),
+                candidate => _settings.ConsentedBleEndpoints.Contains(BleKey(candidate)),
                 () => _ = ShowProtocolDiagnosticsAsync());
             _bluetoothWindow.FormClosing += (_, e) =>
             {
@@ -1234,26 +1240,41 @@ public sealed class TrayAppContext : ApplicationContext
         _bluetoothWindow.BringToFront();
     }
 
-    private void EnableBluetooth(BluetoothCandidate candidate, BluetoothBatteryResult result, DateTimeOffset readAt)
+    private bool EnableBluetooth(BluetoothCandidate candidate, BluetoothBatteryResult result, DateTimeOffset readAt)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
         if (_closing || !candidate.IsLowEnergy || string.IsNullOrWhiteSpace(candidate.DeviceId) ||
-            now < readAt || now - readAt > TimeSpan.FromMinutes(1)) return;
+            !result.IsFreshGatt || now < readAt || now - readAt > TimeSpan.FromMinutes(1)) return false;
         string key = BleKey(candidate);
-        if (_bleSlots.ContainsKey(key)) return;
-        _ble.ObserveUsbPresence(_latestUsbReading?.PresenceKnown == true, _latestUsbReading?.ReceiverPresent == true);
-        if (!_ble.Enable(key, result, readAt)) return;
+        if (_settings.ConsentedBleEndpoints.Contains(key)) return false;
+        if (_settings.ConsentedBleEndpoints.Count >= BleConsent.MaximumDevices) return false;
+        _settings.ConsentedBleEndpoints.Add(key);
+        if (!_settings.Save())
+        {
+            _settings.ConsentedBleEndpoints.Remove(key);
+            return false;
+        }
+        if (!_ble.Enable(key, result, readAt)) return false;
         _bleSlots[key] = new BleSlot(candidate, ++_bleSequence, new AlertPolicy());
         RefreshDeviceDisplay();
-        PollSoon();
+        return true;
     }
 
     private void DisableBluetooth(BluetoothCandidate candidate) => DisableBluetoothKey(BleKey(candidate));
+
+    private void SaveBleOptOut()
+    {
+        if (!_settings.Save())
+            MessageBox.Show(UiText.Get("Bluetooth monitoring stopped; settings could not be saved. It may resume after restart."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
 
     private void DisableBluetoothKey(string key)
     {
         _ble.Disable(key);
         _bleSlots.Remove(key);
+        _settings.ConsentedBleEndpoints.Remove(key);
+        SaveBleOptOut();
         _bluetoothWindow?.DisableAutomatic();
         RefreshDeviceDisplay();
     }
@@ -1262,8 +1283,44 @@ public sealed class TrayAppContext : ApplicationContext
     {
         _ble.DisableAll();
         _bleSlots.Clear();
+        _settings.ConsentedBleEndpoints.Clear();
+        SaveBleOptOut();
         _bluetoothWindow?.DisableAutomatic();
         RefreshDeviceDisplay();
+    }
+
+    private void OnBleTimer(object? sender, EventArgs args)
+    {
+        if (_closing) return;
+        if (_settings.ConsentedBleEndpoints.Count > _bleSlots.Count &&
+            !_bleRestoreBusy && Environment.TickCount64 >= _nextBleDiscoveryTick)
+            _ = RestoreBleConsentAsync();
+        StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
+        if (BleEnabled) RefreshDeviceDisplay();
+    }
+
+    private async Task RestoreBleConsentAsync()
+    {
+        _bleRestoreBusy = true;
+        _nextBleDiscoveryTick = Environment.TickCount64 + 120000;
+        try
+        {
+            var candidates = await BluetoothBatteryReader.FindPairedLeAsync();
+            if (_closing) return;
+            foreach (var candidate in candidates)
+            {
+                if (!candidate.IsLowEnergy || string.IsNullOrWhiteSpace(candidate.DeviceId)) continue;
+                string key = BleKey(candidate);
+                if (!_settings.ConsentedBleEndpoints.Contains(key) || !_ble.Restore(key)) continue;
+                _bleSlots[key] = new BleSlot(candidate with { WindowsPercent = null },
+                    ++_bleSequence, new AlertPolicy());
+            }
+            _bluetoothWindow?.RefreshConsent();
+            RefreshDeviceDisplay();
+            StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
+        }
+        catch (Exception error) { FileLog.Write(LogEvent.BlePairedLookupFailed, error); }
+        finally { _bleRestoreBusy = false; }
     }
 
     private void PopulateBleMenu()
@@ -1286,17 +1343,27 @@ public sealed class TrayAppContext : ApplicationContext
                 (_, _) => DisableBluetoothKey(key));
             _bleDevicesMenu.DropDownItems.Add(item);
         }
+        int pending = 0;
+        foreach (string key in _settings.ConsentedBleEndpoints.OrderBy(x => x, StringComparer.Ordinal))
+        {
+            if (_bleSlots.ContainsKey(key)) continue;
+            var item = new ToolStripMenuItem(UiText.Format("Saved BLE device #{0} (not found)", ++pending));
+            item.DropDownItems.Add(UiText.Get("Disable selected BLE monitor"), null,
+                (_, _) => DisableBluetoothKey(key));
+            _bleDevicesMenu.DropDownItems.Add(item);
+        }
         if (_bleDevicesMenu.DropDownItems.Count == 0)
             _bleDevicesMenu.DropDownItems.Add(new ToolStripMenuItem(UiText.Get("unavailable")) { Enabled = false });
     }
 
     private void UpdateBluetoothStatus()
     {
-        if (!BleEnabled) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: off");
+        if (_settings.ConsentedBleEndpoints.Count == 0) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: off");
+        else if (!BleEnabled) _bluetoothStatus.Text = UiText.Get("Waiting for saved Bluetooth devices");
         else if (_ble.IsBusy) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: checking battery...");
         else _bluetoothStatus.Text = UiText.Format("Bluetooth monitors: {0}", _bleSlots.Count);
-        _disableBluetooth.Enabled = BleEnabled;
-        _bleDevicesMenu.Enabled = BleEnabled;
+        _disableBluetooth.Enabled = _settings.ConsentedBleEndpoints.Count > 0;
+        _bleDevicesMenu.Enabled = _settings.ConsentedBleEndpoints.Count > 0;
         _refreshBluetooth.Enabled = !_closing && !_ble.IsBusy && BleEnabled;
     }
 
@@ -1417,7 +1484,8 @@ public sealed class TrayAppContext : ApplicationContext
             AulaCacheReport() + "\n\n" +
             "[Bluetooth fallback state]\n" +
             $"Enabled: {BleEnabled}; displayed device: {_lastDevice}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
-            $"Opted-in BLE devices: {_bleSlots.Count}; request pending: {_ble.IsBusy}\n" + BleDiagnosticSummary() + "\n" +
+            $"Opted-in BLE devices: {_bleSlots.Count}; request pending: {_ble.IsBusy}\n" +
+            $"Saved BLE consent count: {_settings.ConsentedBleEndpoints.Count}; pending discovery: {_bleRestoreBusy}\n" + BleDiagnosticSummary() + "\n" +
             "\nThe extended monitoring section excludes device paths, serial numbers, Bluetooth addresses, usernames and raw payloads.\n" +
             "Collecting this section does not issue additional HID commands or scan Bluetooth devices.\n\n" +
             (_bluetoothWindow is { IsDisposed: false } inspector ? inspector.DiagnosticSummary() :
@@ -1482,6 +1550,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_closing) return;
         _forcePoll = true;
+        StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
         if (_busy)
         {
             return;
@@ -1527,7 +1596,6 @@ public sealed class TrayAppContext : ApplicationContext
                 // Preserve an explicit clock request through unknown USB presence.
                 _manualClockSync |= result.DeferredManualClock;
                 ApplyClockResult(result.Attempted, result.Succeeded);
-                StartBluetoothPoll(result.Batch.Summary.ReceiverPresent);
                 if (force && _settings.MonitorAulaL99) _ = PollAulaAsync(manual: true);
             }
         }
@@ -1869,6 +1937,8 @@ public sealed class TrayAppContext : ApplicationContext
         _updateRequestCancellation?.Cancel();
         _timer.Stop();
         _timer.Dispose();
+        _bleTimer.Stop();
+        _bleTimer.Dispose();
         _aulaPoll.Close();
         StopAulaTimer();
         _ble.DisableAll();

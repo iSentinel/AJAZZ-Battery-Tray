@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace AjazzBatteryTray;
 
-/// <summary>Manual Bluetooth inspector with optional, session-only tray fallback.</summary>
+/// <summary>Manual Bluetooth inspector with explicit locally remembered monitor consent.</summary>
 public sealed class BluetoothBatteryForm : Form
 {
     private readonly ListBox _devices = new();
@@ -24,14 +24,14 @@ public sealed class BluetoothBatteryForm : Form
     private readonly Button _read = new() { Text = "Read selected battery" };
     private readonly Button _automatic = new() { AutoSize = true, Enabled = false };
     private readonly Button _remove = new() { AutoSize = true, Enabled = false };
-    private readonly Action<BluetoothCandidate, BluetoothBatteryResult, DateTimeOffset> _enable;
+    private readonly Func<BluetoothCandidate, BluetoothBatteryResult, DateTimeOffset, bool> _enable;
     private readonly Action<BluetoothCandidate> _disable;
     private readonly Func<BluetoothCandidate, bool> _isEnabled;
     private BluetoothCandidate? _verified;
     private BluetoothBatteryResult? _verifiedResult;
     private DateTimeOffset _verifiedAt;
 
-    public BluetoothBatteryForm(Action<BluetoothCandidate, BluetoothBatteryResult, DateTimeOffset> enable,
+    public BluetoothBatteryForm(Func<BluetoothCandidate, BluetoothBatteryResult, DateTimeOffset, bool> enable,
         Action<BluetoothCandidate> disable, Func<BluetoothCandidate, bool> isEnabled,
         Action collectDiagnostics)
     {
@@ -106,7 +106,7 @@ public sealed class BluetoothBatteryForm : Form
         _find.Text = UiText.Get("Find paired Bluetooth devices");
         _read.Text = UiText.Get("Read selected battery");
         _copy.Text = UiText.Get("Collect full diagnostics...");
-        _automatic.Text = UiText.Get("Enable selected BLE monitor (this session)");
+        _automatic.Text = UiText.Get("Enable selected BLE monitor (remember on this PC)");
         _remove.Text = UiText.Get("Disable selected BLE monitor");
         if (_devices.Items.Count == 0 && _verified is null)
             _result.Text = UiText.Get("Choose Find to list already paired devices.");
@@ -215,9 +215,11 @@ public sealed class BluetoothBatteryForm : Form
             _result.Text = UiText.Get("Read selected battery again before enabling monitoring.");
             return;
         }
-        _enable(candidate, result, _verifiedAt);
+        bool saved = _enable(candidate, result, _verifiedAt);
         ClearVerifiedSelection();
-        _result.Text = UiText.Get("Bluetooth monitor enabled for this session; independent of USB.");
+        _result.Text = UiText.Get(saved
+            ? "Bluetooth monitor saved on this PC; independent of USB."
+            : "Unable to enable or save Bluetooth monitoring.");
     }
 
     /// <summary>External opt-out invalidates prior consent evidence.</summary>
