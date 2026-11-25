@@ -1,3 +1,10 @@
+# Resume — wizard resource provenance
+
+#217 merged 676f64e into parent after 5/5 CI. Both actual #206
+wizard images match exact pinned ISCmplr.dll resources. Two
+regressions. Licensing, independent trust and hardware acceptance
+remain open. Release hold.
+
 # Resume — Setup.0 installation records
 
 Stacked on #216. All 46193 decoded bytes of exact #206 first

@@ -601,3 +601,15 @@ not yet verified. No trailing bytes. Actual replay SHA-256
 52950d48434d1000653fc9c563c6343b5f5e1e68f569a0c660ad5c7fe614ba06.
 Scoped policy verification, not independent recompilation or release
 admission.
+
+### Wizard image provenance
+
+Exact #206 ISCmplr.dll inventory matches independently extracted
+official compiler SHA-256 1a6ff68241e7f3b18543bb875283788913abbdd7b9d7403ac094598d044def7a.
+Compiler.SetupCompiler.pas CreateWizardImagesFromResources selects
+light-mode RCDATA WIZARDIMAGE150 and WIZARDSMALLIMAGE250 for the
+reviewed defaults. Both actual Setup.0 image payload hashes and
+sizes match the exact named resources. Actual replay SHA-256
+0f4c32a1deabb1482c29930a3fb019efb5b27c0f768c8fb71983643c6cc1e4c8.
+This closes scoped wizard payload attribution, not independent
+publisher trust, complete licensing or release admission.

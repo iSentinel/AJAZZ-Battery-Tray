@@ -1668,3 +1668,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI/integration; compare wizard images to pinned compiler
       inputs, then licensing, independent trust and hardware acceptance.
       Release hold.
+
+### Wizard resource provenance
+
+- [x] #217 merged 676f64e into parent after 5/5 hosted checks and
+      exact tested tree comparison.
+- [x] Match both actual wizard images against exact named resources
+      in pinned official ISCmplr.dll; two regressions and CLI gate.
+- [ ] Hosted CI/integration; licensing, independent key trust and
+      hardware acceptance. Release hold.
