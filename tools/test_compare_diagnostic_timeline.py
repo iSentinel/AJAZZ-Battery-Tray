@@ -3,7 +3,7 @@
 import json
 import unittest
 
-from compare_diagnostic_timeline import gate_sequences, timeline
+from compare_diagnostic_timeline import gate_sequences, timeline, timestamp_relation, sample_relations
 from compare_ready_clear import parse_matrix
 from test_beta60_field_report_import import projected_report
 from test_compare_ready_clear import report
@@ -57,6 +57,29 @@ class DiagnosticTimelineTests(unittest.TestCase):
         self.assertEqual(result['reported_transitions'], [])
         self.assertEqual(sum(result['reported_gate_counts'].values()), 2)
 
+    def test_timestamp_relation_boundaries(self) -> None:
+        """Never use snapshot time as a substitute for a missing sample timestamp."""
+        a, b, c = ('2026-01-01T00:00:00+00:00', '2026-01-01T00:01:00+00:00',
+                   '2026-01-01T00:02:00+00:00')
+        for first, second, expected in (
+                (a, a, 'SAME_REPORTED_TIMESTAMP'), (a, b, 'LATER_REPORTED_TIMESTAMP'),
+                (b, a, 'EARLIER_REPORTED_TIMESTAMP'), (None, b, 'MISSING_TIMESTAMP'),
+                (c, b, 'FUTURE_TIMESTAMP')):
+            with self.subTest(expected=expected):
+                self.assertEqual(timestamp_relation(first, second, b, c), expected)
+
+    def test_sample_relations_edition_scope(self) -> None:
+        """Never compare different edition clocks as one device observation."""
+        first = {'edition': 'windows'}
+        second = {'edition': 'universal'}
+        self.assertEqual(set(sample_relations(first, second).values()), {'DIFFERENT_EDITION'})
+        apple = {'edition': 'universal', 'snapshot_utc': '2026-01-01T00:01:00Z',
+                 'usb': {'last_verified_utc': '2026-01-01T00:00:00Z'}, 'aula': None}
+        later = dict(apple, snapshot_utc='2026-01-01T00:02:00Z')
+        self.assertEqual(sample_relations(apple, later), {
+            'usb': 'SAME_REPORTED_TIMESTAMP', 'aula_poll': 'MISSING_TIMESTAMP',
+            'aula_last_good': 'MISSING_TIMESTAMP'})
+
     def test_order_and_unchanged_unverified(self) -> None:
         """Sort by actual capture time and keep the F7 value unverified."""
         first = field_report(93, '07:03:42')
@@ -86,6 +109,28 @@ class DiagnosticTimelineTests(unittest.TestCase):
         self.assertEqual(rows[1]['aula']['state'], 'cached')
         self.assertIsNone(rows[1]['aula']['fresh_percent'])
         self.assertEqual(rows[1]['aula']['last_good_percent'], 62)
+        self.assertEqual(result['transitions'][0]['reported_sample_timestamp_relations'], {
+            'usb': 'MISSING_TIMESTAMP', 'aula_poll': 'LATER_REPORTED_TIMESTAMP',
+            'aula_last_good': 'SAME_REPORTED_TIMESTAMP'})
+
+    def test_ordinary_sample_timestamp_reuse(self) -> None:
+        """Later reports may repeat a timestamp without a new ordinary reading."""
+        first = field_report(93, '07:03:42')
+        second = field_report(93, '07:04:42')
+        sample = 'USB sample UTC: 2026-11-25T07:03:00Z; scheduled: False'
+        def add_stamp(text: str, line: str) -> str:
+            """Insert the provenance immediately after the ordinary battery field."""
+            lines = text.splitlines()
+            index = next(i for i, value in enumerate(lines) if value.startswith('Battery: '))
+            lines.insert(index + 1, line)
+            return '\n'.join(lines)
+        first = add_stamp(first, sample)
+        second = add_stamp(second, sample.replace('False', 'True'))
+        result = timeline([second, first])
+        self.assertEqual(result['transitions'][0]['reported_sample_timestamp_relations']['usb'],
+                         'SAME_REPORTED_TIMESTAMP')
+        self.assertIsNone(result['snapshots'][1]['usb']['reported_age_eligible_percent'])
+        self.assertEqual(result['identity_binding'], 'NOT_VERIFIED')
 
     def test_duplicate_and_missing_matrix(self) -> None:
         """Do not invent a change when evidence is incomplete."""

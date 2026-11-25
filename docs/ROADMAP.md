@@ -2287,3 +2287,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Rebind the latest complete portable/Apple CI generation for
       hardware review. Physical, signing, distribution, interactive
       acceptance and compiler migration gates remain open.
+
+### Diagnostic timeline sample provenance
+
+- [x] Compare reported ordinary USB timestamps independently from
+      capture and batch-completion timestamps. Export AULA last-read
+      timestamp and compare it separately from last-good timestamp.
+      Preserve missing, future, earlier, equal and later timestamp
+      classifications; do not compare across platform editions.
+      Equal timestamps do not establish physical identity or freshness.
+      Three new synthetic regression groups; no HID changes.
+- [ ] Hosted CI and integration after parent #271 qualification.
+- [ ] Exact latest CI artifacts and physical acceptance.

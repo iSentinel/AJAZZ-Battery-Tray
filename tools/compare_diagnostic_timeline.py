@@ -50,6 +50,7 @@ def aula_observation(text: str, stamp: datetime) -> dict | None:
             and not sample.known else 'unavailable',
             'fresh_percent': sample.percent, 'last_good_percent': sample.last_good,
             'last_good_utc': sample.last_good_at.isoformat() if sample.last_good_at else None,
+            'last_read_utc': sample.last_read.isoformat() if sample.last_read else None,
             'failures': sample.failures, 'receiver_present': sample.present if sample.known else None}
 
 
@@ -144,6 +145,39 @@ def snapshot(text: str) -> dict:
     return row
 
 
+def timestamp_relation(before: str | None, after: str | None,
+                       first_snapshot: str, second_snapshot: str) -> str:
+    """Compare reported timestamps, not device identity or measurement freshness."""
+    if before is None or after is None:
+        return 'MISSING_TIMESTAMP'
+    first, second = datetime.fromisoformat(before), datetime.fromisoformat(after)
+    if (first > datetime.fromisoformat(first_snapshot)
+            or second > datetime.fromisoformat(second_snapshot)):
+        return 'FUTURE_TIMESTAMP'
+    if first == second:
+        return 'SAME_REPORTED_TIMESTAMP'
+    return 'LATER_REPORTED_TIMESTAMP' if second > first else 'EARLIER_REPORTED_TIMESTAMP'
+
+
+def sample_relations(before: dict, after: dict) -> dict:
+    """Keep ordinary USB, AULA poll and last successful AULA evidence separate."""
+    if before['edition'] != after['edition']:
+        return {key: 'DIFFERENT_EDITION' for key in
+                ('usb', 'aula_poll', 'aula_last_good')}
+    windows = before['edition'] == 'windows'
+    usb_key = 'measured_utc' if windows else 'last_verified_utc'
+    first_aula, second_aula = before['aula'] or {}, after['aula'] or {}
+    first_stamp, second_stamp = before['snapshot_utc'], after['snapshot_utc']
+    return {
+        'usb': timestamp_relation(before['usb'].get(usb_key),
+                                  after['usb'].get(usb_key), first_stamp, second_stamp),
+        'aula_poll': timestamp_relation(first_aula.get('last_read_utc'),
+                                        second_aula.get('last_read_utc'), first_stamp, second_stamp),
+        'aula_last_good': timestamp_relation(first_aula.get('last_good_utc'),
+                                             second_aula.get('last_good_utc'), first_stamp, second_stamp),
+    }
+
+
 def change(before: dict, after: dict) -> dict:
     """Describe observable states only, never infer physical connection mode."""
     first, second = before['usb']['state'], after['usb']['state']
@@ -158,6 +192,7 @@ def change(before: dict, after: dict) -> dict:
             'usb_state_before': first, 'usb_state_after': second,
             'unverified_field_change': field, 'identity_binding': 'NOT_VERIFIED',
             'same_edition': before['edition'] == after['edition'],
+            'reported_sample_timestamp_relations': sample_relations(before, after),
             'aula_state_before': old_aula['state'] if old_aula else None,
             'aula_state_after': new_aula['state'] if new_aula else None,
             'active_outcome_before': before['active_capture']['outcome'],
