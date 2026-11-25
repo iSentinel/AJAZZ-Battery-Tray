@@ -1,3 +1,22 @@
+# Resume — unified diagnostics and historical transport evidence
+
+#150 merged b5b5c53 after 5/5 checks, identical tree 9a2bfc0.
+#151 initial 9d2395a Windows 911 assertions PASS and EN/RU/UK dashboard
+smoke PASS; local Python 138/138 PASS. Join #150 parent preserving both
+roadmap blocks; retain last numeric single-receiver USB observation
+as historical diagnostics only, not linked to BLE. Fresh exact-head CI
+and owner acceptance needed. No release or parser promotion.
+
+# Resume — component attribution and runtime provenance
+
+#149 merged 09da592 after 5/5 CI, identical tree eee7a80.
+#150 1cccf03 5/5 CI and clean Gateway 143/143 offline QA PASS.
+Actual #147 EXEs: tray 211 matches, 52 localized unmatched, 0 missing;
+HA 182 matches, 0 unmatched/missing. Retargeted #150 onto draft #99;
+join integrated parent and requalify exact candidate. Next verify
+52 satellite resource hashes against exact upstream runtime pack,
+then licenses/notices and scoped SBOM. Release hold unchanged.
+
 # Resume — Node24 artifact roundtrip correction
 
 #148 initial 14c2eb4 clean isolated Gateway QA 133/133 PASS, tree

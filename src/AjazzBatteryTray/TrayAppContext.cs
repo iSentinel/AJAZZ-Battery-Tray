@@ -68,6 +68,7 @@ public sealed class TrayAppContext : ApplicationContext
         => $"{slot.Candidate.DisplayName} (BLE #{slot.Number})";
     private AjazzHidReader.Reading? _latestUsbReading;
     private DateTimeOffset? _latestUsbReadAt;
+    private readonly UsbDiagnosticHistory _usbDiagnosticHistory = new();
     private bool _diagnosticsBusy;
     private ToolStripMenuItem _bluetoothStatus = new();
     private ToolStripMenuItem _disableBluetooth = new();
@@ -1402,7 +1403,7 @@ public sealed class TrayAppContext : ApplicationContext
             $"Receiver present: {usb?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {usb?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {usb?.Percent?.ToString() ?? "unavailable"}; status: {usb?.Details ?? "not checked"}\n" +
             BatteryReportParser.DiagnosticUnverifiedField(usb?.UnverifiedPercent) + "\n" +
-            attempts + "\n\n[Independent AJAZZ receivers]\n" +
+            attempts + "\n\n" + _usbDiagnosticHistory.Format() + "\n\n[Independent AJAZZ receivers]\n" +
             string.Join("\n", _receivers.Devices.Select(x =>
                 $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}; " +
                 BatteryReportParser.DiagnosticUnverifiedField(x.Reading.UnverifiedPercent, !x.ScheduledSkip))) +
@@ -1683,8 +1684,19 @@ public sealed class TrayAppContext : ApplicationContext
                 _lastClockUpdate.Value.ToString("HH:mm:ss"));
     }
 
+    private void RememberUsbDiagnostic(AjazzHidReader.Batch batch)
+    {
+        if (!batch.Summary.PresenceKnown || batch.Receivers.Count != 1) return;
+        var sample = batch.Receivers[0];
+        if (!sample.Sampled || sample.MeasuredAt is not { } at ||
+            !sample.Reading.PresenceKnown || !sample.Reading.ReceiverPresent) return;
+        _usbDiagnosticHistory.Observe(sample.Revision, sample.Reading.Percent,
+            sample.Reading.UnverifiedPercent, at);
+    }
+
     private void ApplyReading(AjazzHidReader.Batch batch)
     {
+        RememberUsbDiagnostic(batch);
         _ble.ObserveUsbPresence(batch.Summary.PresenceKnown, batch.Summary.ReceiverPresent);
         _receivers.Apply(batch, _settings, _tray, BleEnabled,
             DateTimeOffset.UtcNow);

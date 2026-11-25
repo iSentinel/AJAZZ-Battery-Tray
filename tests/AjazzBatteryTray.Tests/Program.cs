@@ -37,6 +37,25 @@ Check("Manual diagnostic rejects Classic direct GATT claim",
     BluetoothManualObservation.Create("AJ179 APEX", false,
         new(97, BluetoothBatterySource.DirectGatt, "invalid"), manualAt).Percent is null);
 
+var usbEvidence = new UsbDiagnosticHistory();
+Check("USB diagnostic empty before first numeric observation",
+    usbEvidence.Format().EndsWith("never"));
+usbEvidence.Observe(2, null, 97, manualAt);
+usbEvidence.Observe(2, null, null, manualAt.AddMinutes(1));
+Check("USB diagnostic preserves last unverified observation after no value",
+    usbEvidence.Format().Contains("unverified field=97") &&
+    usbEvidence.Format().Contains("verified at observation=unavailable") &&
+    usbEvidence.Format().Contains("historical=true"));
+usbEvidence.Observe(2, 90, null, manualAt.AddSeconds(-1));
+Check("USB diagnostic does not replace evidence with older observation",
+    usbEvidence.Format().Contains("unverified field=97"));
+usbEvidence.Observe(2, 96, 97, manualAt.AddMinutes(2));
+Check("USB diagnostic distinguishes verified observation from unverified",
+    usbEvidence.Format().Contains("verified at observation=96; unverified field=unavailable"));
+usbEvidence.Observe(2, 101, 0, manualAt.AddMinutes(3));
+Check("USB diagnostic rejects out-of-range observations",
+    usbEvidence.Format().Contains("verified at observation=96;"));
+
 Check("100 percent", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0, 100, 1, 1, 1, 2 }) == 100);
 Check("34 percent", BatteryReportParser.ParseWindowsFeature(
