@@ -1128,3 +1128,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Identify ad-hoc empty-CMS signatures without signer trust claims.
 - [ ] Hosted QA, native codesign/OS acceptance, signing/notarization,
       resource rule semantics and distribution SBOM. Release hold unchanged.
+
+### ENG-12 scoped Apple CycloneDX inventory
+
+- [x] Bind archive, direct Mach-O linkage and resource seal evidence to one ZIP.
+- [x] Generate both reviewed Apple BOMs; 7 shipped files each, 24/7 external
+      OS dependencies; official CycloneDX 1.6 schema PASS.
+- [ ] Hosted QA, exact release artifacts, transitive/system symbol review,
+      full distribution inventory, signatures and physical acceptance.
+      Release hold unchanged.
