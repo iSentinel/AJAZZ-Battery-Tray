@@ -1541,6 +1541,20 @@ var linkSettings = new AppSettings { ConsentedBleEndpoints = linkConsent, BleUsb
 Check("Portable preferences omit transport links",
     !System.Text.Encoding.UTF8.GetString(PreferencesBackup.Capture(linkSettings).Export()).Contains(linkUsbA));
 
+// Primary identity is not selected again on every transport change.
+Check("Linked primary initially yields to existing standalone mouse",
+    TransportLinks.SelectPrimary(null, new[] { linkUsbA }, true) is null);
+Check("A sole linked mouse becomes primary without a battery reading",
+    TransportLinks.SelectPrimary(null, new[] { linkUsbA }, false) == linkUsbA);
+Check("Linked primary remains stable when unrelated mouse arrives",
+    TransportLinks.SelectPrimary(linkUsbA, new[] { linkUsbB, linkUsbA }, true) == linkUsbA);
+Check("Hidden or unlinked primary yields to standalone mouse",
+    TransportLinks.SelectPrimary(linkUsbA, new[] { linkUsbB }, true) is null);
+Check("Hidden or unlinked primary selects remaining linked mouse",
+    TransportLinks.SelectPrimary(linkUsbA, new[] { linkUsbB }, false) == linkUsbB);
+Check("No visible links clears primary",
+    TransportLinks.SelectPrimary(linkUsbA, Array.Empty<string>(), false) is null);
+
 // Release checks are local, deterministic, and perform no HTTP requests.
 var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
 Check("Update accepts beta tag", installedVersion.Beta == 41);

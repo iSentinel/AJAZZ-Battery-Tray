@@ -83,6 +83,7 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem _bluetoothStatus = new();
     private ToolStripMenuItem _disableBluetooth = new();
     private ToolStripMenuItem _refreshBluetooth = new();
+    private string? _primaryLinkedUsbKey;
     private string _lastSource = "";
     private string _lastDevice = "AJAZZ APEX";
     private readonly DockClockSchedule _clockSchedule = new();
@@ -1877,8 +1878,11 @@ public sealed class TrayAppContext : ApplicationContext
             !usbPercent.HasValue;
         bool bluetoothPrimary = BatteryDisplayState.PreferIndependentBluetooth(
             receiver is not null, usbPercent, primaryBle is not null, blePercent) || retainCachedBle;
-        // Prefer a linked device as the main icon only if no standalone mouse is selected.
-        var linkedPrimary = receiver is null && !bluetoothPrimary ? linked.FirstOrDefault() : null;
+        // Keep a logical primary across transport and unrelated receiver changes.
+        _primaryLinkedUsbKey = TransportLinks.SelectPrimary(_primaryLinkedUsbKey,
+            linked.Select(x => x.UsbKey), receiver is not null || bluetoothPrimary);
+        var linkedPrimary = linked.FirstOrDefault(x => x.UsbKey == _primaryLinkedUsbKey);
+        if (linkedPrimary is not null) bluetoothPrimary = false;
         bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary && linkedPrimary is null;
         bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null &&
             (reading.ReceiverPresent || aulaPresent || _settings.BleUsbLinks.Count > 0);
@@ -1932,7 +1936,7 @@ public sealed class TrayAppContext : ApplicationContext
             aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device);
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
-        else if (displayConnected && !aulaIsPrimary && !bluetoothPrimary && receiver?.ScheduledSkip == true)
+        else if (displayConnected && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null && receiver?.ScheduledSkip == true)
             value += " (" + UiText.Get("Last scheduled reading") + ")";
         bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null;
         int? unverified = unknownUsb && receiver is { ScheduledSkip: false } && reading.PresenceKnown
@@ -1960,7 +1964,7 @@ public sealed class TrayAppContext : ApplicationContext
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
-                bluetoothPrimary ? null : receiver?.Key, hiddenUsb, DeviceColor,
+                bluetoothPrimary || linkedPrimary is not null ? null : receiver?.Key, hiddenUsb, DeviceColor,
                 BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null),
                 _settings.MouseTrayIcon, linked.Where(x => x != linkedPrimary).Select(x =>
                     (x.UsbKey, x.Name, x.Display.Percent, x.Display.Cached,

@@ -299,3 +299,9 @@ notifications, dashboard rows and local API telemetry remain separate.
 Physical identity is user-confirmed, not independently verified; a
 different receiver key requires a new link. Native CI and hardware
 acceptance remain necessary.
+
+A linked primary is now sticky within the application session: arrival
+of an unrelated mouse or changes in transport availability do not
+replace it. Hiding/unlinking the linked primary permits a new selection.
+Other independently monitored devices remain separate extra icons in
+multiple-icon mode. No local receiver key is added to diagnostics.

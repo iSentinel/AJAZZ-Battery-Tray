@@ -22,7 +22,7 @@ class IndependentBleMonitorTests(unittest.TestCase):
         """An unrelated BLE device must neither hide nor silence USB."""
         code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
         self.assertIn('BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null)', code)
-        self.assertIn('bluetoothPrimary ? null : receiver?.Key', code)
+        self.assertIn('bluetoothPrimary || linkedPrimary is not null ? null : receiver?.Key', code)
         self.assertIn('_receivers.Apply(batch, _settings, _tray, false,', code)
         self.assertIn('BatteryDisplayState.PreferIndependentBluetooth(', code)
 
@@ -64,6 +64,14 @@ class IndependentBleMonitorTests(unittest.TestCase):
         self.assertIn('linked.Where(x => x != linkedPrimary)', code)
         self.assertNotIn('BleUsbLinks', (root / 'PreferencesBackup.cs').read_text())
         self.assertIn('wanted.Add(item.Key)', (root / 'ReceiverMonitor.cs').read_text())
+
+    def test_sticky_linked_primary_keeps_other_icons(self) -> None:
+        """A linked primary must not swallow an unrelated receiver or BLE icon."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        self.assertIn('TransportLinks.SelectPrimary(_primaryLinkedUsbKey,', code)
+        self.assertIn('if (linkedPrimary is not null) bluetoothPrimary = false;', code)
+        self.assertIn('bluetoothPrimary || linkedPrimary is not null ? null : receiver?.Key', code)
+        self.assertIn('BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null)', code)
 
 
 if __name__ == '__main__':
