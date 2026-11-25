@@ -1,3 +1,10 @@
+# Resume — manual Apple GATT evidence
+
+Stacked on #176 161e58c, pending native CI. Add independent
+manual GATT status/UTC/duration/verified value and discovery count.
+Guard Universal timeout generation and both service/UUID gates.
+No new automatic operation or identity pairing.
+
 # Resume — Apple GUI diagnostics owner priority
 
 #175 merged 23998be after 4/4 CI; previous integration 6/6.

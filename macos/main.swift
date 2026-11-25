@@ -584,6 +584,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
             "Last ordinary status: \(last.state); battery: \(battery)\n" +
             "Last verified USB UTC (session): \(sample)\n" +
             "Polling active: \(polling); isolated: \(isolatedPolling)\n" +
+            (bluetoothWindow?.diagnosticSummary ?? "Bluetooth manual 180F/2A19: not requested") + "\n" +
             "No serial numbers, device paths or Bluetooth addresses collected."
     }
 
@@ -1073,7 +1074,8 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
         BluetoothBatteryPayload.parse(nil) == nil &&
         BluetoothBatteryPayload.likelyAjazz("AJ179 APEX") &&
         BluetoothBatteryPayload.likelyAjazz("Ajazz mouse") &&
-        !BluetoothBatteryPayload.likelyAjazz("Keyboard")
+        !BluetoothBatteryPayload.likelyAjazz("Keyboard") &&
+        BluetoothBatteryInspector().diagnosticSummary.contains("Bluetooth last manual read: not requested")
     let sharedFrameValid = ApexBattery.parse([5, 1, 0, 83, 1, 0, 1, 2, 0, 0]) == 83 &&
         ApexBattery.parse([1, 0, 83, 1, 0, 1, 3, 0, 0]) == 83 &&
         ApexBattery.parse([5, 0, 0, 83, 1, 0, 1, 2, 0, 0]) == nil &&

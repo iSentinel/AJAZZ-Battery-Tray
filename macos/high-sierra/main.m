@@ -468,6 +468,9 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
 @property(nonatomic, assign) BOOL bluetoothRequested;
 @property(nonatomic, assign) NSUInteger bluetoothRequestGeneration;
 @property(nonatomic, assign) NSUInteger bluetoothAttempt;
+@property(nonatomic, assign) NSTimeInterval bluetoothStarted;
+@property(nonatomic, strong) NSString *bluetoothLastRead;
+@property(nonatomic, strong) NSString *bluetoothDiscovery;
 @end
 
 @implementation LegacyTray
@@ -848,12 +851,16 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
          @"OS: %@\nVID:PID: 3151:5007\nUsage: FFFF:0002\n"
          @"Battery state: %@; battery: %@\nMatching HID collections: %ld\n"
          @"Last verified USB UTC (session): %@\nPolling active: %@; isolated: %@\n"
+         @"Bluetooth discovery: %@\nBluetooth manual 180F/2A19 pending: %@\n"
+         @"Bluetooth last manual read: %@\n"
          @"Firmware and device serial numbers were not queried.",
          [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
          [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"],
          [utc stringFromDate:[NSDate date]], [[NSProcessInfo processInfo] operatingSystemVersionString],
          state, battery, (long)self.latest.collections, sample,
-         self.polling ? @"True" : @"False", self.isolatedPolling ? @"True" : @"False"];
+         self.polling ? @"True" : @"False", self.isolatedPolling ? @"True" : @"False",
+         self.bluetoothDiscovery ?: @"not requested", self.selectedPeripheral ? @"True" : @"False",
+         self.bluetoothLastRead ?: @"not requested"];
 }
 
 - (void)copyReport:(NSString *)report {
@@ -943,6 +950,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
 - (void)checkBluetooth:(id)sender {
     if (self.selectedPeripheral || self.bluetoothRequested) return;
     self.bluetoothRequested = YES;
+    self.bluetoothDiscovery = @"checking access";
     NSUInteger generation = ++self.bluetoothRequestGeneration;
     if (!self.central) {
         self.central = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
@@ -955,6 +963,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
         if (!self.bluetoothRequested ||
             generation != self.bluetoothRequestGeneration) return;
         self.bluetoothRequested = NO;
+        self.bluetoothDiscovery = @"initialization timeout";
         [self message:@"Bluetooth initialization timed out; try again."];
     });
 }
@@ -966,6 +975,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
         central.state == CBManagerStateResetting) return;
     self.bluetoothRequested = NO;
     if (central.state != CBManagerStatePoweredOn) {
+        self.bluetoothDiscovery = [NSString stringWithFormat:@"access unavailable; state=%ld", (long)central.state];
         [self message:[self word:@"Bluetooth is off or unavailable."
                                  ru:@"Bluetooth выключен или недоступен."
                                  uk:@"Bluetooth вимкнений або недоступний."]];
@@ -981,6 +991,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
             [name containsString:@"AJ179"]) [matching addObject:device];
     }
     self.connectedMice = matching;
+    self.bluetoothDiscovery = [NSString stringWithFormat:@"connected candidates=%lu", (unsigned long)matching.count];
     if (!matching.count) {
         [self message:@"No connected AJAZZ BLE mouse exposes Battery Service (180F)."];
         return;
@@ -1002,6 +1013,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
     if (index < 0 || index >= (NSInteger)matching.count) return;
     self.selectedPeripheral = matching[(NSUInteger)index];
     self.bluetoothAttempt++;
+    self.bluetoothStarted = [[NSProcessInfo processInfo] systemUptime];
     NSUInteger attempt = self.bluetoothAttempt;
     self.selectedPeripheral.delegate = self;
     [central connectPeripheral:self.selectedPeripheral options:nil];
@@ -1010,7 +1022,7 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
                    dispatch_get_main_queue(), ^{
         // A previous attempt must not terminate a newer read of the same mouse.
         if (self.selectedPeripheral == pending && self.bluetoothAttempt == attempt) {
-            [self finishBluetooth:@"Bluetooth Battery Service timed out."];
+            [self finishBluetooth:@"Bluetooth Battery Service timed out." outcome:@"timeout" percent:nil];
         }
     });
 }
@@ -1023,13 +1035,13 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:
     (CBPeripheral *)device error:(NSError *)error {
     if (device == self.selectedPeripheral)
-        [self finishBluetooth:@"Failed to read connected Bluetooth mouse."];
+        [self finishBluetooth:@"Failed to read connected Bluetooth mouse." outcome:@"connection failed" percent:nil];
 }
 
 - (void)peripheral:(CBPeripheral *)device didDiscoverServices:(NSError *)error {
     if (device != self.selectedPeripheral) return;
     if (error) {
-        [self finishBluetooth:@"Bluetooth service discovery failed."];
+        [self finishBluetooth:@"Bluetooth service discovery failed." outcome:@"service discovery failed" percent:nil];
         return;
     }
     for (CBService *service in device.services) {
@@ -1039,14 +1051,14 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
             return;
         }
     }
-    [self finishBluetooth:@"Battery Service (180F) is unavailable."];
+    [self finishBluetooth:@"Battery Service (180F) is unavailable." outcome:@"service unavailable" percent:nil];
 }
 
 - (void)peripheral:(CBPeripheral *)device didDiscoverCharacteristicsForService:
     (CBService *)service error:(NSError *)error {
-    if (device != self.selectedPeripheral) return;
+    if (device != self.selectedPeripheral || ![service.UUID isEqual:[CBUUID UUIDWithString:@"180F"]]) return;
     if (error) {
-        [self finishBluetooth:@"Bluetooth characteristic discovery failed."];
+        [self finishBluetooth:@"Bluetooth characteristic discovery failed." outcome:@"characteristic discovery failed" percent:nil];
         return;
     }
     for (CBCharacteristic *characteristic in service.characteristics) {
@@ -1055,30 +1067,38 @@ static NSString *CaptureMenuTrace(BOOL synthetic) {
             return;
         }
     }
-    [self finishBluetooth:@"Battery Level (2A19) is unavailable."];
+    [self finishBluetooth:@"Battery Level (2A19) is unavailable." outcome:@"characteristic unavailable" percent:nil];
 }
 
 - (void)peripheral:(CBPeripheral *)device didUpdateValueForCharacteristic:
     (CBCharacteristic *)characteristic error:(NSError *)error {
-    if (device != self.selectedPeripheral) return;
+    if (device != self.selectedPeripheral || ![characteristic.UUID isEqual:[CBUUID UUIDWithString:@"2A19"]] ||
+        ![characteristic.service.UUID isEqual:[CBUUID UUIDWithString:@"180F"]]) return;
     NSData *value = characteristic.value;
     if (!error && value.length == 1 && ((const uint8_t *)value.bytes)[0] <= 100) {
-        [self finishBluetooth:[NSString stringWithFormat:
-            @"Bluetooth battery: %d%%", ((const uint8_t *)value.bytes)[0]]];
+        NSNumber *percent = @(((const uint8_t *)value.bytes)[0]);
+        [self finishBluetooth:[NSString stringWithFormat:@"Bluetooth battery: %@%%", percent]
+            outcome:@"fresh GATT" percent:percent];
     } else {
-        [self finishBluetooth:@"No valid Bluetooth Battery Level returned."];
+        [self finishBluetooth:@"No valid Bluetooth Battery Level returned." outcome:@"invalid reply" percent:nil];
     }
 }
 
 - (void)centralManager:(CBCentralManager *)central
     didDisconnectPeripheral:(CBPeripheral *)device error:(NSError *)error {
-    if (device == self.selectedPeripheral) {
-        [self finishBluetooth:@"Bluetooth mouse disconnected before the read completed."];
+    if (device == self.selectedPeripheral && device.state == CBPeripheralStateDisconnected) {
+        [self finishBluetooth:@"Bluetooth mouse disconnected before the read completed." outcome:@"disconnected" percent:nil];
     }
 }
 
-- (void)finishBluetooth:(NSString *)message {
+- (void)finishBluetooth:(NSString *)message outcome:(NSString *)outcome percent:(NSNumber *)percent {
     if (!self.selectedPeripheral) return;
+    NSString *level = percent ? [NSString stringWithFormat:@"%@%%", percent] : @"unknown";
+    NSISO8601DateFormatter *utc = [[NSISO8601DateFormatter alloc] init];
+    NSTimeInterval elapsed = [[NSProcessInfo processInfo] systemUptime] - self.bluetoothStarted;
+    self.bluetoothLastRead = [NSString stringWithFormat:
+        @"outcome=%@; battery=%@; UTC=%@; elapsed_ms=%.0f",
+        outcome, level, [utc stringFromDate:[NSDate date]], elapsed * 1000];
     self.selectedPeripheral.delegate = nil;
     [self.central cancelPeripheralConnection:self.selectedPeripheral];
     self.selectedPeripheral = nil;
