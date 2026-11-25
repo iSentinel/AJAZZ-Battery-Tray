@@ -37,6 +37,8 @@ CLI = ("analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease"
        "build_portable_notice_prototype",
        "build_scoped_windows_sbom",
        "build_product_notice_sbom",
+       "validate_scoped_sbom_schema",
+       "audit_product_sbom_advisories",
        "audit_pinned_nuget_advisories",
        "inventory_apple_archive",
        "inventory_apple_load_commands",
