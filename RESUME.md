@@ -1,3 +1,12 @@
+# Resume — exact #242 BOM migration checkpoint
+
+Stacked on #243. Actual #242 same-run evidence and independent
+CycloneDX schema/binding PASS. Retained Nov25 NuGet and OSV replay:
+no scoped matches, freshness not established. Next: #243 native
+joined rerun and exact production-shaped non-publishing 6.7.4
+qualification; legal/signing/interactive/hardware remain open.
+Release hold and production 6.7.1 unchanged.
+
 # Resume — single-run 6.7.4 migration evidence
 
 #242 merged dfa8202 into draft #99 after 6/6 CI. Seven exact archives

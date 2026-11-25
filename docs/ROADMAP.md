@@ -1957,3 +1957,12 @@ configuration commands. USB `VersionNumber` is a device revision,
       and dated advisory replay; review migration prerequisites.
 - [ ] Production compiler selection, legal, signing, interactive UAC
       and physical acceptance; release hold unchanged.
+
+### Exact #242 BOM migration checkpoint
+
+- [x] Independent schema and candidate binding of the exact #242 BOM.
+- [x] Replay dated NuGet and OSV observations for that BOM.
+- [x] Document non-publishing production-shaped migration requirements.
+- [ ] #243 native joined rerun and integration.
+- [ ] Production-shaped 6.7.4 build qualification, legal/signing,
+      interactive and hardware acceptance. Release hold.
