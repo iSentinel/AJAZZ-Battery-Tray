@@ -51,7 +51,9 @@ bounded rotation/private files, no private identifiers, paths, aliases,
 credentials, raw exception messages or raw unreviewed payloads. Machine
 output stays on stdout, operational diagnostics on stderr/private logs.
 Preserve CLI compatibility. Test canaries, failures and output separation.
-Existing FileLog is legacy debt, not qualified structured logging.
+Windows FileLog has a closed JSONL candidate; native CI, Apple parity,
+operation durations and filesystem/ACL qualification remain separate gates.
+See WINDOWS_OPERATIONAL_LOG.md for the scoped implementation and limitations.
 
 ## 5. CLI and installation
 Every public CLI: -h/--help, examples, non-interactive bounded execution,

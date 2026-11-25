@@ -69,9 +69,9 @@ public static class BluetoothBatteryReader
         }
         catch (Exception error)
         {
-            string transport = lowEnergy ? "BLE" : "Classic";
             string kind = error.GetType().Name;
-            FileLog.Write("WARN", $"{transport} paired lookup failed: {kind}");
+            FileLog.Write(lowEnergy ? LogEvent.BlePairedLookupFailed :
+                LogEvent.ClassicPairedLookupFailed, error);
             return new TransportResult(Array.Empty<BluetoothCandidate>(), kind);
         }
     }
@@ -139,8 +139,7 @@ public static class BluetoothBatteryReader
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "GATT read unavailable: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.GattReadUnavailable, error);
             gatt = Missing("Unable to read the GATT Battery Service.");
         }
 

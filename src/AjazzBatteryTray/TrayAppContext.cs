@@ -95,7 +95,7 @@ public sealed class TrayAppContext : ApplicationContext
     public TrayAppContext(bool isolatedPolling = false)
     {
         _isolatedPolling = isolatedPolling;
-        if (isolatedPolling) FileLog.Write("INFO", "Experimental isolated AJAZZ polling enabled");
+        if (isolatedPolling) FileLog.Write(LogEvent.IsolatedPollingEnabled);
         _aulaPoll.Configure(_settings.MonitorAulaL99);
         UiText.SetLanguage(_settings.Language);
         _tray = new NotifyIcon { Text = "AJAZZ APEX: " + UiText.Get("Connecting...") };
@@ -588,8 +588,7 @@ public sealed class TrayAppContext : ApplicationContext
         try { Clipboard.SetText(text); }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "AULA clipboard unavailable: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.AulaClipboardUnavailable, error);
         }
     }
 
@@ -678,8 +677,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "AULA monitoring failed: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.AulaMonitoringFailed, error);
             if (!_closing && _aulaPoll.MayApply(ticket))
             {
                 // Uncertain enumeration hides the cache; it does not prove
@@ -1046,7 +1044,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "PnP name preview failed: " + error.GetType().Name);
+            FileLog.Write(LogEvent.PnpPreviewFailed, error);
             if (!_closing)
                 MessageBox.Show(UiText.Get("Unable to read Windows device names."),
                     UiText.Get("Windows device names preview..."),
@@ -1355,7 +1353,7 @@ public sealed class TrayAppContext : ApplicationContext
         try { Clipboard.SetText(report); }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Bluetooth status clipboard unavailable: " + error.GetType().Name);
+            FileLog.Write(LogEvent.BluetoothStatusClipboardUnavailable, error);
         }
     }
 
@@ -1465,6 +1463,7 @@ public sealed class TrayAppContext : ApplicationContext
                 $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}; " +
                 BatteryReportParser.DiagnosticUnverifiedField(x.Reading.UnverifiedPercent, !x.ScheduledSkip))) +
             $"\nSeparate tray icons: {_settings.MultipleTrayIcons}\n" +
+            $"Operational log failed writes (this process): {FileLog.FailedWrites}\n" +
             "\n[AJAZZ ordinary unverified observation streaks — session only]\n" +
             string.Join("\n", _receivers.Devices.Select(x =>
                 $"{x.Label}: {x.UnverifiedStreak.DiagnosticText()}; scheduled skip={x.ScheduledSkip}")) +
@@ -1493,7 +1492,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Cannot copy diagnostics to clipboard", error);
+            FileLog.Write(LogEvent.DiagnosticsClipboardUnavailable, error);
             MessageBox.Show(UiText.Get("The Windows clipboard is currently unavailable."),
                 "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
@@ -1523,7 +1522,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error)
         {
-            FileLog.Write("ERROR", "Cannot change Windows startup", error);
+            FileLog.Write(LogEvent.StartupChangeFailed, error);
             MessageBox.Show(error.Message, "AJAZZ Battery Tray",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
@@ -1614,7 +1613,7 @@ public sealed class TrayAppContext : ApplicationContext
         catch (OperationCanceledException) when (_closing) { }
         catch (Exception error)
         {
-            FileLog.Write("ERROR", "Unexpected poll failure", error);
+            FileLog.Write(LogEvent.PollFailed, error);
             if (!_closing)
             {
                 _latestUsbReading = new AjazzHidReader.Reading(
@@ -1677,7 +1676,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (TimeoutException)
         {
-            FileLog.Write("WARN", "Isolated AJAZZ battery poll timed out");
+            FileLog.Write(LogEvent.IsolatedPollTimedOut);
             return new AjazzHidReader.Batch(
                 new AjazzHidReader.Reading(false, null, "HID read timed out",
                     PresenceKnown: false, Issue: UsbReadIssue.Timeout),
@@ -1685,7 +1684,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            FileLog.Write("WARN", "Isolated AJAZZ poll unavailable: " + error.GetType().Name);
+            FileLog.Write(LogEvent.IsolatedPollUnavailable, error);
             return new AjazzHidReader.Batch(
                 new AjazzHidReader.Reading(false, null, "HID worker unavailable",
                     PresenceKnown: false), Array.Empty<AjazzHidReader.ReceiverReading>());
@@ -1699,7 +1698,7 @@ public sealed class TrayAppContext : ApplicationContext
         catch (Exception error) when (error is not OperationCanceledException)
         {
             // Never automatically replay an uncertain RTC transfer.
-            FileLog.Write("WARN", "Isolated dock clock send unavailable: " + error.GetType().Name);
+            FileLog.Write(LogEvent.IsolatedClockUnavailable, error);
             return false;
         }
     }
@@ -1724,7 +1723,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Bluetooth fallback read failed: " + error.GetType().Name);
+            FileLog.Write(LogEvent.BluetoothFallbackFailed, error);
             response = new BluetoothBatteryResult(null, BluetoothBatterySource.Unavailable, "Read failed.");
         }
         if (_closing) return;
@@ -1749,8 +1748,7 @@ public sealed class TrayAppContext : ApplicationContext
         _lastClockUpdate = DateTime.Now;
         _lastClockSucceeded = succeeded;
         UpdateClockStatus();
-        FileLog.Write(succeeded ? "INFO" : "WARN",
-            _clockStatus.Text ?? "Dock clock status unavailable");
+        FileLog.Write(succeeded ? LogEvent.DockClockSucceeded : LogEvent.DockClockFailed);
     }
 
     private void UpdateClockStatus()
@@ -1843,8 +1841,9 @@ public sealed class TrayAppContext : ApplicationContext
         if (displayConnected != _lastConnected ||
             previousPercent != displayPercent || source != _lastSource || device != _lastDevice || stale != _lastStale)
         {
-            FileLog.Write("INFO", $"{device} {source} battery: " +
-                (displayConnected ? $"{displayPercent}%" + (stale ? " (cached)" : "") : "unavailable"));
+            FileLog.Write(stale ? LogEvent.BatteryDisplayCached :
+                displayConnected ? LogEvent.BatteryDisplayAvailable :
+                LogEvent.BatteryDisplayUnavailable);
         }
 
         _lastPercent = displayPercent;
@@ -1955,7 +1954,7 @@ public sealed class TrayAppContext : ApplicationContext
         _tray.Dispose();
         _icon?.Dispose();
         _applicationIcon?.Dispose();
-        FileLog.Write("INFO", "Application stopped");
+        FileLog.Write(LogEvent.ApplicationStopped);
         base.ExitThreadCore();
     }
 }

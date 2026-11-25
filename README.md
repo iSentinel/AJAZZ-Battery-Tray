@@ -558,7 +558,10 @@ dock clock, history and the experimental macOS features.
 
 - Settings: `%APPDATA%\AJAZZBatteryTray\settings.json`
 - Battery history: `%APPDATA%\AJAZZBatteryTray\battery-history.csv`
-- Log: `%APPDATA%\AJAZZBatteryTray\app.log`
+- Operational journal: `%APPDATA%\AJAZZBatteryTray\app-events.jsonl`
+  (previous generation `app-events.previous.jsonl`, each up to 256 KiB).
+  Legacy `app.log` is not migrated or uploaded; review locally before sharing.
+  See [Windows operational logging](docs/WINDOWS_OPERATIONAL_LOG.md).
 - Windows identifiers: `Get-PnpDevice -PresentOnly | Where-Object InstanceId -match 'VID_3151&PID_5007'`
 
 The app does not send telemetry to the Internet or request administrator

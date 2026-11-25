@@ -92,7 +92,7 @@ public sealed class BatteryHistory
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Unable to save battery history", error);
+            FileLog.Write(LogEvent.HistorySaveFailed, error);
         }
     }
 
@@ -105,7 +105,7 @@ public sealed class BatteryHistory
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Unable to read battery history", error);
+            FileLog.Write(LogEvent.HistoryReadFailed, error);
             return Array.Empty<BatterySample>();
         }
     }

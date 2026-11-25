@@ -2593,5 +2593,7 @@ Check("BLE streaming selector honors conservative USB priority",
     bleSelection.TryBegin(false, false, multiAt.AddMinutes(5)) is null);
 bleSelection.DisableAll();
 
+SafeLogTests.Run(Check);
+
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

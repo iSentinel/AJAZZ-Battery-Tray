@@ -66,7 +66,7 @@ public sealed class AppSettings
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Could not read preferences", error);
+            FileLog.Write(LogEvent.PreferencesReadFailed, error);
         }
 
         return new AppSettings();
@@ -128,7 +128,7 @@ public sealed class AppSettings
         }
         catch (Exception error)
         {
-            FileLog.Write("ERROR", "Could not save preferences", error);
+            FileLog.Write(LogEvent.PreferencesSaveFailed, error);
             return false;
         }
     }

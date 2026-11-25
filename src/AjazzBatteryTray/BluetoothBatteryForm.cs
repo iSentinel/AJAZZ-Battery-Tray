@@ -135,8 +135,7 @@ public sealed class BluetoothBatteryForm : Form
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "BLE paired device inspection failed: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.BleInspectionFailed, error);
             _discoverySummary = UiText.Format("Bluetooth lookup unavailable: {0}",
                 error.GetType().Name);
             _result.Text = _discoverySummary;
@@ -172,8 +171,7 @@ public sealed class BluetoothBatteryForm : Form
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "BLE battery query failed: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.BleQueryFailed, error);
             _result.Text = UiText.Get("Unable to read this paired mouse's Battery Service.");
         }
         finally
@@ -229,8 +227,7 @@ public sealed class BluetoothBatteryForm : Form
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Bluetooth clipboard unavailable: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.BluetoothClipboardUnavailable, error);
             _result.Text = UiText.Get("Windows clipboard is unavailable.");
         }
     }

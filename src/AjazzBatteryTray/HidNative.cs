@@ -130,7 +130,7 @@ internal static class HidNative
     {
         if (!HidFeaturePolicy.IsApproved(report))
         {
-            FileLog.Write("WARN", "Blocked unapproved HID feature command");
+            FileLog.Write(LogEvent.HidCommandBlocked);
             return false;
         }
         return HidD_SetFeature(device, report, report.Length);

@@ -39,7 +39,7 @@ public sealed class AulaL99Reader
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "AULA L99 read failed: " + error.GetType().Name);
+            FileLog.Write(LogEvent.AulaReadFailed, error);
             return new(false, null, "HID enumeration error", PresenceKnown: false);
         }
     }
@@ -75,8 +75,7 @@ public sealed class AulaL99Reader
         catch (OperationCanceledException) { /* Sleeping keyboards do not answer. */ }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            FileLog.Write("WARN", "AULA L99 battery query unavailable: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.AulaQueryUnavailable, error);
         }
         return null;
     }
