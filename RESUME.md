@@ -1,3 +1,12 @@
+# Resume — typed F7 observation classification
+
+#260 exact 6/6 CI merged 4276f8f after tested-tree equality.
+#261 native Windows PASS, final Inno check pending at review.
+Child refactors existing F7 gate classification without changing
+admission predicates, diagnostic strings or compact fallback.
+Four C# checks include 4374 synthetic combinations of prior rules.
+Native tests pending; physical and release gates remain open.
+
 # Resume — bounded last-verified APEX display cache
 
 #260 preview passed; remaining native CI pending at initial review.

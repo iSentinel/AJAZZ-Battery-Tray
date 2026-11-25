@@ -143,6 +143,45 @@ foreach (int index in new[] { 5, 6, 9 })
     bad[index] ^= 1;
     Check($"Provisional rejects invalid link flag {index}", BatteryReportParser.UnverifiedMouseField(bad) is null);
 }
+Check("Typed F7 observation separates reported and verified charge",
+    BatteryReportParser.ObserveSharedF7(syntheticGatedMouse) is
+        { Gate: F7MouseGate.Accepted, ReportedField: 83, VerifiedPercent: 83, UnverifiedPercent: null } &&
+    BatteryReportParser.ObserveSharedF7(f7Unreadable) is
+        { Gate: F7MouseGate.ReadUnavailable, ReportedField: 83, VerifiedPercent: null, UnverifiedPercent: 83 });
+Check("Typed F7 observation preserves rejection reasons",
+    BatteryReportParser.ObserveSharedF7(f7Offline)?.Gate == F7MouseGate.Offline &&
+    BatteryReportParser.ObserveSharedF7(f7CannotSend)?.Gate == F7MouseGate.CannotSend &&
+    BatteryReportParser.ObserveSharedF7(f7RfBoot)?.Gate == F7MouseGate.RadioBoot &&
+    BatteryReportParser.ObserveSharedF7(malformedMouse)?.Gate == F7MouseGate.InvalidStatus &&
+    BatteryReportParser.ObserveSharedF7(f7Above100)?.Gate == F7MouseGate.OutOfRange &&
+    BatteryReportParser.ObserveSharedF7(aj159ReadableWithoutCharge)?.Gate == F7MouseGate.ZeroField);
+Check("Typed F7 observation excludes keyboard-only and unrecognized frames",
+    BatteryReportParser.ObserveSharedF7(f7KeyboardSlot) is
+        { Gate: F7MouseGate.KeyboardOnly, ReportedField: null, VerifiedPercent: null, UnverifiedPercent: null } &&
+    BatteryReportParser.ObserveSharedF7(new byte[] { 5, 0, 0, 50 }) is null &&
+    BatteryReportParser.ObserveSharedF7(new byte[10]) is null);
+// Exhaustively replay a synthetic grid against the previous admission predicates.
+bool f7PolicyParity = true;
+int f7PolicyCases = 0;
+foreach (byte slot in new byte[] { 1, 2, 3 })
+foreach (byte ready in new byte[] { 0, 1, 2 })
+foreach (byte keyboard in new byte[] { 0, 1, 2 })
+foreach (byte online in new byte[] { 0, 1, 2 })
+foreach (byte send in new byte[] { 0, 1, 2 })
+foreach (byte boot in new byte[] { 0, 1, 2 })
+foreach (byte field in new byte[] { 0, 1, 42, 100, 101, 255 })
+{
+    byte[] frame = { 5, ready, 0, field, keyboard, online, send, slot, 0, boot };
+    bool valid = keyboard <= 1 && online == 0 && send == 1 && boot == 0 &&
+        field is >= 1 and <= 100;
+    int? verified = valid && ready == 1 && slot != 1 ? field : null;
+    int? provisional = valid && ready == 0 && slot == 2 ? field : null;
+    f7PolicyParity &= BatteryReportParser.ParseWindowsFeature(frame) == verified &&
+        BatteryReportParser.UnverifiedMouseField(frame) == provisional;
+    f7PolicyCases++;
+}
+Check("Typed F7 preserves previous admission predicates across 4374 synthetic combinations",
+    f7PolicyParity && f7PolicyCases == 4374);
 Check("Provisional needs all attempts and two samples",
     BatteryReportParser.ConsistentUnverifiedField(100, 2, 2) == 100 &&
     BatteryReportParser.ConsistentUnverifiedField(100, 1, 2) is null &&
