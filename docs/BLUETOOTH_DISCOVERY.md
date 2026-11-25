@@ -265,3 +265,18 @@ If saving opt-out fails, monitoring stops in the current session and
 the UI warns it may resume after restart. No name-based USB association.
 Actual Windows restart, unavailable endpoint, re-pair and transport
 switch acceptance are still required.
+
+## Bounded session-only BLE display cache
+
+A last successful direct GATT sample is retained for display for up to
+30 minutes within the current process. A failed read or expired
+120-second freshness window does not make the cached sample current.
+Dashboard and local snapshot distinguish cached from fresh; the local
+snapshot exposes cached data only as lastKnownPercent. Both tray icon
+paths render the cached marker. If the current primary BLE slot
+temporarily loses its reply while USB has no verified level, retain
+the cached primary instead of jumping back to an unverified USB icon.
+A valid USB level still takes priority. No new low-battery alerts
+from cache. No cache survives opt-out or process restart. This is
+not proof of continued physical connectivity. The 30-minute lifetime
+is a candidate default, pending physical acceptance.

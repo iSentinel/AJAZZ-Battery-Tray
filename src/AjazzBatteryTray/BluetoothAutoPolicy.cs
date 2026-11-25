@@ -4,11 +4,13 @@ namespace AjazzBatteryTray;
 public sealed class BluetoothAutoPolicy
 {
     private static readonly TimeSpan FreshnessLimit = TimeSpan.FromSeconds(120);
+    public static readonly TimeSpan DisplayCacheLifetime = TimeSpan.FromMinutes(30);
 
     private DateTimeOffset? _lastAttempt;
     private DateTimeOffset? _lastReading;
     private DateTimeOffset? _lastSuccessfulRead;
     private int? _percent;
+    private int? _lastGoodPercent;
 
     public bool Enabled { get; private set; }
     public int ConsecutiveFailures { get; private set; }
@@ -26,6 +28,7 @@ public sealed class BluetoothAutoPolicy
         Generation++;
         Enabled = true;
         _percent = percent;
+        _lastGoodPercent = percent;
         _lastReading = now;
         _lastSuccessfulRead = now;
         ConsecutiveFailures = 0;
@@ -46,6 +49,7 @@ public sealed class BluetoothAutoPolicy
         _percent = null;
         _lastReading = null;
         _lastSuccessfulRead = null;
+        _lastGoodPercent = null;
         ConsecutiveFailures = 0;
         _lastAttempt = null;
     }
@@ -54,6 +58,7 @@ public sealed class BluetoothAutoPolicy
     public void InvalidateForUsb()
     {
         _percent = null;
+        _lastGoodPercent = null;
         _lastReading = null;
         _lastAttempt = null;
         ConsecutiveFailures = 0;
@@ -88,6 +93,7 @@ public sealed class BluetoothAutoPolicy
         if (result.IsFreshGatt)
         {
             _percent = result.Percent;
+            _lastGoodPercent = result.Percent;
             _lastReading = now;
             _lastSuccessfulRead = now;
             ConsecutiveFailures = 0;
@@ -108,6 +114,11 @@ public sealed class BluetoothAutoPolicy
             return null;
         return _percent;
     }
+
+    /// <summary>Session-only last direct reading; never a fresh value or alert source.</summary>
+    public int? CachedPercent(DateTimeOffset now)
+        => Enabled && _lastSuccessfulRead is { } at && now >= at &&
+            now - at < DisplayCacheLifetime ? _lastGoodPercent : null;
 
     /// <summary>Human-readable status without device identifiers.</summary>
     public string StatusText(bool receiverPresent, bool polling, DateTimeOffset now)

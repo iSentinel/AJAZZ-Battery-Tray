@@ -1174,3 +1174,11 @@ association. Hosted Windows CI and persistent consent are next.
 exact paired LE matching and pending slots, dedicated BLE timer, local
 opt-out including missing endpoints. Native Windows CI and hardware
 restart/switch acceptance remain open. No automatic USB/BLE association.
+
+## BLE cached display checkpoint
+
+Stacked on #187. Session-only 30-minute last direct GATT cache; fresh
+telemetry remains bounded to 120 seconds. Cached state in dashboard,
+local API and both icon paths; retain prior BLE primary during transient
+failure when USB has no verified value. No cached alerts. Native CI,
+explicit association and physical acceptance remain open.

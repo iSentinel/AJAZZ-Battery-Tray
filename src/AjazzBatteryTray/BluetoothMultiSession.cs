@@ -111,6 +111,11 @@ public sealed class BluetoothMultiSession
         => !Blocked(presenceKnown, usbPresent) && _slots.TryGetValue(key, out Slot? slot)
             ? slot.Policy.VisiblePercent(false, now) : null;
 
+    /// <summary>Cache belongs only to the independent opted-in endpoint.</summary>
+    public int? CachedPercent(string key, DateTimeOffset now)
+        => _independent && _slots.TryGetValue(key, out Slot? slot)
+            ? slot.Policy.CachedPercent(now) : null;
+
     public int? Failures(string key)
         => _slots.TryGetValue(key, out Slot? slot) ? slot.Policy.ConsecutiveFailures : null;
 }

@@ -249,7 +249,7 @@ internal sealed class ReceiverMonitor : IDisposable
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
         string? visiblePrimaryKey, IReadOnlySet<string> hidden,
         Func<string, string> color,
-        IReadOnlyList<(string Key, string Name, int? Percent)> bluetooth, bool mouseStyle = false)
+        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> bluetooth, bool mouseStyle = false)
     {
         if (!enabled)
         {
@@ -279,7 +279,7 @@ internal sealed class ReceiverMonitor : IDisposable
             foreach (var item in bluetooth)
             {
                 wanted.Add(item.Key);
-                SetIcon(item.Key, item.Name, item.Percent, menu, refresh, color: color(item.Key), mouseStyle: mouseStyle);
+                SetIcon(item.Key, item.Name, item.Percent, menu, refresh, stale: item.Stale, color: color(item.Key), mouseStyle: mouseStyle);
             }
 
             foreach (string key in wanted.Missing(_icons.Keys))
