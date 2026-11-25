@@ -1276,3 +1276,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add three regression tests using redacted field projection.
 - [ ] Hosted CI, independent GATT / same-device evidence and physical
       sleep/wake acceptance; multi-snapshot capture remains next.
+
+### Field evidence — receiver absent while AULA remains available
+
+- [x] Merge #184 after exact hosted CI.
+- [x] Review owner beta.60 report 2026-11-25 06:38:48 UTC:
+      ordinary receiver absent, known presence, fresh count zero,
+      no MI_02 paths, no retained unverified field; AULA fresh 62%
+      after retry, zero misses, cache inactive.
+- [x] Distinguish receiver_absent from inconclusive active capture;
+      require consistent Windows zero-path matrix; add regression.
+- [ ] Hosted CI and physical reconnect / independent GATT acceptance.
+      Cause of absence and same-device identity are not established.

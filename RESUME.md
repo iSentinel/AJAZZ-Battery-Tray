@@ -1,3 +1,11 @@
+# Resume — absent receiver field evidence
+
+#184 merged d32b845. Owner beta.60 report 06:38 UTC shows known absent
+AJAZZ receiver, no retained unverified field, AULA fresh 62% after retry.
+New receiver_absent outcome distinguishes verified enumeration status
+from inconclusive capture. Native CI and physical reconnect remain open.
+No release admission.
+
 # Resume — beta.60 field report compatibility
 
 #182/#183 merged; integrated c5fb1b3. Owner beta.60 report 06:34 UTC:

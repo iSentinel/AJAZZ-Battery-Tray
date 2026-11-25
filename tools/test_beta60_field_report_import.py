@@ -50,6 +50,26 @@ class Beta60FieldReportTests(unittest.TestCase):
         self.assertIsNone(result['usb']['percent'])
         self.assertEqual(result['active_capture']['outcome'], 'inconclusive')
 
+    def test_receiver_removed_aula_survives(self) -> None:
+        """Use the second field report's independent ordinary and active states."""
+        text = projected_report().replace('receiver count=1', 'receiver count=0')
+        text = text.replace('unverified mouse field (not telemetry)=93',
+                            'unverified mouse field (not telemetry)=unavailable')
+        text = text.replace('Receiver present: True; presence known: True',
+                            'Receiver present: False; presence known: True', 1)
+        text = text.replace('status: No valid battery status report', 'status: Receiver not found')
+        text += '\nMatching MI_02 paths: 0'
+        result = normalize(text)
+        self.assertEqual(result['usb']['state'], 'absent')
+        self.assertEqual(result['active_capture']['outcome'], 'receiver_absent')
+        self.assertIsNone(result['active_capture']['reported_percent'])
+        self.assertEqual(normalize(text.replace('known=True; receiver count=0',
+                                               'known=False; receiver count=0'))
+                         ['active_capture']['outcome'], 'inconclusive')
+        self.assertEqual(normalize(text + '\n[Receiver #1]')['active_capture']['outcome'],
+                         'unrecognized')
+        self.assertIsNotNone(parse_summary(text))
+
     def test_new_schema_and_other_build_rejected(self) -> None:
         """Do not silently relax the required section for other reports."""
         text = projected_report()
