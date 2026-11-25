@@ -128,3 +128,37 @@ artifact. The updated workflow preserves the verified beta.61 setup
 before the probe rebuild and uploads only after all tests pass, with
 source and setup/app SHA-256 metadata. This is a short-lived CI
 artifact, not a release. The new artifact must be checked after CI.
+
+## Exact unpublished beta.61 installer
+
+The successful #198 run 45572270704 retained artifact 15001949427
+([download](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45572270704/artifacts/15001949427)).
+The archive hash matches GitHub REST:
+`1832b27564fb435d3561a0be3b8786c0e26fbfc0f28b85add9bf937369725661`.
+The 42817842-byte setup hash matches candidate.json:
+`0dd93d2e1373121b3007b214a61cc38ba18df4107516aa7f50ec79b9566bb8cd`.
+The reported installed app hash is
+`f4878037d453719eb017378e32b9320dbe74da7627012e02d4dfb30ab476e33c`.
+The actual CI checkout was synthetic merge
+`57bbbe04f5c85b75dd421b5cb64fed072f6a4354`, not PR head fa2f81f.
+Fetched Git objects confirm its parents are e5b0046 and fa2f81f and
+the checkout, PR head and integrated 8f08c8a have identical trees
+(50cb0224b34af8da7f41de29a981d443b4edd7c0).
+
+The reproducible scoped verifier checks a trusted-local exact ZIP:
+
+```sh
+python3 tools/verify_installer_candidate.py --archive installer.zip \
+  --sha256 1832b27564fb435d3561a0be3b8786c0e26fbfc0f28b85add9bf937369725661 \
+  --source-sha 57bbbe04f5c85b75dd421b5cb64fed072f6a4354 \
+  --output installer-verification.json
+```
+
+Actual archive verification PASS. The setup bootstrap is PE32 x86,
+11 sections, certificate table absent. This is not the architecture
+of the installed x64 application. The verifier does not unpack the
+Inno Setup payload or independently verify the reported app hash.
+CI verified the installed app hash against its own published app
+before the synthetic probe rebuild. No trusted signature, physical
+acceptance, payload-level independent verification, or release admission.
+The artifact is short-lived; expiry requires a new exact candidate.
