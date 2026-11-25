@@ -122,6 +122,32 @@ jobs:
             if (Test-Path $old) { Remove-Item -LiteralPath $old -Force }
           }
 
+      - name: Preserve verified beta.61 candidate before synthetic rebuild
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-beta61-candidate'
+          New-Item -ItemType Directory -Path $evidence -ErrorAction Stop | Out-Null
+          $setup = 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe'
+          $app = 'dist/app/AJAZZBatteryTray.exe'
+          $copy = Join-Path $evidence 'AJAZZBatteryTray-Setup-win-x64.exe'
+          Copy-Item -LiteralPath $setup -Destination $copy
+          $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ((Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash.ToLowerInvariant() -ne $hash) {
+            throw 'Candidate copy mismatch'
+          }
+          [ordered]@{
+            schema = 'installer-candidate-v1'
+            source_sha = (git rev-parse HEAD)
+            version = '0.3.0-beta.61'
+            setup_sha256 = $hash
+            app_sha256 = (Get-FileHash -LiteralPath $app -Algorithm SHA256).Hash.ToLowerInvariant()
+            lifecycle_probe = $false
+            physical_acceptance = 'NOT_VERIFIED'
+            release_admission = 'NOT_VERIFIED'
+          } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'candidate.json') -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'Candidate source revision unavailable' }
+
       - name: Verify running tray closure and automatic relaunch (synthetic)
         shell: pwsh
         timeout-minutes: 8
@@ -200,3 +226,14 @@ jobs:
             }
             Remove-Item -LiteralPath $prior -Force -ErrorAction SilentlyContinue
           }
+
+      - name: Upload verified unpublished beta.61 installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: AJAZZBatteryTray-unpublished-beta61-installer
+          path: |
+            ${{ runner.temp }}/ajazz-beta61-candidate/AJAZZBatteryTray-Setup-win-x64.exe
+            ${{ runner.temp }}/ajazz-beta61-candidate/candidate.json
+          if-no-files-found: error
+          retention-days: 7

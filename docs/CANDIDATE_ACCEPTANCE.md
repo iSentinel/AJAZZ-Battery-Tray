@@ -104,3 +104,27 @@ availability, notarization and signer trust are NOT VERIFIED.
 Static evidence remains separate from physical acceptance.
 
 SDK screen JSON SHA-256: `6b8547e3e495213da2c7450369cebc7ecd771725cad45bb57807f6fa8edfd179`.
+
+## Exact Windows portable candidate static verification
+
+Artifact 15001321555 from run 45568784624 (head 3d143a3):
+outer ZIP SHA-256
+`6d8ce9f20d08f60445ef69e765631c212ea6c37dfd40a0cca84225718b5d9c68`
+matches the GitHub REST digest. The EXE is 149610595 bytes, SHA-256
+`3d96f335de50fa3e63bb6092424745b361f5f46e0bbd55f479658c282a3f38e0`.
+Four shortcut ICOs match the source bytes. Bundle inventory, scoped
+dependency attribution, host sections, resource payloads, conditional
+header reconstruction and resource serialization all passed using the
+previously pinned NuGet packs. The scoped Windows CycloneDX 1.6 BOM
+contains 269 components (including four package components), with
+all three candidate BOMs passing the local CycloneDX 1.6 schema.
+The Windows EXE certificate table is absent. No Authenticode trust,
+complete distribution SBOM, redistribution approval or physical
+acceptance is established.
+
+The prior installer CI tested an unpublished beta.61 upgrade and a
+separate synthetic beta.62 lifecycle probe but retained no installer
+artifact. The updated workflow preserves the verified beta.61 setup
+before the probe rebuild and uploads only after all tests pass, with
+source and setup/app SHA-256 metadata. This is a short-lived CI
+artifact, not a release. The new artifact must be checked after CI.

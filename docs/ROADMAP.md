@@ -1444,3 +1444,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       screen; retain restricted-only names and NOT_VERIFIED boundaries.
 - [ ] Verify Windows artifact bytes, physical acceptance and release
       admission. Do not lift the release hold from static evidence.
+
+### Exact Windows portable and installer evidence
+
+- [x] Merge #197 after exact CI; e5b0046 tree equals 9ed7d05.
+- [x] Verify exact #196 Windows artifact 15001321555, EXE, four ICOs,
+      bundle, host sections, PE resources/headers and scoped SBOM.
+- [x] Validate all three candidate SBOMs against CycloneDX 1.6.
+- [x] Add CI-only retention of tested beta.61 installer before synthetic
+      beta.62 lifecycle rebuild; include source and both binary hashes.
+- [ ] Hosted installer artifact upload, exact digest verification and
+      physical acceptance. Preserve release hold.

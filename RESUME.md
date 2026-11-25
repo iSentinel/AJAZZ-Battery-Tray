@@ -1263,3 +1263,14 @@ High Sierra 15001876157, outer/inner digest checks, archive/load
 commands/symbol inventory/resource seal/SBOM PASS. SDK name screen
 completed with no runtime compatibility claim. Private evidence at
 /root/ajazz-current-apple-artifacts.ZJ9mpoRM. See CANDIDATE_ACCEPTANCE.md.
+
+## Windows candidate artifact checkpoint
+
+#197 merged e5b0046. Exact #196 portable artifact 15001321555 verified;
+EXE SHA256 3d96f335de50fa3e63bb6092424745b361f5f46e0bbd55f479658c282a3f38e0.
+Scoped PE/bundle/269-component SBOM checks PASS; three SBOMs schema
+PASS. Windows certificate table absent, no trust claim. Private
+evidence /root/ajazz-current-windows-artifacts.vAlfBQTy. New CI
+retains the tested normal beta.61 setup before synthetic beta.62
+rebuild. Hosted installer artifact verification and hardware tests
+pending; release hold unchanged.
