@@ -1555,6 +1555,51 @@ Check("Hidden or unlinked primary selects remaining linked mouse",
 Check("No visible links clears primary",
     TransportLinks.SelectPrimary(linkUsbA, Array.Empty<string>(), false) is null);
 
+// Bounded in-memory diagnostic session; owner labels are not physical observations.
+var diagnosticSession = new DiagnosticSession();
+var diagnosticAt = DateTimeOffset.Parse("2026-11-25T07:00:00Z");
+Check("Inactive diagnostic session rejects capture",
+    !diagnosticSession.Add(DiagnosticMarker.Baseline, "first", diagnosticAt));
+diagnosticSession.Start();
+Check("Diagnostic session admits first explicit snapshot",
+    diagnosticSession.Add(DiagnosticMarker.Baseline, "first", diagnosticAt));
+Check("Diagnostic session rejects equal or reversed timestamps",
+    !diagnosticSession.Add(DiagnosticMarker.Wake, "second", diagnosticAt) &&
+    !diagnosticSession.Add(DiagnosticMarker.Wake, "second", diagnosticAt.AddSeconds(-1)));
+Check("Diagnostic session rejects invalid marker or oversized UTF8",
+    !diagnosticSession.Add((DiagnosticMarker)999, "second", diagnosticAt.AddSeconds(1)) &&
+    !diagnosticSession.Add(DiagnosticMarker.Other, new string('ї', 600000), diagnosticAt.AddSeconds(1)));
+Check("Diagnostic session admits reviewed report",
+    diagnosticSession.Add(DiagnosticMarker.ReviewedReport, "second", diagnosticAt.AddSeconds(1)));
+using (var archiveBytes = new MemoryStream())
+{
+    diagnosticSession.Export(archiveBytes);
+    archiveBytes.Position = 0;
+    using var archive = new System.IO.Compression.ZipArchive(archiveBytes);
+    using var reportReader = new StreamReader(archive.GetEntry("snapshot-01.txt")!.Open());
+    using var manifestReader = new StreamReader(archive.GetEntry("manifest.json")!.Open());
+    string manifest = manifestReader.ReadToEnd();
+    Check("Diagnostic session preserves separate texts and owner marker manifest",
+        archive.Entries.Count == 3 && reportReader.ReadToEnd() == "first" &&
+        manifest.Contains("OWNER_ANNOTATED") && manifest.Contains("NOT_VERIFIED") &&
+        manifest.Contains("ReviewedReport"));
+}
+for (int i = 2; i < DiagnosticSession.MaximumReports; i++)
+    diagnosticSession.Add(DiagnosticMarker.Other, "next", diagnosticAt.AddSeconds(i));
+Check("Diagnostic session bounds snapshot count",
+    diagnosticSession.Count == DiagnosticSession.MaximumReports &&
+    !diagnosticSession.Add(DiagnosticMarker.Other, "overflow", diagnosticAt.AddMinutes(2)));
+diagnosticSession.Clear();
+Check("Diagnostic session discard clears state", !diagnosticSession.Active && diagnosticSession.Count == 0);
+diagnosticSession.Start();
+string maximumReport = new string('x', DiagnosticSession.MaximumReportBytes);
+for (int i = 0; i < 8; i++)
+    diagnosticSession.Add(DiagnosticMarker.Other, maximumReport, diagnosticAt.AddSeconds(i));
+Check("Diagnostic session bounds cumulative UTF8 bytes",
+    diagnosticSession.Count == 8 &&
+    !diagnosticSession.Add(DiagnosticMarker.Other, "overflow", diagnosticAt.AddSeconds(8)));
+diagnosticSession.Clear();
+
 // Release checks are local, deterministic, and perform no HTTP requests.
 var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
 Check("Update accepts beta tag", installedVersion.Beta == 41);

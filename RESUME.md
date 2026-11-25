@@ -1213,3 +1213,13 @@ projects AULA cache separately and compares complete ready-clear matrices
 as unverified observations only. No raw buffers, paths, names or inferred
 identity in JSON. No hardware I/O. Hosted CI and actual multi-report
 replay / interactive capture workflow remain open.
+
+## Windows diagnostic session checkpoint
+
+#192 merged 09c71c3; #191 combined head 3e1737e after resolving only
+append-only roadmap conflicts. New Windows session menu collects
+explicit passive owner annotations or reviewed reports; memory-only
+32/1MiB/8MiB bounds, local ZIP with individual texts and manifest,
+CreateNew output, no uploads. A failed write may leave a partial ZIP
+but retains in-memory reports. Native CI, ZIP importer, macOS workflow
+and physical acceptance remain open.

@@ -1374,3 +1374,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Synthetic regressions and CLI help in offline QA.
 - [ ] Hosted CI, physical capture acceptance and interactive capture workflow.
 - [ ] Release admission; no independent physical identity established.
+
+### Windows interactive diagnostic session
+
+- [x] Integrate #192 after exact CI; reconcile both append-only roadmap
+      checkpoints on #191 and replay combined offline QA.
+- [x] Add explicit menu session, passive baseline/USB/BLE/sleep/wake
+      owner annotations and optional addition from existing review.
+- [x] Bound in-memory collection to 32 reports, one MiB per report and
+      eight MiB total UTF-8; explicit discard and local ZIP export.
+- [x] Preserve individual report texts and owner-marker manifest; no
+      new HID queries from annotations, no automatic upload.
+- [x] Add nine native policy checks and two offline source regressions.
+- [ ] Hosted CI, physical menu acceptance and direct archive importer.
+- [ ] macOS interactive equivalent and release admission.
