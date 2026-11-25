@@ -40,6 +40,7 @@ CLI = ("analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease"
        "validate_scoped_sbom_schema",
        "audit_product_sbom_advisories",
        "crosscheck_product_sbom_osv",
+       "audit_apple_os_dependency_scope",
        "audit_pinned_nuget_advisories",
        "inventory_apple_archive",
        "inventory_apple_load_commands",

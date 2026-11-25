@@ -1,3 +1,12 @@
+# Resume — current Apple SBOM and external OS scope
+
+Stacked on #234. Both actual integration 2a7137a Apple archives
+matched REST and internal sidecar SHA; scoped SBOM and independent
+schema validation PASS. Seven shipped files per edition; external OS
+dependencies classified without inferring installed versions.
+Two regressions. Installed OS advisories, native compatibility,
+trusted signing, Inno 6.7.4 qualification and release gates open.
+
 # Resume — Inno 6.7.4 upstream delta
 
 #232 merged a85079d; #233 merged ed26f10 into parent, both 5/5.
