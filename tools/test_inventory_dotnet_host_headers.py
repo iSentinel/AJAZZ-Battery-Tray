@@ -68,7 +68,7 @@ class HeaderTests(unittest.TestCase):
         """Reject truncated, undersized and out-of-file structures."""
         with self.assertRaises(BundleError):
             parse_headers(bytes(fixture()[:100]))
-        for offset, value in ((148, 300), (352, 1000), (196, 15)):
+        for offset, value in ((148, 300), (348, 1000), (196, 15)):
             raw = fixture()
             struct.pack_into("<I", raw, offset, value)
             with self.assertRaises(BundleError):
