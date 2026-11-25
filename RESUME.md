@@ -1,3 +1,11 @@
+# Resume — scoped Apple CycloneDX inventory
+
+#169 merged 21dd502 after exact 4/4 CI. #170 joined 5d308f1,
+identical tested tree; repeat exact CI. New stacked Apple SBOM generator
+verified two historical ZIPs and official CycloneDX 1.6 schema: Universal
+31 components (7 shipped, 24 external), High Sierra 14 (7 shipped,
+7 external). Incomplete composition, no trust/compatibility/admission.
+
 # Resume — scoped Apple ad-hoc hash integrity
 
 #168 merged f53a8c4 after exact 4/4 CI. #169 joined bbed1df with
