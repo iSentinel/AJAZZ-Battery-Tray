@@ -1206,3 +1206,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted native CI and repeat-read, disconnect, timeout and report
       privacy acceptance on actual connected mice. No identity pairing
       or fresh USB calibration claim.
+
+### Apple Universal partial diagnostic capture
+
+- [x] Merge #176 and #177 after exact hosted CI.
+- [x] Stream bounded diagnostic steps; retain complete partial records after
+      timeout, cancellation or worker failure without a fresh battery claim.
+- [x] Add native synthetic timeout/failure and offline source contract.
+- [ ] Exact native CI and physical timeout/quit/report acceptance.
+- [ ] Interactive cancellation and versioned cross-platform reports.

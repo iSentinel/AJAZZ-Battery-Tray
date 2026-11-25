@@ -55,6 +55,8 @@ final class ApexWorkerCancellation {
 enum ApexBoundedWorker {
     static let traceMode = "--internal-bounded-apex-trace"
     static let traceSampleMode = "--internal-bounded-apex-trace-sample"
+    static let traceHangMode = "--internal-bounded-apex-trace-hang"
+    static let traceFailMode = "--internal-bounded-apex-trace-fail"
     static let readMode = "--internal-bounded-apex-read"
     static let sampleMode = "--internal-bounded-apex-sample"
     static let hangMode = "--internal-bounded-apex-hang"
@@ -64,6 +66,7 @@ enum ApexBoundedWorker {
 
     enum Result: Equatable {
         case trace(String)
+        case partialTrace(String, String)
         case reply(ApexBattery.Status)
         case clock(Bool)
         case timeout
@@ -73,7 +76,62 @@ enum ApexBoundedWorker {
     }
 
     static func isWorker(_ mode: String) -> Bool {
-        [readMode, sampleMode, hangMode, clockMode, clockSampleMode, traceMode, traceSampleMode].contains(mode)
+        [readMode, sampleMode, hangMode, clockMode, clockSampleMode].contains(mode) || isTrace(mode)
+    }
+
+    private static func isTrace(_ mode: String) -> Bool {
+        [traceMode, traceSampleMode, traceHangMode, traceFailMode].contains(mode)
+    }
+
+    /// Fixed, short, newline-terminated records are immediately visible to the parent.
+    private static func emitTraceLine(_ line: String) {
+        guard line.utf8.count <= 192, !line.contains("\n"), !line.contains("\r") else { return }
+        FileHandle.standardOutput.write(Data((line + "\n").utf8))
+    }
+
+    private static func runTrace(_ mode: String) -> Int32 {
+        if mode == traceHangMode || mode == traceFailMode {
+            emitTraceLine("STEP: synthetic trace checkpoint")
+            FileHandle.standardOutput.write(Data("unfinished".utf8))
+            if mode == traceHangMode { sleep(30) }
+            return 1
+        }
+        var count = 0
+        var truncated = false
+        let value: ApexBattery.Status = mode == traceSampleMode ? .accessUnknown : ApexBattery.read {
+            if count < 16 {
+                emitTraceLine($0)
+                count += 1
+            } else { truncated = true }
+        }
+        if truncated { emitTraceLine("Trace detail capped") }
+        emitTraceLine("Battery status: " + ApexWorkerReply(value).state)
+        if case .battery(let level) = value { emitTraceLine("Verified battery: \(level)%") }
+        emitTraceLine("END: trace complete")
+        return 0
+    }
+
+    /// On abnormal termination only complete, non-terminal records survive.
+    static func traceResult(_ data: Data, failure: String?) -> Result {
+        guard data.count <= 4096 else { return .failed }
+        let records = data.split(separator: 10, omittingEmptySubsequences: false)
+        let complete = records.dropLast()
+        let lines = complete.compactMap { record -> String? in
+            guard !record.isEmpty, record.count <= 192 else { return nil }
+            return String(data: Data(record), encoding: .utf8)
+        }
+        guard complete.count == lines.count else { return .failed }
+        if let failure = failure {
+            let partial = lines.filter {
+                !$0.hasPrefix("Battery status:") &&
+                !$0.hasPrefix("Verified battery:") && $0 != "END: trace complete"
+            }
+            return .partialTrace(failure, partial.joined(separator: "\n"))
+        }
+        guard data.last == 10, lines.last == "END: trace complete",
+              lines.dropLast().contains(where: { $0.hasPrefix("Battery status:") })
+        else { return .failed }
+        return .trace(lines.dropLast().joined(separator: "\n"))
     }
 
     static func runChild(_ mode: String) -> Int32 {
@@ -87,15 +145,8 @@ enum ApexBoundedWorker {
         }
         do {
             let data: Data
-            if mode == traceMode || mode == traceSampleMode {
-                var lines = [String]()
-                let value: ApexBattery.Status = mode == traceSampleMode ? .accessUnknown : ApexBattery.read {
-                    if lines.count < 16 { lines.append($0) }
-                }
-                lines.append("Battery status: " + ApexWorkerReply(value).state)
-                if case .battery(let level) = value { lines.append("Verified battery: \(level)%") }
-                data = try JSONEncoder().encode(lines.joined(separator: "\n"))
-            } else if mode == clockMode || mode == clockSampleMode {
+            if isTrace(mode) { return runTrace(mode) }
+            if mode == clockMode || mode == clockSampleMode {
                 data = try JSONEncoder().encode(mode == clockSampleMode || ApexBattery.syncClock())
             } else {
                 let value: ApexBattery.Status = mode == sampleMode ? .accessUnknown : ApexBattery.read()
@@ -113,7 +164,7 @@ enum ApexBoundedWorker {
         return .reply(status)
     }
 
-    /// Routine IPC has no vendor bytes; explicit trace is capped to a small JSON string.
+    /// Trace records stay below 4096 bytes (including terminal records); read after reaping.
     static func read(mode: String = readMode, timeout: Double = 8,
                      cancellation: ApexWorkerCancellation? = nil) -> Result {
         guard cancellation?.isCancelled != true else { return .cancelled }
@@ -135,26 +186,26 @@ enum ApexBoundedWorker {
         while true {
             if cancellation?.isCancelled == true {
                 stopAndWait(child)
-                return .cancelled
+                return isTrace(mode) ? traceResult(pipe.fileHandleForReading.readDataToEndOfFile(), failure: "cancelled") : .cancelled
             }
             let next = min(deadline, DispatchTime.now() + .milliseconds(50))
             if done.wait(timeout: next) == .success { break }
             if DispatchTime.now() >= deadline {
                 stopAndWait(child)
-                return .timeout
+                return isTrace(mode) ? traceResult(pipe.fileHandleForReading.readDataToEndOfFile(), failure: "timeout") : .timeout
             }
         }
         child.waitUntilExit()
+        if isTrace(mode) {
+            let failure = cancellation?.isCancelled == true ? "cancelled" :
+                (child.terminationReason == .exit && child.terminationStatus == 0 ? nil : "worker failed")
+            return traceResult(pipe.fileHandleForReading.readDataToEndOfFile(), failure: failure)
+        }
         guard cancellation?.isCancelled != true else { return .cancelled }
         guard child.terminationReason == .exit, child.terminationStatus == 0 else {
             return .failed
         }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        if mode == traceMode || mode == traceSampleMode {
-            guard data.count <= 4096, let text = try? JSONDecoder().decode(String.self, from: data)
-            else { return .failed }
-            return .trace(text)
-        }
         if mode == clockMode || mode == clockSampleMode {
             guard data.count <= 1024,
                   let sent = try? JSONDecoder().decode(Bool.self, from: data)
@@ -205,7 +256,15 @@ enum ApexBoundedWorker {
         }
         guard read(mode: hangMode, timeout: 4, cancellation: during) == .cancelled
         else { return false }
-        guard read(mode: traceSampleMode) == .trace("Battery status: unknown") else { return false }
+        guard read(mode: traceSampleMode) == .trace("Battery status: unknown"),
+              read(mode: traceHangMode, timeout: 3) == .partialTrace("timeout", "STEP: synthetic trace checkpoint"),
+              read(mode: traceFailMode) == .partialTrace("worker failed", "STEP: synthetic trace checkpoint")
+        else { return false }
+        let terminal = Data("STEP: before read\nBattery status: battery\nVerified battery: 83%\nEND: trace complete\n".utf8)
+        guard traceResult(terminal, failure: "timeout") == .partialTrace("timeout", "STEP: before read"),
+              traceResult(Data("Battery status: unknown\n".utf8), failure: nil) == .failed,
+              traceResult(Data(repeating: 65, count: 4097), failure: "timeout") == .failed
+        else { return false }
         return read(mode: sampleMode) == .reply(.accessUnknown) &&
             read(mode: clockSampleMode) == .clock(true)
     }

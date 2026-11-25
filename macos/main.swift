@@ -48,11 +48,13 @@ enum ApexBattery {
             kIOHIDProductIDKey as String: productID
         ]
         IOHIDManagerSetDeviceMatching(manager, criteria as CFDictionary)
+        trace?("STEP: manager.open")
         let managerResult = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
         trace?(String(format: "manager.open=0x%08x", UInt32(bitPattern: managerResult)))
         guard managerResult == kIOReturnSuccess else { return .accessUnknown }
         defer { IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone)) }
 
+        trace?("STEP: receiver.enumerate")
         let found = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> ?? []
         trace?("receiver.hid_count=\(found.count)")
         guard !found.isEmpty else { return .notConnected }
@@ -195,6 +197,7 @@ enum ApexBattery {
     }
 
     private static func poll(_ device: IOHIDDevice, trace: ((String) -> Void)? = nil) -> (opened: Bool, percent: Int?) {
+        trace?("STEP: collection.open")
         let opened = IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone))
         trace?(String(format: "collection.open=0x%08x", UInt32(bitPattern: opened)))
         guard opened == kIOReturnSuccess else {
@@ -206,6 +209,7 @@ enum ApexBattery {
             var request = [UInt8](repeating: 0, count: count)
             request[1] = 0xF7
             guard validTelemetryFrame(request) else { continue }
+            trace?("STEP: F7.set.length=\(count)")
             let write = request.withUnsafeBufferPointer { data in
                 IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature, 0, data.baseAddress!, data.count)
             }
@@ -215,6 +219,7 @@ enum ApexBattery {
             var reply = [UInt8](repeating: 0, count: count)
             reply[0] = 0x05
             var actualLength: CFIndex = count
+            trace?("STEP: 05.get.length=\(count)")
             let read = reply.withUnsafeMutableBufferPointer { data in
                 IOHIDDeviceGetReport(device, kIOHIDReportTypeFeature, 5, data.baseAddress!, &actualLength)
             }
@@ -680,8 +685,12 @@ final class TrayController: NSObject, NSApplicationDelegate {
             return
         }
         let detail: String
-        if case .trace(let text) = result { detail = text }
-        else { detail = "Diagnostic outcome: \(result)" }
+        switch result {
+        case .trace(let text): detail = text
+        case .partialTrace(let reason, let text):
+            detail = "INCOMPLETE: \(reason); no fresh battery claimed\n" + text
+        default: detail = "Diagnostic outcome: \(result)"
+        }
         diagnosticRunning = false
         renderStatus(displayedStatus)
         let timing = String(format: "Elapsed ms: %.0f", elapsed * 1000)

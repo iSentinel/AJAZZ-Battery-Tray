@@ -1,3 +1,9 @@
+# Resume — Universal partial HID trace
+
+#176/#177 merged; integrated 56a2c59. New bounded streaming trace
+retains non-terminal partial records on abnormal exit. Native synthetic
+self-tests and physical acceptance still required. Release hold unchanged.
+
 # Resume — manual Apple GATT evidence
 
 Stacked on #176 161e58c, pending native CI. Add independent
