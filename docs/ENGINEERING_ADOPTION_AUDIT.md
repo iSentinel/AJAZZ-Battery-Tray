@@ -114,3 +114,16 @@ GitHub wrapper replaced direct test/help/audit commands with common
 entrypoint; hosted execution NOT_RUN due to existing authorization blocker.
 No native build/hardware, full atomicity, Windows ACL or JUnit UI import
 qualification claimed. Next: clean committed local end-to-end gate.
+
+## ENG-04 clean local run and ENG-16 manifest verifier
+
+Clean source 09e8d3d682bf25a50be323c320e8f600b38ab3e0, tree
+1590ec8fb4e2e5a2e1a64cee48aa5a4f9feed31a; Linux x86_64,
+Python 3.13.5, cc Debian 14.2.0. Command python3 tools/run_offline_qa.py:
+exit 0, 14 steps, 111 tests, zero failures/errors/skips. Reopened all four
+required files and verified exact inventory, sizes and SHA-256.
+Private local run ID offline-qa-awurdq9m. Hosted/native/hardware NOT_RUN.
+Next local ENG-16 change adds explicit --verify, fixed complete inventory,
+strict manifest schema, per-file identity/metadata checks and rejection of
+symlinks/hardlinks. It is local integrity only, not authentication,
+durability or an atomic multi-file snapshot. No source push due to 401.

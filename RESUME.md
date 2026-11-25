@@ -1,3 +1,15 @@
+# Resume — ENG-16 local evidence verification
+
+Source 09e8d3d / tree 1590ec8: common Python QA PASS from clean checkout,
+111/111 tests, 14 steps, no skipped; four file digests checked.
+Private run ID offline-qa-awurdq9m; Python 3.13.5, cc 14.2.0 Linux.
+New explicit --verify and strict required inventory, symlink/hardlink
+and per-file mutation checks. Run regression and clean candidate QA.
+GitHub HTTP 401 remains unresolved, local-only branch; hosted NOT_RUN.
+Next independent action: safe FileLog remediation / native test preparation,
+then dependency pin review, CLI bounds and native QA evidence wrappers.
+No hardware, release or publication authorization.
+
 # Resume — ENG-04 first offline QA candidate
 
 Source: 342824d exact zero-debt gate, 106 local tests PASS.

@@ -8,6 +8,8 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -97,14 +99,34 @@ def run_step(arguments: list[str], timeout: int,
             "exit_code": code, "elapsed_seconds": round(time.monotonic() - start, 6)}
 
 
+def file_identity(info: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    """Bind a regular file read to identity, size and mutation metadata."""
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
+            info.st_ctime_ns, info.st_nlink)
+
+
 def read_evidence(path: Path) -> bytes:
-    """Read a bounded regular evidence file, not a symbolic link."""
-    if path.is_symlink() or not path.is_file():
-        raise ValueError("Required regular evidence file missing")
-    with path.open("rb") as stream:
-        raw = stream.read(MAX_EVIDENCE + 1)
-    if len(raw) > MAX_EVIDENCE:
+    """Read bounded regular evidence; detect identity or metadata changes."""
+    try:
+        before = path.lstat()
+    except FileNotFoundError as error:
+        raise ValueError("Required evidence file missing") from error
+    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+        raise ValueError("Expected an unlinked-to regular evidence file")
+    if before.st_size > MAX_EVIDENCE:
         raise ValueError("Evidence exceeds limit")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    descriptor = os.open(path, flags | getattr(os, "O_BINARY", 0))
+    with os.fdopen(descriptor, "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        if not stat.S_ISREG(opened.st_mode) or file_identity(opened) != file_identity(before):
+            raise ValueError("Evidence changed before read")
+        raw = stream.read(MAX_EVIDENCE + 1)
+        after = os.fstat(stream.fileno())
+    if len(raw) > MAX_EVIDENCE or len(raw) != before.st_size:
+        raise ValueError("Evidence length mismatch")
+    if file_identity(after) != file_identity(before) or file_identity(path.lstat()) != file_identity(before):
+        raise ValueError("Evidence changed during read")
     return raw
 
 
@@ -140,6 +162,35 @@ def verify_inventory(directory: Path) -> dict:
     return {"schema": 1, "files": entries}
 
 
+def verify_manifest(directory: Path) -> None:
+    """Check exact required inventory, metadata and current SHA-256 digests."""
+    if directory.is_symlink() or not directory.is_dir():
+        raise ValueError("Expected regular evidence directory")
+    expected = set(REQUIRED) | {"manifest.json"}
+    if {entry.name for entry in directory.iterdir()} != expected:
+        raise ValueError("Unexpected or missing evidence entries")
+    manifest = json.loads(read_evidence(directory / "manifest.json"))
+    if (not isinstance(manifest, dict) or set(manifest) != {"schema", "files"}
+            or type(manifest["schema"]) is not int or manifest["schema"] != 1
+            or not isinstance(manifest["files"], list)):
+        raise ValueError("Invalid manifest schema")
+    seen = set()
+    for entry in manifest["files"]:
+        if (not isinstance(entry, dict) or set(entry) != {"name", "bytes", "sha256"}
+                or not isinstance(entry["name"], str) or entry["name"] not in REQUIRED
+                or entry["name"] in seen or type(entry["bytes"]) is not int
+                or not 0 <= entry["bytes"] <= MAX_EVIDENCE
+                or not isinstance(entry["sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", entry["sha256"])):
+            raise ValueError("Invalid manifest entry")
+        seen.add(entry["name"])
+        raw = read_evidence(directory / entry["name"])
+        if len(raw) != entry["bytes"] or hashlib.sha256(raw).hexdigest() != entry["sha256"]:
+            raise ValueError("Evidence digest or size mismatch")
+    if seen != set(REQUIRED):
+        raise ValueError("Incomplete manifest")
+
+
 def run_qa(directory: Path) -> int:
     """Execute all local Python gates and fail closed on incomplete evidence."""
     started = datetime.now(timezone.utc).isoformat()
@@ -170,16 +221,23 @@ def run_qa(directory: Path) -> int:
         "native_build": "NOT_RUN", "hardware": "NOT_RUN", "steps": steps,
     })
     write_json(directory / "manifest.json", verify_inventory(directory))
+    verify_manifest(directory)
     return 0 if passed else 1
 
 
 def main(argv: list[str] | None = None) -> int:
     """0 complete local Python gate, 1 failed or incomplete, 2 invalid options."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-root", type=Path, default=ROOT / "artifacts")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--output-root", type=Path)
+    mode.add_argument("--verify", type=Path, help="Verify existing evidence only")
     args = parser.parse_args(argv)
     try:
-        directory = create_run(args.output_root)
+        if args.verify is not None:
+            verify_manifest(args.verify)
+            print("PASS: manifest integrity only; not independent QA or authentication")
+            return 0
+        directory = create_run(args.output_root or ROOT / "artifacts")
         result = run_qa(directory)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         print(f"FAIL: QA evidence incomplete ({type(error).__name__})", file=sys.stderr)

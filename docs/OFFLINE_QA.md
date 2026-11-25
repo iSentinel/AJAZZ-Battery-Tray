@@ -7,6 +7,7 @@ shared decoder corpus fixture. The Python tools use the standard library.
 
     python3 tools/run_offline_qa.py
     python3 tools/run_offline_qa.py --output-root /path/to/private/evidence
+    python3 tools/run_offline_qa.py --verify /path/to/private/evidence/offline-qa-RUN
 
 The root must be owner-private on POSIX. The runner creates a unique run
 directory, does not overwrite evidence, and returns 0 only if all
@@ -24,6 +25,14 @@ Required evidence inventory (schema 1):
 - summary.json: UTC, exact revision, commands, status, exit codes, counts.
 - manifest.json: independent required inventory of the preceding four
   documents, size and SHA-256. The manifest cannot hash itself.
+
+The verifier reopens the exact required set, rejects missing/extra entries,
+symlinks and hard links, validates schema, unique names, sizes and SHA-256,
+and detects per-file identity/metadata changes during reads. A successful
+verification is local integrity only: not producer authentication or an
+atomic multi-file snapshot. A PASS in summary.json must be accompanied by
+successful manifest verification and runner exit 0. Full atomic publication
+and Windows filesystem/ACL qualification remain open.
 
 No exception messages, subprocess output or private path in shared
 JUnit/summary; failed test case IDs identify how to reproduce locally.
