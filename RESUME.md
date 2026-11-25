@@ -1158,3 +1158,12 @@ baseline is beta.60, with High Sierra .5 distributed separately.
   and USB cases, actual Windows resource before/after measurements.
 - No claim of measured CPU savings, physical hardware acceptance or
   completed Home Assistant integration; HID protocol remains unchanged.
+
+## Independent BLE priority checkpoint
+
+#185 merged 99c51a0. Windows production BLE session now independent of
+USB enumeration, including unknown USB; explicit fresh direct-GATT opt-in
+remains session-only. A valid visible USB reading retains primary priority;
+fresh BLE can become primary if USB lacks a valid reading. Independent
+extra icons and USB disconnect policy are preserved. No physical-device
+association. Hosted Windows CI and persistent consent are next.

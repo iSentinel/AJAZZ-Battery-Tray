@@ -217,7 +217,7 @@ public sealed class BluetoothBatteryForm : Form
         }
         _enable(candidate, result, _verifiedAt);
         ClearVerifiedSelection();
-        _result.Text = UiText.Get("Bluetooth monitor enabled for this session; USB keeps priority.");
+        _result.Text = UiText.Get("Bluetooth monitor enabled for this session; independent of USB.");
     }
 
     /// <summary>External opt-out invalidates prior consent evidence.</summary>

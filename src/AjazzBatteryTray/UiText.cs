@@ -85,6 +85,8 @@ public static class UiText
         ["Battery history..."] = ("История заряда...", "Історія заряду..."),
         ["Check paired Bluetooth battery..."] = ("Проверить батарею Bluetooth...", "Перевірити батарею Bluetooth..."),
         ["Bluetooth"] = ("Bluetooth", "Bluetooth"),
+        ["Disable Bluetooth monitors"] = ("Отключить мониторинг Bluetooth", "Вимкнути моніторинг Bluetooth"),
+        ["Bluetooth monitor enabled for this session; independent of USB."] = ("Мониторинг Bluetooth включён на сеанс независимо от USB.", "Моніторинг Bluetooth увімкнено на сеанс незалежно від USB."),
         ["Bluetooth fallback: off"] = ("Bluetooth: отключён", "Bluetooth: вимкнено"),
         ["Bluetooth fallback: standby (USB primary)"] = ("Bluetooth: ожидание (приоритет USB)", "Bluetooth: очікування (пріоритет USB)"),
         ["Bluetooth fallback: checking battery..."] = ("Bluetooth: проверка заряда...", "Bluetooth: перевірка заряду..."),
