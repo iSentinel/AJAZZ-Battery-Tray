@@ -335,6 +335,9 @@ var scheduledDashboard = DeviceDashboardState.FromPoll("Mouse", "2.4 GHz",
 Check("Scheduled display preserves measurement time and percent",
     scheduledDashboard.Status == DeviceDashboardStatus.Scheduled &&
     scheduledDashboard.MeasuredAt == scheduleMeasurement && scheduledDashboard.Percent == 83);
+Check("Shared display freshness ceiling matches API",
+    DeviceDashboardState.MaximumFreshAge == TimeSpan.FromMinutes(5) &&
+    LocalBatterySnapshot.MaximumFreshAge == DeviceDashboardState.MaximumFreshAge);
 Check("APEX fresh boundary matches API",
     ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
         scheduleMeasurement, scheduleMeasurement.AddMinutes(5)).Status == DeviceDashboardStatus.Fresh);

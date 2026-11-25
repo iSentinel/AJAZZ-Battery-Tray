@@ -39,7 +39,7 @@ public static class ApexDisplayPolicy
     public static bool IsCurrent(bool known, bool present, bool scheduled,
         DateTimeOffset? measured, DateTimeOffset now)
         => known && present && measured is { } at && at <= now &&
-            now - at <= (scheduled ? ScheduledLifetime : LocalBatterySnapshot.MaximumFreshAge);
+            now - at <= (scheduled ? ScheduledLifetime : DeviceDashboardState.MaximumFreshAge);
 
     public static DeviceDashboardState Dashboard(string name, bool known, bool present,
         bool scheduled, int? percent, DateTimeOffset? measured, DateTimeOffset now)

@@ -1,3 +1,11 @@
+# Resume — APEX dashboard smoke dependency correction
+
+#254 initial CI 4/5: isolated dashboard smoke compile CS0103
+because BatteryDisplayState referenced LocalBatterySnapshot.
+Move shared five-minute ceiling to DeviceDashboardState and
+keep the API alias. New shared-limit assertion, native rerun
+pending; do not merge failing head. Release hold unchanged.
+
 # Resume — APEX presentation age consistency
 
 #253 exact 5/5 CI merged c2061d3 after tested tree equality.

@@ -13,7 +13,7 @@ public sealed record LocalBatterySnapshot(int SchemaVersion, DateTimeOffset Gene
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? SessionEpoch { get; init; }
     public const int MaximumDevices = 64;
-    public static readonly TimeSpan MaximumFreshAge = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan MaximumFreshAge = DeviceDashboardState.MaximumFreshAge;
     public static readonly TimeSpan MaximumCachedAge = TimeSpan.FromHours(24);
 
     public sealed record Input(LocalBatterySource Source, int SessionSlot, DeviceDashboardState State);

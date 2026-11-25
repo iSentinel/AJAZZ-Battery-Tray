@@ -2081,3 +2081,9 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native CI and physical validation of new projection.
 - [ ] AJ159/AJ179 ready-clear comparison with official utility at two
       verified charge levels per device; no unverified field promotion.
+
+- [x] Repair #254 Windows dashboard smoke compile error CS0103:
+      move shared freshness ceiling into the existing dashboard model
+      used by UI, app, API and HA preview; retain API compatibility alias.
+      No change to age values. Add a shared-limit assertion.
+- [ ] Re-run exact Windows CI, including dashboard smoke.
