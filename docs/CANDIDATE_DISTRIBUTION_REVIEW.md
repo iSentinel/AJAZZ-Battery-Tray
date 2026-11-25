@@ -82,3 +82,54 @@ actual applicable license terms and intended channel. Any new local
 or hosted build must have fresh exact hashes and qualification; the
 RG01-RG06 checklist must bind those bytes. Do not publish or lift
 ENG-10. Never record an unavailable test as passed.
+
+## Local build entrypoint (not distribution approval)
+
+PR #249 passed 2/2 checks with exact tested tree and was merged
+into draft #99 at f2f338e. The next change shares one compiler
+entrypoint between the native qualification CI and local development.
+
+Prerequisites: an authorized Windows development environment,
+the exact candidate checkout, Python, a locally built beta.61
+single-file app in dist/app/AJAZZBatteryTray.exe, the reviewed
+portable Inno compiler directory, and the exact staged notice tree.
+Use a fresh local output directory outside the source tree and
+keep all inputs immutable and private. Stage notices with the
+existing tools and reviewed local NuGet archives. Review applicable
+terms before use; this guide does not grant distribution rights.
+
+Dry-run (also the default if no mode is specified):
+
+```powershell
+python tools/build_local_inno674_candidate.py --compiler C:/local/inno674 --notices C:/local/notices --output C:/local/candidate --dry-run
+```
+
+Compile explicitly on Windows, only after local-use review:
+
+```powershell
+python tools/build_local_inno674_candidate.py --compiler C:/local/inno674 --notices C:/local/notices --output C:/local/candidate --compile
+```
+
+The tool validates the exact installer source, embedded project ID
+and version, all 38 reviewed compiler components, four icon hashes,
+and the pinned notice manifest and files. Dry-run does not execute
+the compiler or write output. Compilation uses an absolute compiler
+path, bounded runtime, normal output basename, no shell or version
+override, and before/after input comparison. Existing outputs are
+rejected. A failed compile may leave local files; use a fresh
+directory on retry, and never treat partial output as qualified.
+The tool does not download inputs, install or launch the app,
+change the release recipe, sign, or publish anything. Its evidence
+does not establish source provenance or lifecycle acceptance.
+CI checks the resulting app/setup hashes against the later lifecycle
+binding and retains JSON evidence only.
+
+Actual Linux dry-run on the downloaded #246 Windows portable
+artifact 15040057412 (REST ZIP SHA-256
+ce3cd403d40b690637e6c4b3898b5cc247a83599e3cf94b16500d827a5e0bb41)
+PASS. The application SHA-256
+6e04c353170256f6c0f80957a0eb07d6f6ffddf9329a0b2186cd7b7f5f83003d
+also matches the qualified #246 installer payload. Exact retained
+6.7.4 compiler and staged notice files verified, output empty.
+No compiler execution occurred on Linux. Hosted Windows rerun
+of the new entrypoint is required. Release hold unchanged.

@@ -42,7 +42,10 @@ class InnoUpgradeTests(unittest.TestCase):
     def test_product_probe_is_distinct(self) -> None:
         """Use reviewed portable inputs, the same lifecycle and unique artifact names."""
         text = (ROOT / '.github/workflows/test-inno-674-trust.yml').read_text()
-        self.assertIn("'/DProductionNoticeCandidate=1'", text)
+        self.assertIn("build_local_inno674_candidate.py", text)
+        self.assertIn("--dry-run", text)
+        self.assertIn("--compile", text)
+        self.assertIn("'/DProductionNoticeCandidate=1'", (ROOT / "tools/build_local_inno674_candidate.py").read_text())
         self.assertIn('product-components-before.json', text)
         self.assertIn('product-components-after.json', text)
         self.assertIn("default_silent_launch = 'NOT_OBSERVED'", text)
