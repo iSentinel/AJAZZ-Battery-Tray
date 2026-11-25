@@ -1085,3 +1085,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Historical Tray 265 and HA 184 files; both CycloneDX 1.6 schema PASS.
 - [ ] Hosted QA, exact release candidate, full graph and distribution/toolchain
       coverage, signature trust, advisory disposition and release admission.
+
+### ENG-12 scoped pinned NuGet advisory audit
+
+- [x] Check official two-page NuGet VulnerabilityInfo snapshot against four
+      exact stable pack versions; 211 ranges, zero matches on 2026-11-25.
+- [x] Cross-check all four exact NuGet versions via OSV; no IDs returned.
+- [ ] Exact hosted QA, authenticated/fresh acquisition policy, product-level
+      security advisories, toolchain and all other distribution dependencies.
+      Release hold unchanged.
