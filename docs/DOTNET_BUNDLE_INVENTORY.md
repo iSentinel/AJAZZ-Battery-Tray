@@ -23,3 +23,18 @@ it is not a general adversarial PE parser or proof of file immutability.
 No claim is made about external companion DLLs, unbundled native runtime,
 assembly versions, license coverage or vulnerabilities. Those are separate
 inventory and SBOM steps. Validate on the actual artifacts before merging.
+
+## Observed candidate evidence (2026-11-25)
+
+Clean isolated Gateway QA on ac7f874: 137 tests, zero failures/errors/skips.
+Actual artifacts from #147 independently reopened and hashed. Tray EXE
+SHA-256 09b24f816b057c041a4336ca29903c3224ccb61c31ad96edca05c4d1d3ce2781,
+265 embedded entries (263 assemblies, deps and runtimeconfig); deps names
+NETCore and WindowsDesktop runtimepack 11.0.0 and Windows SDK ref
+10.0.19041.87. HA EXE SHA-256
+60203821e0037994781dae93de5c13dc782ceab12d1da2493d5f16929a752b6b,
+184 entries (182 assemblies plus configs), deps names only NETCore
+runtimepack 11.0.0 besides app. ASP.NET requested in restore but not in
+these deps libraries. Companion tray archive contains four icon files;
+HA archive contains checksum. No native host inspection or license claim.
+#148 Node24 integrated f3686e1 after 7/7 checks. Requalify combined tree.
