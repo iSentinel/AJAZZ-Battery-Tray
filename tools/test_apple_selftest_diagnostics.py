@@ -15,7 +15,7 @@ class AppleSelftestDiagnosticsTests(unittest.TestCase):
         raw = (ROOT / 'macos/main.swift').read_text()
         block = raw.split('let checks: [(String, Bool)] = [', 1)[1].split('for (name, passed)', 1)[0]
         groups = re.findall(r'\("[a-z-]+", (\w+)\)', block)
-        self.assertCountEqual(groups, ['corpusValid', 'provenanceValid', 'sharedFrameValid',
+        self.assertCountEqual(groups, ['corpusValid', 'provenanceValid', 'ageValid', 'sharedFrameValid',
                                       'presenceValid', 'localizationValid', 'bluetoothValid',
                                       'alertTests', 'timeoutValid', 'selectedTests', 'jumpTests',
                                       'chartValid', 'historyValid', 'clockValid', 'guardValid',
