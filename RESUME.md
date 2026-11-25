@@ -1196,3 +1196,11 @@ Hardware acceptance and native CI pending.
 #188 integrated 64635db; stacked on #189 4d2b466. Keep linked primary
 selected until hidden/unlinked even when unrelated USB or BLE appears.
 Other icons remain independent. Hosted CI and physical acceptance open.
+
+## Universal corpus CI triage checkpoint
+
+Integration bda4dc0: 5/6 PASS, Universal run 45565394706/job
+139038945524 failed observation-corpus only. Add fixed stage/row
+diagnostics and explicit whole-second CSV flooring with three
+deterministic boundary replays per fixture. Suspected formatter/prune
+boundary issue, not confirmed original root cause. Native CI pending.
