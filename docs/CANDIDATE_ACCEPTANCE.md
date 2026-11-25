@@ -467,3 +467,23 @@ ddfbb4399e7241cabdbbd3fe9e74bf5e86a2a7a8a45aa8650ea21cb8a4b73c05.
 This is structural validation, not source text or language-option
 semantic equivalence. Compiled script, licensing, independent trust
 and hardware acceptance remain open.
+
+### Pinned English message and appearance equivalence
+
+The exact #206 compiler inventory artifact 15005558278 (archive SHA-256
+27f107834274efd01e6095da5675967b4888a13a7b460eb504a715362ee2b730)
+binds the same source and setup hash and records Default.isl SHA-256
+42a5f6f7dbbddf26cc278f67db5d894235ce1d126a6856702e31bd02023a1316,
+matching the independently extracted official file. The actual CI
+checkout installer script SHA-256 is
+668ff74c3c55db0cd8de544d30bac23497ad6e7a38aaf6da77016c78de2b2a65.
+Using the pinned Shared.SetupMessageIDs.pas enumeration and the
+documented EnumMessagesProc %n expansion, all 281 English strings
+serialize to exactly the observed UTF-16LE body. The 102-byte language
+record also matches reconstructed reviewed defaults: Segoe UI,
+9/7/15 font settings, 120/120 wizard size, clNone colors, modern
+and keep-aspect flags, all light controls. No source text or private
+data is embedded in evidence. Actual paired archive replay SHA-256
+a01b64d9ccf807d01ac54932f05c33cf4690c66486ba6b395b4217e0f6e70d83.
+This establishes scoped English text and appearance equivalence, not
+compiled script execution, resource provenance or release admission.
