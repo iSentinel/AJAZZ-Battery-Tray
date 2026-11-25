@@ -1,0 +1,54 @@
+# Inno Setup runtime notice review — ENG-06/12
+
+This Windows installer uses Inno Setup 6.7.1 and RemObjects Pascal
+Script, available at https://github.com/remobjects/pascalscript.
+The installer engine includes LZMA SDK decompression code by Igor Pavlov.
+
+## Reviewed sources and exact notice copies
+
+- [Inno Setup license](third-party/inno-6.7.1/Inno-Setup-LICENSE.txt):
+  exact official extracted compiler package license, SHA-256
+  2e5346868c2a18434489824e11d65c3031620f792fefc415d05f19cd441abf5c.
+  Source tag is-6_7_1, commit cfdf48923178df4b4f040e038b423aa555a61ffc.
+  Retain existing copyright notices and website addresses in binary
+  redistributions; preserve source notices and identify modifications.
+  AJAZZ-generated setup resources/metadata are not original upstream binaries.
+- [RemObjects Pascal Script license](third-party/inno-6.7.1/Pascal-Script-LICENSE.txt):
+  exact LICENSE.md at submodule commit d6e25439080c37e15af23badb48c39760a2b8d4d,
+  SHA-256 a08799bb2385a3af99a9bbb7c746d0ad9ac7dd07be0fb1473f2f4d1dc3e11bd1.
+  The license calls for visible attribution in an about box or documentation,
+  preservation of source notices and accurate origin/modification marking.
+- [LZMA SDK decoder documentation](third-party/inno-6.7.1/LZMA-SDK-7zC.txt):
+  exact Components/Lzma2/7zC.txt at the pinned Inno commit, SHA-256
+  e5cc6089348474fc82631365932b1aa09df26a8cfc9f320bbb2509a7b3fc7a0c.
+  The document identifies the SDK as public domain; the reviewed pinned
+  LzmaDec.c, Lzma2Dec.c and 7zDec.c source headers agree. This does not
+  establish terms for every other 7-Zip component or binary.
+
+## Remaining coverage
+
+The pinned Setup.dpr and SetupLdr.dpr imports are review leads rather
+than a compiler link map. MD5, SHA1 and SHA256 wrapper headers identify
+public-domain wrapper code; System.Hash and the Delphi RTL/VCL require
+separate distribution analysis. ChaCha20.pas references an upstream
+implementation; its exact historical source and terms remain unresolved.
+PBKDF2.pas cites the Inno license. Continue reviewing transitive units,
+embedded helper executables, vendor code, image rights and redistribution
+conditions. Do not infer that unused optional compiler DLLs are shipped,
+or that absence from the five-file payload proves absence from the engine.
+
+The exercised #206 installer contains five payload files (application
+and four icons) and a generated uninstaller. No separate notice file
+is present in those payloads. The repository's own MIT license and
+previously staged .NET notices also need candidate-bound distribution
+coverage. This commit prepares exact source notice copies and visible
+repository documentation only, not a change to the tested installer,
+portable package or release workflow. A future packaging change must
+generate and qualify a new candidate, including installed and portable
+notice presence and byte integrity. Do not claim complete licensing,
+legal clearance, publisher trust or release admission.
+
+References:
+- https://github.com/jrsoftware/issrc/tree/cfdf48923178df4b4f040e038b423aa555a61ffc
+- https://github.com/remobjects/pascalscript/blob/d6e25439080c37e15af23badb48c39760a2b8d4d/LICENSE.md
+- https://github.com/jrsoftware/issrc/blob/cfdf48923178df4b4f040e038b423aa555a61ffc/Components/Lzma2/7zC.txt

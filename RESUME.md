@@ -1,3 +1,10 @@
+# Resume — scoped Inno runtime notices
+
+Stacked on #218. Three exact upstream notice/documentation files staged
+in repository; visible Pascal Script/Inno acknowledgment and two tests.
+Distribution notices, transitive terms (including RTL/VCL), independent
+trust and physical acceptance remain open. No installer payload change.
+
 # Resume — wizard resource provenance
 
 #217 merged 676f64e into parent after 5/5 CI. Both actual #206
