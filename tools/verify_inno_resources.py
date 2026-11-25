@@ -12,6 +12,7 @@ from compare_inno_loader import TEMPLATE_SHA, compare, digest
 from run_offline_qa import write_json
 from verify_dotnet_host_resources import resources
 from verify_inno_inner_engine import ENGINE_SHA, recover
+from verify_inno_metadata import compare_metadata
 from verify_windowsdesktop_provenance import read_local
 
 ICON_SHA = 'be6d9849acd8c768725d73a4b1a70a4aba9284770dff72bbb5d355694bef3b16'
@@ -91,12 +92,18 @@ def verify(setup: bytes, loader: bytes, template: bytes, ico: bytes, sha: str) -
     engine, record = recover(setup)
     compare(template, engine, overlay_expected=False)
     icons = icon_resources(ico)
+    loader_result = compare_resources(resources(loader), resources(setup), icons, 'loader')
+    engine_result = compare_resources(resources(template), resources(engine), icons, 'engine')
+    loader_result['metadata_payloads'] = compare_metadata(loader, setup, 'loader')
+    engine_result['metadata_payloads'] = compare_metadata(template, engine, 'engine')
+    loader_result['unqualified'] = []
+    engine_result['unqualified'] = []
     return {'schema': 1, 'setup_sha256': sha, 'icon_sha256': ICON_SHA,
             'engine_sha256': record['engine_sha256'],
-            'loader': compare_resources(resources(loader), resources(setup), icons, 'loader'),
-            'engine': compare_resources(resources(template), resources(engine), icons, 'engine'),
+            'loader': loader_result, 'engine': engine_result,
             'offset_table': 'CRC_AND_BOUNDS_VERIFIED',
-            'version_manifest_provenance': 'NOT_VERIFIED', 'release_admission': 'NOT_VERIFIED'}
+            'version_manifest_provenance': 'MATCH_REVIEWED_BETA61_TRANSFORM',
+            'resource_payloads': 'MATCH_SCOPED', 'compiled_script': 'NOT_VERIFIED', 'release_admission': 'NOT_VERIFIED'}
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1604,3 +1604,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add bounded CLI and three synthetic regressions; actual replay PASS.
 - [ ] Hosted CI, integration, loader manifest transformation, version
       resources and metadata/serialization provenance; release hold.
+
+### Exact scoped Inno manifest and version reconstruction
+
+- [x] #210 merged 1efb27b after 4/4 hosted checks; #211 merged
+      f3c05a6 into its parent after 5/5 checks; tested trees match.
+- [x] Replay loader COMCTL32 manifest transform and verify unchanged
+      inner manifest; both exact payload comparisons PASS.
+- [x] Reconstruct both complete fixed-size VersionInfo resources
+      from reviewed beta.61 inputs; actual replay PASS.
+- [x] Four synthetic metadata regressions and scoped verifier integration.
+- [ ] Hosted CI, integrate stacked changes, inspect PE resource
+      directory metadata/serialization, compiled script, licensing,
+      independent trust and physical acceptance. Release hold.

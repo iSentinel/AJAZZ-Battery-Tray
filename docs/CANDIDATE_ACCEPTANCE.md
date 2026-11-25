@@ -505,3 +505,22 @@ version; resource directory metadata and physical serialization remain
 unqualified. Actual replay SHA-256
 b753c41baf7c6514db7b33c17bfe92adbed84f5b59eeede0f85ffa619f03263f.
 No full resource provenance or release admission claim.
+
+### Exact scoped Inno manifest and version payload reconstruction
+
+For the actual #206 setup, official source cfdf48923178df4b4f040e038b423aa555a61ffc
+Compiler.ExeUpdateFunc.pas SHA-256
+116dc1dbe14f69a24a357f084eacfc2a0043a47bcf4d3004f2b2eb8639fd0f21
+defines PreventCOMCTL32Sideloading and UpdateVersionInfo.
+Reproduce the exact length-preserving removal of the loader dependency
+and insertion of its System32 comctl32.dll file entry. The inner
+manifest is unchanged. Reproduce the fixed-capacity UTF-16 version
+string updates from reviewed beta.61 compiler inputs, preserving
+remaining spaces, numeric versions, all other fields and padding.
+Both complete version payloads and both manifests match. With the
+previous exact icon/key/payload comparison and offset table CRC and
+bounds validation, no unknown leaf payload remains in this scoped
+comparison. Directory metadata and resource serialization are not
+qualified. Actual replay SHA-256:
+a3a928f103ffc617a706d90e4327c44cf26685b15e8a41c7ea868a059bc97f6b.
+This is not compiled-script, publisher trust or release admission.
