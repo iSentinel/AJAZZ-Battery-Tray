@@ -50,20 +50,24 @@ internal sealed class ReceiverMonitor : IDisposable
         _states.TryGetValue(PrimaryKey, out State? state) ? state : null;
     internal State? SummaryState { get; private set; }
 
-    internal State? VisiblePrimary(bool multiple, IReadOnlySet<string> hidden)
+    internal State? VisiblePrimary(bool multiple, IReadOnlySet<string> hidden, DateTimeOffset now)
     {
         string? preferred = multiple ? PrimaryKey : SummaryState?.Key;
-        if (preferred is not null && _states.TryGetValue(preferred, out var primary) &&
-            primary.Present && !hidden.Contains(preferred))
-            return primary;
-        State? first = null;
+        State? best = null;
+        int bestRank = -1;
         foreach (var state in _states.Values)
         {
             if (!state.Present || hidden.Contains(state.Key)) continue;
-            if (first is null || StringComparer.Ordinal.Compare(state.Key, first.Key) < 0)
-                first = state;
+            int rank = multiple ? 0 : ApexDisplayPolicy.SelectionRank(Dashboard(state, now));
+            if (best is null || rank > bestRank ||
+                (rank == bestRank && (state.Key == preferred ||
+                    (best.Key != preferred && StringComparer.Ordinal.Compare(state.Key, best.Key) < 0))))
+            {
+                best = state;
+                bestRank = rank;
+            }
         }
-        return first;
+        return best;
     }
 
     internal void Apply(AjazzHidReader.Batch batch, AppSettings settings,
@@ -108,13 +112,15 @@ internal sealed class ReceiverMonitor : IDisposable
 
             PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen.Keys);
             SummaryState = null;
+            int bestRank = -1;
             foreach (var item in batch.Receivers)
             {
                 var state = _states[item.Key];
-                SummaryState ??= state;
-                if (!state.Reading.Percent.HasValue) continue;
+                int rank = ApexDisplayPolicy.SelectionRank(Dashboard(state, now));
+                if (rank <= bestRank) continue;
                 SummaryState = state;
-                break;
+                bestRank = rank;
+                if (rank == 2) break;
             }
         }
         finally

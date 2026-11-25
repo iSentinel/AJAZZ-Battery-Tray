@@ -2122,3 +2122,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       regression groups and one C# assertion.
 - [ ] Native Windows validation and hosted parser CI.
 - [ ] Merge after parent #256 passes; release hold unchanged.
+
+### Multi-receiver freshness selection
+
+- [x] Rank receiver observations by actual presentation state, not
+      retained raw percentage: fresh before scheduled before unknown.
+      Apply the ranking to ordinary batch summary and single-icon
+      selection, re-evaluated at rendering time. Preserve stable
+      multiple-icon primary and exclude hidden/linked receivers.
+      Two C# regression assertions for rank and invalid observations.
+- [ ] Native Windows tests and physical multiple-receiver acceptance.
+- [ ] Integrate after parent #257 qualification; release hold unchanged.

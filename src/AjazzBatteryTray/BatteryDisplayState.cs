@@ -47,6 +47,16 @@ public static class ApexDisplayPolicy
             IsCurrent(known, present, scheduled, measured, now) && percent is >= 1 and <= 100
                 ? percent : null, measured, scheduled: scheduled);
 
+    /// <summary>Prefer fresh over retained scheduled readings, then unknown.</summary>
+    public static int SelectionRank(DeviceDashboardState state)
+        => state.Percent is >= 1 and <= 100
+            ? state.Status switch
+            {
+                DeviceDashboardStatus.Fresh => 2,
+                DeviceDashboardStatus.Scheduled => 1,
+                _ => 0
+            } : 0;
+
     /// <summary>Report measurement provenance without exporting receiver identity.</summary>
     public static string DiagnosticSample(DateTimeOffset? measured, bool scheduled)
         => $"USB sample UTC: {measured?.ToUniversalTime().ToString("O") ?? "never"}; scheduled: {scheduled}";

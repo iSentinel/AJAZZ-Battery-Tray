@@ -1947,11 +1947,11 @@ public sealed class TrayAppContext : ApplicationContext
         var linked = LinkedTrayDevices();
         var hiddenUsb = new HashSet<string>(_settings.HiddenTrayDevices, StringComparer.Ordinal);
         hiddenUsb.UnionWith(_settings.BleUsbLinks.Values);
-        var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons, hiddenUsb);
+        var usbNow = DateTimeOffset.UtcNow;
+        var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons, hiddenUsb, usbNow);
         var aulaState = AulaDashboardState();
         int? aulaLevel = aulaState.Percent;
         bool aulaStale = aulaState.Status == DeviceDashboardStatus.Cached;
-        var usbNow = DateTimeOffset.UtcNow;
         var usbDisplay = receiver is not null && reading.PresenceKnown
             ? ReceiverMonitor.Dashboard(receiver, usbNow) : null;
         int? usbPercent = usbDisplay?.Percent;

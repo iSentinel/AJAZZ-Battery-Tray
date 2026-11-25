@@ -1,3 +1,12 @@
+# Resume — multi-receiver freshness selection
+
+#257 initially 5/7 CI PASS, Windows native and Python passed.
+New independent child ranks ordinary batch summary and single
+tray icon by fresh > scheduled > unknown, with stable primary
+in multiple-icon mode and hidden/linked exclusion. Two C#
+assertions. Native CI and real multi-receiver testing pending.
+No new HID operation or history/alert changes. Release hold.
+
 # Resume — Windows diagnostic sample provenance
 
 #256 head 7afa270: Python and roundtrip PASS at initial review;
