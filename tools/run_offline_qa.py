@@ -45,6 +45,7 @@ CLI = ("analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease"
        "verify_inno674_setup_records",
        "verify_inno674_migration_evidence",
        "verify_interactive_acceptance",
+       "verify_hardware_acceptance",
        "build_local_inno674_candidate",
        "audit_product_sbom_advisories",
        "crosscheck_product_sbom_osv",
