@@ -1478,3 +1478,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       CLI help, replay actual files.
 - [ ] Hosted exact candidate CI; installer engine/uninstaller
       attribution, redistribution review and physical acceptance.
+
+### Inno compiler component observation
+
+- [x] Check actual #198 job 139061565151: engine 6.7.1, ISCC hash,
+      exact setup hash, observed Authenticode Valid for ISCC only.
+- [x] Review official is-6_7_1 tag package layout and license.
+- [x] Inventory explicit compiler inputs before and after normal beta.61
+      compilation; emit separate bounded CI evidence, reject changes.
+- [ ] Native CI qualification, compare actual observed compiler
+      components with official distribution and relevant signed inputs.
+- [ ] Attribute embedded engine/uninstaller, verify licensing/notice
+      coverage, signature and physical acceptance. Keep release hold.

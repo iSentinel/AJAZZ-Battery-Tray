@@ -41,7 +41,7 @@ jobs:
         run: |
           dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.61 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Candidate publish failed' }
-          ./tools/Invoke-InstallerCompiler.ps1 -AppVersion '0.3.0-beta.61'
+          ./tools/Invoke-InstallerCompiler.ps1 -AppVersion '0.3.0-beta.61' -InventoryOutput (Join-Path $env:RUNNER_TEMP 'ajazz-beta61-inno-inventory.json')
       - name: Verify baseline, upgrade, retained data and uninstall
         shell: pwsh
         run: |
@@ -235,5 +235,14 @@ jobs:
           path: |
             ${{ runner.temp }}/ajazz-beta61-candidate/AJAZZBatteryTray-Setup-win-x64.exe
             ${{ runner.temp }}/ajazz-beta61-candidate/candidate.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload normal candidate compiler inventory
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: AJAZZBatteryTray-beta61-inno-compiler-inventory
+          path: ${{ runner.temp }}/ajazz-beta61-inno-inventory.json
           if-no-files-found: error
           retention-days: 7

@@ -1297,3 +1297,14 @@ Replayed scoped PE/.NET/SBOM 269 components, schema PASS. New
 verify_installer_payload.py actual replay PASS; private evidence
 /root/ajazz-inno-payload.jg9QPEie. Setup engine, uninstaller,
 signature/trust, licensing and physical acceptance still open.
+
+## Inno compiler observation checkpoint
+
+#198 job 139061565151 logged Inno 6.7.1, ISCC SHA256
+eb6f4410c8db367a5f74127e8025ad2ccacc0afabbe783959d237df3050f97fb
+and Authenticode Valid (runner observation only). Official is-6_7_1
+tag resolves cfdf48923178df4b4f040e038b423aa555a61ffc. New normal
+beta.61-only inventory option records scoped top-level input files
+before/after compile and separate artifact, source SHA/setup SHA,
+NOT_VERIFIED trust. Actual native qualification pending. This does
+not establish which modules were loaded or embedded.
