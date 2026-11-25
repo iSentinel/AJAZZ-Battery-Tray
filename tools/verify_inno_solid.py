@@ -6,6 +6,7 @@ import hashlib
 import lzma
 from pathlib import Path
 import sys
+from typing import BinaryIO
 
 from compare_inno_loader import digest
 from run_offline_qa import write_json
@@ -29,7 +30,7 @@ def decoder_for(raw: bytes) -> lzma.LZMADecompressor:
         {'id': lzma.FILTER_LZMA2, 'dict_size': dictionary}])
 
 
-def file_hashes(raw: bytes, files: tuple) -> list[dict]:
+def file_hashes(raw: bytes, files: tuple, app_sink: BinaryIO | None = None) -> list[dict]:
     """Hash bounded decoded file chunks; reverse call optimization for first file."""
     decoder = decoder_for(raw)
     pending = raw[5:]
@@ -46,6 +47,8 @@ def file_hashes(raw: bytes, files: tuple) -> list[dict]:
                 raise ValueError('short solid stream block')
             if index == 0:
                 data = reverse_calls(data, offset)
+                if app_sink is not None:
+                    app_sink.write(data)
             hashed.update(data)
             offset += count
         if hashed.hexdigest() != expected:
