@@ -1120,3 +1120,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted QA, symbol availability and transitive dependency review,
       resource seal/signatures, native High Sierra and distribution SBOM.
       Release hold unchanged.
+
+### ENG-12 scoped Apple ad-hoc hash integrity
+
+- [x] Verify actual historical archive resource hashes, page hashes and
+      special slots: 16 resource, 221 page, nine special-slot matches.
+- [x] Identify ad-hoc empty-CMS signatures without signer trust claims.
+- [ ] Hosted QA, native codesign/OS acceptance, signing/notarization,
+      resource rule semantics and distribution SBOM. Release hold unchanged.
