@@ -1,3 +1,15 @@
+# Resume — ENG-06 exact CI action pins
+
+#140 merged 17a65b8 into draft #99, 3/3 hosted CI; Windows
+45517112616 four metadata checks and 907 total C# PASS.
+ENG-06 first candidate: 26 action uses pinned to five full SHAs
+confirmed from prior logs/upstream API; explicit finite job budgets,
+Python 3.12.16, lock regression. See docs/CI_DEPENDENCY_REVIEW.md.
+Next: verify local QA and exact hosted candidate checks, then SDK and
+runtime/toolchain identity review, ENG-12 upstream inventory.
+No release execution; release hold remains. No full advisory or
+transitive dependency qualification claimed.
+
 # Resume — ENG-15 candidate after ENG-05 integration
 
 #139 merged d665299 into draft #99 after Windows/macOS/upgrade PASS.
