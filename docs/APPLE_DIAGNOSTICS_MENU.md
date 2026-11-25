@@ -159,3 +159,19 @@ Six synthetic regression tests cover independent sources, historical layouts,
 full trace redaction, missing inspector, unknown presence and malformed data.
 Physical native report fixtures and active trace outcome normalization remain
 open. No protocol or polling change.
+
+## Universal interactive cancellation
+
+Diagnostics > Cancel HID diagnostics is enabled only during an explicit
+capture, until cancellation is requested. The UI sets the existing
+thread-safe worker token and shows a localized cancelling state; it does
+not signal the child or release the ordinary poll exclusion itself.
+The supervisor stops and reaps the child, then the GUI presents a
+partial report with no fresh battery claim. Cancellation before launch
+or after worker completion but before UI delivery is also handled
+conservatively. Rebuilding the menu or changing language does not
+reset cancellation state. No new HID command or history update.
+Native synthetic cancellation and recovery are included in the bounded
+worker self-test. High Sierra retains its existing bounded capture and
+requires a separate safe supervisor cancellation implementation.
+Actual AppKit interaction and physical HID acceptance remain open.

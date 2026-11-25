@@ -63,6 +63,20 @@ class AppleMenuDiagnosticsTests(unittest.TestCase):
         modern = (ROOT / 'macos/main.swift').read_text()
         self.assertIn('no fresh battery claimed', modern)
 
+    def test_interactive_cancel_preserves_worker_ownership(self) -> None:
+        """Cancellation sets a token, never clears the polling exclusion."""
+        code = (ROOT / 'macos/main.swift').read_text()
+        cancel = code.split('private func cancelHIDDiagnostics()', 1)[1].split(
+            'private func appearanceMenu', 1)[0]
+        self.assertIn('#selector(cancelHIDDiagnostics)', code)
+        self.assertIn('token.cancel()', cancel)
+        self.assertNotIn('diagnosticRunning = false', cancel)
+        self.assertIn('cancelDiagnosticItem?.isEnabled', code)
+        self.assertIn('cancellationRequested', code)
+        worker = (ROOT / 'macos/ApexBoundedWorker.swift').read_text()
+        self.assertIn('read(mode: traceHangMode, timeout: 4, cancellation: traceCancellation)', worker)
+        self.assertIn('stopAndWait(child)', worker)
+
     def test_export_native_contract(self) -> None:
         """Compile exact shared export helper and check mode/no-clobber/symlink."""
         if os.name == "nt":

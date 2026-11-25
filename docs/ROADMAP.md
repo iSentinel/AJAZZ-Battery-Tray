@@ -1237,3 +1237,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add six synthetic regression tests and offline CLI help gate.
 - [ ] Exact hosted CI, actual cross-platform report fixtures, normalized
       active trace outcomes, provider dashboard and interactive cancellation.
+
+### Universal interactive diagnostic cancellation
+
+- [x] Add localized cancel command and running/cancelling states.
+- [x] Retain worker ownership and polling exclusion until completion;
+      preserve partial trace without a fresh battery claim.
+- [x] Add native synthetic cancellation and offline source contract.
+- [ ] Exact hosted CI, physical menu cancellation and recovery.
+- [ ] High Sierra supervisor cancellation without orphan workers.
+- [ ] Multi-snapshot capture and active trace outcome normalization.
