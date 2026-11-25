@@ -1,3 +1,12 @@
+# Resume — scoped NuGet advisory audit
+
+#162 merged d01ca8a after exact 4/4 CI. #163 joined d75b620,
+188/188 local QA PASS; #164 awaits joined exact CI. Four pinned
+NuGet versions checked against both official feed pages on 2026-11-25:
+211 ranges, zero matching; OSV exact queries also returned no IDs.
+New offline CLI and six synthetic tests. Not full vulnerability clearance;
+feed freshness/authentication and all other release gates remain open.
+
 # Resume — merge license inventory with resource serialization
 
 #161 integrated a98cb0d after exact 4/4 CI. #162 prior head b48e3de
