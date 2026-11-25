@@ -1687,3 +1687,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       terms, exact Windows SDK coverage and candidate distribution notices.
 - [ ] Hosted CI and integration; separately qualify future installer and
       portable notice inclusion. No release admission.
+
+### Independent Inno publisher evidence
+
+- [x] #218 merged 4a38184 after exact 5/5 CI.
+- [x] Fetch both published ISSig keys from vendor HTTPS; exact match
+      with pinned source keys and repeat 18/18 signature verification.
+- [x] Verify local official package and sidecar digests against
+      immutable release asset metadata.
+- [x] Add separate read-only hosted Authenticode/attestation test.
+- [ ] Hosted exact-head publisher evidence, integration, remaining
+      licensing, advisories and physical acceptance. Release hold.

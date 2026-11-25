@@ -1,3 +1,11 @@
+# Resume — independent Inno publisher evidence
+
+Stacked on #219. #218 merged 4a38184 (5/5). Vendor HTTPS key
+copies byte-match source pins, ISSig replay 18/18; immutable release
+metadata digest matches. New read-only hosted publisher check for
+Authenticode and release attestation, not yet executed.
+Release hold, licensing and hardware acceptance remain.
+
 # Resume — scoped Inno runtime notices
 
 Stacked on #218. Three exact upstream notice/documentation files staged
