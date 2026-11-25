@@ -1036,3 +1036,11 @@ configuration commands. USB `VersionNumber` is a device revision,
       no orphan workers, data loss or duplicate tray icons.
 - [ ] No release admission; retain the current release hold. Do not enable
       forced process termination as an automatic fallback.
+
+### ENG-06/12 pinned package license inventory
+
+- [x] Re-download four exact NuGet packages and verify pinned digests.
+- [x] Record declared licenses, exact root notice hashes and signature presence.
+- [ ] Hosted QA, SDK redistribution terms, distribution notices, toolchain
+      license review, trusted signatures, candidate-bound SBOM and advisories.
+      Release hold unchanged.

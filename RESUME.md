@@ -1,3 +1,13 @@
+# Resume — pinned package license inventory
+
+Base f23b8fc #99 6/6 CI PASS. #160 and #161 integration pending.
+Four exact official NuGet packs re-downloaded and hashes verified;
+three MIT declarations and one Windows SDK license URL with acceptance
+required. Exact notices and signature presence recorded, no compliance
+or signature clearance. License CLI and seven regression tests added.
+SDK terms, notice distribution, toolchain, SBOM/advisories and release
+qualification remain open.
+
 # Resume — automatic Windows Setup close and relaunch
 
 - #157 corrected 2afb9c8 passed 4/4 CI and merged into draft #99 at
