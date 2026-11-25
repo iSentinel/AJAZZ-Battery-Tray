@@ -1004,3 +1004,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native CI, dashboard smoke, RU/UK and physical owner acceptance; consider equivalent Apple diagnostic consolidation separately.
 
 - [ ] Preserve last sampled single-receiver numeric USB observation across removal/unknown/skipped polls for manual cross-transport comparison; explicitly historical, no inferred identity or telemetry.
+
+
+### Consolidated Windows full-capture process lifetime (issue #93)
+
+- [x] Verify #156 Windows/macOS CI, then preserve its job lifetime design
+      in the consolidated #99 candidate without merging its older source.
+- [x] Preserve #99 report JSON, cancellation, child watchdog, I/O lease,
+      pinned installer baseline, settings/history and icon acceptance.
+- [x] Add portable and installed synthetic missing-token and parent-death
+      tests; retain existing timeout test. No new HID opcodes.
+- [ ] Exact-head Windows, installer upgrade and other triggered CI.
+- [ ] Actual GUI and hardware validation, then retire overlapping #156.
+- [ ] Keep release hold; do not promote unverified AJ179 candidate fields.
