@@ -1677,3 +1677,33 @@ configuration commands. USB `VersionNumber` is a device revision,
       in pinned official ISCmplr.dll; two regressions and CLI gate.
 - [ ] Hosted CI/integration; licensing, independent key trust and
       hardware acceptance. Release hold.
+
+### Scoped Inno runtime notice preparation
+
+- [x] Review exact Inno license, pinned Pascal Script license, and
+      LZMA SDK decoder declarations; retain exact copies in documentation.
+- [x] Add visible upstream attribution and two notice integrity regressions.
+- [ ] Review transitive Delphi/RTL, embedded helpers and other third-party
+      terms, exact Windows SDK coverage and candidate distribution notices.
+- [ ] Hosted CI and integration; separately qualify future installer and
+      portable notice inclusion. No release admission.
+
+### Independent Inno publisher evidence
+
+- [x] #218 merged 4a38184 after exact 5/5 CI.
+- [x] Fetch both published ISSig keys from vendor HTTPS; exact match
+      with pinned source keys and repeat 18/18 signature verification.
+- [x] Verify local official package and sidecar digests against
+      immutable release asset metadata.
+- [x] Add separate read-only hosted Authenticode/attestation test.
+- [ ] Hosted exact-head publisher evidence, integration, remaining
+      licensing, advisories and physical acceptance. Release hold.
+
+### Native upstream publisher evidence
+
+- [x] #220 merged fc81aaa into parent after exact 5/5 CI.
+- [x] Retrieve exact native publisher evidence archive by artifact ID;
+      SHA-256 matches REST, review Authenticode and attestation JSON.
+- [ ] Integrate and continue distribution notice coverage, transitive
+      licensing, remaining advisory scope and physical acceptance.
+      Release hold.

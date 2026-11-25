@@ -1,3 +1,25 @@
+# Resume — native upstream publisher evidence
+
+#220 merged fc81aaa into parent after 5/5 CI. Verified exact native
+publisher evidence artifact digest and reviewed Authenticode and
+attestation JSON. Licensing, distribution notice coverage and physical
+acceptance remain open. Release hold.
+
+# Resume — independent Inno publisher evidence
+
+Stacked on #219. #218 merged 4a38184 (5/5). Vendor HTTPS key
+copies byte-match source pins, ISSig replay 18/18; immutable release
+metadata digest matches. New read-only hosted publisher check for
+Authenticode and release attestation, not yet executed.
+Release hold, licensing and hardware acceptance remain.
+
+# Resume — scoped Inno runtime notices
+
+Stacked on #218. Three exact upstream notice/documentation files staged
+in repository; visible Pascal Script/Inno acknowledgment and two tests.
+Distribution notices, transitive terms (including RTL/VCL), independent
+trust and physical acceptance remain open. No installer payload change.
+
 # Resume — wizard resource provenance
 
 #217 merged 676f64e into parent after 5/5 CI. Both actual #206
