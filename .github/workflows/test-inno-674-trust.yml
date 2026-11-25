@@ -8,6 +8,7 @@ on:
       - 'tools/verify_inno674_components.py'
       - 'tools/verify_inno674_product_binary.py'
       - 'tools/verify_inno674_product_resources.py'
+      - 'tools/verify_inno674_solid_payload.py'
       - 'installer/Inno674CompilerProbe.iss'
       - 'installer/AJAZZBatteryTray.iss'
       - 'src/**'
@@ -400,5 +401,21 @@ jobs:
           archive: true
           name: inno674-product-resource-attribution
           path: ${{ runner.temp }}/ajazz-notice-probe/resource-attribution.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify exact product solid payload and scoped IFPS
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          python tools/verify_inno674_solid_payload.py --setup (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') --app dist/app/AJAZZBatteryTray.exe --icons src/AjazzBatteryTray/Assets --notices (Join-Path $root 'staged') --previous (Join-Path $root 'resource-attribution.json') --binding (Join-Path $root 'inno674-product-binding.json') --output (Join-Path $root 'solid-attribution.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Product solid attribution failed' }
+      - name: Retain solid attribution JSON only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-solid-attribution
+          path: ${{ runner.temp }}/ajazz-notice-probe/solid-attribution.json
           if-no-files-found: error
           retention-days: 7

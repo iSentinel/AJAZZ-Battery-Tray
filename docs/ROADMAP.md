@@ -1920,3 +1920,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] #239 binary attribution and resource hosted result, solid
       payload/script attribution, integration, actual interactive UAC,
       legal and physical gates. Release hold.
+
+### Native 6.7.4 resource and solid payload qualification
+
+- [x] #239 merged ff9c55d and #240 merged 1030524 into respective
+      parent branches after exact 6/6 CI and tested tree comparison.
+- [x] Verify native binary/resource archive digests and binding;
+      scoped loader/engine/uninstaller and message/resource PASS.
+- [x] Add separate 15-file solid stream and IFPS verifier with two
+      regressions; retain existing historical 6.7.1 tools.
+- [ ] Native solid payload and IFPS result; full Setup.0 destinations,
+      wizard/source attribution, integration into #99.
+- [ ] Interactive UAC, legal and hardware gates. Release hold.

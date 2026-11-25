@@ -235,3 +235,44 @@ and English message bytes. Two regressions pass. The actual product
 resource and message result awaits hosted CI, and solid payload,
 compiled script, interactive acceptance and release admission are
 not verified. Production pin remains 6.7.1.
+
+## Native 6.7.4 binary and resource attribution
+
+#239 exact head 7f5b9cb56349dde7ab2e26bc655ca1b7a8f00db2,
+run 45639593361, job 139294214890, passed 6/6. Binary evidence
+artifact 15035475586 ZIP SHA-256
+6bf84d2e73808275d1b88947d41951d31b0987a9ef1da2c24b518fc65b352737;
+binding artifact 15035425989 ZIP SHA-256
+c98767eb322576bbad1149820a81721b56125c8d31a7a64f1d1a6819f72ca9fb.
+Both matched REST; source/setup/app and exercised uninstaller hashes
+match across records. Loader/engine non-resource sections MATCH;
+325 engine chunks CRC-checked, 4496384 decoded bytes. Engine SHA-256
+6a8e8465e229cf2e7d70e698ff4ef9c82a238c31aa0416f79c8cae486793eb53.
+Actual uninstaller PE matches recovered engine except reviewed mode;
+message structure matches. Binary JSON SHA-256
+c8efc297c32a9a825fc2424c12158051dddb8e741d9e132e15bfe056d64ac4fd.
+
+#240 exact head 90a8e189ba8bde7b3f8bb7b67021637c7ad650ae,
+run 45640223414, job 139296497263, passed 6/6. Resource artifact
+15035352163 ZIP SHA-256
+0175f458a579855ed2843ceea4266dae7d90ce099adb3b2979b66a2cad4ddd93;
+binary artifact 15035302431 ZIP SHA-256
+632a3a7d0d45df1dc43c186c1efe95f377ec500c76dc2f033c18638ada125dcf.
+Both matched REST; resource JSON references exact binary JSON hash.
+Resource evidence SHA-256
+1d87cbee8aa5bc2ffcf851c8602c752c952041d02675e99e7801f00c47422e2f.
+Setup SHA-256 ae47ad41b6869168b479bb5058b2f4e53cb4ab9ae983c3ea789afb0cf8c2ed8c.
+Loader 25 leaves, 32 directories; engine 71 leaves, 80 directories.
+All scoped icon, version, manifest, resource serialization and padding
+checks PASS; 281 English messages and language options match.
+No unqualified resource leaves in this scoped observation.
+The distinct candidate setup identities must not be interchanged.
+
+The next probe validates the exact ordered 15 source files (application,
+four icons, nine notices and manifest). The reviewed compiler merges
+duplicate source filenames, not identical contents at distinct paths.
+The verifier requires 16 file records including generated uninstaller,
+15 locations, exact extent/flags/hash, bounded LZMA2 decompression,
+terminal state and per-file hash; checks scoped IFPS launch predicate.
+File destination records and remaining Setup.0 records are not yet
+qualified by this tool. Actual native result pending. No release change.

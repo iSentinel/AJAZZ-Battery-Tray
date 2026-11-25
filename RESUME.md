@@ -1,3 +1,12 @@
+# Resume — native 6.7.4 resource and solid payload qualification
+
+#239 merged ff9c55d; #240 merged 1030524 into respective parent branches.
+Exact native binary/resource artifact identities verified; scoped
+resource and 281 English message attribution PASS. New 15-file
+solid stream/IFPS verifier and two regressions; native result pending.
+Full Setup.0 records, integration, interactive, legal and hardware
+gates open. Production 6.7.1, release hold.
+
 # Resume — native 6.7.4 product evidence and resource qualification
 
 #238 merged bfc68a4 into parent after 6/6 CI. Exact three archives
