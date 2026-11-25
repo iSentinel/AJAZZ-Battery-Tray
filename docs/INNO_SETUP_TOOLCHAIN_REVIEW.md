@@ -373,3 +373,51 @@ Migration checklist:
 5. Only after review of the exact resulting candidate may production
    compiler/notice selection and release admission be considered.
    Preserve the 6.7.1 historical baseline and manual release hold.
+
+## Native joined rerun and production-shaped candidate
+
+PR #243 head 11334f97d618deae566d3f9f8c61afa6f729e74f,
+hosted checkout 1a6e23acf1f8d437a6ed8bd2507f22ff812990e9,
+run 45643621560, job 139308583268: 6/6 PASS.
+Merged into draft #99 at fab3734 after exact tested tree match.
+#244 merged into its parent branch at 8b48fdd after 2/2 checks.
+
+Eight original evidence archives matched REST SHA-256 (artifact IDs
+15035524402, 15035594207, 15035659176, 15036662143, 15037235672,
+15037425627, 15035649133, 15035768737). The joined artifact
+15035524402 ZIP SHA-256
+f60e4c44e276b36738b7abbd7510bc49303c940669f238479ccdd26c9337415a.
+All twelve exact raw documents independently replayed on Linux.
+Hosted output SHA-256
+05d4937e71ea5179a4ff11bf79a23e1831be5d961a30b079e434f0734574e84d;
+local output SHA-256
+137515bba7261ac09952e87c86e439028ff0b94ab2f5af3e334c6b3b49a01e54.
+Output bytes match after CRLF-to-LF normalization only; original
+input document hashes are unchanged. Setup SHA-256
+981f0192655721a92c67d64ef6a05a4f180e8630ab915e62e277f9e213f631f6.
+App SHA-256
+1854b4631123d026d4ab1b5c717384f53ec096626b2c296d0c8e177893cc7d6e.
+
+The non-publishing Windows qualification now explicitly selects
+ProductionNoticeCandidate together with ProductNoticeProbe and
+the beta.61 version override. The new guarded preprocessor mode
+selects the normal AJAZZBatteryTray-Setup-win-x64.exe basename,
+without an /F override, while retaining the same 15-file payload.
+The revised source LF digest is
+b93648632e4cacdee0b683842d77c0804c0e468a26d7b6de727f8e05c8f34cd0;
+the earlier pinned script remains accepted for historical replay.
+The isolated hosted clean installation uses the normal silent flags,
+without /DIR or /LAUNCH overrides, and verifies the default Program
+Files destination, no observed tray launch, exact payload and removal.
+Upgrade and repair retain their isolated runner-temp target.
+A thirteenth JSON document binds the exact profile observation
+to the full candidate chain. New mode requires its evidence and
+the new source pin; earlier evidence is not sufficient for this mode.
+Historical #242 replay remains byte-identical locally.
+
+This is a production-shaped qualification, not an actual release
+build: beta.61 is explicitly overridden, notices are opt-in,
+the production compiler wrapper stays at 6.7.1, the existing
+release workflows remain blocked, and only JSON is uploaded.
+Native result pending. Interactive, signing, legal and hardware
+requirements are not waived.

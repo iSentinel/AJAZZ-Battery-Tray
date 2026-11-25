@@ -9,7 +9,7 @@ import sys
 from run_offline_qa import write_json
 from validate_scoped_sbom_schema import digest, document, read, binding
 from verify_inno674_components import VENDOR
-from verify_inno674_setup_records import COMPILER, SOURCE, destinations
+from verify_inno674_setup_records import COMPILER, PRODUCTION_SOURCE, SOURCE_PINS, destinations
 from verify_windows_notice_transport import MANIFEST_SHA
 
 NAMES = (
@@ -85,7 +85,7 @@ def outcomes(r: list[dict]) -> None:
             and r[11]['header_policy'] == 'MATCH_REVIEWED_SOURCE_AND_DEFAULTS'
             and r[11]['wizard_image_provenance'] == 'MATCH_PINNED_COMPILER_RCDATA'
             and r[11]['compiler_sha256'] == COMPILER
-            and r[11]['installer_source_lf_sha256'] == SOURCE)
+            and r[11]['installer_source_lf_sha256'] in SOURCE_PINS)
 
 
 def verify(raw: list[bytes]) -> dict:
@@ -108,14 +108,38 @@ def verify(raw: list[bytes]) -> dict:
             'release_admission': 'NOT_VERIFIED'}
 
 
+def production_shape(raw: bytes, result: dict, records: dict) -> dict:
+    """Bind the exact normal-name/default-directory observation to the chain."""
+    value = document(raw)
+    expected = {
+        'schema': 'inno-674-production-shape-v1',
+        **{k: result[k] for k in ('source_sha', 'setup_sha256', 'app_sha256')},
+        'output_filename': 'AJAZZBatteryTray-Setup-win-x64.exe',
+        'version': '0.3.0-beta.61', 'default_program_files_install': 'MATCH',
+        'default_silent_launch': 'NOT_OBSERVED', 'uninstalled': 'REMOVED',
+        'release_admission': 'NOT_VERIFIED',
+    }
+    require(value == expected and records['installer_source_lf_sha256'] == PRODUCTION_SOURCE)
+    return {**result, 'production_shape_sha256': digest(raw),
+            'production_shape': 'MATCH_SCOPED'}
+
+
 def main(argv: list[str] | None = None) -> int:
     """Read fixed named JSON documents; do not run or publish anything."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--production-shape', action='store_true')
     args = parser.parse_args(argv)
     try:
-        write_json(args.output, verify([read(args.root / (n + '.json')) for n in NAMES]))
+        raw = [read(args.root / (n + '.json')) for n in NAMES]
+        result = verify(raw)
+        records = document(raw[-1])
+        if args.production_shape:
+            result = production_shape(read(args.root / 'production-shape.json'), result, records)
+        else:
+            require(records['installer_source_lf_sha256'] != PRODUCTION_SOURCE)
+        write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):
         print('FAIL: scoped migration evidence', file=sys.stderr)
         return 2

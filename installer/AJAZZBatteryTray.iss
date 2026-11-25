@@ -11,6 +11,12 @@
 #define LaunchArgs ""
 #endif
 
+#ifdef ProductionNoticeCandidate
+#ifndef ProductNoticeProbe
+#error ProductionNoticeCandidate requires ProductNoticeProbe
+#endif
+#endif
+
 #ifdef ProductNoticeProbe
 #ifndef NoticeRoot
 #error ProductNoticeProbe requires NoticeRoot
@@ -37,7 +43,11 @@ DefaultGroupName=AJAZZ Battery Tray
 DisableProgramGroupPage=yes
 OutputDir=..\dist\installer
 #ifdef ProductNoticeProbe
+#ifdef ProductionNoticeCandidate
+OutputBaseFilename=AJAZZBatteryTray-Setup-win-x64
+#else
 OutputBaseFilename=AJAZZBatteryTray-Notice-Probe-win-x64
+#endif
 #else
 OutputBaseFilename=AJAZZBatteryTray-Setup-win-x64
 #endif

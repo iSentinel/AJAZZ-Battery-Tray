@@ -8,7 +8,7 @@ No hardware access, tray launch, release publication or real-user migration.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$ProbeRoot,
-    [ValidateSet('AJAZZBatteryTray-Notice-Probe-win-x64.exe','AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe')]
+    [ValidateSet('AJAZZBatteryTray-Notice-Probe-win-x64.exe','AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe','AJAZZBatteryTray-Setup-win-x64.exe')]
     [string]$CandidateName = 'AJAZZBatteryTray-Notice-Probe-win-x64.exe'
 )
 $ErrorActionPreference = 'Stop'
