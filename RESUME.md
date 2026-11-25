@@ -1,3 +1,11 @@
+# Resume — scheduled snapshot retention consistency
+
+#259 exact 5/5 CI PASS, merged b39ebd4 after tested-tree equality.
+Share three-minute scheduled display limit with snapshot projection
+and read-time expiration. Five C# assertions; ordinary historical
+and cached behavior unchanged. Native CI and physical acceptance
+pending. No HID parser, history, notification or release changes.
+
 # Resume — receiver selection regression coverage
 
 #258 exact 5/5 CI PASS, merged afd1b8a after tested-tree equality.

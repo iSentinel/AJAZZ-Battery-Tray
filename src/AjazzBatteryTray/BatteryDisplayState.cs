@@ -34,7 +34,7 @@ public static class UsbTrayStatus
 /// <summary>Bound the presentation of the last ordinary USB observation.</summary>
 public static class ApexDisplayPolicy
 {
-    public static readonly TimeSpan ScheduledLifetime = TimeSpan.FromMinutes(3);
+    public static readonly TimeSpan ScheduledLifetime = DeviceDashboardState.MaximumScheduledAge;
 
     public static bool IsCurrent(bool known, bool present, bool scheduled,
         DateTimeOffset? measured, DateTimeOffset now)
