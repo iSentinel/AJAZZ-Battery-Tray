@@ -34,6 +34,7 @@ CLI = ("analyze_aula_sleep", "check_apple_io_lease", "code_audit",
        "stage_dotnet_notices",
        "build_scoped_windows_sbom",
        "audit_pinned_nuget_advisories",
+       "inventory_apple_archive",
        "inventory_nuget_assets",
        "measure_apple_worker", "qa_unittest",
        "run_offline_qa")

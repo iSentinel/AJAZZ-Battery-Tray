@@ -1,3 +1,18 @@
+# Resume — Apple archive audit on integrated toolchain base
+
+#166 integrated 4eecf64 after 4/4 exact CI PASS. #168 previous
+head c3b1360 4/4 PASS; merged updated base and retained all QA gates.
+Requalify exact joined head. Native Apple compatibility and release
+trust remain open; release hold unchanged.
+
+# Resume — scoped Apple archive inventory
+
+#164 integrated a0f9b50. New Apple inventory checked e00b229 historical
+Universal and High Sierra archives, exact outer and inner checksums,
+7 files each, x86_64+arm64 and x86_64 respectively. Plist minima 13.0
+and 10.13; no native compatibility or signature claim. Hosted QA and
+load-command/framework/signature review remain open.
+
 # Resume — installer toolchain on integrated advisory base
 
 #165 merged bec5cd1 after exact 4/4 CI. #166 ba022aa 4/4 PASS,

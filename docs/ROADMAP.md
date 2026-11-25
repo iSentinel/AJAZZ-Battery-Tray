@@ -1103,3 +1103,10 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native hosted acceptance, pinned binary/component hashes and trusted
       signature, installer runtime component notices/advisories, Apple and
       other toolchain inventory. Release hold unchanged.
+
+### ENG-12 scoped Apple archive inventory
+
+- [x] Re-download and hash-check actual Universal and High Sierra CI artifacts.
+- [x] Inventory seven files per app and verify reviewed Mach-O architecture layout.
+- [ ] Hosted QA, load-command deployment and framework inventory, signing and
+      distribution SBOM, physical High Sierra acceptance. Release hold unchanged.
