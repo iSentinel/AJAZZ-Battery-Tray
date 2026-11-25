@@ -8,8 +8,11 @@
 - Added EN/RU/UA status and packaged Windows synthetic success/hang tests.
 - Follow-up: kill-on-close Windows Job Object and stdin start gate protect
   against supervisor death; added actual synthetic forced-parent-exit test.
-- CI (including job compatibility), GUI verification, install/upgrade and
-  failed termination behavior still pending. Issue #93 remains open;
+- Release workflow now gates publication on clean install/uninstall,
+  checksum-verified prior Latest upgrade, installed EXE SHA-256 match and
+  installed synthetic watchdog success, timeout and parent-exit tests.
+- CI (including job compatibility), GUI verification, execution of the new
+  installer upgrade checks and failed termination behavior still pending. Issue #93 remains open;
   no release/version change yet.
 - Latest beta.60, High Sierra .5; AJ159, AULA and iMac hardware acceptance
   remain pending. No new HID opcodes or report IDs.
