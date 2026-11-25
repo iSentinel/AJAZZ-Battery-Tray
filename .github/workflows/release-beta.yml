@@ -81,7 +81,10 @@ jobs:
             choco install innosetup --yes --no-progress
             if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
           }
-      - name: Build Windows installer and smoke-test install/uninstall
+      - name: Build Windows installer and verify previous-release upgrade
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -96,19 +99,78 @@ jobs:
           $installer = 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe'
           if (-not (Test-Path $installer)) { throw 'Installer output missing' }
           $installDir = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'
-          $p = Start-Process -FilePath (Resolve-Path $installer) -ArgumentList @(
-            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-'
-          ) -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "Silent install failed: $($p.ExitCode)" }
           $installed = Join-Path $installDir 'AJAZZBatteryTray.exe'
-          if (-not (Test-Path $installed)) { throw 'Missing EXE in Program Files' }
           $uninstaller = Join-Path $installDir 'unins000.exe'
-          if (-not (Test-Path $uninstaller)) { throw 'Uninstaller missing' }
-          $p = Start-Process -FilePath $uninstaller -ArgumentList @(
-            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
-          ) -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "Silent uninstall failed: $($p.ExitCode)" }
-          if (Test-Path $installed) { throw 'EXE remains after uninstall' }
+          $previous = Join-Path $env:RUNNER_TEMP ('ajazz-upgrade-' + [Guid]::NewGuid().ToString('N'))
+          $installArgs = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-')
+          $uninstallArgs = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')
+          function Install-Checked([string]$path) {
+            $p = Start-Process -FilePath $path -ArgumentList $installArgs -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or -not (Test-Path $installed)) {
+              throw "Silent installation failed: $($p.ExitCode)"
+            }
+          }
+          function Uninstall-Checked {
+            if (-not (Test-Path $uninstaller)) { throw 'Uninstaller missing' }
+            $p = Start-Process -FilePath $uninstaller -ArgumentList $uninstallArgs -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or (Test-Path $installed)) {
+              throw "Silent uninstall failed: $($p.ExitCode)"
+            }
+          }
+          if (Test-Path $installDir) { throw 'Expected clean disposable CI runner' }
+          try {
+            $candidate = (Resolve-Path $installer).Path
+            $candidateHash = (Get-FileHash dist/app/AJAZZBatteryTray.exe -Algorithm SHA256).Hash
+            # First test a clean install and removal of the new package.
+            Install-Checked $candidate
+            if ((Get-FileHash $installed -Algorithm SHA256).Hash -ne $candidateHash) {
+              throw 'Clean installed executable differs from candidate'
+            }
+            Uninstall-Checked
+
+            # Upgrade from the currently published Latest release, not a guessed tag.
+            $priorTag = gh release view --json tagName --jq '.tagName'
+            if ($LASTEXITCODE -ne 0 -or $priorTag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$') {
+              throw 'Could not identify previous beta release'
+            }
+            New-Item -ItemType Directory -Path $previous | Out-Null
+            gh release download $priorTag --dir $previous --pattern 'AJAZZBatteryTray-Setup-win-x64.exe' --pattern 'AJAZZBatteryTray-Setup-win-x64.sha256'
+            if ($LASTEXITCODE -ne 0) { throw 'Previous release download failed' }
+            $priorSetup = Join-Path $previous 'AJAZZBatteryTray-Setup-win-x64.exe'
+            $manifest = (Get-Content (Join-Path $previous 'AJAZZBatteryTray-Setup-win-x64.sha256') -Raw).Trim()
+            if ($manifest -notmatch '^([A-Fa-f0-9]{64})[ \t]+\*?AJAZZBatteryTray-Setup-win-x64\.exe$') {
+              throw 'Invalid previous installer checksum manifest'
+            }
+            $priorHash = $Matches[1]
+            if ((Get-FileHash $priorSetup -Algorithm SHA256).Hash -ne $priorHash) {
+              throw 'Previous installer checksum mismatch'
+            }
+            Install-Checked $priorSetup
+            if ((Get-FileHash $installed -Algorithm SHA256).Hash -eq $candidateHash) {
+              throw 'Previous executable unexpectedly matches candidate'
+            }
+            Install-Checked $candidate
+            if ((Get-FileHash $installed -Algorithm SHA256).Hash -ne $candidateHash) {
+              throw 'Upgrade did not replace the installed executable'
+            }
+            foreach ($case in @(
+              @{ Argument = '--self-test-full-hid-success'; Expected = 0 },
+              @{ Argument = '--self-test-full-hid-watchdog'; Expected = 124 },
+              @{ Argument = '--self-test-full-hid-parent-exit'; Expected = 0 }
+            )) {
+              $p = Start-Process -FilePath $installed -ArgumentList $case.Argument -Wait -PassThru
+              if ($p.ExitCode -ne $case.Expected) {
+                throw "Installed watchdog $($case.Argument): expected $($case.Expected), got $($p.ExitCode)"
+              }
+            }
+            Uninstall-Checked
+            echo "PASS: clean install, $priorTag upgrade, installed watchdog and uninstall"
+          } finally {
+            if (Test-Path $uninstaller) {
+              Start-Process -FilePath $uninstaller -ArgumentList $uninstallArgs -Wait
+            }
+            Remove-Item -LiteralPath $previous -Recurse -Force -ErrorAction SilentlyContinue
+          }
           Copy-Item $installer dist/release/
           $hash = (Get-FileHash dist/release/AJAZZBatteryTray-Setup-win-x64.exe -Algorithm SHA256).Hash.ToLower()
           "$hash  AJAZZBatteryTray-Setup-win-x64.exe" | Set-Content -Encoding ascii dist/release/AJAZZBatteryTray-Setup-win-x64.sha256
