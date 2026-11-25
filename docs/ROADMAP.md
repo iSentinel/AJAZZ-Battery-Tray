@@ -1288,3 +1288,21 @@ configuration commands. USB `VersionNumber` is a device revision,
       require consistent Windows zero-path matrix; add regression.
 - [ ] Hosted CI and physical reconnect / independent GATT acceptance.
       Cause of absence and same-device identity are not established.
+
+### Priority: independent Windows Bluetooth monitoring and tray continuity
+
+- [x] Integrate #185 after exact CI; owner beta.60 reports USB return
+      at 06:42 UTC (one receiver, unverified 93) and AULA cache 62 after
+      seven misses; BLE opted-in count zero.
+- [x] Remove global USB presence gate for explicitly opted-in BLE slots.
+      Keep independent GATT identity, single-flight, freshness and backoff.
+- [x] Keep independent icons; use fresh BLE as primary when visible USB
+      has no validated reading. Do not suppress unrelated USB alerts.
+- [x] Update English/Russian/Ukrainian consent/status; preserve old policy
+      in tests for comparison. Add native pure-policy and source tests.
+- [ ] Exact hosted Windows CI and real transport-switch acceptance.
+- [ ] Persist explicit BLE consent locally with privacy-safe identity
+      matching, restore without replaying stale percentages.
+- [ ] Explicit physical-device association, stable icon slot and stale
+      display policy; no automatic name-based association.
+- [ ] Multi-snapshot capture and physical sleep/wake acceptance.

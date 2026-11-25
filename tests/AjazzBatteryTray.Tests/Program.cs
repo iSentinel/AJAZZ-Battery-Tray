@@ -1419,6 +1419,28 @@ pausedBle.Enable("y", bleDirect, multiAt.AddMinutes(1));
 pausedBle.ObserveUsbPresence(true, false);
 Check("Opt-in while USB blocked requires a new read", pausedBle.VisiblePercent("y", true, false, multiAt.AddMinutes(1)) is null);
 
+// Explicitly opted-in independent BLE is not a USB receiver association.
+var independentBle = new BluetoothMultiSession(independent: true);
+independentBle.ObserveUsbPresence(true, true);
+Check("Independent BLE opt-in while USB present", independentBle.Enable("x", bleDirect, multiAt));
+Check("Independent BLE initial value remains visible", independentBle.VisiblePercent("x", true, true, multiAt) == 83);
+var independentRequest = independentBle.TryBegin(true, true, multiAt.AddMinutes(1));
+Check("Independent BLE polls while USB present", independentRequest is not null);
+independentBle.ObserveUsbPresence(false, false);
+Check("Independent BLE accepts response despite USB uncertainty", independentRequest is not null &&
+    independentBle.Complete(independentRequest, bleDirect, multiAt.AddMinutes(1), false, false));
+Check("Independent BLE survives USB state changes",
+    independentBle.VisiblePercent("x", false, false, multiAt.AddMinutes(1)) == 83);
+Check("Independent BLE chooses primary when USB value unavailable",
+    BatteryDisplayState.PreferIndependentBluetooth(true, null, true, 83));
+Check("Valid USB stays primary, BLE remains independent",
+    !BatteryDisplayState.PreferIndependentBluetooth(true, 90, true, 83));
+Check("BLE unknown keeps its primary icon without USB",
+    BatteryDisplayState.PreferIndependentBluetooth(false, null, true, null));
+Check("No unverified BLE primary while USB present",
+    !BatteryDisplayState.PreferIndependentBluetooth(true, null, true, null));
+independentBle.DisableAll();
+
 // Release checks are local, deterministic, and perform no HTTP requests.
 var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
 Check("Update accepts beta tag", installedVersion.Beta == 41);

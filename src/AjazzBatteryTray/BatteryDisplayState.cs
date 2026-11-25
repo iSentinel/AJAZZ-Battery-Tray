@@ -64,6 +64,12 @@ public sealed record BatteryDisplayState(BatteryTransport Source, int? Percent)
         return new(BatteryTransport.Usb24GHz, null);
     }
 
+    /// <summary>Select a primary icon without asserting physical identity.</summary>
+    public static bool PreferIndependentBluetooth(bool visibleUsb, int? usbPercent,
+        bool bluetoothEnabled, int? bluetoothPercent)
+        => bluetoothEnabled && (!visibleUsb ||
+            (!usbPercent.HasValue && bluetoothPercent.HasValue));
+
     /// <summary>Suppress USB-disconnect alerts during deliberate BLE fallback.</summary>
     public static bool NotifyReceiverDisconnect(bool eventDetected,
         bool bluetoothFallbackEnabled)

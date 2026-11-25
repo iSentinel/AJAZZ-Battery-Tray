@@ -13,6 +13,12 @@ public sealed class BluetoothMultiSession
     private long _requestGeneration;
     private bool _requestInvalidated;
     private bool _usbBlocked;
+    private readonly bool _independent;
+
+    // The independent policy never infers USB/BLE identity from receiver presence.
+    public BluetoothMultiSession(bool independent = false) => _independent = independent;
+
+    private bool Blocked(bool known, bool present) => !_independent && (!known || present);
 
     public int Count => _slots.Count;
     public bool IsBusy => _inFlight is not null;
@@ -39,7 +45,7 @@ public sealed class BluetoothMultiSession
 
     public void ObserveUsbPresence(bool known, bool present)
     {
-        bool blocked = !known || present;
+        bool blocked = Blocked(known, present);
         if (blocked && !_usbBlocked)
         {
             foreach (Slot slot in _slots.Values) slot.Policy.InvalidateForUsb();
@@ -52,7 +58,7 @@ public sealed class BluetoothMultiSession
     public Request? TryBegin(bool presenceKnown, bool usbPresent, DateTimeOffset now,
         string? forceKey = null)
     {
-        if (!presenceKnown || usbPresent || IsBusy) return null;
+        if (Blocked(presenceKnown, usbPresent) || IsBusy) return null;
         KeyValuePair<string, Slot>? chosen = null;
         foreach (var pair in _slots)
         {
@@ -85,15 +91,15 @@ public sealed class BluetoothMultiSession
         if (_inFlight != request) return false;
         _inFlight = null;
         if (_requestInvalidated || !_slots.TryGetValue(request.Key, out Slot? slot) ||
-            slot.Generation != _requestGeneration || !presenceKnown || usbPresent)
+            slot.Generation != _requestGeneration || Blocked(presenceKnown, usbPresent))
             return false;
         slot.Policy.RecordRead(result, now);
         return true;
     }
 
     public int? VisiblePercent(string key, bool presenceKnown, bool usbPresent, DateTimeOffset now)
-        => presenceKnown && _slots.TryGetValue(key, out Slot? slot)
-            ? slot.Policy.VisiblePercent(usbPresent, now) : null;
+        => !Blocked(presenceKnown, usbPresent) && _slots.TryGetValue(key, out Slot? slot)
+            ? slot.Policy.VisiblePercent(false, now) : null;
 
     public int? Failures(string key)
         => _slots.TryGetValue(key, out Slot? slot) ? slot.Policy.ConsecutiveFailures : null;
