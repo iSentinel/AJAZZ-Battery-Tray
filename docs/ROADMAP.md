@@ -1045,3 +1045,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Real historical #147 Tray/HA EXEs: zero unexpected differences.
 - [ ] Exact hosted QA, independent resource serialization, signature,
       license/notices, advisory and SBOM qualification. Release hold unchanged.
+
+### ENG-12 independent resource serialization (scoped inputs)
+
+- [x] Rebuild SDK resource layout from pinned host and embedded app payloads;
+      compare complete resource bytes, including metadata and padding.
+- [x] Historical #147 Tray/HA: exact reconstructed resources and headers PASS.
+- [ ] Exact hosted QA and final candidate artifacts, independent app build,
+      signature, licenses/notices, advisory and SBOM. Release hold unchanged.
