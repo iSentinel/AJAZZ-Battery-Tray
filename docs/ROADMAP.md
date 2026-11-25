@@ -1439,3 +1439,8 @@ configuration commands. USB `VersionNumber` is a device revision,
       exact candidate provenance, explicit NOT RUN physical status.
 - [ ] Verify exact current artifact bytes and High Sierra symbol screen.
 - [ ] Owner physical acceptance; release hold stays in force.
+
+- [x] Verify exact #196 Apple archive bytes and High Sierra SDK name
+      screen; retain restricted-only names and NOT_VERIFIED boundaries.
+- [ ] Verify Windows artifact bytes, physical acceptance and release
+      admission. Do not lift the release hold from static evidence.

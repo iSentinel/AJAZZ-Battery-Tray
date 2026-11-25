@@ -1257,3 +1257,9 @@ rejected; a failed export may leave a partial new ZIP.
 fallback instructions, 18 Windows and 11 per-Apple-edition physical
 scenario IDs. All physical results NOT RUN. Exact artifact verification
 and actual 10.13.6 runtime acceptance remain open. Public beta.60 held.
+
+Exact #196 Apple archive replay: Universal artifact 15001581433 and
+High Sierra 15001876157, outer/inner digest checks, archive/load
+commands/symbol inventory/resource seal/SBOM PASS. SDK name screen
+completed with no runtime compatibility claim. Private evidence at
+/root/ajazz-current-apple-artifacts.ZJ9mpoRM. See CANDIDATE_ACCEPTANCE.md.

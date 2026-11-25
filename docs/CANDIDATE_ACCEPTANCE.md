@@ -83,3 +83,24 @@ Record exact candidate provenance and actual human observations.
 No hardware tests are marked passed by this document. The release hold
 remains until required acceptance, exact artifacts and admission gates
 are reviewed.
+
+## Exact Apple artifact static verification
+
+CI #196 artifacts fetched by exact ID; outer SHA-256 matched the GitHub
+REST digest and inner ZIP SHA-256 matched its companion checksum file.
+
+| Edition | Artifact ID | Inner ZIP SHA-256 |
+|---|---:|---|
+| universal | 15001581433 | `7795dc68af28cc1fe905ffe1a0d6d05141366f80cb62e89302c0216614acd676` |
+| high-sierra | 15001876157 | `a280edf68cf54ddac6946d71ec3b14e71c287b98585851987da836a1d71fa4c3` |
+
+Both: archive layout, direct Mach-O load commands, undefined-symbol
+inventory, scoped ad-hoc code/resource hashes and scoped SBOM PASS.
+High Sierra SDK name screen: 159 imports; 154 unrestricted
+name matches (90 direct), 5 restricted-only, 0 missing.
+The five restricted-only names are reachable through the AppKit reexport
+chain. Linker directive semantics, mirror trust, actual 10.13 symbol
+availability, notarization and signer trust are NOT VERIFIED.
+Static evidence remains separate from physical acceptance.
+
+SDK screen JSON SHA-256: `6b8547e3e495213da2c7450369cebc7ecd771725cad45bb57807f6fa8edfd179`.
