@@ -51,6 +51,39 @@ class NormalizeDiagnosticsTests(unittest.TestCase):
         self.assertNotIn('AJ179 APEX', json.dumps(result))
         self.assertEqual(result['identity_binding'], 'NOT_VERIFIED')
 
+    def test_windows_sample_age(self) -> None:
+        """A new batch timestamp cannot refresh a retained receiver sample."""
+        base = windows_report().replace('Battery: unavailable; status:',
+                                        'Battery: 83; status:', 1)
+        prefix = 'USB sample UTC: '
+        self.assertEqual(normalize(base)['usb']['freshness_at_snapshot'],
+                         'MEASUREMENT_NOT_EXPORTED')
+        for stamp, scheduled, status, eligible in (
+            (STAMP, 'False', 'WITHIN_REPORTED_WINDOW', 83),
+            ('2026-11-25T05:30:00Z', 'False', 'EXPIRED', None),
+            ('2026-11-25T05:41:00Z', 'False', 'FUTURE_TIMESTAMP', None),
+            ('never', 'False', 'MISSING_TIMESTAMP', None),
+            (STAMP, 'True', 'SCHEDULED_NOT_FRESH', None),
+        ):
+            text = base.replace('unverified mouse field', f'{prefix}{stamp}; scheduled: {scheduled}\n'
+                                'unverified mouse field', 1)
+            with self.subTest(status=status):
+                usb = normalize(text)['usb']
+                self.assertEqual(usb['percent'], 83)
+                self.assertEqual(usb['freshness_at_snapshot'], status)
+                self.assertEqual(usb['reported_age_eligible_percent'], eligible)
+
+    def test_windows_sample_provenance_framing(self) -> None:
+        """Reject duplicate, displaced or malformed typed provenance."""
+        line = f'USB sample UTC: {STAMP}; scheduled: False'
+        base = windows_report()
+        text = base.replace('unverified mouse field', line + '\nunverified mouse field', 1)
+        self.assertIsNone(normalize(text)['usb']['reported_age_eligible_percent'])
+        for bad in (text + '\n' + line, base + '\n' + line,
+                    text.replace('scheduled: False', 'scheduled: maybe')):
+            with self.assertRaises(ValueError):
+                normalize(bad)
+
     def test_legacy_and_full(self) -> None:
         """Label legacy and full capture without exporting matrix content."""
         result = normalize(FULL + '\n' + windows_report(False) +

@@ -1,3 +1,14 @@
+# Resume — Windows diagnostic sample provenance
+
+#256 head 7afa270: Python and roundtrip PASS at initial review;
+Windows and Universal pending. Independent stacked change adds
+actual selected receiver timestamp and scheduled flag to existing
+extended-v1 report. Normalizer separates reported sample age
+from batch completion, preserves historical values, refuses age
+qualification of legacy and scheduled readings. Two Python
+regression groups and one C# assertion. Native CI pending.
+No new HID requests or release authorization.
+
 # Resume — Apple diagnostic age evidence
 
 #255 exact 5/5 CI PASS, merged f729ca7 after tested-tree equality.
