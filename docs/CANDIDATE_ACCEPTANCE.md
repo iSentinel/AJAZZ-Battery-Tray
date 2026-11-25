@@ -779,3 +779,45 @@ Use the matching archive hash and profile for each other edition.
 The previous generation remains historical; for a later CI head,
 repeat download, verification and checklist creation. No public
 release or distribution approval is implied.
+
+## Verified generation 43e3cb5 and aggregate review
+
+These three original CI archives have been retrieved and checked
+against the advertised REST digests. All runs report successful
+conclusion and integration head 43e3cb5848b7cfe89937fe4f762eb3a962dd32c9.
+
+| Edition | Run | Artifact ID | Outer ZIP SHA-256 |
+| --- | --- | --- | --- |
+| Portable Windows | 45695276597 | 15059978620 | 972b638b8b02ae8975f2269b5c1f384975dc44448b7bef090932fc14842b5d35 |
+| Universal | 45695276543 | 15060931715 | c16118725596a166d79d68c011fb79a1b8eb50c0f14cb66c68ab574472230f92 |
+| High Sierra | 45695276402 | 15059559852 | 8aad313a4cbeaa618236cdc9488c98585490f796e5efc34073b0047f7e66cf81 |
+
+Portable beta.61 executable SHA-256:
+2cd7af1aec0af43d98ed55b06dba065ab1ed6323ff6df11676bd3cfa4d1025bf.
+Universal and High Sierra executable hashes equal those in the
+bd84554 table, but outer archive hashes and source assertions differ.
+No checklist results are carried across generations.
+
+Generate the five original checklists using the existing single-profile
+validator and name them PROFILE.checklist.json in one private directory.
+The aggregate verifier rechecks the three original archives and all
+five checklists without trusting pre-generated review summaries:
+
+```sh
+python3 tools/verify_hardware_acceptance_set.py \
+  --source-sha 43e3cb5848b7cfe89937fe4f762eb3a962dd32c9 \
+  --windows-archive windows.zip \
+  --windows-sha256 972b638b8b02ae8975f2269b5c1f384975dc44448b7bef090932fc14842b5d35 \
+  --universal-archive universal.zip \
+  --universal-sha256 c16118725596a166d79d68c011fb79a1b8eb50c0f14cb66c68ab574472230f92 \
+  --high-sierra-archive high-sierra.zip \
+  --high-sierra-sha256 8aad313a4cbeaa618236cdc9488c98585490f796e5efc34073b0047f7e66cf81 \
+  --checklist-dir ./checklists --output aggregate.json
+```
+
+Actual blank aggregate: 57 NOT_RUN, zero PASS, INCOMPLETE.
+Aggregate JSON SHA-256:
+aa2d8f5a7b163e9b478f4d63fce8f21d9b7976b61f1f66768c4b962461409d4c.
+Source provenance remains a caller-reviewed assertion; the aggregate
+does not independently authenticate human observations, physical
+acceptance, signing, installer identity or release admission.

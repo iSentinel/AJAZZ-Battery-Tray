@@ -1,3 +1,11 @@
+# Resume — hardware acceptance set review
+
+#271 exact 2/2 CI merged 38a4f5b; #272 exact 4/4 CI merged
+970f003. Three 43e3cb5 CI archive hashes verified; five blank
+checklists. New aggregate verifier revalidates original archives
+and checklists, four synthetic groups and real replay: 57 NOT_RUN.
+Hosted CI and physical acceptance remain open. Release hold.
+
 # Resume — diagnostic timeline sample provenance
 
 #271 pending native CI at initial review. Child compares reported

@@ -2299,3 +2299,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       Three new synthetic regression groups; no HID changes.
 - [ ] Hosted CI and integration after parent #271 qualification.
 - [ ] Exact latest CI artifacts and physical acceptance.
+
+### Hardware acceptance set review
+
+- [x] #271 exact 2/2 CI merged 38a4f5b; #272 exact 4/4 CI
+      merged 970f003 after tested-tree equality.
+- [x] Rebind three successful 43e3cb5 integration CI archives by
+      exact REST digest; generate five blank checklists (57 NOT_RUN).
+- [x] Add local aggregate verifier for all five profiles against
+      three original archives and one caller-reviewed source SHA.
+      Revalidate original checklists; reject mixed generation or
+      missing profile. Four synthetic groups plus real blank replay.
+- [ ] Hosted CI and physical acceptance; release hold unchanged.
