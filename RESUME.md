@@ -1,3 +1,11 @@
+# Resume — installer toolchain on integrated advisory base
+
+#165 merged bec5cd1 after exact 4/4 CI. #166 ba022aa 4/4 PASS,
+actual upgrade log 45551287935 confirmed Inno 6.7.1, same ISCC
+SHA256 both compiles, Authenticode Valid observation, and synthetic
+old/new PID lifecycle PASS. Joined exact CI required; trust and
+physical acceptance remain open. Release hold unchanged.
+
 # Resume — reviewed compiler on integrated SBOM base
 
 #164 integrated a0f9b50 after 4/4 exact CI; #166 retains the actual
@@ -19,6 +27,22 @@ Chocolatey fallback, checks reviewed file version and engine banner, logs
 compiler/Setup hashes and signature observation. Exact upstream license
 reviewed, no commercial-status assumption or compliance clearance.
 Native CI required (Gateway has no pwsh). Release hold unchanged.
+
+# Resume — advisory audit stacked on joined scoped SBOM
+
+#167 integrated e00b229, #164 joined 9b64aa9 with 192/192 local QA.
+#165 now builds on that exact SBOM/notice/roundtrip candidate; retain
+all three tool checks and histories. Hosted qualification and release hold
+remain open. Do not merge until #164 has been integrated and base aligned.
+
+# Resume — scoped NuGet advisory audit
+
+#162 merged d01ca8a after exact 4/4 CI. #163 joined d75b620,
+188/188 local QA PASS; #164 awaits joined exact CI. Four pinned
+NuGet versions checked against both official feed pages on 2026-11-25:
+211 ranges, zero matching; OSV exact queries also returned no IDs.
+New offline CLI and six synthetic tests. Not full vulnerability clearance;
+feed freshness/authentication and all other release gates remain open.
 
 # Resume — SBOM with exact artifact roundtrip
 
