@@ -7,7 +7,8 @@ from pathlib import Path
 import re
 import sys
 
-from analyze_apple_diagnostics import HEADERS, MAX_SIZE, TRACE, field, level, parse, utc
+from analyze_apple_diagnostics import (HEADERS, MAX_SIZE, TRACE, field, level,
+                                       parse, reported_age, utc)
 from compare_apex_reports import read_report
 
 WINDOWS = 'AJAZZ Battery Tray extended diagnostic report'
@@ -33,7 +34,29 @@ def windows_level(value: str, minimum: int) -> int | None:
     return level('unknown' if value == 'unavailable' else value + '%', minimum)
 
 
-def windows_usb(lines: list[str]) -> dict:
+def windows_sample(lines: list[str], offset: int, percent: int | None, snapshot: str) -> dict:
+    """Treat batch completion as historical, never a measurement timestamp."""
+    prefix = 'USB sample UTC: '
+    matches = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+    if not matches:
+        return {'measured_utc': None, 'scheduled': None,
+                'freshness_at_snapshot': 'MEASUREMENT_NOT_EXPORTED',
+                'reported_age_eligible_percent': None}
+    if matches != [offset + 4]:
+        raise ValueError('invalid USB sample provenance location')
+    match = re.fullmatch(r'USB sample UTC: ([^;]+); scheduled: (True|False)', lines[offset + 4])
+    if not match:
+        raise ValueError('invalid USB sample provenance')
+    measured = windows_utc(match[1])
+    scheduled = match[2] == 'True'
+    age = reported_age(percent, measured, snapshot)
+    if scheduled and percent is not None:
+        age = {'freshness_at_snapshot': 'SCHEDULED_NOT_FRESH',
+               'reported_age_eligible_percent': None}
+    return {'measured_utc': measured, 'scheduled': scheduled, **age}
+
+
+def windows_usb(lines: list[str], snapshot: str) -> dict:
     """Read the three fixed ordinary-poll fields, never the fresh matrix."""
     if lines.count(ORDINARY) != 1:
         raise ValueError('missing or duplicate ordinary poll')
@@ -55,7 +78,7 @@ def windows_usb(lines: list[str]) -> dict:
     state = ('valid' if percent is not None else 'unavailable' if present is True
              else 'absent' if present is False else 'unknown')
     return {'state': state, 'percent': percent, 'completed_utc': stamp,
-            'receiver_present': present}
+            'receiver_present': present, **windows_sample(lines, offset, percent, snapshot)}
 
 
 def manual_observation(value: str) -> dict | None:
@@ -119,7 +142,7 @@ def parse_windows(text: str) -> dict:
     if stamp is None:
         raise ValueError('missing report UTC')
     return {'schema': 'windows-extended-v1' if schema else 'windows-extended-legacy',
-            'edition': 'windows', 'snapshot_utc': stamp, 'usb': windows_usb(block),
+            'edition': 'windows', 'snapshot_utc': stamp, 'usb': windows_usb(block, stamp),
             'manual_gatt': windows_gatt(block, beta60), 'active_trace_present': MATRIX in lines,
             'identity_binding': 'NOT_VERIFIED', 'simultaneous': 'NOT_VERIFIED'}
 

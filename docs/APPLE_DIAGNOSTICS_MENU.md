@@ -282,3 +282,19 @@ from a historical timestamp alone. These additive fields describe
 reported age at snapshot time, never current charge at import time,
 physical identity, independent verification or a fresh HID request.
 The manual GATT and active capture evidence remain separate.
+
+### Windows measurement provenance
+
+New Windows extended-v1 reports include one additive typed line
+immediately after the ordinary battery field:
+`USB sample UTC: <actual sample UTC or never>; scheduled: <True or False>`.
+The existing Completed UTC remains the completion of the batch, not
+the observation of its selected receiver. The normalizer preserves
+historical state, percent and batch completion, and exports separate
+measured_utc, scheduled, freshness_at_snapshot and
+reported_age_eligible_percent. Legacy reports without provenance use
+MEASUREMENT_NOT_EXPORTED and no age-eligible percentage. Scheduled
+retained values are SCHEDULED_NOT_FRESH, even if their timestamps
+appear recent. Ordinary observations use the same conservative
+reported-age classification as Apple. These are reported timestamps,
+not independent verification; no HID query or raw payload export.

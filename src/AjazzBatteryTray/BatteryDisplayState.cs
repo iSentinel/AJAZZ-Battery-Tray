@@ -47,6 +47,10 @@ public static class ApexDisplayPolicy
             IsCurrent(known, present, scheduled, measured, now) && percent is >= 1 and <= 100
                 ? percent : null, measured, scheduled: scheduled);
 
+    /// <summary>Report measurement provenance without exporting receiver identity.</summary>
+    public static string DiagnosticSample(DateTimeOffset? measured, bool scheduled)
+        => $"USB sample UTC: {measured?.ToUniversalTime().ToString("O") ?? "never"}; scheduled: {scheduled}";
+
     public static int? Unverified(bool known, bool present, bool scheduled,
         int? field, DateTimeOffset? measured, DateTimeOffset now)
         => !scheduled && IsCurrent(known, present, false, measured, now) &&

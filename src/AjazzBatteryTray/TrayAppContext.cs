@@ -1582,6 +1582,13 @@ public sealed class TrayAppContext : ApplicationContext
         review.ShowDialog();
     }
 
+    /// <summary>Use the actual selected receiver observation, not the batch completion time.</summary>
+    private string UsbSampleProvenance()
+    {
+        var state = _latestUsbReading?.PresenceKnown == true ? _receivers.SummaryState : null;
+        return ApexDisplayPolicy.DiagnosticSample(state?.MeasuredAt, state?.ScheduledSkip == true);
+    }
+
     private string BuildExtendedReport(string inventory)
     {
         var usb = _latestUsbReading;
@@ -1598,6 +1605,7 @@ public sealed class TrayAppContext : ApplicationContext
             $"Completed UTC: {_latestUsbReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {usb?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {usb?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {usb?.Percent?.ToString() ?? "unavailable"}; status: {usb?.Details ?? "not checked"}\n" +
+            UsbSampleProvenance() + "\n" +
             BatteryReportParser.DiagnosticUnverifiedField(usb?.UnverifiedPercent) + "\n" +
             attempts + "\n\n" + _usbDiagnosticHistory.Format() + "\n\n[Independent AJAZZ receivers]\n" +
             string.Join("\n", _receivers.Devices.Select(x =>

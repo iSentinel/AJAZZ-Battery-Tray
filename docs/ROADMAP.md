@@ -2111,3 +2111,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted validation and merge of parser change.
 - [ ] Physical sleep/wake and real-device USB/GATT comparisons remain
       open; no new HID commands or release authorization.
+
+### Windows diagnostic sample provenance
+
+- [x] Separate actual selected receiver sample time and scheduled
+      status from ordinary batch completion. Add typed provenance
+      without changing legacy report framing. Import checks the exact
+      field location and rejects duplicate/malformed provenance;
+      old reports remain readable but not age-qualified. Two Python
+      regression groups and one C# assertion.
+- [ ] Native Windows validation and hosted parser CI.
+- [ ] Merge after parent #256 passes; release hold unchanged.

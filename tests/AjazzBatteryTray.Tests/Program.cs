@@ -338,6 +338,10 @@ Check("Scheduled display preserves measurement time and percent",
 Check("Shared display freshness ceiling matches API",
     DeviceDashboardState.MaximumFreshAge == TimeSpan.FromMinutes(5) &&
     LocalBatterySnapshot.MaximumFreshAge == DeviceDashboardState.MaximumFreshAge);
+Check("APEX diagnostic sample keeps original time during scheduled skip",
+    ApexDisplayPolicy.DiagnosticSample(scheduleMeasurement, true) ==
+        $"USB sample UTC: {scheduleMeasurement.ToUniversalTime():O}; scheduled: True" &&
+    ApexDisplayPolicy.DiagnosticSample(null, false) == "USB sample UTC: never; scheduled: False");
 Check("APEX fresh boundary matches API",
     ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
         scheduleMeasurement, scheduleMeasurement.AddMinutes(5)).Status == DeviceDashboardStatus.Fresh);
