@@ -1776,3 +1776,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native upgrade result, exact evidence review, integration,
       remaining redistribution terms and physical acceptance.
       Release hold.
+
+### Native notice upgrade evidence and historical SBOM replay
+
+- [x] #228 merged 2610603 after exact 6/6 CI and tested tree comparison.
+- [x] Download and digest-match both evidence ZIPs; bind identical
+      setup/application/source across clean, upgrade and reinstall
+      runs and match all three notice records.
+- [x] Replay scoped Windows SBOM on exact recovered #206 application
+      and four pinned packs; 265 files, 269 components; document
+      incomplete scope and current Microsoft license guidance.
+- [ ] Independent schema validation, final candidate-bound SBOM,
+      remaining legal terms and actual physical acceptance.
+      Release hold.
