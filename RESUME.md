@@ -1,3 +1,10 @@
+# Resume — exact Windows notice transport
+
+Nine exact staged files plus manifest verified in a canonical ZIP;
+actual tree and ZIP replay match, three regressions. No candidate
+payload changes. Remaining distribution terms, candidate inclusion,
+hardware acceptance and release hold unchanged.
+
 # Resume — combined Windows notice staging
 
 Stacked on #221. Nine reviewed notice files staged from pinned

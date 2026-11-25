@@ -66,3 +66,15 @@ Actual replay on the four retained pinned packs: nine files PASS;
 manifest SHA-256
 b151b2a7ed4f40ef0859b2f846c87b4211290751b8092eba0aac69bdaac0649c.
 No installer or portable artifact changed; this is preparation only.
+
+## Exact notice transport
+
+`tools/verify_windows_notice_transport.py` checks a local immutable
+notice directory against the exact reviewed manifest digest, rejects
+extra entries, links and reparse points, and can generate a canonical
+stored ZIP with fixed metadata. The same verifier checks the ZIP
+without extracting it. No existing archive or evidence is overwritten.
+The caller must keep the inspected local tree immutable during review.
+Actual replay on nine staged notice files and manifest: PASS,
+ZIP SHA-256 76a16fd9f5b929398a27932c866ad77d56e01d23f79023aa7495a15e37f67fdb.
+No claim of legal compliance, candidate inclusion or release admission.
