@@ -1,3 +1,10 @@
+# Resume — Apple self-test attribution
+
+Integrated #99 21dd502 run 45554473404 failed aggregate self-test
+after successful build/signing/icons; no Apple source delta. Add
+15 fixed group outcomes without modifying predicates or aggregate exit.
+Native CI required; cause remains unknown. Release hold unchanged.
+
 # Resume — direct Apple load-command inventory
 
 #166 merged 4eecf64 after 4/4 CI, #168 joined a9e3a95 with 209/209

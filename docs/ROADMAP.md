@@ -1120,3 +1120,11 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted QA, symbol availability and transitive dependency review,
       resource seal/signatures, native High Sierra and distribution SBOM.
       Release hold unchanged.
+
+### ENG-12 Apple self-test failure attribution
+
+- [x] Inspect failed integrated run 45554473404: build/signing/icons PASS,
+      generic aggregated HID self-test FAIL; no macOS source delta from
+      previous successful f53a8c4. Root cause not established.
+- [x] Emit fixed synthetic group outcomes without changing the checks.
+- [ ] Native CI and actual failing group attribution; do not waive failures.
