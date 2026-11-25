@@ -1,3 +1,13 @@
+# Resume — candidate signature observation
+
+Metadata branch ec9cab9 pushed; PR #246 created via REST after
+GraphQL error. Integration ref e20a350; stale #99 API head observed,
+do not reuse old checks for new head. Stacked signature observation:
+exact setup/app/exercised uninstaller Authenticode status and raw
+hash binding, two regressions. Native result pending. Unsigned
+observation is not trusted signing. Production compiler remains
+6.7.1; legal/interactive/hardware gates and release hold unchanged.
+
 # Resume — candidate metadata coherence without publication
 
 #245 merged e20a350 after exact 7/7 CI and eight archive/13-document

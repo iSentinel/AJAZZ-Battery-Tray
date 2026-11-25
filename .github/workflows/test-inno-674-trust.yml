@@ -11,6 +11,7 @@ on:
       - 'tools/verify_inno674_solid_payload.py'
       - 'tools/verify_inno674_setup_records.py'
       - 'tools/verify_inno674_migration_evidence.py'
+      - 'tools/verify_candidate_signature_observation.py'
       - 'installer/Inno674CompilerProbe.iss'
       - 'installer/AJAZZBatteryTray.iss'
       - 'src/**'
@@ -470,5 +471,48 @@ jobs:
           archive: true
           name: inno674-migration-evidence
           path: ${{ runner.temp }}/ajazz-notice-probe/migration-evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Observe exact unsigned product Authenticode status
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $files = [ordered]@{
+            setup = Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe'
+            app = 'dist/app/AJAZZBatteryTray.exe'
+            uninstaller = Join-Path $root 'exercised-unins000.exe'
+          }
+          $results = [ordered]@{}
+          foreach ($entry in $files.GetEnumerator()) {
+            $before = (Get-FileHash -LiteralPath $entry.Value -Algorithm SHA256).Hash.ToLowerInvariant()
+            $signature = Get-AuthenticodeSignature -LiteralPath $entry.Value
+            $after = (Get-FileHash -LiteralPath $entry.Value -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($before -cne $after) { throw 'Observed candidate changed' }
+            $results[$entry.Key] = [ordered]@{
+              sha256 = $before
+              status = [string]$signature.Status
+              signature_type = [string]$signature.SignatureType
+              signer_present = ($null -ne $signature.SignerCertificate)
+              timestamp_present = ($null -ne $signature.TimeStamperCertificate)
+            }
+          }
+          [ordered]@{
+            schema = 'candidate-authenticode-observation-v1'
+            source_sha = (git rev-parse HEAD)
+            files = $results
+            release_admission = 'NOT_VERIFIED'
+          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $root 'authenticode-observation.json') -Encoding utf8
+          python tools/verify_candidate_signature_observation.py --observation (Join-Path $root 'authenticode-observation.json') --migration (Join-Path $root 'migration-evidence.json') --exercised (Join-Path $root 'exercised-uninstaller.json') --output (Join-Path $root 'signature-evidence.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Unexpected candidate signature observation' }
+      - name: Retain candidate signature observations only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-candidate-signature-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/authenticode-observation.json
+            ${{ runner.temp }}/ajazz-notice-probe/signature-evidence.json
           if-no-files-found: error
           retention-days: 7

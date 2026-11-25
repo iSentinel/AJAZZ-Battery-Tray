@@ -1992,3 +1992,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native version-default qualification and integration.
 - [ ] Actual compiler/notice selection, distribution terms, trusted
       signing, interactive and physical acceptance. Release hold.
+
+### Candidate signature observation
+
+- [x] Recover metadata branch push and create #246 via REST.
+- [x] Add native Authenticode observation for exact setup/app/exercised
+      uninstaller, hash-bound to the same-run migration evidence.
+      Two synthetic regressions PASS.
+- [ ] #246 native metadata-default CI and signature observation CI.
+- [ ] Approved signer/timestamp policy and signed-byte qualification;
+      legal, interactive and hardware acceptance. Release hold.

@@ -459,3 +459,32 @@ actual #245 local replay remains identical. Two metadata regressions
 and release hold tests pass. This is candidate metadata alignment,
 not migration authorization or release admission. The compiler wrapper
 and shipping notice selection remain unchanged. Native rerun required.
+
+## Candidate Authenticode observation (unsigned scope)
+
+The metadata-aligned candidate is on PR #246, head
+ec9cab99d9adbc998ab8da62a297f04b3cbebe28. The previous GitHub push
+failure was resolved; REST PR creation succeeded after GraphQL failed.
+The integration branch ref is e20a350, but the PR #99 API briefly
+reported the preceding head. Do not attribute old check results to
+the new integration head without exact identity confirmation.
+
+The next hosted qualification uses Get-AuthenticodeSignature on the
+exact setup, application and captured exercised uninstaller. SHA-256
+before and after each observation must match. A separate local
+verifier binds the raw native observation to the exact migration
+evidence and exercised-uninstaller document. Current qualification
+is restricted to NotSigned / None with no signer or timestamp
+certificate. An unexpected status fails; it is not automatically
+accepted as a trusted signed candidate. Only JSON is retained.
+No certificates are created, no signing operation is performed,
+and no candidate is published.
+
+Two synthetic regressions cover identity, missing roles and
+unexpected signature observations. Native observation pending.
+A successful unsigned observation does not satisfy trusted signing.
+A future approved signing path needs independently reviewed signer
+identity, timestamp and chain policy, and qualification of the
+resulting signed bytes. Do not transfer unsigned binary attribution
+to signed outputs without reviewing the changed PE certificate
+table and exact candidate identity.
