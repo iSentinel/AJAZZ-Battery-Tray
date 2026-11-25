@@ -58,3 +58,15 @@ verified. Second report reused same ordinary timestamp. This establishes
 possible spontaneous changes, not freshness or accuracy. #136 native
 three checks PASS, merged c416b3f; session streak tests 8/8 PASS.
 Issue #34 records observation. No new HID commands or runtime changes here.
+
+## First remediation and audit inventory
+
+Added source-only tools/code_audit.py and exact baseline comparison with
+duplicate counts and removal of resolved debt. Scope: tools/*.py including
+test sources; public names and public constructors (private ancestor
+names excluded), private functions still length-checked. No audited code
+is executed. The current CI step is explicitly INVENTORY_ONLY; the
+reviewed exact baseline is not established yet and no debt PASS claimed.
+Temporary release hold regression checks source triggers, read permissions,
+absence of clobber and fail-closed first steps. They do not qualify
+GitHub's live release admission; no workflow publication was dispatched.

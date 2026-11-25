@@ -6,8 +6,9 @@ Actual baseline: #99 six CI PASS; Python 3.13.5 unittest 97 PASS.
 Changes: AGENTS, standard/audit, architecture, security, roadmap pointer;
 release workflows fail closed; no existing releases or settings changed.
 Candidate CI pending. No release, production change or hardware fault approved.
-Next independent action: ENG-03 source-only debt inventory and review,
-then ENG-04 offline evidence runner. Native tooling via hosted CI only.
+ENG-03 source-only audit, exact comparator and release-hold tests added.
+Inventory-only CI until exact baseline review; no claim of debt gate PASS.
+Next: review baseline and activate exact no-new-debt gate, then ENG-04. Native tooling via hosted CI only.
 Owner 99 appeared without power cycle; ready-clear not verified telemetry.
 
 # Resume — ordinary unverified observation streak
