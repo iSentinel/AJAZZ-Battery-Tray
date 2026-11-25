@@ -1,3 +1,13 @@
+# Resume — scoped Inno 6.7.4 evidence replay
+
+#270 exact 2/2 CI merged 43e3cb5. Run 45694508038 (head
+5b18c5c, actual checkout 5c825ce) eight archive SHA checks,
+14-document scoped replay and hosted equality PASS. Restore three
+pinned CycloneDX schemas; 269-component schema/binding PASS.
+Retained four-pack NuGet/OSV data replays no matches; freshness
+not verified. Latest CI artifact binding and hardware gates open.
+Release hold and compiler migration hold unchanged.
+
 # Resume — exact acceptance artifact generation checkpoint
 
 #269 exact 4/4 CI merged 5b18c5c after tested-tree equality.
