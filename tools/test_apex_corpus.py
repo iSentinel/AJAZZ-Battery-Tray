@@ -105,3 +105,33 @@ class SharedApexCorpusTests(unittest.TestCase):
         reject = (slot == 1, keyboard > 1, ready != 1, online != 0,
                   send != 1, boot != 0, field == 0, field > 100)
         return next((i for i, failed in enumerate(reject, 1) if failed), 9)
+
+
+    @unittest.skipUnless(shutil.which("cc"), "a C compiler is required")
+    def test_apple_trace_gate_names(self) -> None:
+        """Exercise the exact diagnostic formatter for both report forms."""
+        wrapper = ('#include "AjazzBatteryReport.h"\n'
+                   'const char *gate(const uint8_t *p, size_t n) {\n'
+                   '    return AjazzF7ReplyGateName(p, n);\n}\n')
+        with tempfile.TemporaryDirectory() as temp:
+            library = Path(temp) / "gate.so"
+            subprocess.run(["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                            "-shared", "-fPIC", "-x", "c", "-I", str(ROOT / "macos"),
+                            "-", "-o", str(library)], input=wrapper, text=True,
+                           check=True, timeout=15)
+            gate = ctypes.CDLL(str(library)).gate
+            gate.argtypes = (ctypes.c_char_p, ctypes.c_size_t)
+            gate.restype = ctypes.c_char_p
+            base = bytes((1, 0, 42, 0, 0, 1, 2, 0, 0))
+            cases = ((6, 1, "KeyboardOnly"), (3, 2, "InvalidStatus"),
+                     (0, 0, "ReadUnavailable"), (4, 1, "Offline"),
+                     (5, 0, "CannotSend"), (8, 1, "RadioBoot"),
+                     (2, 0, "ZeroField"), (2, 101, "OutOfRange"),
+                     (2, 42, "Accepted"), (6, 0, "Unrecognized"))
+            for offset, value, expected in cases:
+                payload = base[:offset] + bytes((value,)) + base[offset + 1:]
+                for frame in (payload, b"\x05" + payload):
+                    self.assertEqual(gate(frame, len(frame)), expected.encode())
+            for frame in (b"", b"\x05", b"\x05\x00\x00\x2a"):
+                self.assertEqual(gate(frame, len(frame)), b"Unrecognized")
+            self.assertEqual(gate(None, 10), b"Unrecognized")

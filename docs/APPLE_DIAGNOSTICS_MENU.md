@@ -298,3 +298,15 @@ retained values are SCHEDULED_NOT_FRESH, even if their timestamps
 appear recent. Ordinary observations use the same conservative
 reported-age classification as Apple. These are reported timestamps,
 not independent verification; no HID query or raw payload export.
+
+### F7 policy classification in the bounded trace
+
+Universal and High Sierra active traces include a single
+`F7 policy gate:` line after each successful GET with bounded
+length. The names match the Windows policy classifier. A short or
+nonshared reply is Unrecognized, which does not imply rejection by
+the compact fallback. The label describes the existing parser's
+ordered policy, not independently verified physical sleep or radio
+state. Transfer failure produces no gate label. The existing trace
+prefix, request sequence, ordinary observation and passive report
+normalizer are unchanged.

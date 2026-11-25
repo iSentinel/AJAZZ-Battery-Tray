@@ -1,3 +1,11 @@
+# Resume — Apple bounded F7 trace classifications
+
+#264 exact 5/5 CI merged c105bbf after tested-tree equality.
+Universal and High Sierra trace now emit matching privacy-safe
+F7 gate names via shared C, optional report ID unchanged.
+24 formatter cases and existing corpus/parity PASS on Linux.
+Native macOS CI pending. No ordinary polling, HID or release changes.
+
 # Resume — typed F7 ordinary poll diagnostics
 
 #262 exact corrected head 044c3a9 five workflow PASS, including
