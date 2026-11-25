@@ -1906,3 +1906,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Native product and binary evidence, then resources, message
       semantics, compiled script and solid payload attribution.
 - [ ] Interactive UAC, legal and physical gates; release hold.
+
+### Native 6.7.4 product evidence and resource qualification
+
+- [x] #238 merged bfc68a4 after exact 6/6 CI and tested tree match.
+- [x] Verify three exact native archives and lifecycle/compiler/SBOM
+      identities; clean/upgrade/repair/removal PASS, synthetic data preserved.
+- [x] Independent CycloneDX validation and replay retained dated NuGet
+      and OSV observations on exact new BOM; scoped no matches.
+- [x] Compare exact template resource leaves and unchanged English
+      source message inputs; add separate scoped resource verifier.
+      Two regressions PASS.
+- [ ] #239 binary attribution and resource hosted result, solid
+      payload/script attribution, integration, actual interactive UAC,
+      legal and physical gates. Release hold.

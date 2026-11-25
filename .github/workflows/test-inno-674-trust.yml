@@ -7,6 +7,7 @@ on:
       - 'config/inno-674-component-pins.json'
       - 'tools/verify_inno674_components.py'
       - 'tools/verify_inno674_product_binary.py'
+      - 'tools/verify_inno674_product_resources.py'
       - 'installer/Inno674CompilerProbe.iss'
       - 'installer/AJAZZBatteryTray.iss'
       - 'src/**'
@@ -382,5 +383,22 @@ jobs:
           path: |
             ${{ runner.temp }}/ajazz-notice-probe/exercised-uninstaller.json
             ${{ runner.temp }}/ajazz-notice-probe/binary-attribution.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Attribute exact product resources and English messages
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          python tools/verify_inno674_product_resources.py --setup (Join-Path $root 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe') --uninstaller (Join-Path $root 'exercised-unins000.exe') --loader (Join-Path $compiler 'SetupLdr.e32') --engine (Join-Path $compiler 'Setup.e32') --icon src/AjazzBatteryTray/Assets/AppIcon.ico --previous (Join-Path $root 'binary-attribution.json') --output (Join-Path $root 'resource-attribution.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Product resource attribution failed' }
+      - name: Retain scoped resource attribution JSON only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: inno674-product-resource-attribution
+          path: ${{ runner.temp }}/ajazz-notice-probe/resource-attribution.json
           if-no-files-found: error
           retention-days: 7

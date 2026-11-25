@@ -181,3 +181,57 @@ verifiers are unchanged. Only JSON evidence is uploaded.
 Two regressions pass; actual hosted attribution pending.
 Resource content, message semantics, compiled script, solid payload
 attribution, interactive acceptance and release admission remain open.
+
+## Native 6.7.4 product lifecycle and scoped SBOM result
+
+PR #238 head 63a0f973a2f28d8b7fec19cc068a857ff4c02465,
+hosted checkout bfa6ffcc5225255c008004839fe7fe9718b1ed9a,
+run 45638993065, job 139292075013: PASS. Exact archive digests
+matched REST for these three evidence artifacts:
+
+- Clean 15035156390:
+  29be74e532690fca4c240b3ff0649bd34302d79503cf4b1fc7941b4b7e937417
+- Upgrade 15035006804:
+  e9e3d9e11caf5fd8b0068f41d6362c3d81db33807cf0b89da295d518223c226a
+- SBOM 15033382633:
+  b6fe18d056e4ac303bfab61dc0006730ca00113b47283027c592128eb805b92f
+
+Clean and upgrade lifecycle bytes match the bound hashes; all three
+notice records equal, all 38 compiler inputs match before/after.
+Setup SHA-256 2efcfd3901351a3ba40e9a285cf952a25190b4cc92a1cae1e27674a28361d99e;
+app SHA-256 fd78cc38ec0b26d75a2fc3bf06208027fd5667068eef7db04fb4301ec1553733.
+Repair PASS, synthetic data PRESERVED, uninstall REMOVED, tray launch
+NOT_OBSERVED. Native interactive acceptance remains NOT_VERIFIED.
+
+269-component scoped SBOM SHA-256
+3701b1ec71532830b25b2734633aca6823d9db9fa9bd92fb9ea470feb104026f
+passed independent CycloneDX schema and candidate binding; evidence
+SHA-256 51789a00b7bdc792f38143bd87adeafc42ebb30d1600b6e29bc334e763a264f6.
+Replayed the retained Nov25 NuGet snapshot and OSV response against this
+exact new BOM (no new acquisition): four package identities match;
+no matching ranges/IDs. Evidence SHA-256 respectively
+8c5a7b8d9acf7cd10eb5951a3bd8f4f3660042d56677a6c5e37b3d960b8eb60a
+and b86670a1d2108dfd64e9c32f5b4efe335916947d9d139614f244d350b8fce34e.
+No freshness gate, full vulnerability clearance or legal admission.
+
+## 6.7.4 resource and English message qualification
+
+The actual extracted official loader and engine have respectively 45
+and 81 resource leaves, every key and payload digest identical to the
+reviewed 6.7.1 templates. The observed template comparison is scoped
+to leaf payloads, not a claim of equal PE code or directory serialization.
+Default.isl and Shared.SetupMessageIDs.pas at the pinned 6.7.4 source
+match the prior exact pins; reconstruct the 281 English message
+strings in enum order (25120 bytes), SHA-256
+31b34a6d0f6d21f25e92c7ef6fcb03067654b5dd16df3416374f2d12ed4b3dbd;
+reviewed language options SHA-256
+20818b0695dca2c6bd625d633b29e98f012f3db4e0d16c2c05f447bacb563e0a.
+The current project icon also matches its existing pin.
+
+A separate 6.7.4 verifier checks the actual prior binary evidence,
+pinned template/icon identities, recovered engine, exact leaf changes,
+version and manifest transforms, observed resource serialization
+and English message bytes. Two regressions pass. The actual product
+resource and message result awaits hosted CI, and solid payload,
+compiled script, interactive acceptance and release admission are
+not verified. Production pin remains 6.7.1.

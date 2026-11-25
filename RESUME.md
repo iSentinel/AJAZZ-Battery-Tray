@@ -1,3 +1,13 @@
+# Resume — native 6.7.4 product evidence and resource qualification
+
+#238 merged bfc68a4 into parent after 6/6 CI. Exact three archives
+and compiler/lifecycle/SBOM binding verified, schema PASS. Retained
+Nov25 NuGet/OSV observations replay on exact new BOM, no scoped matches.
+Stacked on #239. New 6.7.4 template resource leaves and English
+source inputs match previous pins; separate resource/message verifier,
+two tests. Hosted binary/resource, solid payload/script, interactive,
+legal and hardware gates open. Production pin 6.7.1, release hold.
+
 # Resume — Inno 6.7.4 scoped product binary attribution
 
 Stacked on #238. New loader and engine pins, actual uninstaller
