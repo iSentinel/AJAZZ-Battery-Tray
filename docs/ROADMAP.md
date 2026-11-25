@@ -1658,3 +1658,22 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Actual replay PASS, three synthetic regressions and CLI gate.
 - [ ] Hosted CI/integration; remaining Setup.0 records and wizard
       data, licensing, trust, hardware acceptance. Release hold.
+
+### Complete scoped Setup.0 records
+
+- [x] Parse all first-block records to exact EOF; verify fixed header,
+      source paths, flags, optional task, two shortcuts, run entry.
+- [x] Match 281 standard and 12 custom messages to pinned Default.isl.
+- [x] Inventory two wizard PNG images and add three synthetic regressions.
+- [ ] Hosted CI/integration; compare wizard images to pinned compiler
+      inputs, then licensing, independent trust and hardware acceptance.
+      Release hold.
+
+### Wizard resource provenance
+
+- [x] #217 merged 676f64e into parent after 5/5 hosted checks and
+      exact tested tree comparison.
+- [x] Match both actual wizard images against exact named resources
+      in pinned official ISCmplr.dll; two regressions and CLI gate.
+- [ ] Hosted CI/integration; licensing, independent key trust and
+      hardware acceptance. Release hold.
