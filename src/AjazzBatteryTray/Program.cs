@@ -10,6 +10,11 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == InstallerShutdownWindow.ProbeMode)
+        {
+            Environment.ExitCode = InstallerShutdownWindow.RunProbe();
+            return;
+        }
         bool isolated = args.Length == 1 && args[0] == "--experimental-isolated-polling";
         if (args.Length > 0 && !isolated)
         {
@@ -26,6 +31,8 @@ internal static class Program
 
         ApplicationConfiguration.Initialize();
         FileLog.Write(LogEvent.ApplicationStarted);
-        Application.Run(new TrayAppContext(isolated));
+        using TrayAppContext context = new(isolated);
+        using InstallerShutdownWindow shutdown = new(context.ExitThread);
+        Application.Run(context);
     }
 }

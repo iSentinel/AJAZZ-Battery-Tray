@@ -1017,3 +1017,22 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Exact-head Windows, installer upgrade and other triggered CI.
 - [ ] Actual GUI and hardware validation, then retire overlapping #156.
 - [ ] Keep release hold; do not promote unverified AJ179 candidate fields.
+
+
+### Windows Setup — close running tray and relaunch after installation
+
+- [x] Use Windows Restart Manager scoped to the installed AJAZZBatteryTray.exe;
+      keep graceful closure and avoid process-name-wide termination.
+- [x] Add a hidden top-level window that handles close-app session messages
+      and invokes the existing tray cleanup on the UI thread.
+- [x] Launch the installed EXE once after successful interactive installation;
+      unattended mode remains non-launching unless /LAUNCH=1 is explicit,
+      and /LAUNCH=0 opts out. Request original user credentials.
+- [x] Add a bounded no-HID probe and versioned upgrade CI for old PID
+      graceful exit, new EXE hash/version and automatic new PID startup.
+- [ ] Exact Windows portable, installer, and other triggered CI checks.
+- [ ] Physical owner test from published beta.60 with tray running, including
+      active diagnostics, modal windows, UAC and restart failure; confirm
+      no orphan workers, data loss or duplicate tray icons.
+- [ ] No release admission; retain the current release hold. Do not enable
+      forced process termination as an automatic fallback.

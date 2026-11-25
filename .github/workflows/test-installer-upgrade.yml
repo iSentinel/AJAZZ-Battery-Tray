@@ -134,3 +134,88 @@ jobs:
             if (Test-Path $data) { Remove-Item -LiteralPath $data -Recurse -Force }
             if (Test-Path $old) { Remove-Item -LiteralPath $old -Force }
           }
+
+      - name: Verify running tray closure and automatic relaunch (synthetic)
+        shell: pwsh
+        timeout-minutes: 8
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Resolve-Path 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe').Path
+          $prior = Join-Path $env:RUNNER_TEMP 'ajazz-lifecycle-beta61.exe'
+          Copy-Item -LiteralPath $setup -Destination $prior
+          $dir = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'
+          $installed = Join-Path $dir 'AJAZZBatteryTray.exe'
+          $uninstaller = Join-Path $dir 'unins000.exe'
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9829045F-37F0-4AC3-ACBD-1B5E4129A179}_is1'
+          $mode = '--internal-installer-lifecycle-probe'
+          $readyName = 'Local\AJAZZBatteryTray_InstallerProbe_v1'
+          $flags = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/RESTARTEXITCODE=3010','/SP-','/CLOSEAPPLICATIONS','/NOFORCECLOSEAPPLICATIONS')
+          function Invoke-Setup([string]$Path, [string]$Launch) {
+            $p = Start-Process -FilePath $Path -ArgumentList ($flags + "/LAUNCH=$Launch") -PassThru
+            if (-not $p.WaitForExit(90000)) { $p.Kill($true); throw 'Setup exceeded deadline' }
+            if ($p.ExitCode -ne 0) { throw "Setup failed or requires reboot: $($p.ExitCode)" }
+          }
+          function Wait-Probe([Diagnostics.Process]$Process) {
+            $until = [DateTime]::UtcNow.AddSeconds(15)
+            do {
+              if ($Process.HasExited) { throw 'Probe exited before ready' }
+              try {
+                $event = [Threading.EventWaitHandle]::OpenExisting($readyName)
+                try { if ($event.WaitOne(0)) { return } } finally { $event.Dispose() }
+              } catch [Threading.WaitHandleCannotBeOpenedException] { }
+              Start-Sleep -Milliseconds 200
+            } while ([DateTime]::UtcNow -lt $until)
+            throw 'Probe did not signal readiness'
+          }
+          $oldProcess = $null
+          $newProcess = $null
+          try {
+            if (Test-Path $dir) { throw 'Expected clean CI install directory' }
+            dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.62 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
+            if ($LASTEXITCODE -ne 0) { throw 'Lifecycle target publish failed' }
+            $iscc = @(
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+            ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+            if (-not $iscc) { throw 'Missing ISCC' }
+            # This installer is CI-only: its post-install launch enters the no-HID probe.
+            & $iscc /DAppVersion=0.3.0-beta.62 /DInstallerLifecycleProbe=1 'installer/AJAZZBatteryTray.iss'
+            if ($LASTEXITCODE -ne 0) { throw 'Lifecycle setup compilation failed' }
+            Invoke-Setup $prior '0'
+            if ((Get-ItemProperty -LiteralPath $key).DisplayVersion -ne '0.3.0-beta.61') {
+              throw 'Unexpected lifecycle baseline version'
+            }
+            $oldHash = (Get-FileHash $installed).Hash
+            $oldProcess = Start-Process -FilePath $installed -ArgumentList $mode -PassThru
+            Wait-Probe $oldProcess
+            Invoke-Setup $setup '1'
+            if (-not $oldProcess.WaitForExit(5000) -or $oldProcess.ExitCode -ne 0) {
+              throw 'Old probe did not exit gracefully'
+            }
+            $until = [DateTime]::UtcNow.AddSeconds(15)
+            do {
+              $matches = @(Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue |
+                Where-Object { $_.Id -ne $oldProcess.Id -and $_.Path -eq $installed })
+              if ($matches.Count -gt 1) { throw 'Multiple replacement processes' }
+              if ($matches.Count -eq 1) { $newProcess = $matches[0]; break }
+              Start-Sleep -Milliseconds 200
+            } while ([DateTime]::UtcNow -lt $until)
+            if (-not $newProcess) { throw 'Automatic relaunch did not start' }
+            Wait-Probe $newProcess
+            $hash = (Get-FileHash $installed).Hash
+            if ($hash -eq $oldHash -or $hash -ne (Get-FileHash 'dist/app/AJAZZBatteryTray.exe').Hash -or
+                (Get-ItemProperty -LiteralPath $key).DisplayVersion -ne '0.3.0-beta.62') {
+              throw 'Relaunch does not use updated installation'
+            }
+            Write-Host 'PASS: Restart Manager gracefully closed old PID, upgraded EXE and launched new PID; synthetic only'
+          } finally {
+            foreach ($process in @($oldProcess, $newProcess)) {
+              if ($process -and -not $process.HasExited) { $process.Kill(); [void]$process.WaitForExit(5000) }
+              if ($process) { $process.Dispose() }
+            }
+            # Cleanup only the known installed path on this disposable CI runner.
+            if (Test-Path $uninstaller) {
+              Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
+            }
+            Remove-Item -LiteralPath $prior -Force -ErrorAction SilentlyContinue
+          }

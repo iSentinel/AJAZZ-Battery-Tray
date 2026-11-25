@@ -1,3 +1,20 @@
+# Resume — automatic Windows Setup close and relaunch
+
+- #157 corrected 2afb9c8 passed 4/4 CI and merged into draft #99 at
+  5800d80. Consolidated job lifetime is now the canonical candidate;
+  no main merge or release dispatch.
+- Owner requests automatic application closure and launch after installation.
+  Inno Setup uses graceful Windows Restart Manager, scoped to the installed
+  EXE. Hidden top-level window handles close-app session and uses tray cleanup.
+- Interactive launch defaults on; /LAUNCH=0 suppresses, /LAUNCH=1 enables
+  silent launch. Original user credentials requested (Inno cannot de-elevate
+  an already elevated launcher). No automatic force-kill or new HID commands.
+- Versioned synthetic installer regression (beta.61 -> beta.62 test fixture)
+  checks old PID exit, updated hash/version and new PID readiness without
+  actual tray monitoring. Normal silent upgrade remains no-launch.
+- Exact native CI and real beta.60 running-tray/UAC/diagnostics field tests
+  remain pending; release hold unchanged.
+
 # Resume — consolidated full capture job lifetime
 
 - #155 exact head 4973b71 all four CI PASS; merged into draft #99 at
