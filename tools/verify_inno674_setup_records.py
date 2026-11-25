@@ -27,7 +27,9 @@ from verify_windowsdesktop_provenance import read_local
 COMPILER = '236555054ca65194c69544b4ef1d49ea345259745f5c4a2005aca7b5674e7cff'
 SOURCE = 'd2876f4209f244033dd92dd19a6f9e9d641ca3cbed441b4dbd020923492f9ef8'
 PRODUCTION_SOURCE = 'b93648632e4cacdee0b683842d77c0804c0e468a26d7b6de727f8e05c8f34cd0'
-SOURCE_PINS = (SOURCE, PRODUCTION_SOURCE)
+ALIGNED_SOURCE = 'a41fc727e7ff0a9b680958c981f668dca6bb7979c379e562ff136fe7159538bc'
+PRODUCTION_SOURCE_PINS = (PRODUCTION_SOURCE, ALIGNED_SOURCE)
+SOURCE_PINS = (SOURCE, *PRODUCTION_SOURCE_PINS)
 
 def check_header(reader: Reader) -> dict:
     """Validate all reviewed header strings and fixed settings."""

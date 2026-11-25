@@ -9,7 +9,7 @@ import sys
 from run_offline_qa import write_json
 from validate_scoped_sbom_schema import digest, document, read, binding
 from verify_inno674_components import VENDOR
-from verify_inno674_setup_records import COMPILER, PRODUCTION_SOURCE, SOURCE_PINS, destinations
+from verify_inno674_setup_records import COMPILER, PRODUCTION_SOURCE_PINS, SOURCE_PINS, destinations
 from verify_windows_notice_transport import MANIFEST_SHA
 
 NAMES = (
@@ -119,7 +119,7 @@ def production_shape(raw: bytes, result: dict, records: dict) -> dict:
         'default_silent_launch': 'NOT_OBSERVED', 'uninstalled': 'REMOVED',
         'release_admission': 'NOT_VERIFIED',
     }
-    require(value == expected and records['installer_source_lf_sha256'] == PRODUCTION_SOURCE)
+    require(value == expected and records['installer_source_lf_sha256'] in PRODUCTION_SOURCE_PINS)
     return {**result, 'production_shape_sha256': digest(raw),
             'production_shape': 'MATCH_SCOPED'}
 
@@ -138,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.production_shape:
             result = production_shape(read(args.root / 'production-shape.json'), result, records)
         else:
-            require(records['installer_source_lf_sha256'] != PRODUCTION_SOURCE)
+            require(records['installer_source_lf_sha256'] not in PRODUCTION_SOURCE_PINS)
         write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):
         print('FAIL: scoped migration evidence', file=sys.stderr)

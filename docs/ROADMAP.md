@@ -1980,3 +1980,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Align actual release version metadata and compiler/notice selection
       only after signing, legal, interactive and hardware gates.
       Release hold unchanged.
+
+### Candidate metadata coherence without publication
+
+- [x] #245 native production-shaped qualification 7/7, eight archives,
+      thirteen documents; exact independent replay and scoped BOM
+      schema/advisory observations; merged e20a350 into draft #99.
+- [x] Align draft Windows/Setup beta.61, dormant release tag and
+      Universal build 65; no version overrides in 6.7.4 candidate CI.
+      Historical exact evidence retained, two new regressions.
+- [ ] Native version-default qualification and integration.
+- [ ] Actual compiler/notice selection, distribution terms, trusted
+      signing, interactive and physical acceptance. Release hold.

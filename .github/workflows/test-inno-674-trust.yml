@@ -212,13 +212,13 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
-          dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.61 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
+          dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Product probe publish failed' }
           $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
           python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'product-components-before.json')
           if ($LASTEXITCODE -ne 0) { throw 'Product compiler input identity failed' }
           $iscc = Join-Path $compiler 'ISCC.exe'
-          $lines = @(& $iscc '/DAppVersion=0.3.0-beta.61' '/DProductNoticeProbe=1' '/DProductionNoticeCandidate=1' "/DNoticeRoot=$(Join-Path $root 'staged')" "/O$root" 'installer/AJAZZBatteryTray.iss')
+          $lines = @(& $iscc '/DProductNoticeProbe=1' '/DProductionNoticeCandidate=1' "/DNoticeRoot=$(Join-Path $root 'staged')" "/O$root" 'installer/AJAZZBatteryTray.iss')
           $code = $LASTEXITCODE
           $lines | ForEach-Object { Write-Host $_ }
           if ($code -ne 0 -or @($lines | Where-Object { $_ -ceq 'Compiler engine version: Inno Setup 6.7.4' }).Count -ne 1) {

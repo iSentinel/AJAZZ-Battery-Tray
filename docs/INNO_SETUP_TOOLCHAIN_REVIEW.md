@@ -421,3 +421,41 @@ the production compiler wrapper stays at 6.7.1, the existing
 release workflows remain blocked, and only JSON is uploaded.
 Native result pending. Interactive, signing, legal and hardware
 requirements are not waived.
+
+## Native production-shaped result and candidate metadata alignment
+
+PR #245 exact head dc3eefc75b2ec87f1a767aaec6ca0ce5e205d63f,
+hosted checkout cdd7c26f18843651a8d23288f0f973ed1db2966c,
+run 45644689569, job 139312388639, 7/7 checks PASS.
+Merged into draft #99 at e20a350 after tested tree comparison.
+Eight native archives matched REST digests; joined artifact 15036034055
+ZIP SHA-256 4fdc6512bfd455ea2c9b76afb095d25d24f98ab91920b5e76e3a5508cc93f38f.
+All thirteen documents independently replayed; hosted JSON SHA-256
+d42e2ccf8fe3fc1b900ce1a136c2de3ff6d7620167dd866eb3e0f5c92583560e.
+Output matches after CRLF normalization only. Setup SHA-256
+1f9f582daf49d8b8a1336aceda95a00b766ae8f98f365eec58d814c91ee99e48;
+app SHA-256 d71d6296a709c468957be6647e8d8c5abc05314d096b42d78be52e7d60b0a960.
+Normal basename, default silent Program Files installation, no tray
+launch observed, upgrade/repair/removal and full scoped attribution PASS.
+The exact BOM SHA-256
+2fc05f6f7971b38167f7f2e7cd7d7df0273bcb48998aa6ef2b36e37a6f45fadd
+passed independent schema validation; evidence SHA-256
+974f4242ab4482a5c27bad7b067e9736eaed21c6a8ce459ef63fa22a09b360bc.
+Retained Nov25 NuGet/OSV observations replayed with no scoped matches;
+evidence SHA-256 e591ebfab8309aa00f66e93e2db9250fc7e2908ec2d9b82658529dc390c0537c
+and d0b8402633c926216f4592539b3f882976c91f7dec41f09670090ac4364aba15.
+No new advisory acquisition or full clearance.
+
+The next draft aligns the Windows project and installer default at
+0.3.0-beta.61, dormant release tag at v0.3.0-beta.61 and Universal
+macOS 0.3.0 build 65 (increment from 64). High Sierra edition is
+unchanged. Replace stale embedded beta.60 notes with explicitly
+draft candidate notes; published release notes remain untouched.
+The non-publishing 6.7.4 CI now uses version defaults, not overrides.
+New exact installer LF source pin:
+a41fc727e7ff0a9b680958c981f668dca6bb7979c379e562ff136fe7159538bc.
+Prior production-shaped and historical source pins remain supported;
+actual #245 local replay remains identical. Two metadata regressions
+and release hold tests pass. This is candidate metadata alignment,
+not migration authorization or release admission. The compiler wrapper
+and shipping notice selection remain unchanged. Native rerun required.
