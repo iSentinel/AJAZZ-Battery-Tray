@@ -14,10 +14,10 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $expected = '6.7.1'
-$candidates = @(
+$candidates = @(@(
     "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -Unique
+) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -Unique)
 if (@($candidates).Count -ne 1) { throw 'Expected exactly one preinstalled ISCC; no automatic download' }
 $iscc = $candidates[0]
 $version = (Get-Item -LiteralPath $iscc).VersionInfo

@@ -26,6 +26,13 @@ class InstallerCompilerContractTests(unittest.TestCase):
         self.assertIn("-AppVersion '0.3.0-beta.62' -LifecycleProbe", upgrade)
         self.assertIn("-AppVersion '0.3.0-beta.61'", upgrade)
 
+    def test_single_compiler_path_is_array(self) -> None:
+        """Avoid indexing the first character of a scalar PowerShell string."""
+        raw = (ROOT / "tools/Invoke-InstallerCompiler.ps1").read_text()
+        self.assertIn("$candidates = @(@(", raw)
+        self.assertIn("Select-Object -Unique)", raw)
+        self.assertIn("$iscc = $candidates[0]", raw)
+
     def test_version_observation_contract(self) -> None:
         """Retain reviewed version and identity observations, not a trust claim."""
         raw = (ROOT / "tools/Invoke-InstallerCompiler.ps1").read_text()
