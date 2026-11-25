@@ -2257,3 +2257,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       legacy missing labels and unrecognized compact replies.
       Two additional synthetic regression groups.
 - [ ] Hosted CI and physical acceptance; release hold unchanged.
+
+### Exact acceptance artifact generation checkpoint
+
+- [x] #269 exact 4/4 CI merged 5b18c5c after tested-tree equality.
+- [x] Verify three successful bd84554 integration CI artifact
+      downloads by REST digest; verify actual executable identities
+      and Apple companion checksums, generate and replay five blank
+      hardware checklists (57 NOT_RUN, no physical PASS).
+- [x] Record artifact generation separately from newer source head;
+      no binary or checklist identity transfer to a different build.
+- [ ] Verify next complete integration CI generation; physical,
+      signing and distribution admission remain open.
