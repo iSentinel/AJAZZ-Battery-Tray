@@ -42,11 +42,16 @@ class InnoUpgradeTests(unittest.TestCase):
     def test_product_probe_is_distinct(self) -> None:
         """Use reviewed portable inputs, the same lifecycle and unique artifact names."""
         text = (ROOT / '.github/workflows/test-inno-674-trust.yml').read_text()
-        self.assertIn("'/FAJAZZBatteryTray-Inno674-Notice-Probe-win-x64'", text)
+        self.assertIn("'/DProductionNoticeCandidate=1'", text)
         self.assertIn('product-components-before.json', text)
         self.assertIn('product-components-after.json', text)
-        self.assertIn("'/LAUNCH=0'", text)
-        self.assertIn("-CandidateName 'AJAZZBatteryTray-Inno674-Notice-Probe-win-x64.exe'", text)
+        self.assertIn("default_silent_launch = 'NOT_OBSERVED'", text)
+        self.assertIn("$target = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'", text)
+        self.assertIn("Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-')", text)
+        self.assertIn('--production-shape --output', text)
+        self.assertIn('#error ProductionNoticeCandidate requires ProductNoticeProbe',
+                      (ROOT / 'installer/AJAZZBatteryTray.iss').read_text())
+        self.assertIn("-CandidateName 'AJAZZBatteryTray-Setup-win-x64.exe'", text)
         self.assertIn('name: inno674-product-notice-sbom-evidence', text)
         original = (ROOT / '.github/workflows/test-notice-install.yml').read_text()
         self.assertNotIn('6.7.4', original)
