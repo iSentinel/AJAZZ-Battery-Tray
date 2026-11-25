@@ -67,8 +67,36 @@ class InventoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             inventory(b'{"version":3,"version":3}')
         data = fixture()
-        data["version"] = 4
+        data["version"] = 5
         with self.assertRaises(ValueError):
+            inventory(encode(data))
+
+    def test_aliased_v4_graph(self) -> None:
+        """The v4 alias and effective framework can differ."""
+        data = fixture()
+        data["version"] = 4
+        data["targets"]["production/win-x64"] = data["targets"].pop("net11.0/win-x64")
+        frameworks = data["project"]["frameworks"]
+        frameworks["production"] = frameworks.pop("net11.0")
+        frameworks["production"].update(framework="net11.0", targetAlias="production")
+        result = inventory(encode(data))
+        self.assertEqual(result["schema"], 2)
+        self.assertEqual(result["assets_version"], 4)
+        self.assertEqual(result["frameworks"][0]["alias"], "production")
+        self.assertEqual(result["targets"][0]["framework"], "net11.0")
+        self.assertEqual(result["targets"][0]["runtime_identifier"], "win-x64")
+
+    def test_v4_inconsistent_alias_rejected(self) -> None:
+        """A declared alias must bind to its target, not another framework."""
+        data = fixture()
+        data["version"] = 4
+        details = data["project"]["frameworks"]["net11.0"]
+        details.update(framework="net11.0", targetAlias="PRIVATE_CANARY")
+        with self.assertRaisesRegex(ValueError, "Inconsistent framework alias"):
+            inventory(encode(data))
+        details["targetAlias"] = "net11.0"
+        data["targets"]["unknown/win-x64"] = data["targets"].pop("net11.0/win-x64")
+        with self.assertRaisesRegex(ValueError, "Invalid target alias"):
             inventory(encode(data))
 
     def test_path_like_package_identity_rejected(self) -> None:

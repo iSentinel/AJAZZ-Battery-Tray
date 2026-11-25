@@ -7,6 +7,8 @@ on:
       - 'global.json'
       - 'src/**'
       - 'tests/**'
+      - 'tools/inventory_nuget_assets.py'
+      - 'tools/run_offline_qa.py'
       - 'tools/Measure-TrayResources.ps1'
       - 'tools/Measure-TrayJobCpu.ps1'
       - 'tools/TrayJobAccounting.cs'
@@ -44,6 +46,9 @@ jobs:
             }
           }
           if ($LASTEXITCODE -ne 0) { throw 'Runtime inventory failed' }
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13.17'
       - name: Run unit tests
         shell: pwsh
         run: |
@@ -73,6 +78,26 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $output -ErrorAction SilentlyContinue
           }
+      - name: Verify inventory reader on Windows
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tools -p 'test_inventory_nuget_assets.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Inventory regression failed' }
+          python -m unittest discover -s tools -p 'test_offline_qa.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Evidence regression failed' }
+      - name: Record framework restore inventories
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-nuget-inventory'
+          New-Item -ItemType Directory -Path $evidence -ErrorAction Stop | Out-Null
+          dotnet restore src/AjazzBatteryTray/AjazzBatteryTray.csproj
+          if ($LASTEXITCODE -ne 0) { throw 'Framework restore failed' }
+          python tools/inventory_nuget_assets.py --assets 'src/AjazzBatteryTray/obj/project.assets.json' --output (Join-Path $evidence 'tray-framework.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: tray-framework' }
+          python tools/inventory_nuget_assets.py --assets 'tests/AjazzBatteryTray.Tests/obj/project.assets.json' --output (Join-Path $evidence 'unit-tests.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: unit-tests' }
+          python tools/inventory_nuget_assets.py --assets 'tests/AjazzDashboard.Smoke/obj/project.assets.json' --output (Join-Path $evidence 'dashboard-smoke.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: dashboard-smoke' }
       - name: Publish single-file Windows executable
         shell: pwsh
         run: |
@@ -81,6 +106,21 @@ jobs:
             -p:PublishSingleFile=true -p:PublishTrimmed=false `
             -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Windows publish failed' }
+      - name: Record tray win-x64 publish restore inventory
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-nuget-inventory'
+          python tools/inventory_nuget_assets.py --assets 'src/AjazzBatteryTray/obj/project.assets.json' --output (Join-Path $evidence 'tray-win-x64.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: tray-win-x64' }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-nuget-restore-inventory
+          path: |
+            ${{ runner.temp }}/ajazz-nuget-inventory/tray-framework.json
+            ${{ runner.temp }}/ajazz-nuget-inventory/unit-tests.json
+            ${{ runner.temp }}/ajazz-nuget-inventory/dashboard-smoke.json
+            ${{ runner.temp }}/ajazz-nuget-inventory/tray-win-x64.json
+          if-no-files-found: error
       - name: Verify job CPU sampler preflight
         shell: pwsh
         run: |
