@@ -1070,3 +1070,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Resolve exact redistribution coverage, downstream terms, installer and
       portable notice inclusion, signature trust and SBOM/advisory evidence.
       Release hold unchanged.
+
+### ENG-06/12 Inno Setup reviewed compiler selection
+
+- [x] Review actual hosted compiler engine 6.7.1 and exact upstream license.
+- [x] Replace floating compiler install with shared exact-version wrapper;
+      record binary hashes and signature status, not trust clearance.
+- [ ] Native hosted acceptance, pinned binary/component hashes and trusted
+      signature, installer runtime component notices/advisories, Apple and
+      other toolchain inventory. Release hold unchanged.

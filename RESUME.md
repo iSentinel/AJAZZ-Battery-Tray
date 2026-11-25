@@ -1,3 +1,12 @@
+# Resume — reviewed Inno Setup compiler selection
+
+#163 merged 5d965ce after exact 4/4 CI. Actual prior upgrade log
+engine 6.7.1 for both builds. Shared compiler wrapper removes floating
+Chocolatey fallback, checks reviewed file version and engine banner, logs
+compiler/Setup hashes and signature observation. Exact upstream license
+reviewed, no commercial-status assumption or compliance clearance.
+Native CI required (Gateway has no pwsh). Release hold unchanged.
+
 # Resume — notice staging and field evidence
 
 New stacked notice preparation: five exact files from four pinned packs,
