@@ -6,6 +6,7 @@ on:
       - 'global.json'
       - 'src/**'
       - 'installer/**'
+      - 'tools/Invoke-InstallerCompiler.ps1'
       - '.github/workflows/test-installer-upgrade.yml'
   workflow_dispatch:
 
@@ -40,21 +41,7 @@ jobs:
         run: |
           dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.61 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Candidate publish failed' }
-          $iscc = @(
-            "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
-            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-          if (-not $iscc) {
-            choco install innosetup --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { throw 'Compiler install failed' }
-            $iscc = @(
-              "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
-              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-            ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-          }
-          if (-not $iscc) { throw 'Missing ISCC' }
-          & $iscc /DAppVersion=0.3.0-beta.61 'installer/AJAZZBatteryTray.iss'
-          if ($LASTEXITCODE -ne 0) { throw 'Candidate setup compilation failed' }
+          ./tools/Invoke-InstallerCompiler.ps1 -AppVersion '0.3.0-beta.61'
       - name: Verify baseline, upgrade, retained data and uninstall
         shell: pwsh
         run: |
@@ -173,14 +160,8 @@ jobs:
             if (Test-Path $dir) { throw 'Expected clean CI install directory' }
             dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.62 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
             if ($LASTEXITCODE -ne 0) { throw 'Lifecycle target publish failed' }
-            $iscc = @(
-              "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
-              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-            ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-            if (-not $iscc) { throw 'Missing ISCC' }
-            # This installer is CI-only: its post-install launch enters the no-HID probe.
-            & $iscc /DAppVersion=0.3.0-beta.62 /DInstallerLifecycleProbe=1 'installer/AJAZZBatteryTray.iss'
-            if ($LASTEXITCODE -ne 0) { throw 'Lifecycle setup compilation failed' }
+            # CI-only installer launches a synthetic no-HID probe.
+            ./tools/Invoke-InstallerCompiler.ps1 -AppVersion '0.3.0-beta.62' -LifecycleProbe
             Invoke-Setup $prior '0'
             if ((Get-ItemProperty -LiteralPath $key).DisplayVersion -ne '0.3.0-beta.61') {
               throw 'Unexpected lifecycle baseline version'

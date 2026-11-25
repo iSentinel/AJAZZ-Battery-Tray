@@ -1086,6 +1086,24 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted QA, exact release candidate, full graph and distribution/toolchain
       coverage, signature trust, advisory disposition and release admission.
 
+### ENG-12 scoped pinned NuGet advisory audit
+
+- [x] Check official two-page NuGet VulnerabilityInfo snapshot against four
+      exact stable pack versions; 211 ranges, zero matches on 2026-11-25.
+- [x] Cross-check all four exact NuGet versions via OSV; no IDs returned.
+- [ ] Exact hosted QA, authenticated/fresh acquisition policy, product-level
+      security advisories, toolchain and all other distribution dependencies.
+      Release hold unchanged.
+
+### ENG-06/12 Inno Setup reviewed compiler selection
+
+- [x] Review actual hosted compiler engine 6.7.1 and exact upstream license.
+- [x] Replace floating compiler install with shared exact-version wrapper;
+      record binary hashes and signature status, not trust clearance.
+- [ ] Native hosted acceptance, pinned binary/component hashes and trusted
+      signature, installer runtime component notices/advisories, Apple and
+      other toolchain inventory. Release hold unchanged.
+
 ### ENG-12 scoped Apple archive inventory
 
 - [x] Re-download and hash-check actual Universal and High Sierra CI artifacts.
