@@ -25,7 +25,7 @@ internal static class Program
         }
 
         ApplicationConfiguration.Initialize();
-        FileLog.Write("INFO", "Application started");
+        FileLog.Write(LogEvent.ApplicationStarted);
         Application.Run(new TrayAppContext(isolated));
     }
 }

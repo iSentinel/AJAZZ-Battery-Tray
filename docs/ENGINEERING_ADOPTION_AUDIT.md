@@ -147,3 +147,20 @@ local common QA: 117 tests, 14 steps, zero errors/failures/skips; manifest
 verified on reopen, private run offline-qa-m7fozn0p. Hosted candidate
 checks pending; no native/runtime claims or publication. Release hold is
 in draft #99, not main. ENG-05 is the next independent remediation.
+
+## ENG-05 Windows operational logging candidate
+
+#138 eaa150c passed four hosted checks, including the verified downloaded
+Python QA artifact from run 45516071847 (117 tests, 14 steps, Python
+3.12.16, exact merge tree 1a6fa1b2bc444aaedc5b8e5e71def63ebf3a5be2).
+All 32 Windows FileLog.Write call sites now accept closed event IDs and
+optional Exception classified into closed reason codes without raw text.
+Versioned UTC JSONL, 256 KiB active plus 256 KiB previous, cooperating
+writer lock, partial-tail rotation, expected error refusal and process
+failure counter. Existing app.log untouched. No battery level, alias,
+private paths or raw buffers in new records. Native tests prepared in
+SafeLogTests.cs; no local .NET compiler, so Windows CI required.
+Operational logging is not hardened against an adversarial same-user
+filesystem race, nor a crash-durable evidence system. Windows ACL, Apple
+logging, measured operation duration, broader UI/diagnostic redaction and
+external transport review remain separate. No hardware behavior changed.

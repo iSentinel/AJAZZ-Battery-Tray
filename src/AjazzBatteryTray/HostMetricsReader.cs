@@ -82,7 +82,7 @@ public static class HostMetricsReader
         }
         catch (Exception error)
         {
-            FileLog.Write("INFO", "Local metrics preview unavailable: " + error.GetType().Name);
+            FileLog.Write(LogEvent.HostMetricsUnavailable, error);
             return (Array.Empty<HostHardwareMetrics>(), false);
         }
     }

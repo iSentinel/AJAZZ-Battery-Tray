@@ -44,7 +44,7 @@ public static class DeviceDiagnostics
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Unable to inspect USB receiver", error);
+            FileLog.Write(LogEvent.UsbInspectionFailed, error);
             return $"Receiver inspection unavailable: {error.GetType().Name}";
         }
     }

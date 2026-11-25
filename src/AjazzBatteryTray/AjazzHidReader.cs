@@ -91,7 +91,7 @@ public sealed class AjazzHidReader
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "HID read failed: " + error.GetType().Name);
+            FileLog.Write(LogEvent.HidReadFailed, error);
             attempts.Add("Poll exception: " + error.GetType().Name);
             return new Batch(new Reading(false, null, "HID read error; see log",
                 PresenceKnown: false, Attempts: attempts.ToArray()), Array.Empty<ReceiverReading>());
@@ -129,7 +129,7 @@ public sealed class AjazzHidReader
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Dock clock HID transfer failed", error);
+            FileLog.Write(LogEvent.DockClockTransferFailed, error);
         }
 
         return false;

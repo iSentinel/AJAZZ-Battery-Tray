@@ -1,3 +1,14 @@
+# Resume — ENG-05 Windows operational journal
+
+#138 eaa150c four hosted checks PASS, downloaded QA artifact independently
+verified (117 tests, 14 steps, Python 3.12.16; merge tree identical).
+ENG-05 closed enum events at all 32 Windows call sites, UTC JSONL,
+256 KiB x two generations, cooperative writer refusal, partial-tail
+handling, per-process failure count, canary/rotation tests.
+Legacy app.log untouched. Native CI required; no local dotnet.
+Next: integrate #138 after exact-head verification, submit separate ENG-05
+candidate. No main merge or release dispatch. Apple/ACL/timing remain open.
+
 # Resume — ENG-03/04/14/16 candidate PR #138
 
 #137 all four checks PASS, normal retry of merge succeeded after prior
