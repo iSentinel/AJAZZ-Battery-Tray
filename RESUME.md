@@ -1,3 +1,12 @@
+# Resume — AULA retained-success freshness consistency
+
+#252 exact 5/5 CI merged d812850. Fix AULA retained successful
+reply: use five-minute API freshness ceiling, cached until 24h,
+clock rollback hidden, common tray/dashboard projection. Six
+native assertions added; native CI pending. No HID, history or
+alert policy change. Physical AULA and APEX acceptance remains
+open. Release hold unchanged.
+
 # Resume — hardware acceptance artifact binding
 
 #251 merged 0b4dec7 after exact 5/5 CI, eight archive digests

@@ -556,23 +556,23 @@ var aulaTime = DateTimeOffset.Parse("2026-11-22T15:17:48Z");
 aulaCache.Observe(true, true, 98, aulaTime);
 aulaCache.Observe(true, true, null, aulaTime.AddSeconds(31));
 Check("AULA retains last good percentage on transient no reply",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(31)) == 98 &&
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(31)) == 98 &&
     aulaCache.ConsecutiveFailures == 1 && aulaCache.LastGoodAt == aulaTime);
 Check("AULA cached percentage remains visible during eight-hour sleep",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddHours(8)) == 98);
+    aulaCache.CachedPercent(true, true, aulaTime.AddHours(8)) == 98);
 Check("AULA cached percentage expires after 24 hours",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddHours(24)) is null);
+    aulaCache.CachedPercent(true, true, aulaTime.AddHours(24)) is null);
 Check("AULA unknown presence hides cache",
-    aulaCache.DisplayPercent(true, false, null, aulaTime.AddSeconds(32)) is null);
+    aulaCache.CachedPercent(true, false, aulaTime.AddSeconds(32)) is null);
 Check("AULA clock rollback hides old cache",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(-1)) is null);
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(-1)) is null);
 aulaCache.Observe(true, true, 97, aulaTime.AddSeconds(60));
 Check("AULA successful recovery clears failure count",
     aulaCache.LastGoodPercent == 97 && aulaCache.ConsecutiveFailures == 0);
 aulaCache.Observe(false, true, null, aulaTime.AddSeconds(61));
 Check("AULA unplug invalidates cache",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null &&
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(62)) is null);
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(62)) is null);
 aulaCache.Observe(true, true, 96, aulaTime.AddSeconds(70));
 aulaCache.Reset();
 Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
@@ -580,9 +580,9 @@ aulaCache.Observe(true, true, 93, aulaTime);
 aulaCache.Observe(false, false, null, aulaTime.AddSeconds(30));
 Check("AULA uncertain enumeration retains hidden last-good sample",
     aulaCache.LastGoodPercent == 93 && aulaCache.LastGoodAt == aulaTime &&
-    aulaCache.DisplayPercent(false, false, null, aulaTime.AddSeconds(30)) is null);
+    aulaCache.CachedPercent(false, false, aulaTime.AddSeconds(30)) is null);
 Check("AULA same receiver can reuse cached sample after uncertainty",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(31)) == 93);
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(31)) == 93);
 aulaCache.Observe(false, true, null, aulaTime.AddSeconds(32));
 Check("AULA confirmed unplug still invalidates sample",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null);
@@ -2271,6 +2271,27 @@ aulaSleep.Observe(true, true, 87, sleepStart);
 Check("AULA completed automatic poll is fresh, not scheduled",
     AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart) is
     { Status: DeviceDashboardStatus.Fresh, Percent: 87 });
+Check("AULA freshness includes exact five-minute boundary",
+    AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart.AddMinutes(5)) is
+    { Status: DeviceDashboardStatus.Fresh, Percent: 87 });
+var agedAula = AulaSleepView(true, true, true, true, 87, sleepStart,
+    sleepStart.AddMinutes(5).AddTicks(1));
+Check("AULA retained successful poll ages to cache without another HID reply",
+    agedAula is { Status: DeviceDashboardStatus.Cached, Percent: 87 } &&
+    agedAula.MeasuredAt == sleepStart);
+Check("AULA aged successful poll is not current API telemetry",
+    LocalBatterySnapshot.Create(sleepStart.AddMinutes(6),
+        new[] { new LocalBatterySnapshot.Input(LocalBatterySource.AulaReceiver, 1, agedAula) })
+        .Devices[0] is { Status: "cached", BatteryPercent: null, LastKnownPercent: 87 });
+Check("AULA retained reply cannot bypass 24-hour expiry",
+    AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart.AddHours(24)) is
+    { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("AULA retained reply cannot bypass clock rollback",
+    AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart.AddTicks(-1)) is
+    { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("AULA mismatched current sample is not fresh",
+    AulaSleepView(true, true, true, true, 88, sleepStart, sleepStart) is
+    { Status: DeviceDashboardStatus.Cached, Percent: 87 });
 Check("AULA explicit read while disabled is manual only",
     AulaSleepView(false, true, true, true, 87, sleepStart, sleepStart).Status == DeviceDashboardStatus.ManualReading);
 for (int n = 1; n <= 960; n++)
