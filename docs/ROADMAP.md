@@ -2246,3 +2246,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       never export raw payloads or infer battery from experimental data.
       Five synthetic test groups and CLI help coverage.
 - [ ] Hosted CI and physical acceptance; release hold unchanged.
+
+### CLI diagnostic consistency
+
+- [x] #268 exact 5/5 CI, merged bd84554 after tested-tree equality.
+- [x] Require a unique terminal marker in ordinary and experimental
+      CLI reports; check completed ordinary outcome, enumeration and
+      GET/SET counts. Reject accepted labels without a reported level
+      and complete rejection labels with a reported level. Preserve
+      legacy missing labels and unrecognized compact replies.
+      Two additional synthetic regression groups.
+- [ ] Hosted CI and physical acceptance; release hold unchanged.
