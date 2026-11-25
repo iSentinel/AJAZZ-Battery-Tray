@@ -142,3 +142,16 @@ At 05:43:18 UTC, fresh 66, matching new last-good timestamp, cache off,
 zero misses. Reconstructed allowlisted excerpts pass the two observed
 state checks. No independent awake snapshot or receiver identity proof.
 A04/A06 observed behavior only; A01-A14 remains open.
+
+## Age consistency after a delayed poll
+
+The candidate now projects a retained successful reply through the same
+five-minute freshness ceiling as the local snapshot API. If no new
+poll completes (including after suspension), a confirmed-present
+receiver's last-good sample becomes cached after five minutes and
+expires at 24 hours, even when the last reply itself was successful.
+The tray and dashboard share this projection. A clock rollback hides
+the value rather than treating a future timestamp as fresh. No extra
+HID queries are issued, and age transitions do not record a sample
+or trigger a notification. The next valid response restores freshness.
+Check this on a real Windows sleep/resume cycle; CI is not that test.

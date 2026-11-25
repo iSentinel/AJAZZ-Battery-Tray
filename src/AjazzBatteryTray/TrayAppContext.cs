@@ -580,7 +580,7 @@ public sealed class TrayAppContext : ApplicationContext
            $"UTC: {_aulaBattery.LastGoodAt?.ToString("O") ?? "never"}; " +
            $"Consecutive no-reply polls: {_aulaBattery.ConsecutiveFailures}; " +
            $"Cache lifetime hours: {AulaBatteryState.CacheLifetime.TotalHours}; " +
-           $"Display cache active: {_aulaLatest?.Percent is null && AulaDisplayPercent().HasValue}";
+           $"Display cache active: {AulaDashboardState().Status == DeviceDashboardStatus.Cached}";
 
     private void ShowAulaHistory()
     {
@@ -599,10 +599,6 @@ public sealed class TrayAppContext : ApplicationContext
             : $"{state.Name} · {state.Transport}: {state.MenuStatus(_aulaBattery.LastGoodAt)}";
         _aulaStatus.Text = value;
     }
-
-    private int? AulaDisplayPercent()
-        => _aulaBattery.DisplayPercent(_aulaLatest?.ReceiverPresent == true,
-            _aulaLatest?.PresenceKnown == true, _aulaLatest?.Percent, DateTimeOffset.UtcNow);
 
     private void ArmAulaTimer(int milliseconds)
     {
@@ -1949,8 +1945,9 @@ public sealed class TrayAppContext : ApplicationContext
         var hiddenUsb = new HashSet<string>(_settings.HiddenTrayDevices, StringComparer.Ordinal);
         hiddenUsb.UnionWith(_settings.BleUsbLinks.Values);
         var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons, hiddenUsb);
-        int? aulaLevel = AulaDisplayPercent();
-        bool aulaStale = _aulaLatest?.Percent is null && aulaLevel.HasValue;
+        var aulaState = AulaDashboardState();
+        int? aulaLevel = aulaState.Percent;
+        bool aulaStale = aulaState.Status == DeviceDashboardStatus.Cached;
         int? usbPercent = reading.PresenceKnown ? receiver?.Reading.Percent : null;
         bool retainCachedBle = primaryBle is not null && _lastSource == "Bluetooth" &&
             _lastDevice == BleLabel(_bleSlots[primaryBle]) &&

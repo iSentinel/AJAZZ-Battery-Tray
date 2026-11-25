@@ -2057,3 +2057,13 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Authorized real-device observations and exact interactive
       installer acceptance; separate licensing/signing decisions.
       Release hold unchanged.
+
+### AULA retained-success freshness consistency
+
+- [x] #252 exact 5/5 CI, merged d812850 into draft #99.
+- [x] Fix retained successful AULA reply bypassing cache expiry and
+      freshness classification after delayed polling. Use common
+      dashboard projection for tray and API; six new native assertions.
+- [ ] Windows native CI and physical sleep/resume acceptance.
+- [ ] AJ159/AJ179 ready-clear comparison at two verified charge levels;
+      do not promote unverified fields or change HID commands.
