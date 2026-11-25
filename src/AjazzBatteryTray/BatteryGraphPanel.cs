@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -7,10 +8,13 @@ namespace AjazzBatteryTray;
 /// <summary>Draws battery readings without any third-party graphics library.</summary>
 public sealed class BatteryGraphPanel : Panel
 {
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IReadOnlyList<BatterySample> Samples { get; set; } =
         Array.Empty<BatterySample>();
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal DateTimeOffset PeriodEnd { get; set; } = DateTimeOffset.UtcNow;
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal DateTimeOffset PeriodStart { get; set; } = DateTimeOffset.UtcNow.AddDays(-7);
 
     public BatteryGraphPanel()

@@ -40,3 +40,16 @@ Inno 6.7.1 observed in prior upgrade logs; installer fallback still
 requires a separate supply-chain review. No new package downloads
 or installer changes here. Node 20 actions forced to Node 24 warning
 in earlier CI is recorded for review; no automatic action upgrade.
+
+## Owner-selected .NET 11 migration (2026-11-25)
+
+#143 merged 48b1fff, six hosted checks passed, identical tested tree.
+Owner explicitly selects .NET 11 rather than .NET 10. Microsoft lists
+11.0 GA, SDK 11.0.100, runtime 11.0.0, released 2026-11-10, supported
+through 2028-11-14 (STS): https://dotnet.microsoft.com/en-us/download/dotnet/11.0
+and https://dotnet.microsoft.com/en-us/platform/support/policy.
+This candidate changes SDK/TFMs and CI, not device protocol. Windows API
+target is retained provisionally; it is not an OS support guarantee.
+Review breaking changes, actual resolved runtime and installer/native
+behavior before admission. Local QA not executed; hosted checks pending.
+No release dispatch. See #144 and #142.
