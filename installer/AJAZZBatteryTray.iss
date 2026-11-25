@@ -5,6 +5,11 @@
 #define AppVersion "0.3.0-beta.60"
 #endif
 #define AppExe "AJAZZBatteryTray.exe"
+#ifdef InstallerLifecycleProbe
+#define LaunchArgs "--internal-installer-lifecycle-probe"
+#else
+#define LaunchArgs ""
+#endif
 
 [Setup]
 AppId={{9829045F-37F0-4AC3-ACBD-1B5E4129A179}
@@ -28,7 +33,10 @@ SolidCompression=yes
 UninstallDisplayName=AJAZZ Battery Tray
 SetupIconFile=..\src\AjazzBatteryTray\Assets\AppIcon.ico
 UninstallDisplayIcon={app}\{#AppExe}
+; Let Restart Manager close only applications using our installed executable.
 CloseApplications=yes
+CloseApplicationsFilter=AJAZZBatteryTray.exe
+; One explicit launch below; do not also ask Restart Manager to restart it.
 RestartApplications=no
 
 [Languages]
@@ -49,4 +57,20 @@ Name: "{autoprograms}\AJAZZ Battery Tray"; Filename: "{app}\{#AppExe}"; WorkingD
 Name: "{autodesktop}\AJAZZ Battery Tray"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Launch AJAZZ Battery Tray"; Flags: nowait postinstall skipifsilent runasoriginaluser
+Filename: "{app}\{#AppExe}"; Parameters: "{#LaunchArgs}"; WorkingDir: "{app}"; StatusMsg: "Starting AJAZZ Battery Tray..."; Flags: nowait runasoriginaluser; Check: ShouldLaunchTray
+
+[Code]
+function ShouldLaunchTray: Boolean;
+var
+  Launch: String;
+begin
+  { Interactive setup launches by default. Unattended setup requires opt-in. }
+  Launch := ExpandConstant('{param:LAUNCH|}');
+  if Launch = '0' then
+    Result := False
+  else if Launch = '1' then
+    Result := True
+  else
+    Result := not WizardSilent;
+end;
+
