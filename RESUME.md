@@ -1,3 +1,13 @@
+# Resume — shared local/CI candidate compiler entrypoint
+
+#249 merged f2f338e after exact 2/2 CI. New shared local/CI
+builder defaults to dry-run; explicit Windows compile validates
+exact pinned inputs before/after, no install or publish. Actual
+#246 portable artifact dry-run PASS, app SHA equals qualified
+#246 setup payload; empty output. Three regressions, native rerun
+pending. Local-use/distribution terms, lifecycle of fresh candidate,
+interactive/hardware, signing and production compiler gates open.
+
 # Resume — candidate distribution review
 
 #248 merged dd38bf4 after exact 5/5 CI. Compared two actual #246

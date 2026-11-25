@@ -36,7 +36,10 @@ class CandidateVersionTests(unittest.TestCase):
         workflow = (ROOT / '.github/workflows/test-inno-674-trust.yml').read_text()
         self.assertNotIn('-p:Version=0.3.0-beta.61', workflow)
         self.assertNotIn('/DAppVersion=0.3.0-beta.61', workflow)
-        self.assertIn('/DProductionNoticeCandidate=1', workflow)
+        self.assertIn('build_local_inno674_candidate.py', workflow)
+        builder = (ROOT / 'tools/build_local_inno674_candidate.py').read_text()
+        self.assertIn('/DProductionNoticeCandidate=1', builder)
+        self.assertNotIn('/DAppVersion=', builder)
         self.assertIn("release_admission = 'NOT_VERIFIED'", workflow)
 
 

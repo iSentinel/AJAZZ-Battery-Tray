@@ -6,6 +6,7 @@ on:
       - '.github/workflows/test-inno-674-trust.yml'
       - 'config/inno-674-component-pins.json'
       - 'tools/verify_inno674_components.py'
+      - 'tools/build_local_inno674_candidate.py'
       - 'tools/verify_inno674_product_binary.py'
       - 'tools/verify_inno674_product_resources.py'
       - 'tools/verify_inno674_solid_payload.py'
@@ -215,22 +216,10 @@ jobs:
           dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Product probe publish failed' }
           $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
-          python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'product-components-before.json')
-          if ($LASTEXITCODE -ne 0) { throw 'Product compiler input identity failed' }
-          $iscc = Join-Path $compiler 'ISCC.exe'
-          $lines = @(& $iscc '/DProductNoticeProbe=1' '/DProductionNoticeCandidate=1' "/DNoticeRoot=$(Join-Path $root 'staged')" "/O$root" 'installer/AJAZZBatteryTray.iss')
-          $code = $LASTEXITCODE
-          $lines | ForEach-Object { Write-Host $_ }
-          if ($code -ne 0 -or @($lines | Where-Object { $_ -ceq 'Compiler engine version: Inno Setup 6.7.4' }).Count -ne 1) {
-            throw 'Product probe compilation failed or engine differs'
-          }
-          if (!(Test-Path -LiteralPath (Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe') -PathType Leaf)) {
-            throw 'Production-shaped 6.7.4 output missing'
-          }
-          python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'product-components-after.json')
-          if ($LASTEXITCODE -ne 0 -or (Get-FileHash (Join-Path $root 'product-components-before.json')).Hash -cne (Get-FileHash (Join-Path $root 'product-components-after.json')).Hash) {
-            throw 'Product compiler inputs changed'
-          }
+          python tools/build_local_inno674_candidate.py --compiler $compiler --notices (Join-Path $root 'staged') --output $root --dry-run
+          if ($LASTEXITCODE -ne 0) { throw 'Local candidate preflight failed' }
+          python tools/build_local_inno674_candidate.py --compiler $compiler --notices (Join-Path $root 'staged') --output $root --compile
+          if ($LASTEXITCODE -ne 0) { throw 'Local candidate compilation failed' }
       - name: Verify product notice lifecycle without tray launch
         shell: pwsh
         run: |
@@ -359,6 +348,11 @@ jobs:
           if ($binding.setup_sha256 -cne $setupHash -or $binding.source_sha -cne (git rev-parse HEAD)) {
             throw 'Product lifecycle identity differs'
           }
+          $local = Get-Content -Raw -LiteralPath (Join-Path $root 'local-build-evidence.json') | ConvertFrom-Json
+          if ($local.setup_sha256 -cne $setupHash -or $local.app_sha256 -cne $binding.app_sha256 -or
+              $local.input_identity -cne 'MATCH' -or $local.release_admission -cne 'NOT_VERIFIED') {
+            throw 'Local compilation evidence identity differs'
+          }
           [ordered]@{
             schema = 'inno-674-product-binding-v1'
             source_sha = $binding.source_sha
@@ -382,6 +376,7 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/product-components-before.json
             ${{ runner.temp }}/ajazz-notice-probe/product-components-after.json
             ${{ runner.temp }}/ajazz-notice-probe/inno674-product-binding.json
+            ${{ runner.temp }}/ajazz-notice-probe/local-build-evidence.json
           if-no-files-found: error
           retention-days: 7
 

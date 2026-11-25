@@ -2018,3 +2018,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Arrange exact independently qualified executable for human
       testing; no substitution of historical installer evidence.
 - [ ] Physical/interactive acceptance, signing and release admission.
+
+### Shared local and CI candidate compiler entrypoint
+
+- [x] #249 exact 2/2 CI, merged f2f338e into draft #99.
+- [x] Local dry-run and explicit Windows compilation tool, pinned
+      compiler/source/notice checks and app version, before/after
+      identity, fresh outputs and CI lifecycle hash binding.
+- [x] Actual #246 portable input dry-run PASS; exact app matches
+      qualified installer payload. Three regression tests.
+- [ ] Native CI rerun of shared compiler entrypoint.
+- [ ] Review local-use and distribution terms, exact fresh candidate
+      lifecycle/interactive/hardware qualification and signing.
+      Release hold unchanged.
