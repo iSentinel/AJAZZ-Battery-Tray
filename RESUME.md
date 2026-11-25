@@ -1223,3 +1223,11 @@ explicit passive owner annotations or reviewed reports; memory-only
 CreateNew output, no uploads. A failed write may leave a partial ZIP
 but retains in-memory reports. Native CI, ZIP importer, macOS workflow
 and physical acceptance remain open.
+
+## Direct session ZIP import checkpoint
+
+#191 merged cd5af94; stacked on #193 46172b6. Timeline accepts
+--session path.zip without extraction; bounded regular ZIP, exact manifest,
+fixed member names, CRC, UTF-8, owner annotation chronology. Initial
+unchecked AULA remains not_checked. Synthetic exporter-layout fixtures;
+real Windows ZIP interoperability and physical acceptance pending.

@@ -341,3 +341,22 @@ The current importer does not read ZIP directly. No automatic uploads,
 no persisted in-memory session after app exit. Limits: 32 reports,
 one MiB per report, eight MiB total UTF-8. A failed export may leave
 a partial file; the session remains available for retry at a new path.
+
+### Direct session archive analysis
+
+The timeline importer now accepts the Windows diagnostic session ZIP
+directly:
+
+```sh
+python3 tools/compare_diagnostic_timeline.py --session session.zip
+```
+
+No files are extracted. The importer validates the manifest, fixed
+snapshot names, entry count, declared and actual sizes, CRC, allowed
+compression, UTF-8, and chronological annotation timestamps. Limits:
+32 reports, 1 MiB each, 8 MiB total, 9 MiB archive, 64 KiB manifest.
+The result retains explicit owner annotations separately from the
+observations; selecting Bluetooth or marking sleep is not hardware
+proof. The archive is not authenticated. Unknown AULA before its first
+poll is reported as not_checked. Invalid input exits 2 without
+printing partial results. No original report content is uploaded.

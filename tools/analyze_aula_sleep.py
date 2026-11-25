@@ -62,6 +62,21 @@ def parse_time(value: str) -> datetime | None:
     return result
 
 
+def extended_presence(presence: re.Match, stamp: str, level: str,
+                      cache: str) -> tuple[str, str]:
+    """Recognize the exact not-yet-polled extended emitter state."""
+    present, known = presence.groups()
+    if present == "unknown" or known == "unknown":
+        if (present, known, stamp, level, cache) != (
+                "unknown", "unknown", "never", "unavailable",
+                "Last successful battery: unavailable; UTC: never; "
+                "Consecutive no-reply polls: 0; Cache lifetime hours: 24; "
+                "Display cache active: False"):
+            raise ValueError("inconsistent unchecked AULA measurement")
+        present, known = "False", "False"
+    return present, known
+
+
 def extended_summary(data: str) -> str:
     """Project only allowlisted AULA fields from one extended report."""
     lines = data.splitlines()
@@ -81,17 +96,18 @@ def extended_summary(data: str) -> str:
     auto = re.fullmatch(
         r"Auto monitoring: (True|False); interval(?:=|: )\d+s; UTC: (.+)", block[0])
     presence = re.fullmatch(
-        r"Receiver present: (True|False); presence known: (True|False)",
+        r"Receiver present: (True|False|unknown); presence known: (True|False|unknown)",
         block[1])
     level = re.fullmatch(r"Battery: (unavailable|\d+); status: .+", block[2])
     if not auto or not presence or not level or not CACHE_FIELDS.fullmatch(block[3]):
         raise ValueError("malformed extended AULA fields")
+    present, known = extended_presence(presence, auto[2], level[1], block[3])
     return "\n".join([
         "AULA L99 2.4 GHz experimental battery check",
         f"Version: {versions[0]}",
         f"Automatic monitoring enabled: {auto[1]}",
-        f"Receiver present: {presence[1]}",
-        f"Presence known: {presence[2]}",
+        f"Receiver present: {present}",
+        f"Presence known: {known}",
         f"Battery percentage: {level[1]}",
         f"Last read UTC: {auto[2]}",
         block[3],
