@@ -1037,6 +1037,23 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] No release admission; retain the current release hold. Do not enable
       forced process termination as an automatic fallback.
 
+### ENG-12 conditional host header reconstruction
+
+- [x] Review pinned .NET v11.0.0 resource updater and host writer.
+- [x] Reconstruct inventoried PE header fields conditional on observed
+      resource size; require zero-filled resource tail.
+- [x] Real historical #147 Tray/HA EXEs: zero unexpected differences.
+- [ ] Exact hosted QA, independent resource serialization, signature,
+      license/notices, advisory and SBOM qualification. Release hold unchanged.
+
+### ENG-12 independent resource serialization (scoped inputs)
+
+- [x] Rebuild SDK resource layout from pinned host and embedded app payloads;
+      compare complete resource bytes, including metadata and padding.
+- [x] Historical #147 Tray/HA: exact reconstructed resources and headers PASS.
+- [ ] Exact hosted QA and final candidate artifacts, independent app build,
+      signature, licenses/notices, advisory and SBOM. Release hold unchanged.
+
 ### ENG-06/12 pinned package license inventory
 
 - [x] Re-download four exact NuGet packages and verify pinned digests.

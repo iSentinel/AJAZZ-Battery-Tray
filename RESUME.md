@@ -1,3 +1,9 @@
+# Resume — merge license inventory with resource serialization
+
+#161 integrated a98cb0d after exact 4/4 CI. #162 prior head b48e3de
+4/4 PASS; conflicts resolved retaining both sets of tools and roadmap
+entries. Fresh combined QA required; release hold unchanged.
+
 # Resume — pinned package license inventory
 
 Base f23b8fc #99 6/6 CI PASS. #160 and #161 integration pending.
@@ -7,6 +13,25 @@ required. Exact notices and signature presence recorded, no compliance
 or signature clearance. License CLI and seven regression tests added.
 SDK terms, notice distribution, toolchain, SBOM/advisories and release
 qualification remain open.
+
+# Resume — independent PE resource serialization (scoped inputs)
+
+#158 integrated f23b8fc after 4/4 checks. #160 935a1a4 staged.
+New stacked verifier derives .rsrc bytes and size from pinned Host and
+embedded application resources. Historical #147 Tray 1629900 and HA
+1473220 bytes exact; reconstructed headers and zero tail both PASS.
+Scope limited to reviewed key types and three named resources; no
+independent app build, whole-file reproducibility or signature claim.
+Hosted CI and release/physical gates remain open.
+
+# Resume — conditional PE header reconstruction
+
+#159 merged b21337d after 4/4 CI and actual synthetic lifecycle log PASS.
+#158 joined 00d4cc3, local 166/166 QA, manifest PASS; exact CI pending.
+New stacked header reconstruction compares actual #147 Tray/HA against
+pinned host: 0 unexpected differences, zero resource tail for both.
+Observed resource size is conditional input, not independent serialization.
+Native/physical acceptance and release hold remain open.
 
 # Resume — automatic Windows Setup close and relaunch
 
