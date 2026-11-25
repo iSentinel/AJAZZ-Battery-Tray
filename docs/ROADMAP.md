@@ -1455,3 +1455,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       beta.62 lifecycle rebuild; include source and both binary hashes.
 - [ ] Hosted installer artifact upload, exact digest verification and
       physical acceptance. Preserve release hold.
+
+### Exact retained installer verification
+
+- [x] Merge #198 after exact CI, 8f08c8a.
+- [x] Download artifact 15001949427; verify REST archive digest, setup
+      digest, non-probe manifest and actual CI merge checkout tree.
+- [x] Add reproducible bounded installer archive verifier and tests;
+      verify PE32 bootstrap certificate-table observation.
+- [ ] Independent installer payload verification, toolchain trust and
+      redistribution review. No physical acceptance claimed.

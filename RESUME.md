@@ -1274,3 +1274,15 @@ evidence /root/ajazz-current-windows-artifacts.vAlfBQTy. New CI
 retains the tested normal beta.61 setup before synthetic beta.62
 rebuild. Hosted installer artifact verification and hardware tests
 pending; release hold unchanged.
+
+## Retained installer checkpoint
+
+#198 merged 8f08c8a. Artifact 15001949427 from run 45572270704 checked;
+archive and setup hashes match, manifest checkout 57bbbe0 is the
+actual CI merge with identical tree to fa2f81f and 8f08c8a. New
+verify_installer_candidate.py passes actual ZIP. Bootstrap x86 PE32,
+certificate table absent; app hash manifest only independently,
+native CI checked installed hash. Evidence
+/root/ajazz-beta61-installer-verified.evVtmGsl. Physical acceptance,
+independent installer payload verification and trust/redistribution
+remain open. Release hold unchanged.
