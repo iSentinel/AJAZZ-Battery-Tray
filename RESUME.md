@@ -1,3 +1,12 @@
+# Resume — conditional PE header reconstruction
+
+#159 merged b21337d after 4/4 CI and actual synthetic lifecycle log PASS.
+#158 joined 00d4cc3, local 166/166 QA, manifest PASS; exact CI pending.
+New stacked header reconstruction compares actual #147 Tray/HA against
+pinned host: 0 unexpected differences, zero resource tail for both.
+Observed resource size is conditional input, not independent serialization.
+Native/physical acceptance and release hold remain open.
+
 # Resume — automatic Windows Setup close and relaunch
 
 - #157 corrected 2afb9c8 passed 4/4 CI and merged into draft #99 at

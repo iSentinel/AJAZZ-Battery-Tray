@@ -1036,3 +1036,12 @@ configuration commands. USB `VersionNumber` is a device revision,
       no orphan workers, data loss or duplicate tray icons.
 - [ ] No release admission; retain the current release hold. Do not enable
       forced process termination as an automatic fallback.
+
+### ENG-12 conditional host header reconstruction
+
+- [x] Review pinned .NET v11.0.0 resource updater and host writer.
+- [x] Reconstruct inventoried PE header fields conditional on observed
+      resource size; require zero-filled resource tail.
+- [x] Real historical #147 Tray/HA EXEs: zero unexpected differences.
+- [ ] Exact hosted QA, independent resource serialization, signature,
+      license/notices, advisory and SBOM qualification. Release hold unchanged.
