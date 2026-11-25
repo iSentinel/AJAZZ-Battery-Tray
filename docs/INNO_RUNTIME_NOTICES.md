@@ -52,3 +52,17 @@ References:
 - https://github.com/jrsoftware/issrc/tree/cfdf48923178df4b4f040e038b423aa555a61ffc
 - https://github.com/remobjects/pascalscript/blob/d6e25439080c37e15af23badb48c39760a2b8d4d/LICENSE.md
 - https://github.com/jrsoftware/issrc/blob/cfdf48923178df4b4f040e038b423aa555a61ffc/Components/Lzma2/7zC.txt
+
+## Combined local Windows notice staging
+
+`tools/stage_windows_notices.py` stages the exact repository MIT license,
+three pinned Inno-related files and five root notices from the four pinned
+.NET/SDK packs. All input identities are checked before creating the
+output directory; existing output is rejected. Nine files are reread
+and a manifest records their SHA-256 and lengths. The SDK pack contains
+no root notice in the reviewed inventory, not a waiver of its terms.
+
+Actual replay on the four retained pinned packs: nine files PASS;
+manifest SHA-256
+b151b2a7ed4f40ef0859b2f846c87b4211290751b8092eba0aac69bdaac0649c.
+No installer or portable artifact changed; this is preparation only.

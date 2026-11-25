@@ -1707,3 +1707,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Integrate and continue distribution notice coverage, transitive
       licensing, remaining advisory scope and physical acceptance.
       Release hold.
+
+### Combined Windows notice staging
+
+- [x] Stage nine exact reviewed notice files from repository and pinned
+      packages; verify reread bytes and manifest; reject replacement.
+- [x] Actual replay and three synthetic regressions.
+- [ ] Hosted checks and integration, resolve remaining licensing terms,
+      design candidate-bound installed/portable notice transport and
+      qualify new binaries. Release hold.
