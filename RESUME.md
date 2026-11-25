@@ -1249,3 +1249,17 @@ EN/RU/UK, passive owner markers and explicit reviewed report addition.
 Portable C compile + Python import passes; native CI and physical
 menu acceptance remain open. Duplicate whole-second snapshot UTC is
 rejected; a failed export may leave a partial new ZIP.
+
+## Candidate acceptance refresh
+
+#195 merged 33629e7; #196 merged d5d3313, identical to tested #196
+3d143a3. New CANDIDATE_ACCEPTANCE.md supersedes obsolete session-only
+fallback instructions, 18 Windows and 11 per-Apple-edition physical
+scenario IDs. All physical results NOT RUN. Exact artifact verification
+and actual 10.13.6 runtime acceptance remain open. Public beta.60 held.
+
+Exact #196 Apple archive replay: Universal artifact 15001581433 and
+High Sierra 15001876157, outer/inner digest checks, archive/load
+commands/symbol inventory/resource seal/SBOM PASS. SDK name screen
+completed with no runtime compatibility claim. Private evidence at
+/root/ajazz-current-apple-artifacts.ZJ9mpoRM. See CANDIDATE_ACCEPTANCE.md.

@@ -65,7 +65,7 @@ No new receiver write commands have been enabled.
 - Actual radio monitor/RTC wire format remains unconfirmed; no write has
   been implemented. See AULA_L99_SCREEN_SYNC.md.
 
-## Evidence snapshot — 2026-11-06
+## Historical evidence snapshot — 2026-11-06 (not current policy)
 
 | Capability | Implementation / CI | Physical validation |
 | --- | --- | --- |
@@ -91,33 +91,15 @@ No new receiver write commands have been enabled.
 The observed **83%** is one historical reading, not a permanent battery
 level, and does not prove compatibility of all firmware variants or AJ159.
 
-## Highest-value Windows hardware acceptance sequence
+## Current Windows hardware acceptance sequence
 
-Use the newest package from
-[GitHub Latest](https://github.com/iSentinel/AJAZZ-Battery-Tray/releases/latest).
-
-1. Close the vendor AJAZZ utility to avoid HID conflicts, then run Battery
-   Tray. Verify battery percentage over 2.4 GHz. Note the displayed source.
-2. Switch AJ179 APEX to Bluetooth. Open **Check paired Bluetooth battery...**,
-   select **AJ179 APEX**, click **Read selected battery** and confirm the
-   message says **Fresh GATT Battery Level (2A19) read**.
-3. Explicitly enable **Use this mouse in tray when 2.4 GHz receiver is
-   absent (this session)**. The Bluetooth device ID stays in memory only.
-4. **Physically unplug the 2.4 GHz USB receiver.** Confirm the tray switches
-   to **Bluetooth** and shows a fresh percent, or clearly says unavailable.
-5. Check another automatic GATT reading after 60 seconds. It must not be a
-   Windows cached BatteryLife value. If the mouse sleeps, the indicator
-   should become unavailable rather than remain at an obsolete percentage.
-6. Wake the mouse. Use **Refresh Bluetooth battery now** to bypass the
-   automatic retry delay. The success state should reset failure count.
-7. Reinsert the USB receiver. Verify the tray now prioritizes USB.
-   **If the USB receiver is present but the mouse is still in Bluetooth mode,
-   the expected USB display may be unavailable**; Bluetooth is intentionally
-   not substituted while USB is present.
-8. Disable Bluetooth fallback, confirm the UI and diagnostics report it off,
-   restart the application, and verify it has not silently re-enabled.
-9. Copy **Bluetooth monitor status** and record the result. The copied report
-   contains timestamps, counts and transport labels, **not MAC/USB IDs**.
+The November 6 table above is historical, not the current behavior.
+For the integrated candidate after #196 use
+[Candidate Acceptance](CANDIDATE_ACCEPTANCE.md), including independent
+BLE polling, local persistent opt-in, display-only cache, explicit
+transport association and diagnostic sessions. Do not test these new
+features on the public beta.60 release or infer hardware acceptance
+from CI.
 
 ## Dock clock acceptance
 
