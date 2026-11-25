@@ -338,6 +338,14 @@ static NSInteger TraceCollections(const void **list, CFIndex count,
         IOHIDDeviceRef device = (IOHIDDeviceRef)list[i];
         if (!MatchesVendorCollection(device)) continue;
         (*matches)++;
+        CFTypeRef revision = IOHIDDeviceGetProperty(device, CFSTR("VersionNumber"));
+        CFTypeRef feature = IOHIDDeviceGetProperty(device, CFSTR("MaxFeatureReportSize"));
+        int rev = -1, size = -1;
+        if (revision && CFGetTypeID(revision) == CFNumberGetTypeID())
+            CFNumberGetValue(revision, kCFNumberIntType, &rev);
+        if (feature && CFGetTypeID(feature) == CFNumberGetTypeID())
+            CFNumberGetValue(feature, kCFNumberIntType, &size);
+        printf("collection.%ld.revision=%d feature_bytes=%d\n", (long)*matches, rev, size);
         IOReturn opened = IOHIDDeviceOpen(device, 0);
         printf("collection.%ld.open=0x%08x\n",
                (long)*matches, (unsigned int)opened);
@@ -402,6 +410,41 @@ static int TraceReceiver(void) {
     return result;
 }
 
+/// Capture the existing supervised CLI trace without a shell or global redirection.
+static NSString *CaptureMenuTrace(BOOL synthetic) {
+    NSTask *task = [[NSTask alloc] init];
+    task.launchPath = [[NSBundle mainBundle] executablePath];
+    task.arguments = synthetic ? @[@"--self-test-watchdog"] : @[@"--trace-hid"];
+    NSPipe *pipe = [NSPipe pipe];
+    task.standardOutput = pipe;
+    task.standardError = pipe;
+    @try {
+        NSTimeInterval started = [[NSProcessInfo processInfo] systemUptime];
+        [task launch];
+        // NSTask closes the parent writing end for NSPipe.
+        NSMutableData *captured = [NSMutableData data];
+        BOOL truncated = NO;
+        for (;;) {
+            NSData *chunk = [[pipe fileHandleForReading] readDataOfLength:1024];
+            if (!chunk.length) break;
+            if (!truncated && captured.length + chunk.length <= 4096) [captured appendData:chunk];
+            else truncated = YES;
+        }
+        [task waitUntilExit];
+        NSString *text = [[NSString alloc] initWithData:captured encoding:NSUTF8StringEncoding];
+        return [NSString stringWithFormat:@"%@%@\nDiagnostic exit: %d\nElapsed ms: %.0f",
+            text ?: @"Diagnostic output unavailable", truncated ? @"\n[Output truncated]" : @"",
+            task.terminationStatus, ([[NSProcessInfo processInfo] systemUptime] - started) * 1000];
+    } @catch (NSException *exception) {
+        (void)exception;
+        // Close a failed capture pipe before waiting for the supervisor.
+        @try { [[pipe fileHandleForReading] closeFile]; }
+        @catch (NSException *ignored) { (void)ignored; }
+        if (task.running) [task waitUntilExit];
+        return @"FAIL: diagnostic process unavailable";
+    }
+}
+
 @interface LegacyTray : NSObject <NSApplicationDelegate, CBCentralManagerDelegate,
                                    CBPeripheralDelegate>
 @property(nonatomic, strong) NSStatusItem *tray;
@@ -415,6 +458,7 @@ static int TraceReceiver(void) {
 @property(nonatomic, assign) BOOL polling;
 @property(nonatomic, assign) BOOL isolatedPolling;
 @property(nonatomic, assign) BOOL closing;
+@property(nonatomic, assign) BOOL diagnosticRunning;
 @property(nonatomic, strong) LegacyPollCancellation *activeCancellation;
 @property(nonatomic, assign) NSUInteger pollAttempt;
 @property(nonatomic, assign) BOOL everConnected;
@@ -508,9 +552,16 @@ static int TraceReceiver(void) {
     [self item:menu title:[self word:@"Check connected Bluetooth battery…"
                                     ru:@"Проверить Bluetooth…" uk:@"Перевірити Bluetooth…"]
                    action:@selector(checkBluetooth:)];
-    [self item:menu title:[self word:@"Copy diagnostics" ru:@"Копировать диагностику"
-                                    uk:@"Копіювати діагностику"]
+    NSMenu *diagnostics = [[NSMenu alloc] initWithTitle:@"Diagnostics"];
+    [self item:diagnostics title:[self word:@"Device diagnostics…" ru:@"Диагностика устройства…" uk:@"Діагностика пристрою…"]
+                   action:@selector(showDiagnostics:)];
+    [self item:diagnostics title:[self word:@"Run HID diagnostics…" ru:@"Запустить HID-диагностику…" uk:@"Запустити HID-діагностику…"]
+                   action:@selector(runHIDDiagnostics:)];
+    [self item:diagnostics title:[self word:@"Copy diagnostics" ru:@"Копировать диагностику" uk:@"Копіювати діагностику"]
                    action:@selector(copyDiagnostics:)];
+    NSMenuItem *diagnosticItem = [menu addItemWithTitle:
+        [self word:@"Diagnostics" ru:@"Диагностика" uk:@"Діагностика"] action:NULL keyEquivalent:@""];
+    diagnosticItem.submenu = diagnostics;
     [menu addItem:[NSMenuItem separatorItem]];
 
     NSMenu *settings = [[NSMenu alloc] initWithTitle:@"Settings"];
@@ -708,7 +759,7 @@ static int TraceReceiver(void) {
 }
 
 - (void)refresh:(id)sender {
-    if (self.polling || self.closing) return; // Never accumulate blocked HID threads.
+    if (self.polling || self.diagnosticRunning || self.closing) return; // Never accumulate blocked HID threads.
     self.polling = YES;
     LegacyPollCancellation *token = self.isolatedPolling
         ? [[LegacyPollCancellation alloc] init] : nil;
@@ -788,19 +839,97 @@ static int TraceReceiver(void) {
          self.latest.state == BatteryUnexpectedUsage ? @"HID usage mismatch" :
          self.latest.state == BatteryTimedOut ? @"HID read stalled" :
          @"receiver present, no valid battery");
+    NSISO8601DateFormatter *utc = [[NSISO8601DateFormatter alloc] init];
+    NSString *sample = self.sessionVerifiedAt ? [utc stringFromDate:self.sessionVerifiedAt] : @"never";
+    NSString *battery = self.latest.state == BatteryValid ?
+        [NSString stringWithFormat:@"%ld%%", (long)self.latest.percent] : @"unknown";
     return [NSString stringWithFormat:
-        @"AJAZZ Battery Tray High Sierra Edition\n"
+        @"AJAZZ Battery Tray High Sierra Edition\nVersion: %@ (%@)\nUTC: %@\n"
          @"OS: %@\nVID:PID: 3151:5007\nUsage: FFFF:0002\n"
-         @"Battery state: %@\nMatching HID collections: %ld\n"
+         @"Battery state: %@; battery: %@\nMatching HID collections: %ld\n"
+         @"Last verified USB UTC (session): %@\nPolling active: %@; isolated: %@\n"
          @"Firmware and device serial numbers were not queried.",
-         [[NSProcessInfo processInfo] operatingSystemVersionString],
-         state, (long)self.latest.collections];
+         [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
+         [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"],
+         [utc stringFromDate:[NSDate date]], [[NSProcessInfo processInfo] operatingSystemVersionString],
+         state, battery, (long)self.latest.collections, sample,
+         self.polling ? @"True" : @"False", self.isolatedPolling ? @"True" : @"False"];
 }
 
-- (void)copyDiagnostics:(id)sender {
+- (void)copyReport:(NSString *)report {
     NSPasteboard *board = [NSPasteboard generalPasteboard];
     [board clearContents];
-    [board setString:[self diagnostics] forType:NSPasteboardTypeString];
+    if (![board setString:report forType:NSPasteboardTypeString])
+        [self message:[self word:@"Unable to copy diagnostics" ru:@"Не удалось скопировать отчёт" uk:@"Не вдалося скопіювати звіт"]];
+}
+
+- (void)copyDiagnostics:(id)sender { [self copyReport:[self diagnostics]]; }
+
+- (void)saveReport:(NSString *)report {
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.nameFieldStringValue = @"ajazz-high-sierra-diagnostics.txt";
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    NSData *data = [report dataUsingEncoding:NSUTF8StringEncoding];
+    if (AjazzWriteDiagnostic(panel.URL.path.fileSystemRepresentation, data.bytes, data.length) != 0)
+        [self message:[self word:@"Unable to save a new diagnostic file" ru:@"Не удалось сохранить новый файл отчёта" uk:@"Не вдалося зберегти новий файл звіту"]];
+}
+
+- (void)reviewReport:(NSString *)report {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = [self word:@"Device diagnostics" ru:@"Диагностика устройства" uk:@"Діагностика пристрою"];
+    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 470, 260)];
+    NSTextView *view = [[NSTextView alloc] initWithFrame:scroll.bounds];
+    view.string = report;
+    view.editable = NO;
+    view.selectable = YES;
+    view.verticallyResizable = YES;
+    view.autoresizingMask = NSViewWidthSizable;
+    scroll.documentView = view;
+    scroll.hasVerticalScroller = YES;
+    alert.accessoryView = scroll;
+    [alert addButtonWithTitle:[self word:@"Copy report" ru:@"Копировать" uk:@"Копіювати"]];
+    [alert addButtonWithTitle:[self word:@"Save report…" ru:@"Сохранить…" uk:@"Зберегти…"]];
+    [alert addButtonWithTitle:[self word:@"Close" ru:@"Закрыть" uk:@"Закрити"]];
+    [NSApp activateIgnoringOtherApps:YES];
+    NSModalResponse result = [alert runModal];
+    if (result == NSAlertFirstButtonReturn) [self copyReport:report];
+    if (result == NSAlertSecondButtonReturn) [self saveReport:report];
+}
+
+- (void)showDiagnostics:(id)sender { [self reviewReport:[self diagnostics]]; }
+
+- (void)runHIDDiagnostics:(id)sender {
+    if (self.polling || self.diagnosticRunning || self.closing) {
+        [self message:[self word:@"Diagnostic busy; try again after the current read" ru:@"Идёт опрос; повторите после завершения" uk:@"Триває опитування; повторіть після завершення"]];
+        return;
+    }
+    NSAlert *consent = [[NSAlert alloc] init];
+    consent.messageText = [self word:@"Run HID diagnostics" ru:@"Запустить HID-диагностику" uk:@"Запустити HID-діагностику"];
+    consent.informativeText = [self word:@"F7/05 query, up to 20 seconds. First 8 reply bytes included. No RTC or configuration writes. Review before sharing."
+        ru:@"Опрос F7/05, до 20 секунд. Первые 8 байт ответа. Без RTC и настроек. Проверьте перед отправкой."
+        uk:@"Опитування F7/05, до 20 секунд. Перші 8 байтів відповіді. Без RTC і налаштувань. Перевірте перед надсиланням."];
+    [consent addButtonWithTitle:[self word:@"Run" ru:@"Запустить" uk:@"Запустити"]];
+    [consent addButtonWithTitle:[self word:@"Cancel" ru:@"Отмена" uk:@"Скасувати"]];
+    [NSApp activateIgnoringOtherApps:YES];
+    if ([consent runModal] != NSAlertFirstButtonReturn || self.polling || self.diagnosticRunning || self.closing) return;
+    self.diagnosticRunning = YES;
+    NSString *snapshot = [self diagnostics];
+    self.detail.title = [self word:@"Running HID diagnostics…" ru:@"Выполняется HID-диагностика…" uk:@"Виконується HID-діагностика…"];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        @autoreleasepool {
+            NSString *trace = CaptureMenuTrace(NO);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (self.closing) {
+                    self.diagnosticRunning = NO;
+                    [NSApp replyToApplicationShouldTerminate:YES];
+                    return;
+                }
+                self.diagnosticRunning = NO;
+                [self display:self.latest];
+                [self reviewReport:[snapshot stringByAppendingFormat:@"\n\nFresh bounded F7/05 trace:\n%@", trace]];
+            });
+        }
+    });
 }
 
 - (void)message:(NSString *)text {
@@ -957,6 +1086,11 @@ static int TraceReceiver(void) {
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    if (self.diagnosticRunning) {
+        self.closing = YES;
+        [self.timer invalidate];
+        return NSTerminateLater;
+    }
     if (!self.isolatedPolling || !self.polling) return NSTerminateNow;
     self.closing = YES;
     [self.timer invalidate];
@@ -1138,6 +1272,7 @@ int main(int argc, char *argv[]) {
                        !strcmp(argv[i], "--diagnose") ||
                        !strcmp(argv[i], "--trace-hid") ||
                        !strcmp(argv[i], "--self-test-watchdog") ||
+                       !strcmp(argv[i], "--self-test-menu-diagnostic") ||
                        !strcmp(argv[i], "--internal-trace-hid") ||
                        !strcmp(argv[i], "--internal-diagnose") ||
                        !strcmp(argv[i], "--internal-poll-sample") ||
@@ -1175,6 +1310,12 @@ int main(int argc, char *argv[]) {
         }
         if (!strcmp(mode, "--help") || !strcmp(mode, "-h")) {
             Help();
+            return 0;
+        }
+        if (!strcmp(mode, "--self-test-menu-diagnostic")) {
+            NSString *trace = CaptureMenuTrace(YES);
+            if (![trace containsString:@"TIMEOUT:"] || ![trace containsString:@"Diagnostic exit: 124"] || !AjazzDiagnosticExportSelfTest()) return 1;
+            puts("PASS: menu capture uses supervised trace without HID");
             return 0;
         }
         if (!strcmp(mode, "--self-test-routine-poll")) return RoutineSelfTest();

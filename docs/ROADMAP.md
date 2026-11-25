@@ -1181,3 +1181,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Exact hosted CI, actual OS export provenance, client and linker
       directive semantics, runtime Objective-C API and hardware validation.
       No native compatibility or release admission claim.
+
+### Owner priority — Apple GUI HID diagnostics and peer research
+
+- [x] Review five peer projects and selected pinned source implementations.
+- [x] Add EN/RU/UK Diagnostics menu in both Apple editions, passive snapshot,
+      consented supervised F7/05 capture, review/copy/private no-clobber save.
+- [x] Keep ordinary monitoring separate, retain CLI and vendor lease;
+      add synthetic capture/export checks to native build scripts.
+- [ ] Native hosted CI and physical UI/diagnostic acceptance on both editions.
+- [ ] Provider status dashboard and independent GATT comparison export.
+- [ ] Versioned redacted cross-platform reports and cancellable partial capture.
+- [ ] Event-based refresh and resource baseline review.
+      ENG-12 linker directives and actual OS export evidence remain open.

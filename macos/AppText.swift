@@ -11,6 +11,13 @@ enum AppText {
             "ru": "График заряда...", "uk": "Графік заряду..."],
         "Open battery history folder...": [
             "ru": "Открыть папку истории...", "uk": "Відкрити теку історії..."],
+        "Running HID diagnostics...": ["ru": "Выполняется HID-диагностика...", "uk": "Виконується HID-діагностика..."],
+        "Run HID diagnostics...": ["ru": "Запустить HID-диагностику...", "uk": "Запустити HID-діагностику..."],
+        "Save diagnostic report...": ["ru": "Сохранить отчёт...", "uk": "Зберегти звіт..."],
+        "Close diagnostic report": ["ru": "Закрыть", "uk": "Закрити"],
+        "Unable to save diagnostic report": ["ru": "Не удалось сохранить новый файл отчёта", "uk": "Не вдалося зберегти новий файл звіту"],
+        "Diagnostic busy; try again after the current read": ["ru": "Идёт опрос; повторите после завершения", "uk": "Триває опитування; повторіть після завершення"],
+        "HID diagnostic consent": ["en": "F7/05 query, up to 8 seconds. Report includes first 8 reply bytes. No RTC or configuration writes. Review before sharing.", "ru": "Опрос F7/05, до 8 секунд. Отчёт содержит первые 8 байт ответа. Без RTC и настроек. Проверьте перед отправкой.", "uk": "Опитування F7/05, до 8 секунд. Звіт містить перші 8 байтів відповіді. Без RTC і налаштувань. Перевірте перед надсиланням."],
         "Device diagnostics...": [
             "ru": "Диагностика устройства...", "uk": "Діагностика пристрою..."],
         "Check connected Bluetooth battery...": [

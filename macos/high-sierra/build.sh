@@ -43,6 +43,7 @@ codesign --verify --verbose "$APP"
 if [[ "$(uname -m)" == "x86_64" ]]; then
   AJAZZ_TEST_CORPUS="$ROOT/tests/fixtures/apex-f7-v1.csv" "$EXE" --self-test
   "$EXE" --self-test-routine-poll
+  "$EXE" --self-test-menu-diagnostic
   "$EXE" --help
 else
   echo "SKIP: executable smoke test needs Intel runner"

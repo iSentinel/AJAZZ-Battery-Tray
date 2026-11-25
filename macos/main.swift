@@ -35,9 +35,12 @@ enum ApexBattery {
         return value < 0 ? nil : Int(value)
     }
 
-    static func read() -> Status {
+    static func read(trace: ((String) -> Void)? = nil) -> Status {
         let lease = AjazzAcquireIoLease()
-        guard lease >= 0 else { return .accessUnknown }
+        guard lease >= 0 else {
+            trace?("I/O lease unavailable; no request")
+            return .accessUnknown
+        }
         defer { AjazzReleaseIoLease(lease) }
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         let criteria: [String: Any] = [
@@ -45,20 +48,24 @@ enum ApexBattery {
             kIOHIDProductIDKey as String: productID
         ]
         IOHIDManagerSetDeviceMatching(manager, criteria as CFDictionary)
-        guard IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
-            return .accessUnknown
-        }
+        let managerResult = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        trace?(String(format: "manager.open=0x%08x", UInt32(bitPattern: managerResult)))
+        guard managerResult == kIOReturnSuccess else { return .accessUnknown }
         defer { IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone)) }
 
-        guard let found = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice>,
-              !found.isEmpty else {
-            return .notConnected
-        }
+        let found = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> ?? []
+        trace?("receiver.hid_count=\(found.count)")
+        guard !found.isEmpty else { return .notConnected }
         var matched = false
         var opened = false
         for device in found where matchesVendorUsage(device) {
             matched = true
-            let result = poll(device)
+            if let trace = trace {
+                let revision = (IOHIDDeviceGetProperty(device, "VersionNumber" as CFString) as? NSNumber)?.stringValue ?? "unknown"
+                let size = (IOHIDDeviceGetProperty(device, "MaxFeatureReportSize" as CFString) as? NSNumber)?.stringValue ?? "unknown"
+                trace("collection.revision=\(revision) feature_bytes=\(size)")
+            }
+            let result = poll(device, trace: trace)
             opened = opened || result.opened
             if let value = result.percent { return .battery(value) }
         }
@@ -187,8 +194,10 @@ enum ApexBattery {
         return page == usagePage && item == usage
     }
 
-    private static func poll(_ device: IOHIDDevice) -> (opened: Bool, percent: Int?) {
-        guard IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone)) == kIOReturnSuccess else {
+    private static func poll(_ device: IOHIDDevice, trace: ((String) -> Void)? = nil) -> (opened: Bool, percent: Int?) {
+        let opened = IOHIDDeviceOpen(device, IOOptionBits(kIOHIDOptionsTypeNone))
+        trace?(String(format: "collection.open=0x%08x", UInt32(bitPattern: opened)))
+        guard opened == kIOReturnSuccess else {
             return (false, nil)
         }
         defer { IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone)) }
@@ -200,6 +209,7 @@ enum ApexBattery {
             let write = request.withUnsafeBufferPointer { data in
                 IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature, 0, data.baseAddress!, data.count)
             }
+            trace?(String(format: "F7.set.length=%d result=0x%08x", count, UInt32(bitPattern: write)))
             guard write == kIOReturnSuccess else { continue }
             Thread.sleep(forTimeInterval: 0.03)
             var reply = [UInt8](repeating: 0, count: count)
@@ -207,6 +217,11 @@ enum ApexBattery {
             var actualLength: CFIndex = count
             let read = reply.withUnsafeMutableBufferPointer { data in
                 IOHIDDeviceGetReport(device, kIOHIDReportTypeFeature, 5, data.baseAddress!, &actualLength)
+            }
+            trace?(String(format: "05.get.result=0x%08x length=%d", UInt32(bitPattern: read), Int(actualLength)))
+            if read == kIOReturnSuccess && (0...count).contains(actualLength) {
+                trace?("05.reply.first_bytes=" + reply.prefix(min(8, Int(actualLength)))
+                    .map { String(format: "%02x", $0) }.joined(separator: " "))
             }
             if read == kIOReturnSuccess && (3...count).contains(actualLength),
                let percent = parse(Array(reply.prefix(Int(actualLength)))) {
@@ -242,6 +257,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var polling = false
     private var closing = false
+    private var diagnosticRunning = false
+    private var diagnosticCancellation: ApexWorkerCancellation?
     private var activeCancellation: ApexWorkerCancellation?
     private let isolatedPolling = CommandLine.arguments == [
         CommandLine.arguments[0], "--experimental-isolated-polling"
@@ -310,6 +327,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     private func buildDiagnosticsMenu() -> NSMenu {
         let menu = NSMenu(title: AppText.text("Diagnostics"))
         menu.addItem(command("Device diagnostics...", #selector(showDiagnostics)))
+        menu.addItem(command("Run HID diagnostics...", #selector(runHIDDiagnostics)))
         menu.addItem(command("Copy diagnostic report", #selector(copyDeviceReport)))
         menu.addItem(command("Open battery history folder...",
                               #selector(openHistoryFolder)))
@@ -549,13 +567,27 @@ final class TrayController: NSObject, NSApplicationDelegate {
         if enabled { syncClockNow() }
     }
 
-    @objc private func copyDeviceReport() {
+    private func diagnosticSnapshot() -> String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"]
             as? String ?? "unknown"
-        let report = "AJAZZ Battery Tray diagnostic report\n" +
-            "Version: \(version)\n" +
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        let last = ApexWorkerReply(displayedStatus)
+        let battery = last.percent.map { String($0) + "%" } ?? "unknown"
+        let sample = sessionObservation.lastVerified.map {
+            ISO8601DateFormatter().string(from: $0)
+        } ?? "never"
+        return "AJAZZ Battery Tray diagnostic report\n" +
+            "Version: \(version) (\(build))\n" +
+            "UTC: \(ISO8601DateFormatter().string(from: Date()))\n" +
             "macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)\n" +
-            ApexBattery.diagnostics()
+            "VID:PID: 3151:5007; usage FFFF:0002\n" +
+            "Last ordinary status: \(last.state); battery: \(battery)\n" +
+            "Last verified USB UTC (session): \(sample)\n" +
+            "Polling active: \(polling); isolated: \(isolatedPolling)\n" +
+            "No serial numbers, device paths or Bluetooth addresses collected."
+    }
+
+    private func copyReport(_ report: String) {
         let clipboard = NSPasteboard.general
         clipboard.clearContents()
         if !clipboard.setString(report, forType: .string) {
@@ -567,6 +599,94 @@ final class TrayController: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc private func copyDeviceReport() { copyReport(diagnosticSnapshot()) }
+
+    private func reviewReport(_ report: String) {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = AppText.text("AJAZZ APEX — Device diagnostics")
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 470, height: 260))
+        let view = NSTextView(frame: scroll.bounds)
+        view.string = report
+        view.isEditable = false
+        view.isSelectable = true
+        view.isVerticallyResizable = true
+        view.autoresizingMask = [.width]
+        scroll.documentView = view
+        scroll.hasVerticalScroller = true
+        alert.accessoryView = scroll
+        alert.addButton(withTitle: AppText.text("Copy diagnostic report"))
+        alert.addButton(withTitle: AppText.text("Save diagnostic report..."))
+        alert.addButton(withTitle: AppText.text("Close diagnostic report"))
+        let result = alert.runModal()
+        if result == .alertFirstButtonReturn { copyReport(report) }
+        if result == .alertSecondButtonReturn { saveReport(report) }
+    }
+
+    private func saveReport(_ report: String) {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "ajazz-macos-diagnostics.txt"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let bytes = Array(report.utf8)
+        let saved = url.path.withCString { path in
+            bytes.withUnsafeBufferPointer {
+                AjazzWriteDiagnostic(path, $0.baseAddress, $0.count) == 0
+            }
+        }
+        if !saved {
+            let alert = NSAlert()
+            alert.messageText = AppText.text("Unable to save diagnostic report")
+            alert.runModal()
+        }
+    }
+
+    @objc private func runHIDDiagnostics() {
+        guard !polling, !diagnosticRunning, !closing else {
+            let alert = NSAlert()
+            alert.messageText = AppText.text("Diagnostic busy; try again after the current read")
+            alert.runModal()
+            return
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        let consent = NSAlert()
+        consent.messageText = AppText.text("Run HID diagnostics...")
+        consent.informativeText = AppText.text("HID diagnostic consent")
+        consent.addButton(withTitle: AppText.text("Run HID diagnostics..."))
+        consent.addButton(withTitle: AppText.text("Close diagnostic report"))
+        guard consent.runModal() == .alertFirstButtonReturn,
+              !polling, !diagnosticRunning, !closing else { return }
+        diagnosticRunning = true
+        let token = ApexWorkerCancellation()
+        diagnosticCancellation = token
+        let snapshot = diagnosticSnapshot()
+        detailItem.title = AppText.text("Running HID diagnostics...")
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let started = ProcessInfo.processInfo.systemUptime
+            let result = ApexBoundedWorker.read(mode: ApexBoundedWorker.traceMode,
+                                                cancellation: token)
+            let elapsed = ProcessInfo.processInfo.systemUptime - started
+            DispatchQueue.main.async {
+                self?.finishDiagnostic(snapshot, result, elapsed: elapsed)
+            }
+        }
+    }
+
+    private func finishDiagnostic(_ snapshot: String, _ result: ApexBoundedWorker.Result, elapsed: Double) {
+        diagnosticCancellation = nil
+        if closing {
+            diagnosticRunning = false
+            NSApp.reply(toApplicationShouldTerminate: true)
+            return
+        }
+        let detail: String
+        if case .trace(let text) = result { detail = text }
+        else { detail = "Diagnostic outcome: \(result)" }
+        diagnosticRunning = false
+        renderStatus(displayedStatus)
+        let timing = String(format: "Elapsed ms: %.0f", elapsed * 1000)
+        reviewReport(snapshot + "\n\nFresh bounded F7/05 trace:\n" + detail + "\n" + timing)
+    }
+
     @objc private func showBluetoothBattery() {
         if bluetoothWindow == nil {
             bluetoothWindow = BluetoothBatteryWindowController()
@@ -576,11 +696,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showDiagnostics() {
-        let alert = NSAlert()
-        alert.messageText = AppText.text("AJAZZ APEX — Device diagnostics")
-        alert.informativeText = ApexBattery.diagnostics()
-        alert.alertStyle = .informational
-        alert.runModal()
+        reviewReport(diagnosticSnapshot())
     }
 
     @objc private func syncClockNow() {
@@ -589,7 +705,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func refresh() {
-        guard !polling, !closing else { return }
+        guard !polling, !diagnosticRunning, !closing else { return }
         polling = true
         let token = isolatedPolling ? ApexWorkerCancellation() : nil
         activeCancellation = token
@@ -754,6 +870,12 @@ final class TrayController: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if diagnosticRunning, let token = diagnosticCancellation {
+            closing = true
+            timer?.invalidate()
+            token.cancel()
+            return .terminateLater
+        }
         guard isolatedPolling, polling else { return .terminateNow }
         closing = true
         timer?.invalidate()
@@ -814,7 +936,7 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
     exit(ApexBoundedWorker.runChild(worker))
 } else if CommandLine.arguments.contains("--self-test-bounded-poll") {
     guard CommandLine.arguments.count == 2 else { exit(1) }
-    let passed = ApexBoundedWorker.selfTest()
+    let passed = ApexBoundedWorker.selfTest() && AjazzDiagnosticExportSelfTest()
     print(passed ? "PASS: bounded worker IPC, rejection, timeout, cancellation and recovery" :
         "FAIL: bounded worker self-test")
     exit(passed ? 0 : 1)

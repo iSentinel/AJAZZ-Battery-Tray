@@ -1,3 +1,12 @@
+# Resume — Apple GUI diagnostics owner priority
+
+#175 merged 23998be after 4/4 CI; previous integration 6/6.
+Both Apple editions now have consented menu F7/05 capture,
+passive snapshot, preview/copy/private no-clobber save.
+Peer project review and future improvements in
+docs/APPLE_DIAGNOSTICS_MENU.md. Native CI and hardware pending.
+Release hold unchanged.
+
 # Resume — High Sierra SDK name screen
 
 #174 merged dea88bf after 4/4 exact hosted CI.
