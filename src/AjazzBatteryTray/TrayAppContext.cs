@@ -1394,6 +1394,7 @@ public sealed class TrayAppContext : ApplicationContext
         string attempts = usb?.Attempts is { Count: > 0 } trace
             ? string.Join(Environment.NewLine, trace) : "No completed poll trace.";
         return "AJAZZ Battery Tray extended diagnostic report" + Environment.NewLine +
+            "Report schema: windows-extended-v1\n" +
             $"App version: {Application.ProductVersion}\n" +
             $"Windows: {Environment.OSVersion.VersionString}; OS architecture: {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}\n" +
             $"Report UTC: {DateTimeOffset.UtcNow:O}\n" +

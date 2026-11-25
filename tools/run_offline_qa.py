@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = ("source-toolchain.json", "code-audit.json", "python-results.xml",
             "summary.json")
 CLI = ("analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease", "code_audit",
-       "compare_apex_reports", "compare_get_ids", "compare_job_cpu",
+       "compare_apex_reports", "normalize_device_diagnostics", "compare_get_ids", "compare_job_cpu",
        "compare_ready_clear", "compare_tray_resources",
        "compare_windows_hid_logs", "inventory_dotnet_bundle",
        "inventory_dotnet_components",

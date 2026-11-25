@@ -1226,3 +1226,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Exact native CI, physical report fixtures, versioned Windows
       adapter and active trace outcome normalization.
 - [ ] Interactive cancellation and multi-snapshot capture.
+
+### Cross-platform diagnostic envelope
+
+- [x] Integrate #178 and #179 after exact hosted CI.
+- [x] Add version marker to Windows extended report without changing layout
+      of ordinary/AULA sections.
+- [x] Normalize reviewed legacy/versioned Windows and versioned Apple
+      snapshots in one redacted envelope; preserve typed GATT/cache sources.
+- [x] Add six synthetic regression tests and offline CLI help gate.
+- [ ] Exact hosted CI, actual cross-platform report fixtures, normalized
+      active trace outcomes, provider dashboard and interactive cancellation.

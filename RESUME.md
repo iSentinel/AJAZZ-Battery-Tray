@@ -1,3 +1,10 @@
+# Resume — cross-platform diagnostics summary
+
+#178/#179 merged; integrated ce9a2b6. Windows extended schema marker
+and common redacted importer added. Keep ordinary USB, cached Bluetooth
+and independent GATT distinct. Native CI and physical reports pending.
+Release hold unchanged.
+
 # Resume — Apple menu report schema
 
 Stacked on #178 969540e. Both Apple editions emit apple-menu-v1.
