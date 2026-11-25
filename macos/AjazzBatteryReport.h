@@ -10,6 +10,11 @@
 #include "AjazzSessionArchive.h"
 #endif
 
+// Presentation only: absent, future, non-finite and expired sample ages are invalid.
+static inline bool AjazzSampleAgeIsCurrent(double ageSeconds) {
+    return ageSeconds >= 0.0 && ageSeconds <= 300.0;
+}
+
 // IOKit can return the requested 05 report with or without its report ID.
 static inline int AjazzBatteryPercent(const uint8_t *bytes, size_t length) {
     if (!bytes || length == 0) return -1;

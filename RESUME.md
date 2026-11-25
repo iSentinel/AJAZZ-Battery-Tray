@@ -1,3 +1,12 @@
+# Resume — Apple retained USB presentation age
+
+#254 corrected head 48a6cf3 passed 6/6 CI, merged df27f42 after
+tested tree equality. Apple shared C age predicate and both native
+presentation projections now hide expired/future/missing readings
+on refresh/menu/diagnostics; history and alerts unchanged.
+Seven shared C boundary assertions passed on Linux. Native Apple
+CI and physical sleep/wake pending. Release hold unchanged.
+
 # Resume — APEX dashboard smoke dependency correction
 
 #254 initial CI 4/5: isolated dashboard smoke compile CS0103

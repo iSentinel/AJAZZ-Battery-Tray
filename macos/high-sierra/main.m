@@ -38,6 +38,16 @@ static NSDate *SessionVerifiedAt(NSDate *previous, BatteryReading reading, NSDat
     return reading.state == BatteryAbsent ? nil : previous;
 }
 
+/// Project the last reading without mutating history, alerts or receiver state.
+static BatteryReading PresentationReading(BatteryReading reading, NSDate *stamp, NSDate *now) {
+    if (reading.state == BatteryValid && (!stamp || reading.percent < 1 ||
+        reading.percent > 100 || !AjazzSampleAgeIsCurrent([now timeIntervalSinceDate:stamp]))) {
+        reading.state = BatteryUnknown;
+        reading.percent = -1;
+    }
+    return reading;
+}
+
 /// Accept only the documented F7/05 telemetry response, not arbitrary bytes.
 static NSInteger ParseBattery(const uint8_t *report, CFIndex length) {
     return length > 0 ? AjazzBatteryPercent(report, (size_t)length) : -1;
@@ -510,7 +520,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     return [scanner scanInt:&pid] && pid > 1 && kill((pid_t)pid, 0) < 0 && errno == ESRCH;
 }
 
-@interface LegacyTray : NSObject <NSApplicationDelegate, CBCentralManagerDelegate,
+@interface LegacyTray : NSObject <NSApplicationDelegate, NSMenuDelegate, CBCentralManagerDelegate,
                                    CBPeripheralDelegate>
 @property(nonatomic, strong) NSStatusItem *tray;
 @property(nonatomic, strong) NSMenuItem *detail;
@@ -723,6 +733,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     [menu addItem:[NSMenuItem separatorItem]];
     [self item:menu title:[self word:@"Quit" ru:@"Выход" uk:@"Вийти"]
                    action:@selector(quit:)];
+    menu.delegate = self;
     self.tray.menu = menu;
     [self display:self.latest];
 }
@@ -747,6 +758,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 }
 
 - (void)display:(BatteryReading)reading {
+    reading = PresentationReading(reading, self.sessionVerifiedAt, [NSDate date]);
     if (reading.state == BatteryValid) {
         self.tray.button.title = [NSString stringWithFormat:@"🔋%ld%%",
                                  (long)reading.percent];
@@ -848,7 +860,15 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
                      uk:@"Низький заряд: %ld%%"], (long)reading.percent]];
 }
 
+- (void)menuWillOpen:(NSMenu *)menu {
+    (void)menu;
+    [self display:self.latest];
+}
+
 - (void)refresh:(id)sender {
+    if (self.closing) return;
+    if (PresentationReading(self.latest, self.sessionVerifiedAt, [NSDate date]).state != self.latest.state)
+        [self display:self.latest];
     if (self.polling || self.diagnosticRunning || self.closing) return; // Never accumulate blocked HID threads.
     self.polling = YES;
     LegacyPollCancellation *token = self.isolatedPolling
@@ -1019,17 +1039,18 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 }
 
 - (NSString *)diagnostics {
-    NSString *state = self.latest.state == BatteryValid ? @"valid" :
-        (self.latest.state == BatteryChecking ? @"not checked yet" :
-         self.latest.state == BatteryAbsent ? @"not connected" :
-         self.latest.state == BatteryAccessError ? @"access error" :
-         self.latest.state == BatteryUnexpectedUsage ? @"HID usage mismatch" :
-         self.latest.state == BatteryTimedOut ? @"HID read stalled" :
+    BatteryReading current = PresentationReading(self.latest, self.sessionVerifiedAt, [NSDate date]);
+    NSString *state = current.state == BatteryValid ? @"valid" :
+        (current.state == BatteryChecking ? @"not checked yet" :
+         current.state == BatteryAbsent ? @"not connected" :
+         current.state == BatteryAccessError ? @"access error" :
+         current.state == BatteryUnexpectedUsage ? @"HID usage mismatch" :
+         current.state == BatteryTimedOut ? @"HID read stalled" :
          @"receiver present, no valid battery");
     NSISO8601DateFormatter *utc = [[NSISO8601DateFormatter alloc] init];
     NSString *sample = self.sessionVerifiedAt ? [utc stringFromDate:self.sessionVerifiedAt] : @"never";
-    NSString *battery = self.latest.state == BatteryValid ?
-        [NSString stringWithFormat:@"%ld%%", (long)self.latest.percent] : @"unknown";
+    NSString *battery = current.state == BatteryValid ?
+        [NSString stringWithFormat:@"%ld%%", (long)current.percent] : @"unknown";
     return [NSString stringWithFormat:
         @"AJAZZ Battery Tray High Sierra Edition\nReport schema: apple-menu-v1\nVersion: %@ (%@)\nUTC: %@\n"
          @"OS: %@\nVID:PID: 3151:5007\nUsage: FFFF:0002\n"
@@ -1041,7 +1062,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
          [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
          [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"],
          [utc stringFromDate:[NSDate dateWithTimeIntervalSince1970:floor([[NSDate date] timeIntervalSince1970])]], [[NSProcessInfo processInfo] operatingSystemVersionString],
-         state, battery, (long)self.latest.collections, sample,
+         state, battery, (long)current.collections, sample,
          self.polling ? @"True" : @"False", self.isolatedPolling ? @"True" : @"False",
          self.bluetoothDiscovery ?: @"not requested", self.selectedPeripheral ? @"True" : @"False",
          self.bluetoothLastRead ?: @"not requested"];
@@ -1436,8 +1457,15 @@ static int SelfTest(void) {
         [SessionVerifiedAt(verified, (BatteryReading){BatteryTimedOut, -1, 0},
             [stamp dateByAddingTimeInterval:30]) isEqualToDate:stamp] &&
         SessionVerifiedAt(verified, (BatteryReading){BatteryAbsent, -1, 0}, stamp) == nil;
+    BatteryReading valid = {BatteryValid, 83, 1};
+    BOOL age = PresentationReading(valid, stamp, [stamp dateByAddingTimeInterval:300]).state == BatteryValid &&
+        PresentationReading(valid, stamp, [stamp dateByAddingTimeInterval:300.01]).state == BatteryUnknown &&
+        PresentationReading(valid, stamp, [stamp dateByAddingTimeInterval:-1]).percent == -1 &&
+        PresentationReading(valid, nil, stamp).percent == -1 &&
+        PresentationReading((BatteryReading){BatteryTimedOut, -1, 0}, stamp, stamp).state == BatteryTimedOut;
+    puts(age ? "PASS: sample age" : "FAIL: sample age");
     NSString *corpus = [NSProcessInfo processInfo].environment[@"AJAZZ_TEST_CORPUS"];
-    BOOL pass = (!corpus || VerifyObservationCorpus(corpus)) && provenance && safe && shared && ParseBattery(first, 4) == 1 &&
+    BOOL pass = (!corpus || VerifyObservationCorpus(corpus)) && provenance && age && safe && shared && ParseBattery(first, 4) == 1 &&
         ParseBattery(full, 4) == 100 &&
         ParseBattery(stripped, 3) == 25 &&
         ParseBattery(zero, 4) == -1 &&

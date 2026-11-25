@@ -680,3 +680,15 @@ expires. No new HID request, history record or alert is generated
 by a presentation refresh. Validate actual Windows suspension,
 resume, linked transport selection and multi-icon display separately.
 This does not qualify ready-clear data as a battery reading.
+
+## Apple retained observation age
+
+On Universal and High Sierra, a retained successful USB reply is
+eligible for presentation through five minutes from its observed
+timestamp. On refresh, menu opening and passive diagnostic export,
+an expired, future or missing timestamp hides the percentage without
+claiming disconnection. The last verified session timestamp remains
+historical context. Refreshing the presentation does not itself
+issue a new HID request or replay alerts/history. Check suspension,
+resume, delayed polls, language and appearance changes, and recovery
+on each supported OS. No actual Apple physical acceptance is claimed.

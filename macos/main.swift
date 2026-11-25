@@ -248,10 +248,17 @@ struct ApexSessionObservation {
             lastVerified = nil
         }
     }
+
+    func presentation(_ status: ApexBattery.Status, at now: Date) -> ApexBattery.Status {
+        guard case .battery(let value) = status else { return status }
+        guard (1...100).contains(value), let stamp = lastVerified,
+              AjazzSampleAgeIsCurrent(now.timeIntervalSince(stamp)) else { return .unavailable }
+        return status
+    }
 }
 
 /// Native AppKit menu bar user interface, without a Dock window.
-final class TrayController: NSObject, NSApplicationDelegate {
+final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var statusMenu: NSMenu!
     private var detailItem: NSMenuItem!
@@ -308,6 +315,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
 
     private func buildStatusMenu() {
         statusMenu = NSMenu(title: "AJAZZ Battery Tray")
+        statusMenu.delegate = self
         detailItem = NSMenuItem(
             title: AppText.text("Checking 2.4 GHz receiver…"),
             action: nil, keyEquivalent: "")
@@ -702,7 +710,7 @@ final class TrayController: NSObject, NSApplicationDelegate {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"]
             as? String ?? "unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
-        let last = ApexWorkerReply(displayedStatus)
+        let last = ApexWorkerReply(sessionObservation.presentation(displayedStatus, at: Date()))
         let battery = last.percent.map { String($0) + "%" } ?? "unknown"
         let sample = sessionObservation.lastVerified.map {
             ISO8601DateFormatter().string(from: $0)
@@ -858,7 +866,15 @@ final class TrayController: NSObject, NSApplicationDelegate {
         refresh()
     }
 
+    func menuWillOpen(_ menu: NSMenu) {
+        renderStatus(displayedStatus)
+    }
+
     @objc private func refresh() {
+        if closing { return }
+        if sessionObservation.presentation(displayedStatus, at: Date()) != displayedStatus {
+            renderStatus(displayedStatus)
+        }
         guard !polling, !diagnosticRunning, !closing else { return }
         polling = true
         let token = isolatedPolling ? ApexWorkerCancellation() : nil
@@ -950,7 +966,8 @@ final class TrayController: NSObject, NSApplicationDelegate {
         renderStatus(status)
     }
 
-    private func renderStatus(_ status: ApexBattery.Status) {
+    private func renderStatus(_ observation: ApexBattery.Status) {
+        let status = sessionObservation.presentation(observation, at: Date())
         switch status {
         case .battery(let level):
             statusItem.button?.title = "🔋\(level)%"
@@ -1280,6 +1297,11 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
         ApexBattery.Status.notConnected.compatibleReceiverPresent == false
     var observation = ApexSessionObservation()
     observation.observe(.battery(83), at: testDate)
+    let ageValid = observation.presentation(.battery(83), at: testDate.addingTimeInterval(300)) == .battery(83) &&
+        observation.presentation(.battery(83), at: testDate.addingTimeInterval(300.01)) == .unavailable &&
+        observation.presentation(.battery(83), at: testDate.addingTimeInterval(-1)) == .unavailable &&
+        ApexSessionObservation().presentation(.battery(83), at: testDate) == .unavailable &&
+        observation.presentation(.timedOut, at: testDate) == .timedOut
     observation.observe(.timedOut, at: testDate.addingTimeInterval(30))
     let preserved = observation.lastVerified == testDate
     observation.observe(.notConnected, at: testDate.addingTimeInterval(60))
@@ -1297,6 +1319,7 @@ if CommandLine.arguments.contains("--internal-test-io-lease") {
     // Stable synthetic group labels only; do not emit device data or raw reports.
     let checks: [(String, Bool)] = [
         ("observation-corpus", corpusValid), ("provenance", provenanceValid),
+        ("sample-age", ageValid),
         ("shared-frame", sharedFrameValid), ("presence", presenceValid),
         ("localization", localizationValid), ("bluetooth-payload", bluetoothValid),
         ("alerts", alertTests), ("timeout-alerts", timeoutValid),

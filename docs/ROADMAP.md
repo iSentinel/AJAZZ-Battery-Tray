@@ -2087,3 +2087,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       used by UI, app, API and HA preview; retain API compatibility alias.
       No change to age values. Add a shared-limit assertion.
 - [ ] Re-run exact Windows CI, including dashboard smoke.
+
+### Apple retained USB presentation age
+
+- [x] #254 corrected head 48a6cf3, exact 6/6 CI including Windows
+      Device Manager smoke and HA preview; merged df27f42 into draft #99.
+- [x] Universal and High Sierra apply a shared five-minute age ceiling
+      to retained USB readings on rendering, timer and menu opening;
+      preserve last verified session timestamp, suppress expired/future
+      or missing timestamps in diagnostics. No history, alert, or HID
+      policy changes. Shared C boundary check: 7/7 on Linux.
+- [ ] Native Universal and High Sierra self-tests and actual sleep/wake
+      acceptance; no change to release tags or shipping build metadata.
