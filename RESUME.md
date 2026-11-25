@@ -6,8 +6,11 @@
 - Consent gate retained, 40s deadline, kill attempt and confirmed exit before
   polling resumes. If termination fails, polling remains excluded.
 - Added EN/RU/UA status and packaged Windows synthetic success/hang tests.
-- CI, GUI verification, install/upgrade and hard parent-exit behavior still
-  pending. Issue #93 remains open; no release/version change yet.
+- Follow-up: kill-on-close Windows Job Object and stdin start gate protect
+  against supervisor death; added actual synthetic forced-parent-exit test.
+- CI (including job compatibility), GUI verification, install/upgrade and
+  failed termination behavior still pending. Issue #93 remains open;
+  no release/version change yet.
 - Latest beta.60, High Sierra .5; AJ159, AULA and iMac hardware acceptance
   remain pending. No new HID opcodes or report IDs.
 
