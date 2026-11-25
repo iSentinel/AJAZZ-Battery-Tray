@@ -1874,3 +1874,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       product install/upgrade/repair and interactive launch, and new
       binary attribution before any production compiler change.
       Release hold.
+
+### Inno 6.7.4 interactive launch acceptance boundary
+
+- [x] Compare exact upstream source commits and identify the
+      InitializeSetup elevation-path change.
+- [x] Record RG01–RG06 launch, privilege and mitigation acceptance
+      matrix; distinguish silent CI and actual UAC interactive path.
+- [ ] Native compiler result, separate product-probe qualification,
+      actual interactive observations and physical acceptance.
+      Release hold; no RedirectionGuard bypass.

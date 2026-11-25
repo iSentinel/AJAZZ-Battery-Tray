@@ -1,3 +1,11 @@
+# Resume — Inno 6.7.4 interactive launch acceptance boundary
+
+Stacked on #236. Exact source comparison confirms elevation-path
+RedirectionGuardConfigure removal. RG01–RG06 acceptance matrix
+separates real UAC/original-user launch from already-elevated and
+silent CI cases; no mitigation bypass. Native compiler and product
+probe, interactive hardware/OS evidence and legal gates pending.
+
 # Resume — Inno 6.7.4 exact input and portable compiler qualification
 
 #234 merged abfd739 (6/6); #235 merged b64201e into parent (5/5).
