@@ -75,8 +75,30 @@ $arguments = @()
 if ($AppVersion) { $arguments += "/DAppVersion=$AppVersion" }
 if ($LifecycleProbe) { $arguments += '/DInstallerLifecycleProbe=1' }
 $arguments += $installer
-$lines = @(& $iscc @arguments)
-$code = $LASTEXITCODE
+# Inno stores the last-write time of the EXE and four icons in Setup.0.
+# Normalize only these build inputs and restore their original metadata.
+$payloads = @('dist/app/AJAZZBatteryTray.exe',
+    'src/AjazzBatteryTray/Assets/AppIcon.ico',
+    'src/AjazzBatteryTray/Assets/AppIcon-white.ico',
+    'src/AjazzBatteryTray/Assets/AppIcon-black.ico',
+    'src/AjazzBatteryTray/Assets/AppIcon-blue.ico')
+$stamps = [ordered]@{}
+foreach ($relative in $payloads) {
+    $item = Get-Item -LiteralPath (Join-Path $root $relative)
+    if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "Expected a regular installer input: $relative"
+    }
+    $stamps[$item.FullName] = $item.LastWriteTimeUtc
+}
+$fixedStamp = [datetime]::new(2000, 1, 1, 0, 0, 0, [DateTimeKind]::Utc)
+try {
+    foreach ($path in $stamps.Keys) { [IO.File]::SetLastWriteTimeUtc($path, $fixedStamp) }
+    $lines = @(& $iscc @arguments)
+    $code = $LASTEXITCODE
+}
+finally {
+    foreach ($path in $stamps.Keys) { [IO.File]::SetLastWriteTimeUtc($path, $stamps[$path]) }
+}
 $lines | ForEach-Object { Write-Host $_ }
 if ($code -ne 0) { throw "Installer compilation failed: $code" }
 $banner = @($lines | Where-Object { $_ -match '^Compiler engine version:' })

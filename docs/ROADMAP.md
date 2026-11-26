@@ -1,5 +1,71 @@
 # AJAZZ Battery Tray — Product Roadmap
 
+## 25 November review — history recovery and chart acceptance
+
+- Development changes cover Windows and universal Mac CSV tail recovery,
+  Windows-format history replay on Mac, localized read failures and Mac chart
+  rendering. See the [findings and reproduction cases](BATTERY_TRAY_AUDIT_20261124.md#follow-up-review-25-november-2026).
+- Open checks cover a known second charge for the same mouse, UI timing on
+  20,000 rows, Windows high contrast and DPI, and post-upgrade history recovery.
+
+### GearHub field evidence at 83, 25 November 2026
+
+The owner supplied two capture windows and a duplicate export. The table
+counts adjacent F7 send/get HID operations with the same receiver path and
+bridge session, successful gRPC status and a 65-byte read. Both windows
+used the shared 3151:5007 receiver. The two larger exports contain the same
+extracted gRPC bodies and are counted once.
+
+| GearHub capture | F7 sends | Matched reads | Mouse field = 83 | Read-ready with all mouse status checks passing |
+| --- | ---: | ---: | ---: | ---: |
+| Earlier | 83 | 83 | 83 | 12 |
+| Later | 20 | 19 | 19 | 4 |
+
+The remaining 71 and 15 reads respectively have read-ready clear. All
+matched reads indicate mouse slot 2, mouse link online and RF boot clear.
+GearHub's bridge returns a leading 00. These counts evaluate its status
+fields and do not constitute a Windows 05 or macOS live application read.
+The screenshot shows four filled battery segments without a numeric value.
+
+The later console log reports a missing RPC status during device identification.
+The HAR also contains a failed SetFeature on a different device, 05AC:024F
+(HTTP 200, gRPC 13, Windows error 1). The console error has no request ID
+to prove the association. The successful APEX transactions remain independently
+observable. The earlier tray-only diagnostic field of 99 was unverified and
+came from another time.
+
+- [x] Capture a nonzero field with a read-ready F7 response in GearHub.
+- [ ] Compare GearHub and tray diagnostics back-to-back on the same awake
+      physical mouse, with one reader at a time. Record the tray build,
+      report framing, both ready flags and admitted level. Repeat at
+      another observed charge level. Direct app hardware acceptance remains open.
+
+## Beta.61 release preparation — 26 November 2026
+
+- [x] Verify four platform archives and nine successful workflows for the
+      reviewed integration generation. Match the installed app as recorded
+      by CI to the portable EXE hash and verify both Apple companion checksums.
+- [x] Generate and replay five exact-candidate hardware checklists.
+      57 physical cases remain NOT_RUN.
+- [x] Confirm the beta.61 Windows field launcher created both reports.
+      All six 05/00 pairs agree on status bytes. Field 82 remained unverified.
+- [ ] Run combined candidate CI and bind the resulting platform archives.
+- [ ] Complete physical and interactive acceptance, distribution and signing
+      review, reproducibility comparison, and ENG-10 candidate admission.
+
+See the [release readiness record](BETA61_RELEASE_READINESS.md) for exact
+candidate identities, artifact links, field findings and remaining gates.
+
+### ENG-10 build reproducibility
+
+- [x] Capture a repeat-build mismatch on High Sierra with identical signed
+      bundle files and different release ZIP bytes.
+- [x] Normalize ZIP order and timestamps for both Apple build scripts.
+      Add a local comparison CLI that verifies both source archives and
+      distinguishes a packaging difference from changed app files.
+- [ ] Verify independent native repeats for both Apple editions and Windows.
+      Record exact asset digests and explain any remaining differences.
+
 ## Scope and safety contract
 
 - Keep the Windows and macOS applications independent of official AJAZZ software.

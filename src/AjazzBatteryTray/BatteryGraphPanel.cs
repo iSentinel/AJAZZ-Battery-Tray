@@ -17,6 +17,9 @@ public sealed class BatteryGraphPanel : Panel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal DateTimeOffset PeriodStart { get; set; } = DateTimeOffset.UtcNow.AddDays(-7);
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    internal bool ReadFailed { get; set; }
+
     public BatteryGraphPanel()
     {
         DoubleBuffered = true;
@@ -54,8 +57,9 @@ public sealed class BatteryGraphPanel : Panel
         if (!Samples.Any(sample => sample.Percent.HasValue))
         {
             using Font font = new("Segoe UI", 11);
-            graphics.DrawString(UiText.Get(Samples.Count == 0
-                ? "No battery observations yet" : "No charge readings in this period"), font,
+            string message = ReadFailed ? "Unable to read battery history" :
+                Samples.Count == 0 ? "No battery observations yet" : "No charge readings in this period";
+            graphics.DrawString(UiText.Get(message), font,
                 Brushes.Gray, area.Left + 16, area.Top + 30);
             return;
         }

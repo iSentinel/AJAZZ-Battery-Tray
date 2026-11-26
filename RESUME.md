@@ -7,6 +7,28 @@ one-minute consent age unchanged. One source wiring regression
 and four native assertions. Native Windows CI, physical BLE and
 suspend/resume acceptance pending; release hold unchanged.
 
+# Resume — public release reproducibility
+
+The High Sierra repeats from `10f9b4d` had equal app file hashes and
+different release ZIP hashes. Both Apple build entry points now use the
+shared deterministic packager. The offline comparator checks both original
+artifact digests and compares the actual final payload. Native repeats and
+the remaining ENG-10 admission gates are recorded in the
+[beta.61 readiness record](docs/BETA61_RELEASE_READINESS.md).
+
+# Resume — beta.61 release preparation, 26 November 2026
+
+The reviewed #99 integration generation `d94c1c3` passed all nine workflows.
+Windows portable/setup and both Apple archives match GitHub digests. The
+five bound hardware profiles contain 57 NOT_RUN cases. The older field
+kit ran on the owner's Windows PC and produced both logs. Six matched 05/00
+pairs had equal status, field 82 and the read-ready flag clear. The later
+text report showed unverified field 81.
+
+Continue with the combined #266 candidate checks and rebind its final
+artifacts. Hardware, installer interactive acceptance and ENG-10 remain
+open. [Release readiness record](docs/BETA61_RELEASE_READINESS.md)
+
 # Resume — AULA delayed UI delivery provenance
 
 Parent #277 has Windows/macOS and Python checks PASS, installer
@@ -2001,3 +2023,22 @@ upgrade run and independent engine attribution pending. Release hold.
 Notice probe CI bootstrap correction: Windows x64 Python 3.12.16 is
 unavailable; pin verified available stable 3.13.17 for this job only.
 #224 merged 18118e1 after 5/5 CI. Native install evidence still pending.
+
+## History and chart review, 25 November 2026
+
+Candidate [#266](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/266), branch `fix/history-csv-recovery-review`,
+code commit `401ab3fbe5e3efc39da1838eebddedb5b123e140`, tree
+`36d828403456e83e7d9b981bfda855618e649b95`, based on `c105bbf`.
+Linux Python 3.13.5 passed `python3 -m unittest discover -s tools -p 'test_*.py' -q`
+(428 cases), `python3 tools/run_offline_qa.py --output-root <private-dir>`
+and evidence verification. Hosted checks for this code commit passed:
+[Windows](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162729),
+[universal macOS](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162680),
+[Windows upgrade](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162608),
+[notice transport](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162626) and
+[Inno evidence](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162570).
+Windows exercised five history-recovery assertions. The Mac binary passed
+history-recovery, history-chart and history-writer. Follow the
+[roadmap](docs/ROADMAP.md#25-november-review--history-recovery-and-chart-acceptance)
+for field comparison at a second charge level, chart performance, accessibility
+and upgrade acceptance with interrupted history. Physical acceptance is open.
