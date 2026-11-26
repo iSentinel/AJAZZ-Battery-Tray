@@ -2419,6 +2419,25 @@ aulaLifecycle.Configure(true);
 Check("AULA lifecycle closed state cannot be re-enabled", !aulaLifecycle.Enabled);
 
 // AULA dashboard and optional API must classify real sleep/recovery consistently.
+// Simulate UI delivery after suspend or a blocked message loop; no hardware I/O.
+var delayedAula = new AulaBatteryState();
+var workerCompleted = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
+delayedAula.Observe(true, true, 42, workerCompleted);
+Check("AULA worker timestamp fresh at five-minute boundary",
+    delayedAula.IsFreshSample(42, workerCompleted, workerCompleted.AddMinutes(5)));
+Check("AULA delayed delivery cannot renew fresh alert eligibility",
+    !delayedAula.IsFreshSample(42, workerCompleted, workerCompleted.AddMinutes(5).AddTicks(1)) &&
+    !delayedAula.IsFreshSample(42, workerCompleted, workerCompleted.AddTicks(-1)) &&
+    !delayedAula.IsFreshSample(42, workerCompleted.AddMinutes(6), workerCompleted.AddMinutes(6)));
+var delayedAulaView = delayedAula.Dashboard("Keyboard", true, true, true, true,
+    42, workerCompleted, workerCompleted.AddHours(8));
+Check("AULA delayed delivery retains original cached timestamp",
+    delayedAulaView is { Status: DeviceDashboardStatus.Cached, Percent: 42 } &&
+    delayedAulaView.MeasuredAt == workerCompleted);
+Check("AULA delayed delivery beyond retention is unavailable",
+    delayedAula.Dashboard("Keyboard", true, true, true, true, 42, workerCompleted,
+        workerCompleted.AddHours(24)).Percent is null);
+
 var aulaSleep = new AulaBatteryState();
 DateTimeOffset sleepStart = DateTimeOffset.Parse("2026-11-22T12:00:00Z");
 DeviceDashboardState AulaSleepView(bool automatic, bool checkedOnce, bool known,

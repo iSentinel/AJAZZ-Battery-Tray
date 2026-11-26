@@ -40,6 +40,12 @@ public sealed class AulaBatteryState
         return LastGoodPercent;
     }
 
+    /// <summary>Use the worker completion time, never a delayed UI delivery time.</summary>
+    public bool IsFreshSample(int? percent, DateTimeOffset? measuredAt, DateTimeOffset now)
+        => percent is >= 1 and <= 100 && measuredAt is { } at && at <= now &&
+            now - at <= DeviceDashboardState.MaximumFreshAge &&
+            percent == LastGoodPercent && at == LastGoodAt;
+
     /// <summary>Project AULA observations consistently for the dashboard and local API.</summary>
     public DeviceDashboardState Dashboard(string name, bool automatic, bool checkedOnce,
         bool known, bool present, int? fresh, DateTimeOffset? measuredAt, DateTimeOffset now)
@@ -47,9 +53,7 @@ public sealed class AulaBatteryState
         const string transport = "2.4 GHz";
         if (!automatic && !checkedOnce)
             return new(name, transport, DeviceDashboardStatus.Disabled, null, null);
-        if (fresh is not (>= 1 and <= 100) || measuredAt is not { } at ||
-            at > now || now - at > DeviceDashboardState.MaximumFreshAge ||
-            fresh != LastGoodPercent || at != LastGoodAt)
+        if (!IsFreshSample(fresh, measuredAt, now))
             fresh = null;
         int? cached = CachedPercent(present, known, now);
         var state = DeviceDashboardState.FromPoll(name, transport, checkedOnce,
