@@ -154,3 +154,26 @@ sidecar was created. Existing public names and the release hold remain
 unchanged. Selection of a compatible final asset strategy, public
 documentation, real package extraction/launch and publisher trust
 remain open.
+
+
+## Native extraction qualification
+
+PR #312 passed four hosted checks and merged 7cf2211 after exact
+tested-tree equality. A dedicated Windows/macOS workflow now retrieves
+the pinned original application archives, reconstructs the proposed
+notice packages from the reviewed inputs, checks the exact proposal
+hashes, and uses native Expand-Archive or ditto in fresh directories.
+Windows checks all 16 regular files. Each Apple edition checks all four
+outer files, then extracts the original inner archive and compares
+every regular file and executable mode bit, and performs strict deep
+all-architectures codesign verification. No app is launched or re-signed.
+Only JSON observations are retained; no private prototype is uploaded.
+
+Local Python extraction of all three actual pinned ZIPs passed full
+inventory and byte checks. The Apple inner extraction also passed
+after explicitly restoring archive mode bits; that local check is not
+evidence that native extraction preserves the modes. Two synthetic
+test groups cover missing, modified and extra files and executable
+mode loss. Native workflow results are pending. Actual Finder/Explorer
+interaction, GUI launch, device behavior, publisher trust, distribution
+terms and final package selection remain unverified.

@@ -2846,3 +2846,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI; decide final names/compatibility strategy and execute
       native package extraction/launch, hardware and interactive tests.
       Signing, distribution and publication remain blocked.
+
+
+### Native proposed package extraction
+
+- [x] #312 exact 4/4 CI merged 7cf2211 after tested-tree equality.
+- [x] Recheck three real proposed ZIPs and both Apple inner archives
+      locally; complete inventory and byte checks PASS.
+- [x] Add native Windows Expand-Archive and macOS ditto qualification,
+      exact proposal hash checks, Apple executable bits and codesign;
+      JSON-only evidence, no application launch.
+- [ ] Review actual native CI observations. GUI extraction/launch,
+      private Setup retention, physical and interactive acceptance,
+      final package selection, distribution and signing remain open.
+      Publication BLOCKED.
