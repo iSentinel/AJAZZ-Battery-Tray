@@ -163,6 +163,36 @@ to signing or packaging require a new candidate identity and review.
 Physical and interactive acceptance, distribution clearance and publication
 approval remain tracked separately.
 
+## Candidate-bound admission review
+
+The local admission review uses the acceptance kit manifest, all four
+original Actions archives and the six original checklists. It requires
+no new format for operator observations. Run it from the repository
+root with the original artifact names or equivalent local paths:
+
+```sh
+python3 tools/review_beta61_admission.py --manifest candidate.json \
+  --windows-archive windows.zip --installer-archive setup.zip \
+  --universal-archive universal.zip --high-sierra-archive high-sierra.zip \
+  --checklist-dir checklists --output admission-review.json
+```
+
+The tool independently revalidates the archive and asset hashes and the
+checklist identities. It binds the interactive installer review to the
+actual verified setup and portable EXE bytes. The JSON contains counts
+and checklist digests without copying recorded observations. The subject
+SHA-256 covers the beta tag, source commit, tree, artifact IDs, release
+channels, filenames and exact archive and asset hashes. Updating the
+checklists preserves that subject. Review the actual CI provenance and
+use the subject and the reviewed report when recording approval.
+
+Exit 0 means all required cases were reported PASS. Exit 1 means some
+coverage is incomplete and the report was still written. Exit 2 means
+the input is invalid or the new output cannot be written. All statuses
+leave release admission BLOCKED pending independent qualification,
+distribution and signing disposition, and explicit publication approval.
+The publication workflows retain their existing hold.
+
 ## Remaining release gates
 
 | Gate | Required evidence |

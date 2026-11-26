@@ -1,3 +1,11 @@
+# Resume — beta.61 candidate-bound admission review
+
+The admission review revalidated the real `b2c5ce9` archives and six
+acceptance forms. The report binds all exact artifact hashes and
+recorded coverage to the subject digest. Current coverage is 57
+hardware and six interactive NOT_RUN. Continue with human review
+and the existing signing, distribution and approval gates.
+
 # Resume — exact beta.61 release asset staging
 
 The consolidated integration passed nine workflows. The local staging CLI
