@@ -2756,6 +2756,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Exercise upgrade and reinstall in the same hosted workflow
       that compiles the notice-bearing setup. Check shared source,
       app and setup hashes and retain JSON evidence.
-- [ ] Review the new hosted upgrade/reinstall result and perform
-      interactive and physical cases. Distribution, signing and
-      publication acceptance remain open.
+- [x] Run and replay the hosted upgrade/reinstall result for rebuilt
+      Setup `350e0501`. All nine notices matched and synthetic user
+      data was preserved. See [PR #303](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/303#hosted-result).
+- [x] Apply the reviewed UTC input timestamp policy to the 6.7.4
+      qualification path and collect same-run normalized repeats
+      plus a control that varies only the app file timestamp.
+- [ ] Verify repeat results across independent runners before
+      choosing the final reproducible Setup. Interactive and physical
+      acceptance, signing, distribution and publication remain open.

@@ -151,8 +151,78 @@ jobs:
           $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
           python tools/build_local_inno674_candidate.py --compiler $compiler --notices (Join-Path $root 'staged') --output $root --dry-run
           if ($LASTEXITCODE -ne 0) { throw 'Exact candidate preflight failed' }
-          python tools/build_local_inno674_candidate.py --compiler $compiler --notices (Join-Path $root 'staged') --output $root --compile
-          if ($LASTEXITCODE -ne 0) { throw 'Exact candidate compilation failed' }
+          $noticeRoot = Join-Path $root 'staged'
+          $app = Get-Item -LiteralPath 'dist/app/AJAZZBatteryTray.exe'
+          $inputs = @($app)
+          foreach ($name in @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')) {
+            $inputs += Get-Item -LiteralPath "src/AjazzBatteryTray/Assets/$name"
+          }
+          $inputs += Get-ChildItem -LiteralPath $noticeRoot -File -Recurse
+          if ($inputs.Count -ne 15) { throw 'Unexpected installer timestamp inputs' }
+          $stamps = [ordered]@{}
+          foreach ($item in $inputs) {
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+              throw 'Expected regular staged installer input'
+            }
+            $stamps[$item.FullName] = $item.LastWriteTimeUtc
+          }
+          $fixedStamp = [datetime]::new(2000, 1, 1, 0, 0, 0, [DateTimeKind]::Utc)
+          $repeat = Join-Path $root 'repeat-normalized'
+          $different = Join-Path $root 'repeat-changed-app-time'
+          New-Item -ItemType Directory -Path $repeat,$different | Out-Null
+          try {
+            foreach ($path in $stamps.Keys) { [IO.File]::SetLastWriteTimeUtc($path, $fixedStamp) }
+            foreach ($destination in @($root, $repeat, $different)) {
+              if ($destination -ceq $different) {
+                [IO.File]::SetLastWriteTimeUtc($app.FullName, $fixedStamp.AddDays(1))
+              }
+              python tools/build_local_inno674_candidate.py --compiler $compiler --notices $noticeRoot --output $destination --compile
+              if ($LASTEXITCODE -ne 0) { throw 'Exact candidate compilation failed' }
+            }
+          } finally {
+            foreach ($path in $stamps.Keys) { [IO.File]::SetLastWriteTimeUtc($path, $stamps[$path]) }
+          }
+          @'
+          import json
+          from pathlib import Path
+          import sys
+
+          sys.path.insert(0, "tools")
+          from compare_inno_loader import digest
+          from run_offline_qa import write_json
+          from verify_inno_inner_engine import recover
+          from verify_inno_setup_data import decode_setup0
+          from verify_windowsdesktop_provenance import read_local
+
+          root, repeat, different = map(Path, sys.argv[1:])
+          names = ("normalized_primary", "normalized_repeat", "changed_app_time")
+          builds = {}
+          records = []
+          for name, directory in zip(names, (root, repeat, different)):
+              record = json.loads(read_local(directory / "local-build-evidence.json"))
+              raw = read_local(directory / "AJAZZBatteryTray-Setup-win-x64.exe")
+              sha = digest(raw)
+              if record.pop("setup_sha256") != sha:
+                  raise ValueError("Build record digest differs")
+              records.append(record)
+              engine, section = recover(raw)
+              a, b, c = (section[key] for key in ("offset1", "offset0", "engine_offset"))
+              setup_records, location_records, _ = decode_setup0(raw[b:c])
+              builds[name] = {"setup_sha256": sha, "loader_sha256": digest(raw[:a]),
+                              "solid_payload_sha256": digest(raw[a:b]),
+                              "setup_records_sha256": digest(setup_records),
+                              "location_records_sha256": digest(location_records),
+                              "inner_engine_sha256": digest(engine)}
+          if any(record != records[0] for record in records[1:]):
+              raise ValueError("Build byte inputs differ")
+          write_json(root / "setup-repeat-observation.json", {
+              "schema": "notice-setup-repeat-v1", "source_sha": "f939fea7fb422aa588649138d29a750ce62cd22a",
+              "app_sha256": records[0]["app_sha256"], "builds": builds,
+              "scope": "one runner; same byte inputs; only the app timestamp deliberately varied",
+              "release_admission": "NOT_VERIFIED",
+          })
+          '@ | python - $root $repeat $different
+          if ($LASTEXITCODE -ne 0) { throw 'Setup repeat observation failed' }
           $record = Get-Content (Join-Path $root 'local-build-evidence.json') -Raw | ConvertFrom-Json
           if ($record.app_sha256 -cne '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c' -or
               $record.setup_sha256 -cne (Get-FileHash (Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe')).Hash.ToLowerInvariant() -or
@@ -276,6 +346,7 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/product-lifecycle.json
             ${{ runner.temp }}/ajazz-notice-probe/production-shape.json
             ${{ runner.temp }}/ajazz-notice-probe/exercised-uninstaller.json
+            ${{ runner.temp }}/ajazz-notice-probe/setup-repeat-observation.json
             ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-lifecycle.json
             ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-notices.json
             ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json

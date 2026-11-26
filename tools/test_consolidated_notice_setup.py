@@ -53,5 +53,18 @@ class ConsolidatedNoticeSetupTests(unittest.TestCase):
             self.assertIn(item, text[upload:])
 
 
+    def test_repeat_observation_keeps_inputs_and_qualifies_primary(self) -> None:
+        """Keep repeat builds scoped and preserve the primary lifecycle input."""
+        text = WORKFLOW.read_text()
+        repeat = text.index('repeat-normalized')
+        lifecycle = text.index('name: Verify product notice lifecycle')
+        self.assertLess(repeat, lifecycle)
+        for item in ('SetLastWriteTimeUtc', 'finally', '$fixedStamp.AddDays(1)',
+                     'decode_setup0', 'location_records_sha256'):
+            self.assertIn(item, text[repeat:lifecycle])
+        uploaded = text.split('name: Retain exact candidate evidence only', 1)[1]
+        self.assertIn('setup-repeat-observation.json', uploaded)
+
+
 if __name__ == '__main__':
     unittest.main()
