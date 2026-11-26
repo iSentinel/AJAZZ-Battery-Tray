@@ -236,6 +236,32 @@ jobs:
               Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait
             }
           }
+      - name: Exercise exact setup upgrade and same-version reinstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $setupName = 'AJAZZBatteryTray-Setup-win-x64.exe'
+          $setup = Join-Path $root $setupName
+          $clean = Get-Content -LiteralPath (Join-Path $root 'product-lifecycle.json') -Raw | ConvertFrom-Json
+          if ($clean.setup_sha256 -cne (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()) {
+            throw 'Setup changed after clean lifecycle'
+          }
+          & ./tools/Test-ProductNoticeUpgrade.ps1 -ProbeRoot $root -CandidateName $setupName
+          $upgrade = Get-Content -LiteralPath (Join-Path $root 'product-upgrade-lifecycle.json') -Raw | ConvertFrom-Json
+          if ($upgrade.source_sha -cne $clean.source_sha -or $upgrade.setup_sha256 -cne $clean.setup_sha256 -or
+              $upgrade.app_sha256 -cne $clean.app_sha256 -or $upgrade.synthetic_user_data -cne 'PRESERVED' -or
+              $upgrade.upgrade_notices -cne 'MATCH' -or $upgrade.reinstall_restores_missing_notice -cne 'PASS' -or
+              $upgrade.uninstall_notices -cne 'REMOVED' -or $upgrade.tray_launch -cne 'NOT_OBSERVED' -or
+              $upgrade.release_admission -cne 'NOT_VERIFIED') {
+            throw 'Upgrade, reinstall or clean lifecycle identity differs'
+          }
+          $noticeDigest = (Get-FileHash -LiteralPath (Join-Path $root 'staged-evidence.json') -Algorithm SHA256).Hash
+          foreach ($name in @('product-upgrade-notices.json', 'product-reinstall-notices.json')) {
+            if ((Get-FileHash -LiteralPath (Join-Path $root $name) -Algorithm SHA256).Hash -cne $noticeDigest) {
+              throw 'Upgrade notice evidence differs from staged notices'
+            }
+          }
       - name: Retain exact candidate evidence only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -250,6 +276,9 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/product-lifecycle.json
             ${{ runner.temp }}/ajazz-notice-probe/production-shape.json
             ${{ runner.temp }}/ajazz-notice-probe/exercised-uninstaller.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-lifecycle.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-notices.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json
             ${{ runner.temp }}/ajazz-inno-674-publisher/authenticode.json
             ${{ runner.temp }}/ajazz-inno-674-publisher/release-attestation.json
           if-no-files-found: error
