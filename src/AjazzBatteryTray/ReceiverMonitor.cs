@@ -100,12 +100,22 @@ internal sealed class ReceiverMonitor : IDisposable
                 state.ScheduledSkip = !item.Sampled;
                 if (!item.Sampled) continue;
                 state.Reading = item.Reading;
-                state.MeasuredAt = item.MeasuredAt ?? now;
+                state.MeasuredAt = item.MeasuredAt;
+                // A missing or future timestamp must never acquire a synthetic age.
+                if (state.MeasuredAt is not { } measured || measured > now)
+                {
+                    state.Reading = item.Reading with { Percent = null, UnverifiedPercent = null };
+                    state.MeasuredAt = null;
+                    state.UnverifiedStreak.Reset();
+                    state.VerifiedDisplay.Reset();
+                    state.Connection.ObserveUnknown();
+                    continue;
+                }
                 state.UnverifiedStreak.Observe(item.Reading.UnverifiedPercent, state.MeasuredAt.Value);
                 state.VerifiedDisplay.Observe(item.Reading.PresenceKnown, item.Reading.ReceiverPresent,
                     item.Reading.Percent, state.MeasuredAt.Value);
                 if (item.Reading.Percent.HasValue) state.LastVerifiedAt = state.MeasuredAt;
-                Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
+                Record(state, settings, notifier, bluetoothEnabled, measured, now);
             }
 
             foreach (string missingKey in seen.Missing(_states.Keys))
@@ -118,7 +128,7 @@ internal sealed class ReceiverMonitor : IDisposable
                 missing.UnverifiedStreak.Reset();
                 missing.VerifiedDisplay.Reset();
                 Record(missing, settings, notifier,
-                    bluetoothEnabled && batch.Receivers.Count == 0, now);
+                    bluetoothEnabled && batch.Receivers.Count == 0, now, now);
             }
 
             PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen.Keys);
@@ -187,17 +197,19 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private static void Record(State state, AppSettings settings, NotifyIcon notifier,
-        bool bluetoothEnabled, DateTimeOffset now)
+        bool bluetoothEnabled, DateTimeOffset measured, DateTimeOffset now)
     {
         int? percent = state.Reading.Percent;
         if (settings.RecordBatteryHistory)
-            state.History.Record(now, percent, state.Present);
-        if (state.Connection.Evaluate(percent.HasValue, state.Present) &&
+            state.History.Record(measured, percent, state.Present);
+        int? fresh = ApexDisplayPolicy.AlertPercent(state.Reading.PresenceKnown,
+            state.Present, state.ScheduledSkip, percent, state.MeasuredAt, now);
+        if (state.Connection.Evaluate(fresh.HasValue, state.Present) &&
             settings.EffectiveDisconnectAlert(state.Key) && !bluetoothEnabled)
             notifier.ShowBalloonTip(4000, state.DisplayLabel,
                 UiText.Get("The 2.4 GHz receiver is no longer detected."),
                 ToolTipIcon.Warning);
-        if (percent is not int level) return;
+        if (fresh is not int level) return;
         int mask = settings.EffectiveAlertMask(state.Key);
         int? threshold = state.Alerts.Evaluate(level,
             (mask & 1) != 0, (mask & 2) != 0, (mask & 4) != 0);
