@@ -465,3 +465,33 @@ Native unsigned observation MATCH; trusted signing NOT_VERIFIED.
 Signing or an explicit unsigned-distribution disposition, legal
 distribution review and hardware/interactive acceptance remain open.
 No trust, SmartScreen acceptance or publication authorization inferred.
+
+### Consolidated Apple native signature observation preparation
+
+PR #299 passed five hosted checks and merged c946160 after
+tested-tree equality. The original f939fea Apple archives remain
+distinct from the private outer notice wrappers. Both original
+build scripts use ad-hoc signing, and the offline signature
+parser verifies the scoped code pages, special slots and resource
+hashes without asserting signer trust or notarization.
+
+The new read-only macOS CI workflow retrieves the original
+Universal artifact 15108849028 and High Sierra artifact 15109082825,
+requires the pinned outer and inner SHA-256 digests, and reruns
+the scoped resource seal parser before staging either inner ZIP.
+Both original inputs passed actual local staging and two synthetic
+test groups passed. The native job extracts into fresh directories,
+compares member bytes and executable mode bits, and observes
+codesign strict/deep/all-architectures verification, signature kind,
+authority presence and spctl assessment exit code. It does not
+launch, re-sign or notarize either app. Only JSON is retained.
+
+A zero or nonzero assessment exit code on the hosted macOS 15
+runner is an observation of that environment, not proof of
+Gatekeeper behavior on an owner's device or macOS 10.13.
+Native CI remains pending. Trusted signing, notarization,
+distribution and physical acceptance remain unverified.
+The separate exact Windows Inno 6.7.4 preflight remains PASS;
+actual Windows compilation with the pinned original app, notices
+and reviewed compiler is still open. No new installer is claimed.
+Release admission remains blocked.

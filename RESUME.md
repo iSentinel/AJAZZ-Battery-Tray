@@ -1,3 +1,12 @@
+# Resume — consolidated Apple native signature observation
+
+#299 exact 5/5 merged c946160. Original f939fea Universal and
+High Sierra archive staging and scoped ad-hoc seals PASS.
+New native macOS CI checks original extracted bytes, codesign
+and Gatekeeper exit status without execution, signing or notarizing.
+Native CI pending. Exact notice-bearing Windows compilation,
+distribution and human acceptance remain open. Release BLOCKED.
+
 # Resume — consolidated installer preflight and Apple notice wrappers
 
 Exact f939fea staged Windows payload and reviewed 6.7.4 notice
