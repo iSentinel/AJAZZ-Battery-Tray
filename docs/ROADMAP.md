@@ -2655,3 +2655,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI for the replay tool; authorized signing/unsigned
       disposition, legal distribution, hardware and interactive
       acceptance. No publication or change to candidate bytes.
+
+### Consolidated notice transport gap and private prototype
+
+- [x] #297 exact 5/5 CI merged 5da4ab4 after tested-tree equality.
+- [x] Review exact f939fea Windows and Apple package inventories
+      and decoded normal setup; no separate notice tree present.
+- [x] Private notice-bearing Windows portable ZIP with unchanged
+      app and four icons, nine pinned notices, manifest and identity;
+      two synthetic groups and byte-identical actual replay PASS.
+- [ ] Hosted CI; decide final portable/Apple packaging and qualify
+      notice-bearing normal installer on exact bytes. Distribution
+      terms, signing and human acceptance remain open.
+      No publication or replacement of previously pinned assets.
