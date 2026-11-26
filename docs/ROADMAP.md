@@ -2249,3 +2249,177 @@ configuration commands. USB `VersionNumber` is a device revision,
       No change to accepted/provisional fields, history, or alerts.
       Add diagnostic-label regression.
 - [ ] Native Windows CI and real-device acceptance.
+
+### Apple bounded F7 trace classifications
+
+- [x] #264 exact 5/5 CI, merged c105bbf after tested-tree equality.
+- [x] Add matching F7 policy gate names to Universal and High Sierra
+      bounded active traces, using the shared C classifier and existing
+      optional report-ID handling. No extra USB commands, no expanded
+      raw-byte output, no change to ordinary measurement or IPC.
+- [x] Native C formatter test: 20 numbered/unnumbered cases and four
+      short/null/compact cases. Historical corpus and admission parity
+      unchanged. Passive report normalizer still excludes active trace.
+- [ ] Native macOS CI and physical acceptance; release hold unchanged.
+
+### Reported F7 policy sequence analysis
+
+- [x] #265 exact 5/5 CI including Universal and High Sierra,
+      merged 31f2ec7 after tested-tree equality.
+- [x] Extend existing local diagnostic timeline with separate
+      ordinary and active reported policy gate counts and within-
+      collection transitions. Reset on failed or unlabeled transfers
+      and collection changes; exclude interrupted active captures.
+      Reject unknown, duplicate and orphan labels. No raw bytes,
+      device identity or physical sleep-state claims exported.
+      Three new synthetic test groups.
+- [ ] Hosted Python/roundtrip CI and hardware acceptance.
+
+### Local Windows CLI diagnostic analysis
+
+- [x] #267 exact 4/4 CI, merged 3432dc7 after tested-tree equality.
+- [x] Add a bounded local JSON CLI for ordinary HID diagnostics and
+      experimental GET-ID logs. Reuse existing parsers and scoped F7
+      gate sequences; separate reported transport results, policy
+      classifications and paired status-byte agreement. Exclude
+      interrupted gate evidence, reject malformed terminal markers,
+      never export raw payloads or infer battery from experimental data.
+      Five synthetic test groups and CLI help coverage.
+- [ ] Hosted CI and physical acceptance; release hold unchanged.
+
+### CLI diagnostic consistency
+
+- [x] #268 exact 5/5 CI, merged bd84554 after tested-tree equality.
+- [x] Require a unique terminal marker in ordinary and experimental
+      CLI reports; check completed ordinary outcome, enumeration and
+      GET/SET counts. Reject accepted labels without a reported level
+      and complete rejection labels with a reported level. Preserve
+      legacy missing labels and unrecognized compact replies.
+      Two additional synthetic regression groups.
+- [ ] Hosted CI and physical acceptance; release hold unchanged.
+
+### Exact acceptance artifact generation checkpoint
+
+- [x] #269 exact 4/4 CI merged 5b18c5c after tested-tree equality.
+- [x] Verify three successful bd84554 integration CI artifact
+      downloads by REST digest; verify actual executable identities
+      and Apple companion checksums, generate and replay five blank
+      hardware checklists (57 NOT_RUN, no physical PASS).
+- [x] Record artifact generation separately from newer source head;
+      no binary or checklist identity transfer to a different build.
+- [ ] Verify next complete integration CI generation; physical,
+      signing and distribution admission remain open.
+
+### Scoped Inno 6.7.4 evidence replay — integration generation 5b18c5c
+
+- [x] #270 exact 2/2 CI merged 43e3cb5 after tested-tree equality.
+- [x] Replay 14 input documents from eight digest-checked artifacts
+      of successful run 45694508038, integration head 5b18c5c,
+      synthetic checkout 5c825ce. Hosted joined JSON matches replay
+      after line-ending normalization. Production-shape and local-build
+      checks are scoped MATCH; migration remains NOT_AUTHORIZED.
+- [x] Restore three pinned CycloneDX schemas from specification tag
+      1.6 after temporary directory loss; exact digest checks and
+      independent schema validation with candidate binding PASS.
+- [x] Re-evaluate retained NuGet and OSV evidence for four exact
+      source packs. No matching ranges or returned IDs in those
+      historical inputs. Freshness and authentication not verified.
+- [ ] Rebind the latest complete portable/Apple CI generation for
+      hardware review. Physical, signing, distribution, interactive
+      acceptance and compiler migration gates remain open.
+
+### Diagnostic timeline sample provenance
+
+- [x] Compare reported ordinary USB timestamps independently from
+      capture and batch-completion timestamps. Export AULA last-read
+      timestamp and compare it separately from last-good timestamp.
+      Preserve missing, future, earlier, equal and later timestamp
+      classifications; do not compare across platform editions.
+      Equal timestamps do not establish physical identity or freshness.
+      Three new synthetic regression groups; no HID changes.
+- [ ] Hosted CI and integration after parent #271 qualification.
+- [ ] Exact latest CI artifacts and physical acceptance.
+
+### Hardware acceptance set review
+
+- [x] #271 exact 2/2 CI merged 38a4f5b; #272 exact 4/4 CI
+      merged 970f003 after tested-tree equality.
+- [x] Rebind three successful 43e3cb5 integration CI archives by
+      exact REST digest; generate five blank checklists (57 NOT_RUN).
+- [x] Add local aggregate verifier for all five profiles against
+      three original archives and one caller-reviewed source SHA.
+      Revalidate original checklists; reject mixed generation or
+      missing profile. Four synthetic groups plus real blank replay.
+- [ ] Hosted CI and physical acceptance; release hold unchanged.
+
+### Interactive acceptance local binary binding
+
+- [x] Add paired optional setup/app paths to the existing local
+      interactive checklist validator. Match actual bounded local
+      bytes to both candidate SHA-256 values before writing output;
+      review records MATCH or NOT_PROVIDED. Preserve original
+      checklist schema and independent acceptance hold.
+- [x] Two synthetic test groups for valid pairs, swapped/changed
+      bytes, missing partner and CLI output behavior.
+- [ ] Hosted CI and exact installer bytes for real interactive
+      acceptance; compiler migration and release remain on hold.
+
+### Private local interactive acceptance path
+
+- [x] #274 exact 4/4 CI merged 8e3625d after tested-tree equality.
+- [x] Confirm public repository and existing JSON-only Inno 6.7.4
+      qualification workflow. Do not upload setup or change release hold.
+- [x] Extend interactive validator to accept the distinct local-build
+      evidence schema, check pinned fields and require both actual
+      local executable hashes for template creation and review.
+      Local identity cannot substitute for native joined evidence;
+      source provenance and native qualification remain NOT_VERIFIED.
+      Two new synthetic groups, documentation with dry-run/compile
+      and checklist commands.
+- [ ] Hosted CI, authorized Windows local compilation and human
+      interactive/physical acceptance. No distribution authorization.
+
+### Private installer payload staging
+
+- [x] #275 exact 4/4 CI merged 016da67 after tested-tree equality.
+- [x] Retrieve successful 8e3625d portable CI artifact 15073934383
+      and verify outer digest, embedded beta.61 version, four icons,
+      exact retained 38-component compiler and notice tree. Dry-run
+      PASS; no compiler executed.
+- [x] Automate staging into fresh dist/app using exact archive,
+      clean tracked source SHA and source icon comparison.
+      Four synthetic groups and actual detached-checkout replay PASS;
+      reject wrong digest, dirty checkout, existing output and links.
+- [ ] Hosted CI, authorized private Windows compilation, human
+      interactive and physical acceptance. Release hold unchanged.
+
+### Windows age-only presentation refresh
+
+- [x] #276 exact 5/5 CI merged a92bfe9 after tested-tree equality.
+- [x] Reuse existing five-second independent UI/BLE timer to
+      reproject USB and AULA displays even when BLE is disabled
+      and USB polling is paused. Do not add HID requests, replay
+      history/alerts or publish a new API generation for this path.
+      Preserve active diagnostic capture status.
+- [x] Avoid rebuilding unchanged dashboard rows on this age-only
+      path, but refresh row action targets. Add source wiring
+      regression and native dashboard smoke for unchanged/expired
+      rows in all supported languages.
+- [ ] Hosted Windows CI and interactive visual acceptance.
+      Release hold unchanged.
+
+### AULA delayed UI delivery provenance
+
+- [x] Preserve the background worker completion UTC when delivering
+      an AULA result to the UI after a blocked message loop or suspend.
+      Use the original completion timestamp for cache, diagnostics and
+      history; do not renew freshness on delayed UI delivery.
+- [x] Share the existing five-minute fresh-sample predicate between
+      dashboard projection and low-battery notification admission.
+      Confirmed presence is required for the notification.
+      Refresh the AULA submenu from the existing independent timer.
+- [x] Add one source-wiring test and four native synthetic assertions
+      for exact freshness boundary, delayed delivery, clock rollback,
+      retained cache timestamp and expired cache. No HID changes.
+- [ ] Hosted CI and actual Windows suspend/resume and L99 acceptance.
+      Parent #277 qualification required; release hold unchanged.

@@ -183,3 +183,36 @@ Application SHA-256
 d0245fbc1bdba8a8f0496a97fb8e9f761153fa04690a819769df396312e18e1e.
 Merged 0b4dec7 into draft #99 after tested-tree equality.
 No setup bytes retained; no new release or distribution clearance.
+
+## Exact portable payload staging for private preflight
+
+For an independently reviewed CI artifact, the new local staging
+tool checks the supplied outer archive SHA-256, portable inventory,
+embedded project version, actual clean tracked checkout SHA, and
+all four icon files against the target source tree. It stages only
+the app into a new dist/app directory, refuses existing output or
+unsafe directory links, and neither compiles nor executes the app.
+The caller must still verify the CI run and archive source association;
+the checkout check alone does not establish binary source provenance.
+
+Actual replay: integration head
+8e3625de9d549435d5bf4880bd971b5e7339b849, successful Windows run
+45726045422, portable artifact 15073934383, outer SHA-256
+07e890a222fbac7d63a0f2793ce0792dff17d58c2c27c87931874e76ba10f58a.
+The actual EXE SHA-256 is
+711c50d54497720484a25fc42ea65ed05e026d73848ab67c2e6a8a590fad36c2.
+A fresh detached checkout was staged with this command (substitute
+local paths; the script can reside in a newer tool checkout):
+
+```sh
+python3 tools/stage_local_inno674_payload.py --source /local/source --source-sha 8e3625de9d549435d5bf4880bd971b5e7339b849 --archive /local/portable.zip --archive-sha256 07e890a222fbac7d63a0f2793ce0792dff17d58c2c27c87931874e76ba10f58a
+```
+
+The retained exact 38-component compiler directory and pinned notices
+passed the existing builder dry-run from that target checkout.
+All four icons matched. Output directory remained empty; no compiler
+was executed. The reviewed input snapshot SHA-256 is
+b138120b75082274c0e2221e75c5823a218ec3ce7cb88bfcbc486d92bd9ed563.
+Use a fresh output directory for any subsequent authorized private
+Windows compilation. Do not transfer this hash or any test status to
+a different generation; no distribution or release admission.

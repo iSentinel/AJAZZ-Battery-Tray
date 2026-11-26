@@ -317,9 +317,9 @@ public sealed class TrayAppContext : ApplicationContext
         _dashboard.BringToFront();
     }
 
-    private void RefreshDashboard()
+    private void RefreshDashboard(bool publishSnapshot = true)
     {
-        PublishLocalSnapshot();
+        if (publishSnapshot) PublishLocalSnapshot();
         if (_dashboard is not { IsDisposed: false }) return;
         List<DeviceDashboardForm.Entry> entries = new();
         foreach (var receiver in _receivers.Devices)
@@ -349,7 +349,7 @@ public sealed class TrayAppContext : ApplicationContext
             () => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName)));
         foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
             entries.Add(new(BluetoothDashboardState(pair.Key, pair.Value), Key: $"BLE:{pair.Value.Number}"));
-        _dashboard.SetEntries(entries);
+        _dashboard.SetEntries(entries, skipUnchanged: !publishSnapshot);
     }
 
     private void PublishLocalSnapshot()
@@ -592,7 +592,7 @@ public sealed class TrayAppContext : ApplicationContext
         string value = _aulaPoll.IsBusy
             ? UiText.Get("AULA L99: checking battery...")
             : $"{state.Name} · {state.Transport}: {state.MenuStatus(_aulaBattery.LastGoodAt)}";
-        _aulaStatus.Text = value;
+        if (_aulaStatus.Text != value) _aulaStatus.Text = value;
     }
 
     private void ArmAulaTimer(int milliseconds)
@@ -632,17 +632,21 @@ public sealed class TrayAppContext : ApplicationContext
         UpdateAulaStatus();
         try
         {
-            AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
+            var (result, completedAt) = await Task.Run(async () =>
+            {
+                var reading = await _aulaReader.ReadAsync().ConfigureAwait(false);
+                return (reading, DateTimeOffset.UtcNow);
+            });
             if (_closing || !_aulaPoll.MayApply(ticket)) return;
             if (_aulaContinuity.MustReset(result.PresenceKnown,
                 result.ReceiverPresent, result.LocalKey))
                 _aulaBattery.Reset();
             _aulaLatest = result;
-            _aulaLastReadAt = DateTimeOffset.UtcNow;
+            _aulaLastReadAt = completedAt;
             _aulaBattery.Observe(result.ReceiverPresent, result.PresenceKnown,
-                result.Percent, _aulaLastReadAt.Value);
+                result.Percent, completedAt);
             if (_settings.RecordBatteryHistory)
-                _aulaHistory.Record(DateTimeOffset.UtcNow, result.Percent,
+                _aulaHistory.Record(completedAt, result.Percent,
                     result.ReceiverPresent || !result.PresenceKnown);
             if (_settings.MonitorAulaL99)
             {
@@ -653,7 +657,10 @@ public sealed class TrayAppContext : ApplicationContext
                     _tray.ShowBalloonTip(4000, AulaName,
                         UiText.Get("The 2.4 GHz receiver is no longer detected."),
                         ToolTipIcon.Warning);
-                if (result.Percent is int percent) NotifyAulaBattery(percent);
+                if (result.PresenceKnown && result.ReceiverPresent &&
+                    result.Percent is int percent &&
+                    _aulaBattery.IsFreshSample(percent, completedAt, DateTimeOffset.UtcNow))
+                    NotifyAulaBattery(percent);
             }
         }
         catch (Exception error)
@@ -1373,6 +1380,11 @@ public sealed class TrayAppContext : ApplicationContext
             _ = RestoreBleConsentAsync();
         StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
         if (BleEnabled) RefreshDeviceDisplay();
+        // The USB timer pauses during I/O. Age the UI even with BLE disabled,
+        // without publishing a new API generation or replaying a measurement.
+        else if (_latestUsbReading is not null || _aulaLatest is not null)
+            RefreshDeviceDisplay(publishSnapshot: false);
+        if (_aulaLatest is not null) UpdateAulaStatus();
     }
 
     private async Task RestoreBleConsentAsync()
@@ -1927,15 +1939,16 @@ public sealed class TrayAppContext : ApplicationContext
             ToolTipIcon.Warning);
     }
 
-    private void RefreshDeviceDisplay()
+    private void RefreshDeviceDisplay(bool publishSnapshot = true)
     {
         if (_closing) return;
         UpdateTrayDisplay(_latestUsbReading ??
-            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false, Issue: UsbReadIssue.NotChecked));
+            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false, Issue: UsbReadIssue.NotChecked),
+            publishSnapshot);
     }
 
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
-    private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
+    private void UpdateTrayDisplay(AjazzHidReader.Reading reading, bool publishSnapshot = true)
     {
         string? primaryBle = PrimaryBleKey;
         int? blePercent = primaryBle is not null
@@ -2035,7 +2048,7 @@ public sealed class TrayAppContext : ApplicationContext
             if (unverified is int raw) value = UsbTrayStatus.UnverifiedField(raw);
         }
         string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
-        if (_statusItem.Text != status) _statusItem.Text = status;
+        if (!_diagnosticsBusy && _statusItem.Text != status) _statusItem.Text = status;
         string color = linkedPrimary is { } linkedIcon ? DeviceColor(linkedIcon.UsbKey) :
             aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
             !bluetoothPrimary && receiver is not null ? DeviceColor(receiver.Key) : _settings.DefaultTrayColor;
@@ -2055,7 +2068,7 @@ public sealed class TrayAppContext : ApplicationContext
                     (x.UsbKey, x.Name, x.Display.Percent, x.Display.Cached,
                     x.Display.Percent is null ? "2.4 GHz / Bluetooth" : x.Display.Bluetooth ? "Bluetooth" : "2.4 GHz")).ToArray());
         UpdateBluetoothStatus();
-        RefreshDashboard();
+        RefreshDashboard(publishSnapshot);
     }
 
     private sealed record LinkedTrayDevice(string UsbKey, string Name, TransportLinks.Display Display);

@@ -51,6 +51,40 @@ class IndependentBleMonitorTests(unittest.TestCase):
         self.assertIn('stale: item.Stale', extra)
         self.assertIn('response.IsFreshGatt && response.Percent is int percent', code)
 
+    def test_display_ages_without_ble_or_usb_poll_completion(self) -> None:
+        """The existing independent timer refreshes presentation without new telemetry."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        timer = code.split('private void OnBleTimer(', 1)[1].split(
+            'private async Task RestoreBleConsentAsync(', 1)[0]
+        self.assertIn('if (_closing) return;', timer)
+        self.assertIn('else if (_latestUsbReading is not null || _aulaLatest is not null)', timer)
+        self.assertIn('RefreshDeviceDisplay(publishSnapshot: false);', timer)
+        self.assertNotIn('PollSoon()', timer)
+        self.assertNotIn('ApplyReading(', timer)
+        display = code.split('private void RefreshDeviceDisplay(', 1)[1].split(
+            'private sealed record LinkedTrayDevice', 1)[0]
+        self.assertIn('publishSnapshot);', display)
+        self.assertIn('RefreshDashboard(publishSnapshot);', display)
+        self.assertIn('if (!_diagnosticsBusy && _statusItem.Text != status)', display)
+        dashboard = code.split('private void RefreshDashboard(', 1)[1].split(
+            'private void PublishLocalSnapshot(', 1)[0]
+        self.assertIn('if (publishSnapshot) PublishLocalSnapshot();', dashboard)
+        self.assertIn('skipUnchanged: !publishSnapshot', dashboard)
+
+    def test_aula_completion_provenance(self) -> None:
+        """Preserve worker completion across delayed UI delivery and menu aging."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        poll = code.split('private async Task PollAulaAsync(', 1)[1].split(
+            'private void NotifyAulaBattery(', 1)[0]
+        self.assertIn('await _aulaReader.ReadAsync().ConfigureAwait(false)', poll)
+        self.assertIn('return (reading, DateTimeOffset.UtcNow);', poll)
+        self.assertIn('_aulaLastReadAt = completedAt;', poll)
+        self.assertIn('_aulaHistory.Record(completedAt, result.Percent,', poll)
+        self.assertIn('_aulaBattery.IsFreshSample(percent, completedAt, DateTimeOffset.UtcNow)', poll)
+        timer = code.split('private void OnBleTimer(', 1)[1].split(
+            'private async Task RestoreBleConsentAsync(', 1)[0]
+        self.assertIn('if (_aulaLatest is not null) UpdateAulaStatus();', timer)
+
     def test_explicit_links_project_single_icon(self) -> None:
         """Keep link consent explicit, independent telemetry and local preferences."""
         root = ROOT / 'src/AjazzBatteryTray'

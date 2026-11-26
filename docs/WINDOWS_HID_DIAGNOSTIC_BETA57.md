@@ -154,3 +154,22 @@ returned-ID prefix and existing-parser candidate separately, and never
 normalizes a GET 00 response into a fresh 05 reading. Multiple matching
 receivers are deliberately inconclusive. Compare actual official
 displayed charge separately and preserve the original reviewed report.
+
+### Redacted local JSON summary
+
+Run the same analyzer separately for either ordinary or experimental
+CLI output:
+
+```text
+python tools/analyze_windows_cli_diagnostics.py hid-diagnose.txt
+python tools/analyze_windows_cli_diagnostics.py hid-compare-get-ids.txt
+```
+
+The summary contains reported transport counts and ordinary F7 gate
+sequences, or experimental pair agreement counts. Experimental
+results never contain a reported battery percentage. Incomplete
+ordinary captures do not contribute gate sequences. Older logs
+without gate labels retain empty counts; the result is not independent
+hardware verification. No upload, HID access or raw payload export
+is performed. Exit 0 denotes a parsed summary, not a hardware PASS;
+exit 2 denotes invalid or unsupported input.

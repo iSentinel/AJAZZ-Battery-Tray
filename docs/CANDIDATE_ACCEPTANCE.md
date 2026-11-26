@@ -734,3 +734,90 @@ parser rejected the response. Transfer failures do not fabricate
 a classification, and experimental GET comparisons do not publish
 ordinary gate lines. Existing charge acceptance, diagnostic fields
 and telemetry policy remain unchanged.
+
+## Verified integration artifact generation bd84554
+
+The following archive generation supersedes the older fb48770 table
+for candidate selection. It is bound only to CI head
+bd84554786bbe465f997934ba20264b0d51b83e4, not the later integration
+head 5b18c5cb664662d08d2c3e9e920c910f789a0a73. The latter changes
+the offline CLI analyzer, tests and documentation only, but has
+its own source identity; do not carry checklist results forward.
+
+| Edition | Run | Artifact ID | Outer ZIP SHA-256 |
+| --- | --- | --- | --- |
+| Portable Windows | 45693822808 | 15058964934 | c58879417b8808c66f50dcd65bcd846ac996ca2658d299b6d5e24e56f3386efb |
+| Universal | 45693822755 | 15060850395 | dccc6ca473981c137cd1b9619fa4298b00c0f41d32977385e7442f84b40d4ce4 |
+| High Sierra | 45693822618 | 15060181252 | 053702f5f73ae379deea451a23cf48c2a19f43c7af957544eadc9ca5a7515b6c |
+
+All three runs report the stated head and successful conclusion.
+The exact REST archive downloads match their advertised SHA-256
+digests. The existing local hardware validator checks the Windows
+portable inventory and beta.61 project version, both Apple inner
+archive checksums and their bundle inventories.
+
+| Edition | Version/build | Executable SHA-256 |
+| --- | --- | --- |
+| Portable Windows | 0.3.0-beta.61 | fe5d74b72f03ca2851956b6237589b915bd4afb52d382c4b302f39968b0828f4 |
+| Universal | 65 | bc7357b2ef27ce7f7b518bfadbd3572ab05a56cdb701a2f7c16af1f0e51856ce |
+| High Sierra | 1 (CI experimental) | bb3226a68609366613e20fcecd0d054b76fedefbb5c19813cf62c405e2010869 |
+
+Five blank checklists were generated and replayed
+through the local review function: AJ179 17, AJ159 17, AULA 1,
+Universal 11, High Sierra 11, all 57 NOT_RUN. The scope is archive
+identity and checklist structure only. Source provenance is a
+caller-reviewed CI head assertion; code signing, installer identity,
+physical acceptance and release admission remain unverified.
+
+For this exact Windows archive, the local command is:
+
+```sh
+python3 tools/verify_hardware_acceptance.py --archive windows.zip --archive-sha256 c58879417b8808c66f50dcd65bcd846ac996ca2658d299b6d5e24e56f3386efb --source-sha bd84554786bbe465f997934ba20264b0d51b83e4 --profile windows-aj179 --output checklist-bd84554-aj179.json
+```
+
+Use the matching archive hash and profile for each other edition.
+The previous generation remains historical; for a later CI head,
+repeat download, verification and checklist creation. No public
+release or distribution approval is implied.
+
+## Verified generation 43e3cb5 and aggregate review
+
+These three original CI archives have been retrieved and checked
+against the advertised REST digests. All runs report successful
+conclusion and integration head 43e3cb5848b7cfe89937fe4f762eb3a962dd32c9.
+
+| Edition | Run | Artifact ID | Outer ZIP SHA-256 |
+| --- | --- | --- | --- |
+| Portable Windows | 45695276597 | 15059978620 | 972b638b8b02ae8975f2269b5c1f384975dc44448b7bef090932fc14842b5d35 |
+| Universal | 45695276543 | 15060931715 | c16118725596a166d79d68c011fb79a1b8eb50c0f14cb66c68ab574472230f92 |
+| High Sierra | 45695276402 | 15059559852 | 8aad313a4cbeaa618236cdc9488c98585490f796e5efc34073b0047f7e66cf81 |
+
+Portable beta.61 executable SHA-256:
+2cd7af1aec0af43d98ed55b06dba065ab1ed6323ff6df11676bd3cfa4d1025bf.
+Universal and High Sierra executable hashes equal those in the
+bd84554 table, but outer archive hashes and source assertions differ.
+No checklist results are carried across generations.
+
+Generate the five original checklists using the existing single-profile
+validator and name them PROFILE.checklist.json in one private directory.
+The aggregate verifier rechecks the three original archives and all
+five checklists without trusting pre-generated review summaries:
+
+```sh
+python3 tools/verify_hardware_acceptance_set.py \
+  --source-sha 43e3cb5848b7cfe89937fe4f762eb3a962dd32c9 \
+  --windows-archive windows.zip \
+  --windows-sha256 972b638b8b02ae8975f2269b5c1f384975dc44448b7bef090932fc14842b5d35 \
+  --universal-archive universal.zip \
+  --universal-sha256 c16118725596a166d79d68c011fb79a1b8eb50c0f14cb66c68ab574472230f92 \
+  --high-sierra-archive high-sierra.zip \
+  --high-sierra-sha256 8aad313a4cbeaa618236cdc9488c98585490f796e5efc34073b0047f7e66cf81 \
+  --checklist-dir ./checklists --output aggregate.json
+```
+
+Actual blank aggregate: 57 NOT_RUN, zero PASS, INCOMPLETE.
+Aggregate JSON SHA-256:
+aa2d8f5a7b163e9b478f4d63fce8f21d9b7976b61f1f66768c4b962461409d4c.
+Source provenance remains a caller-reviewed assertion; the aggregate
+does not independently authenticate human observations, physical
+acceptance, signing, installer identity or release admission.

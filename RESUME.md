@@ -1,3 +1,117 @@
+# Resume — AULA delayed UI delivery provenance
+
+Parent #277 has Windows/macOS and Python checks PASS, installer
+checks pending at review. Child timestamps AULA worker completion
+before UI dispatch, shares the freshness predicate for alert
+admission and presentation, and updates AULA submenu on the
+independent timer. One source regression plus four native
+assertions. No new HID operations. Actual suspend/resume and
+physical acceptance remain unverified; release hold unchanged.
+
+# Resume — Windows age-only presentation refresh
+
+#276 exact 5/5 CI merged a92bfe9. Existing five-second timer
+now reprojects USB/AULA even without BLE, no new HID operations
+or API generation on this age-only path. Active capture text
+preserved; unchanged dashboard rows retained. Source wiring
+regression and native dashboard smoke added. Hosted CI and
+physical/visual acceptance pending; release hold unchanged.
+
+# Resume — private installer payload staging
+
+#275 exact 4/4 CI merged 016da67. Successful 8e3625d CI portable
+artifact 15073934383 verified and staged in a detached checkout;
+38 compiler components, notices and four icons match. Dry-run
+PASS, no compiler executed. New local staging CLI passes four
+synthetic groups and actual replay. Native Windows compilation,
+human acceptance and release hold remain open.
+
+# Resume — private local interactive acceptance path
+
+#274 exact 4/4 CI merged 8e3625d. Public repository retains
+JSON-only native installer qualification. Interactive validator
+now accepts a distinct private local-build record with pinned
+fields and both exact local binaries required. Native qualification
+and source provenance NOT_VERIFIED. Two synthetic groups.
+Actual Windows compilation and human acceptance still open;
+no public binary upload, compiler migration or release authorization.
+
+# Resume — interactive acceptance local binary binding
+
+#273 pending final Windows CI at latest review. Child adds paired
+optional setup/app paths and checks actual SHA-256 values before
+writing a checklist or review. Review local_binary_binding is
+MATCH or NOT_PROVIDED; original checklist schema unchanged.
+Two synthetic groups. Exact setup bytes and human acceptance
+remain unavailable/unverified; compiler and release hold unchanged.
+
+# Resume — hardware acceptance set review
+
+#271 exact 2/2 CI merged 38a4f5b; #272 exact 4/4 CI merged
+970f003. Three 43e3cb5 CI archive hashes verified; five blank
+checklists. New aggregate verifier revalidates original archives
+and checklists, four synthetic groups and real replay: 57 NOT_RUN.
+Hosted CI and physical acceptance remain open. Release hold.
+
+# Resume — diagnostic timeline sample provenance
+
+#271 pending native CI at initial review. Child compares reported
+USB sample timestamps independently from capture time and adds
+AULA last-read versus last-good timestamp relations. Three new
+synthetic groups; no physical identity or fresh telemetry claims.
+Hosted CI, latest artifact binding and hardware gates open.
+
+# Resume — scoped Inno 6.7.4 evidence replay
+
+#270 exact 2/2 CI merged 43e3cb5. Run 45694508038 (head
+5b18c5c, actual checkout 5c825ce) eight archive SHA checks,
+14-document scoped replay and hosted equality PASS. Restore three
+pinned CycloneDX schemas; 269-component schema/binding PASS.
+Retained four-pack NuGet/OSV data replays no matches; freshness
+not verified. Latest CI artifact binding and hardware gates open.
+Release hold and compiler migration hold unchanged.
+
+# Resume — exact acceptance artifact generation checkpoint
+
+#269 exact 4/4 CI merged 5b18c5c after tested-tree equality.
+Verified three original bd84554 CI ZIPs against REST digests,
+actual app identities and five blank/replayed checklists:
+57 NOT_RUN. Later integration source is distinct. Rebind exact
+artifacts for next generation; physical, signing and distribution
+gates open. Release hold unchanged.
+
+# Resume — CLI diagnostic consistency
+
+#268 exact 5/5 CI merged bd84554 after tested-tree equality.
+Child validates terminal outcomes, transport counts and policy label
+consistency without independently verifying telemetry. Two additional
+synthetic groups; legacy logs supported. Native and hardware gates open.
+
+# Resume — local Windows CLI diagnostic analysis
+
+#267 exact 4/4 CI merged 3432dc7 after tested-tree equality.
+New local JSON CLI reuses ordinary and experimental parsers and
+scoped gate sequences; no raw payload export or experimental
+percentage promotion. Five synthetic groups and help coverage.
+Hosted CI and physical acceptance pending; release hold unchanged.
+
+# Resume — reported F7 policy sequence analysis
+
+#265 exact 5/5 CI merged 31f2ec7 after tested-tree equality.
+Extend local timeline with ordinary/active typed gate counts and
+within-collection transitions. Reject orphan/duplicate labels,
+break on missing/failed transfers and exclude interrupted active
+captures. Three synthetic groups. Hosted CI and physical acceptance
+pending; release hold unchanged.
+
+# Resume — Apple bounded F7 trace classifications
+
+#264 exact 5/5 CI merged c105bbf after tested-tree equality.
+Universal and High Sierra trace now emit matching privacy-safe
+F7 gate names via shared C, optional report ID unchanged.
+24 formatter cases and existing corpus/parity PASS on Linux.
+Native macOS CI pending. No ordinary polling, HID or release changes.
+
 # Resume — typed F7 ordinary poll diagnostics
 
 #262 exact corrected head 044c3a9 five workflow PASS, including

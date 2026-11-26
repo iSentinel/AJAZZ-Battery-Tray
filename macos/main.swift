@@ -227,6 +227,12 @@ enum ApexBattery {
             if read == kIOReturnSuccess && (0...count).contains(actualLength) {
                 trace?("05.reply.first_bytes=" + reply.prefix(min(8, Int(actualLength)))
                     .map { String(format: "%02x", $0) }.joined(separator: " "))
+                if let trace = trace {
+                    let gate = reply.withUnsafeBufferPointer {
+                        String(cString: AjazzF7ReplyGateName($0.baseAddress, Int(actualLength)))
+                    }
+                    trace("F7 policy gate: " + gate)
+                }
             }
             if read == kIOReturnSuccess && (3...count).contains(actualLength),
                let percent = parse(Array(reply.prefix(Int(actualLength)))) {

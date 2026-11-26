@@ -58,6 +58,35 @@ static inline AjazzF7Observation AjazzObserveF7(const uint8_t *bytes, size_t len
     return result;
 }
 
+// Match the decoder's existing optional report-ID handling.
+static inline AjazzF7Observation AjazzObserveF7Reply(const uint8_t *bytes, size_t length) {
+    if (bytes && length > 0 && bytes[0] == 0x05) {
+        bytes++;
+        length--;
+    }
+    return AjazzObserveF7(bytes, length);
+}
+
+// Stable policy labels; no reported charge, identity or physical sleep claim.
+static inline const char *AjazzF7GateName(AjazzF7Gate gate) {
+    switch (gate) {
+        case AjazzF7KeyboardOnly: return "KeyboardOnly";
+        case AjazzF7InvalidStatus: return "InvalidStatus";
+        case AjazzF7ReadUnavailable: return "ReadUnavailable";
+        case AjazzF7Offline: return "Offline";
+        case AjazzF7CannotSend: return "CannotSend";
+        case AjazzF7RadioBoot: return "RadioBoot";
+        case AjazzF7ZeroField: return "ZeroField";
+        case AjazzF7OutOfRange: return "OutOfRange";
+        case AjazzF7Accepted: return "Accepted";
+        default: return "Unrecognized";
+    }
+}
+
+static inline const char *AjazzF7ReplyGateName(const uint8_t *bytes, size_t length) {
+    return AjazzF7GateName(AjazzObserveF7Reply(bytes, length).gate);
+}
+
 // IOKit can return the requested 05 report with or without its report ID.
 static inline int AjazzBatteryPercent(const uint8_t *bytes, size_t length) {
     if (!bytes || length == 0) return -1;
