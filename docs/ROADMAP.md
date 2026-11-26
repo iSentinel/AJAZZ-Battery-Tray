@@ -2803,3 +2803,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI; retained private Setup, real hardware/interactive
       results, signing, distribution and final release decisions.
       No publication or new acceptance claim.
+
+### Exact normalized product signature and runbook consistency
+
+- [x] #309 exact 5/5 CI merged 2ae646f after tested-tree equality.
+- [x] Pin Windows runbook to the revision containing both the blank-kit
+      generator and local-build-aware reviewer; document fresh combined
+      form assembly without overwriting observations.
+- [x] Add native Authenticode observation for the original app,
+      exact e7195b38 Setup and exercised uninstaller; separate
+      JSON artifact with OS build and before/after hash checks.
+- [ ] Review actual native signature observation; retained private
+      Setup and human acceptance, signing disposition, distribution,
+      final selection and publication remain open.

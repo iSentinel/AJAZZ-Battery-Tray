@@ -34,7 +34,7 @@ $ErrorActionPreference = 'Stop'
 $lab = Join-Path $env:USERPROFILE 'AJAZZ-Beta61-Lab'
 $url = 'https://github.com/iSentinel/AJAZZ-Battery-Tray.git'
 $appCommit = 'f939fea7fb422aa588649138d29a750ce62cd22a'
-$toolCommit = '0c22bf959a6bae9a34c0e6806e9146a3d54d8c58'
+$toolCommit = '2ae646fc68194accfea852f6c2d4cfd93e22272d'
 New-Item -ItemType Directory -Path $lab | Out-Null
 Set-Location $lab
 git clone --branch fix/battery-audit-20261124 $url tools
@@ -218,10 +218,29 @@ interactive form. A form generated from local build JSON must be reviewed
 with that same unedited JSON, even when its formatting differs from the
 hosted record. The normalized reviewer requires semantic equality of all
 build fields and the actual hash-matching Setup. For example, from the lab
-directory using the updated qualification tools:
+directory using the pinned qualification tools. If no hardware forms
+have been created yet, download the original Universal, High Sierra and
+normalized-evidence ZIPs from the hardware field kit, then run:
 
 ```powershell
-python .\tools\tools\review_beta61_admission.py --normalized-evidence .\normalized-evidence.zip --windows-archive .\windows.zip --universal-archive .\universal.zip --high-sierra-archive .\high-sierra.zip --checklist-dir .\checklists --setup $setup --local-build-evidence .\candidate\local-build-evidence.json --output .\candidate\combined-review.json
+python .\tools\tools\create_beta61_acceptance_kit.py --normalized-evidence .\normalized-evidence.zip --windows-archive .\windows.zip --universal-archive .\universal.zip --high-sierra-archive .\high-sierra.zip --output-dir .\checklists
+if ($LASTEXITCODE -ne 0) { throw 'Blank acceptance kit creation failed' }
+```
+
+After the tests, assemble the five hardware forms and the exact local
+interactive form in a fresh combined directory. Do not overwrite or
+edit either original form identity:
+
+```powershell
+New-Item -ItemType Directory -Path .\combined-checklists -ErrorAction Stop | Out-Null
+Copy-Item -LiteralPath (Get-ChildItem -LiteralPath .\checklists -Filter '*.checklist.json' -File).FullName -Destination .\combined-checklists
+Copy-Item -LiteralPath .\candidate\interactive-checklist.json -Destination .\combined-checklists
+```
+
+Then review that combined directory:
+
+```powershell
+python .\tools\tools\review_beta61_admission.py --normalized-evidence .\normalized-evidence.zip --windows-archive .\windows.zip --universal-archive .\universal.zip --high-sierra-archive .\high-sierra.zip --checklist-dir .\combined-checklists --setup $setup --local-build-evidence .\candidate\local-build-evidence.json --output .\candidate\combined-review.json
 ```
 
 Do not edit the form identity or substitute the hosted build JSON for the
