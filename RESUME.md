@@ -1,3 +1,11 @@
+# Resume — normalized blank acceptance kit
+
+#308 exact 4/4 merged 9848e0e. One offline command now validates
+four original artifacts and creates six blank forms in a new
+directory. Actual original-archive replay preserves subject
+913bda76 and 57+6 NOT_RUN. Four synthetic groups PASS. Retained
+private Setup and human acceptance still open; release BLOCKED.
+
 # Resume — normalized local interactive form compatibility
 
 Integration #307 at 2c64ad6, 13/13 hosted checks PASS. Normalized

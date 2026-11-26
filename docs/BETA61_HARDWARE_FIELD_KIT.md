@@ -32,6 +32,30 @@ The app reports the full source identity after `0.3.0-beta.61+`. Check
 this identity when saving diagnostics. If the OS or security software
 blocks execution, record the observed error and leave protection enabled.
 
+## Create the complete blank acceptance kit
+
+Download the three original outer Actions ZIPs listed above as
+windows.zip, universal.zip and high-sierra.zip. Download the original
+[normalized installer evidence ZIP](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45865417976/artifacts/15139373707)
+as normalized-evidence.zip. From the updated qualification tools checkout:
+
+```sh
+python tools/create_beta61_acceptance_kit.py --normalized-evidence normalized-evidence.zip --windows-archive windows.zip --universal-archive universal.zip --high-sierra-archive high-sierra.zip --output-dir checklists
+```
+
+This offline command checks all original artifact identities and creates
+five hardware forms and one hosted-identity interactive form, all NOT_RUN,
+in a new directory. It refuses an existing directory; keep completed
+observations separate and do not regenerate over them. Exit 0 means blank
+forms were created, not that any acceptance test passed; exit 2 means
+invalid inputs or output failure. No application is launched.
+
+The interactive form generated here uses the original hosted build JSON
+identity. If the operator instead creates a local-build-bound form, keep
+that form and its original local JSON together and supply both with the
+exact matching Setup to the combined reviewer as described in the
+[Windows runbook](BETA61_WINDOWS_RUNBOOK.md).
+
 ## Windows evidence collection
 
 Exit the tray app and close the vendor utility before an active APEX probe.
