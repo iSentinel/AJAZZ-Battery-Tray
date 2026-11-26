@@ -2338,3 +2338,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       and checklist commands.
 - [ ] Hosted CI, authorized Windows local compilation and human
       interactive/physical acceptance. No distribution authorization.
+
+### Private installer payload staging
+
+- [x] #275 exact 4/4 CI merged 016da67 after tested-tree equality.
+- [x] Retrieve successful 8e3625d portable CI artifact 15073934383
+      and verify outer digest, embedded beta.61 version, four icons,
+      exact retained 38-component compiler and notice tree. Dry-run
+      PASS; no compiler executed.
+- [x] Automate staging into fresh dist/app using exact archive,
+      clean tracked source SHA and source icon comparison.
+      Four synthetic groups and actual detached-checkout replay PASS;
+      reject wrong digest, dirty checkout, existing output and links.
+- [ ] Hosted CI, authorized private Windows compilation, human
+      interactive and physical acceptance. Release hold unchanged.
