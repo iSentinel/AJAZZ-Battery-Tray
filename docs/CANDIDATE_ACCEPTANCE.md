@@ -900,3 +900,22 @@ Keep forms private and omit raw identifiers and vendor buffers.
 Actual replay: both forms passed structural review with eight
 NOT_RUN cases each. Three ordinary Windows hardware forms separately
 remain 35 NOT_RUN. This does not admit a release.
+
+### Exact successor runtime version binding
+
+The display acceptance tool now requires the reviewed #290 source,
+archive and app digests above. The v2 form includes expected_version
+and observed_version; record the exact running application's version
+before reporting a case result. The expected suffix is the actual
+CI checkout, not the PR head. A mismatched or missing version
+cannot qualify a recorded case. The reviewer records MATCH_REPORTED
+rather than independently authenticating the running binary.
+Regenerate the previous blank v1 forms under new output names;
+do not automatically transfer observations between forms.
+
+The owner reports that the basic experimental number display,
+hiding it when disabled, and preference persistence after restart
+work. This is partial functional acceptance, not evidence for every
+subcondition of UD02–UD05 or independent battery accuracy.
+Complete the remaining scenarios on the exact candidate. Keep
+operator diagnostic reports and individual observations private.
