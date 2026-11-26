@@ -133,6 +133,36 @@ review independently rehashes the supplied setup and app. Checklist
 validation preserves the distinction between reported observations
 and independently reviewed acceptance.
 
+## Locally staging the pinned release bytes
+
+The acceptance kit for [PR #282](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/282#verified-acceptance-artifacts)
+contains `candidate.json`. The four GitHub Actions ZIPs in that PR hold
+the original acceptance assets. Save them as local files and use the
+manifest with the release staging CLI:
+
+```sh
+python3 tools/stage_beta61_release.py --manifest candidate.json \
+  --windows-archive windows.zip --installer-archive setup.zip \
+  --universal-archive universal.zip --high-sierra-archive high-sierra.zip \
+  --dry-run
+```
+
+Use `--output staged-beta61` in place of `--dry-run` to write a new
+private local directory. `beta/` contains the three cross-platform release
+assets and checksum files. `high-sierra/` contains its separate archive
+and checksum. `staging-evidence.json` records the reviewed identity.
+The checker verifies all four outer and inner SHA-256 pins and matches the
+setup manifest's app digest to the portable EXE. It reuses the bounded
+installer and platform archive parsers. The original binaries are staged
+byte for byte.
+
+Confirm that the manifest was taken from the accepted candidate and
+correlate source tree, run IDs and artifact IDs through the PR. The dry run
+does not execute programs or write files. Staging is local only. Changes
+to signing or packaging require a new candidate identity and review.
+Physical and interactive acceptance, distribution clearance and publication
+approval remain tracked separately.
+
 ## Remaining release gates
 
 | Gate | Required evidence |

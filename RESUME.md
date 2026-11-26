@@ -1,3 +1,12 @@
+# Resume — exact beta.61 release asset staging
+
+The consolidated integration passed nine workflows. The local staging CLI
+verified the exact four acceptance archives from `b2c5ce9`, staged the
+release bytes and independent High Sierra archive, and replayed every
+checksum. The [readiness record](docs/BETA61_RELEASE_READINESS.md)
+documents the dry run. Human acceptance and the existing publication
+hold still apply to these files.
+
 # Resume — consolidated beta.61 acceptance candidate
 
 Combined the current integration with history recovery, reproducible
