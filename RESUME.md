@@ -1,3 +1,12 @@
+# Resume — consolidated native unsigned observation replay
+
+#296 exact 6/6 merged d37093b. Original Windows observation
+45811458861 / artifact 15113087216 verified; all three f939fea
+EXEs NotSigned, None, no signer or timestamp. New offline verifier
+passes original archive and three synthetic groups. Trusted signing
+NOT_VERIFIED; distribution disposition and hardware/interactive
+acceptance remain open. Publication BLOCKED.
+
 # Resume — consolidated successor exercised uninstaller and native signature scope
 
 #295 exact 4/4 merged 0295836. Exact f939fea original uninstaller

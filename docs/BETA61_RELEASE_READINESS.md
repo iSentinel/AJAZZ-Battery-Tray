@@ -433,3 +433,35 @@ passed locally. Native observation is pending CI; a successful
 workflow means evidence collection, not signing or trust approval.
 Expired original artifacts must fail rather than trigger a rebuild.
 Publication remains blocked.
+
+### Consolidated successor native unsigned observation
+
+PR #296 passed six hosted checks and merged d37093b after tested
+tree equality. Native Windows run 45811458861, job 139880098122,
+used checkout 6b2e88c of observation-tool head 0864100, whose
+tree matches the reviewed tool source. This tool checkout is not
+the binary source: the three original EXEs remain from f939fea.
+
+Original observation artifact 15113087216 has ZIP SHA-256
+89114da68d1e23f3c37be155d33ad0fbb339cb990d06a158bf382f64bda37b3e.
+Its sole JSON SHA-256 is
+305f453b4d16dc87363bf6f5b179f95cedffd44c261bc0c01f9a3ecbea5ae949.
+All three reported binary hashes match the original reviewed files.
+Native Get-AuthenticodeSignature reported NotSigned, signature
+type None, no signer certificate and no timestamp for each file.
+No EXE was executed or signed by this observation job.
+
+The new offline replay rejects substituted archives, JSON, binary
+identities, altered statuses, non-boolean certificate flags and
+implicit trust or release approval. It passed on the exact artifact:
+
+```sh
+python3 tools/verify_consolidated_signature_observation.py --archive native-authenticode.zip --output native-signature-review.json
+```
+
+Review SHA-256:
+35f566708d83a0360f196dd2b5bb52a3bf90696c53c94300761a32838e5aa89a.
+Native unsigned observation MATCH; trusted signing NOT_VERIFIED.
+Signing or an explicit unsigned-distribution disposition, legal
+distribution review and hardware/interactive acceptance remain open.
+No trust, SmartScreen acceptance or publication authorization inferred.

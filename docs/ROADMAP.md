@@ -2643,3 +2643,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       JSON only and never executing the candidate files.
 - [ ] Review native CI observation and remaining trust, distribution,
       hardware and interactive acceptance gates. Release blocked.
+
+### Consolidated native unsigned observation replay
+
+- [x] #296 exact 6/6 CI merged d37093b after tested-tree equality.
+- [x] Retrieve original signature JSON artifact 15113087216; verify
+      ZIP and JSON hashes, all three original EXE hashes, native
+      NotSigned/None and absent signer/timestamp observations.
+- [x] Add fail-closed local observation replay; three synthetic
+      test groups and actual original-archive replay PASS.
+- [ ] Hosted CI for the replay tool; authorized signing/unsigned
+      disposition, legal distribution, hardware and interactive
+      acceptance. No publication or change to candidate bytes.
