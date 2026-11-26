@@ -1,3 +1,11 @@
+# Resume — consolidated successor solid payload and signature scope
+
+#294 exact 4/4 merged ade64bf. Independent f939fea LZMA2
+stream and five decoded file hashes MATCH, with candidate isolation.
+Static app/setup PE certificate tables ABSENT; native Authenticode
+and generated uninstaller trust NOT_VERIFIED. No publication.
+Continue remaining native, distribution and physical gates.
+
 # Resume — consolidated successor dependency and setup replay
 
 #293 exact 2/2 merged 2ec40bc. Regenerated scoped f939fea Windows

@@ -2617,3 +2617,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       and message inputs; add cross-candidate setup substitution test.
 - [ ] Hosted CI, interactive and physical acceptance, OS advisory
       scope, distribution and signing disposition. Release blocked.
+
+### Consolidated successor independent payload and signature scope
+
+- [x] #294 exact 4/4 CI merged ade64bf after tested-tree equality.
+- [x] Extend the existing solid decoder to the exact f939fea setup
+      and independently match all five decoded file digests and
+      terminal state; retain prior default and reject substitution.
+- [x] Static PE certificate directory observation for exact app and
+      setup: both ABSENT; native trust and generated uninstaller
+      signatures remain unverified.
+- [ ] Hosted CI, actual interactive/hardware acceptance, native
+      signature observation and distribution disposition. Release
+      hold unchanged.

@@ -368,3 +368,35 @@ No trailing record bytes. Static evidence SHA-256:
 `0798a7f8c68dca03f59414fc07ba67161461265bc2f3c37fb3ac6a66911ef77a`.
 This is not interactive execution or a distribution decision.
 Release admission remains BLOCKED.
+
+### Consolidated successor independent solid payload and certificate observation
+
+The exact f939fea setup (SHA-256 1cc71e5c2a7119070c80611160b5e263afd2b70155f33b13a88fac848d67542e)
+passed independent decoding of the bounded solid LZMA2 stream,
+including the location table, call transform, all file hashes and
+the exact terminal state. The decoded 149626979-byte application
+matches the separately verified portable EXE SHA-256
+91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c.
+All four decoded icon hashes match the reviewed source inventory.
+The verifier accepts an explicit new candidate selection while
+retaining the historical default; cross-candidate substitution
+is rejected before decompression.
+
+Replay on the exact reviewed setup:
+
+```sh
+python3 tools/verify_inno_solid.py --candidate f939fea --setup AJAZZBatteryTray-Setup-win-x64.exe --output solid-payload.json
+```
+
+Solid payload evidence SHA-256:
+`9c2ff7a16d716c6c5330734c0c517e88b214d01d8ff9201aee54b52cabc988c4`.
+
+The static PE directory parsers, applied to the exact portable and
+setup bytes, report ABSENT for both embedded certificate tables.
+Certificate observation SHA-256:
+`831b08c18eab80cbaca8ee7b24036f0e7ac90bc86642f6d290f351b928da8330`.
+This does not evaluate catalog signatures, native Authenticode trust,
+SmartScreen, or the actual generated uninstaller's signature.
+No native signature check or signing operation was performed.
+Interactive acceptance, legal distribution and release admission
+remain open; no pinned asset was replaced.

@@ -93,12 +93,12 @@ def header_script(raw: bytes) -> dict:
             'remaining_header_entries': 'NOT_VERIFIED'}
 
 
-def locations(raw: bytes, payload: bytes) -> list[dict]:
+def locations(raw: bytes, payload: bytes, files: tuple = FILES) -> list[dict]:
     """Match five records to retained app and source icon hashes and solid extent."""
-    if len(raw) != LOCATION.size * len(FILES) or payload[:4] != b'zlb\x1a':
+    if len(raw) != LOCATION.size * len(files) or payload[:4] != b'zlb\x1a':
         raise ValueError('unexpected location table or payload marker')
     rows, offset = [], 0
-    for i, (name, size, sha) in enumerate(FILES):
+    for i, (name, size, sha) in enumerate(files):
         first, last, start, sub, original, compressed, hashed, _, _, _, flags = LOCATION.unpack_from(
             raw, i * LOCATION.size)
         if ((first, last, start, sub, original, compressed, hashed.hex(), flags)
