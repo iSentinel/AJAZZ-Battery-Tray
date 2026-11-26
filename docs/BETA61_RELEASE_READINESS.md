@@ -661,3 +661,23 @@ six-form baseline retained subject
 reserialization of the original hosted build JSON passed the identity
 check. No retained local Setup or human test result was supplied.
 Release admission remains BLOCKED.
+
+
+### Normalized blank acceptance kit
+
+PR #308 passed 4/4 hosted checks and merged 9848e0e after tested
+tree equality. The new offline create_beta61_acceptance_kit.py
+command checks all four pinned original archives and generates five
+hardware checklists and one hosted-identity interactive checklist in
+a fresh directory. No Setup binary is needed to generate blank forms.
+Existing directories are rejected; invalid artifact identity cannot
+create output. The command never launches an app or records acceptance.
+
+Actual original-archive generation and combined review reproduced
+subject 913bda7686afff10036e681471169542175aef67345ab3c8cbb4fbb843144da6,
+57 hardware and six interactive NOT_RUN; reviewer exit 1 is expected.
+Four new synthetic test groups passed. See the
+[hardware field kit](BETA61_HARDWARE_FIELD_KIT.md#create-the-complete-blank-acceptance-kit)
+for the operator command. Actual retained Setup, human observations,
+final asset selection, signing and distribution remain outstanding.
+Release admission remains BLOCKED.

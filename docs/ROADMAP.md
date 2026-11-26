@@ -2791,3 +2791,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI for this change; retained private Setup and real physical
       and interactive observations, final asset selection, signing,
       distribution and publication remain open.
+
+
+### Normalized blank acceptance kit
+
+- [x] #308 exact 4/4 CI merged 9848e0e after tested-tree equality.
+- [x] Generate all six blank forms with one offline command, verify
+      four original artifacts, refuse existing output directories.
+- [x] Original artifact replay preserves subject 913bda76 and 57+6
+      NOT_RUN; four synthetic test groups PASS.
+- [ ] Hosted CI; retained private Setup, real hardware/interactive
+      results, signing, distribution and final release decisions.
+      No publication or new acceptance claim.
