@@ -1,3 +1,12 @@
+# Resume — consolidated successor exercised uninstaller and native signature scope
+
+#295 exact 4/4 merged 0295836. Exact f939fea original uninstaller
+archive binding and scoped official 6.7.1 attribution PASS.
+Static certificate tables absent for all three EXEs.
+New pinned archive staging replay PASS and dedicated Windows
+Authenticode observation workflow added; native CI pending.
+No candidate execution, signing, release approval or publication.
+
 # Resume — consolidated successor solid payload and signature scope
 
 #294 exact 4/4 merged ade64bf. Independent f939fea LZMA2
