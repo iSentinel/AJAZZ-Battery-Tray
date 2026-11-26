@@ -32,6 +32,19 @@ class SetupRecordTests(unittest.TestCase):
                     verify(b'', b'', b'', b'')
             recover.assert_not_called()
 
+    def test_consolidated_setup_identity(self) -> None:
+        """Equal installer scripts do not permit substitution of setup bytes."""
+        old_setup, old_source = CANDIDATES['b2c5ce9']
+        new_setup, new_source = CANDIDATES['f939fea']
+        self.assertEqual(old_source, new_source)
+        self.assertNotEqual(old_setup, new_setup)
+        with patch('verify_inno_setup_records.recover') as recover:
+            for actual, profile in ((old_setup, 'f939fea'), (new_setup, 'b2c5ce9')):
+                with patch('verify_inno_setup_records.digest', return_value=actual):
+                    with self.assertRaisesRegex(ValueError, 'setup digest'):
+                        verify(b'', b'', b'', b'', candidate=profile)
+            recover.assert_not_called()
+
     def test_task(self) -> None:
         """Reject a default-checked task or altered task name."""
         raw = b''.join(map(field, ['desktopicon', 'Create a desktop shortcut',

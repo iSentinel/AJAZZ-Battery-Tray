@@ -331,3 +331,40 @@ observations or scoped dependency evidence are transferred to these
 new bytes. This is a consolidated successor review, not a replacement
 release selection. Requalify dependency and installer evidence for
 the chosen final asset set; publication remains BLOCKED.
+
+### Consolidated successor scoped dependency and setup replay
+
+Rebuilt the three scoped CycloneDX 1.6 inventories from the exact
+f939fea assets identified above. The Windows inventory compared
+the embedded package bytes and host scope to all four pinned NuGet
+archives; the Apple inventories recomputed bundle files, load
+commands and resource seals. All three offline schema checks passed.
+
+| Scope | Components | SBOM SHA-256 |
+| --- | --- | --- |
+| Windows portable | 269 (265 files, four source packages) | `f187ef200c7e2dbac4af83b4eb4ac6b47f9a0fea7380ac87619d169e2e2e0f87` |
+| Universal | 31 (seven files, 24 OS references) | `30f69be0fe12a0cec1d97f10ba68c5debacecc317e6e42fea24bb235f492a65a` |
+| High Sierra | 14 (seven files, seven OS references) | `55d06656a5c91927a6c44acc06141530b93de3c848195cee05205ac66966b21f` |
+
+The root digests match the corresponding release asset hashes.
+Apple SBOMs were independently regenerated and are byte-identical
+to the earlier reviewed inventories. All compositions remain
+incomplete. The four Windows source package versions are unchanged.
+Replaying the retained 26 November 07:47 UTC NuGet snapshot examined
+211 ranges with no matches. The retained OSV query matches these
+four package/version pairs and the response contains no IDs.
+No fresh advisory request was made in this replay. Snapshot
+authentication and freshness are NOT_VERIFIED. OS installed-version
+advisories, signing, licensing and full installer coverage remain open.
+
+The consolidated setup passed the scoped Setup.0 record and launch
+policy verifier using the new pinned pair (--candidate f939fea).
+Its installer script hash equals the earlier b2c5ce9 script hash;
+the setup bytes are different. The verifier rejects substituting
+either setup for the other. The same 281 standard and 12 custom
+messages, six file records (including the generated uninstaller),
+two shortcuts, one launch entry and IFPS policy matched.
+No trailing record bytes. Static evidence SHA-256:
+`0798a7f8c68dca03f59414fc07ba67161461265bc2f3c37fb3ac6a66911ef77a`.
+This is not interactive execution or a distribution decision.
+Release admission remains BLOCKED.
