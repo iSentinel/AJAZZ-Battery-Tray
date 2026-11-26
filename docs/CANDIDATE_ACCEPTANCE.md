@@ -832,3 +832,24 @@ aa2d8f5a7b163e9b478f4d63fce8f21d9b7976b61f1f66768c4b962461409d4c.
 Source provenance remains a caller-reviewed assertion; the aggregate
 does not independently authenticate human observations, physical
 acceptance, signing, installer identity or release admission.
+
+## Successor experimental USB display preference
+
+This preference applies to the successor source, not the pinned
+b2c5ce9 candidate. Settings > Show unverified USB charge
+(experimental) defaults off for new and existing settings lacking
+the field. Enabling requires affirmative confirmation. The setting
+is local to this installation and is excluded from portable
+preference backups.
+
+With a current eligible ordinary unverified observation, toggle the
+preference and check the primary icon, extra receiver icons, receiver
+submenu and Device Manager. Off hides the number; on allows the
+existing gray question-mark presentation and explicit unverified
+status. Verified fresh, cached and scheduled numbers retain priority;
+expired, absent or unknown observations do not display the field.
+Changing the preference does not initiate a poll, add history, emit
+an alert or publish a new API generation. Diagnostics remain available
+regardless of the display preference. Check save failure and restart,
+and repeat with EN, RU and UK. No independent battery verification or
+release approval follows from this display option.

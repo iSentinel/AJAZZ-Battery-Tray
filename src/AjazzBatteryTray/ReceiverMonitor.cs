@@ -226,20 +226,17 @@ internal sealed class ReceiverMonitor : IDisposable
     internal static DeviceDashboardState Presentation(State state, DateTimeOffset now)
         => state.VerifiedDisplay.Present(Dashboard(state, now), now, state.ScheduledSkip);
 
-    internal static int? Unverified(State state, DateTimeOffset now)
-        => ApexDisplayPolicy.Unverified(state.Reading.PresenceKnown, state.Present,
+    internal static int? Unverified(State state, DateTimeOffset now, bool showUnverified)
+        => ApexDisplayPolicy.UnverifiedForDisplay(showUnverified, state.Reading.PresenceKnown, state.Present,
             state.ScheduledSkip, state.Reading.UnverifiedPercent, state.MeasuredAt, now);
 
-    internal static string Status(State state)
-        => Status(state, DateTimeOffset.UtcNow);
-
-    private static string Status(State state, DateTimeOffset now)
+    private static string Status(State state, DateTimeOffset now, bool showUnverified)
     {
         var display = Presentation(state, now);
         if (display.Percent is int level)
             return display.Status is DeviceDashboardStatus.Scheduled or DeviceDashboardStatus.Cached
                 ? display.MenuStatus() : $"{level}%";
-        if (Unverified(state, now) is int raw) return UsbTrayStatus.UnverifiedField(raw);
+        if (Unverified(state, now, showUnverified) is int raw) return UsbTrayStatus.UnverifiedField(raw);
         return UsbTrayStatus.WithLastVerified(
             UsbTrayStatus.Reason(state.Reading.PresenceKnown, state.Present, state.Reading.Issue),
             state.LastVerifiedAt);
@@ -247,14 +244,14 @@ internal sealed class ReceiverMonitor : IDisposable
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
         Func<string, bool> visible, Action<string> toggle,
-        Action<State> editColor, Action<State> editAlerts, Action<State> editInterval)
+        Action<State> editColor, Action<State> editAlerts, Action<State> editInterval, bool showUnverified)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
         menu.DropDownItems.Clear();
         foreach (State state in _states.Values)
         {
-            ToolStripMenuItem item = new($"{state.DisplayLabel}: {Status(state)}");
+            ToolStripMenuItem item = new($"{state.DisplayLabel}: {Status(state, DateTimeOffset.UtcNow, showUnverified)}");
             item.DropDownItems.Add(UiText.Get("Battery history..."), null,
                 (_, _) => ShowHistory(state));
             item.DropDownItems.Add(UiText.Get("Edit local name..."), null, (_, _) => edit(state));
@@ -297,7 +294,7 @@ internal sealed class ReceiverMonitor : IDisposable
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
         string? visiblePrimaryKey, IReadOnlySet<string> hidden,
         Func<string, string> color,
-        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> bluetooth, bool mouseStyle = false,
+        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> bluetooth, bool showUnverified, bool mouseStyle = false,
         IReadOnlyList<(string Key, string Name, int? Percent, bool Stale, string Source)>? linked = null)
     {
         if (!enabled)
@@ -316,10 +313,10 @@ internal sealed class ReceiverMonitor : IDisposable
                 wanted.Add(pair.Key);
                 var now = DateTimeOffset.UtcNow;
                 var display = Presentation(pair.Value, now);
-                int? raw = display.Percent.HasValue ? null : Unverified(pair.Value, now);
+                int? raw = display.Percent.HasValue ? null : Unverified(pair.Value, now, showUnverified);
                 SetIcon(pair.Key, pair.Value.DisplayLabel, display.Percent ?? raw, menu, refresh,
                     stale: display.Status == DeviceDashboardStatus.Cached,
-                    color: color(pair.Key), status: display.Status == DeviceDashboardStatus.Fresh ? null : Status(pair.Value, now),
+                    color: color(pair.Key), status: display.Status == DeviceDashboardStatus.Fresh ? null : Status(pair.Value, now, showUnverified),
                     mouseStyle: mouseStyle, unverified: raw.HasValue);
             }
             if (showAula && !aulaIsPrimary)
