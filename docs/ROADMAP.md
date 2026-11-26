@@ -2804,6 +2804,19 @@ configuration commands. USB `VersionNumber` is a device revision,
       results, signing, distribution and final release decisions.
       No publication or new acceptance claim.
 
+### Exact normalized product signature and runbook consistency
+
+- [x] #309 exact 5/5 CI merged 2ae646f after tested-tree equality.
+- [x] Pin Windows runbook to the revision containing both the blank-kit
+      generator and local-build-aware reviewer; document fresh combined
+      form assembly without overwriting observations.
+- [x] Add native Authenticode observation for the original app,
+      exact e7195b38 Setup and exercised uninstaller; separate
+      JSON artifact with OS build and before/after hash checks.
+- [ ] Review actual native signature observation; retained private
+      Setup and human acceptance, signing disposition, distribution,
+      final selection and publication remain open.
+
 ### Normalized package proposal
 
 - [x] Revalidate the three private notice-bearing prototypes against
@@ -2815,3 +2828,7 @@ configuration commands. USB `VersionNumber` is a device revision,
       compatibility, private Setup retention, actual acceptance, signing,
       distribution and publication. See
       [package proposal](BETA61_PACKAGE_PROPOSAL.md). Release blocked.
+
+- [x] #310 exact 5/5 CI merged 5bef61e; same-run normalized
+      product signature and lifecycle artifacts verified. All three
+      product EXEs report NotSigned on Windows build 26100.33828.

@@ -1,11 +1,22 @@
-# Resume — normalized package proposal
+# Resume — normalized package proposal and exact native signatures
 
-#309 merged 2ae646f, 13/13 integration CI PASS. #310 native
-signature CI still pending at this checkpoint. Three private
-notice-bearing prototypes reverified against original archives.
-Proposal f5cc9152 binds them and expected Setup e7195b38 without
-changing acceptance subject 913bda76. Setup NOT_PROVIDED, package
-selection and real acceptance remain open. Publication BLOCKED.
+#310 exact 5/5 merged 5bef61e. Native original signature and
+same-run lifecycle archives verified; app, normalized Setup and
+exercised uninstaller NotSigned on Windows 26100.33828.
+Three private notice-bearing prototypes reverified. Proposal
+f5cc9152 binds them and expected Setup e7195b38 without changing
+acceptance subject 913bda76. Setup NOT_PROVIDED locally, final
+package selection and real acceptance open. Release BLOCKED.
+
+# Resume — exact normalized product signature and runbook consistency
+
+#309 exact 5/5 merged 2ae646f. Windows runbook now pins that
+tool revision and explicitly assembles the local interactive and
+five hardware forms. Add native Authenticode observation of exact
+e7195b38 Setup, original app and exercised uninstaller, separate
+JSON only. Hosted observation pending; Gateway lists only Linux
+Proxmox, no enrolled Windows desktop. Actual human acceptance and
+distribution/signing decisions remain open. Release BLOCKED.
 
 # Resume — normalized blank acceptance kit
 

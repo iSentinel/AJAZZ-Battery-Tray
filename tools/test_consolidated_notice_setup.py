@@ -79,5 +79,20 @@ class ConsolidatedNoticeSetupTests(unittest.TestCase):
         self.assertIn('candidate-payload-replay.json', text[upload:])
 
 
+    def test_normalized_product_signature_scope(self) -> None:
+        """Observe all exact product binaries, not only the compiler signature."""
+        text = WORKFLOW.read_text()
+        start = text.index('name: Observe native signature status of the exact normalized product')
+        end = text.index('name: Retain exact candidate evidence only')
+        self.assertLess(text.index('name: Independently validate the scoped normalized Setup'), start)
+        for item in ('e7195b3817e919eeff47606c036089a2e9fabc44b2238eae466918b992da90a8',
+                     'exercised-uninstaller.json', 'exercised-unins000.exe',
+                     '$record.uninstaller_sha256', 'Get-AuthenticodeSignature',
+                     '$before -cne $after', "product_trust = 'NOT_VERIFIED'"):
+            self.assertIn(item, text[start:end])
+        self.assertNotIn('Start-Process', text[start:end])
+        self.assertIn('name: normalized-product-signature-observation', text[end:])
+
+
 if __name__ == '__main__':
     unittest.main()

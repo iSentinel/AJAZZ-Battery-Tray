@@ -56,3 +56,24 @@ The output is written exclusively and does not replace prior evidence.
 The actual local replay verified all three existing package files and
 returned exit 1 with Setup NOT_PROVIDED. No package has been selected,
 uploaded or released by this step.
+
+
+## Exact normalized product native signature observation
+
+PR #310 passed five hosted checks and merged 5bef61e after
+tested-tree equality. Native Windows run 45912448089, job
+140223775027, used the original f939fea source and qualification
+checkout 4a5afc9. Original signature artifact 15160742137 has ZIP
+SHA-256 25164ddc711931e9f629722bbd7379394c7b3c579556559ec90e30e71d09bacc
+and sole JSON SHA-256
+a539c65b4144dfcacaa7f01e930031593c1514ebc8b1bb23d887371c9854f082.
+Same-run lifecycle evidence artifact 15160826987 has ZIP SHA-256
+74e9eacb5ab996235a4de5d52ed34569ee5633403c19be0e850131f1137b2f43.
+Both original archive digests matched; shared source, original app,
+normalized Setup and exercised uninstaller hashes matched. The
+uninstaller hash is
+9f07d326d9136adfa67658ba5719731a17e1a1a3ac7ef66e441d35673e99804e.
+Windows build 26100.33828 reported NotSigned / None, no signer
+certificate or timestamp, for all three files. This is a scoped
+native observation, not trusted signing, SmartScreen or permission
+to distribute. No product binaries were retained by this run.
