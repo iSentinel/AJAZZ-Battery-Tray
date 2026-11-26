@@ -1,3 +1,13 @@
+# Resume — consolidated notice transport gap and private prototype
+
+#297 exact 5/5 merged 5da4ab4. Exact f939fea normal packages
+lack separate notice files/tree in reviewed inventories. Private
+Windows portable ZIP preserves app and four icons and adds nine
+pinned notices plus manifest and identity. Actual independent
+replay byte-identical, two synthetic groups PASS. No public upload,
+release selection or legal clearance. Normal notice-bearing setup,
+Apple packaging, distribution, signing and human acceptance open.
+
 # Resume — consolidated native unsigned observation replay
 
 #296 exact 6/6 merged d37093b. Original Windows observation

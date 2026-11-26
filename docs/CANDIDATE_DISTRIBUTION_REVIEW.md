@@ -216,3 +216,45 @@ b138120b75082274c0e2221e75c5823a218ec3ce7cb88bfcbc486d92bd9ed563.
 Use a fresh output directory for any subsequent authorized private
 Windows compilation. Do not transfer this hash or any test status to
 a different generation; no distribution or release admission.
+
+## Consolidated f939fea notice transport gap and private prototype
+
+For the exact consolidated successor reviewed in
+[BETA61_RELEASE_READINESS.md](BETA61_RELEASE_READINESS.md), the
+ordinary Windows CI archive has the app and four icons only. The
+staged release portable is a bare EXE. The independently decoded
+ordinary Setup payload contains the same five files and no separate
+notice tree. The script includes notices only in its ProductNoticeProbe
+branch. Both Apple inner archives have seven regular bundle files
+and no separate notice file in the reviewed inventory. These are
+transport observations, not a determination that all legally required
+notices are absent or that embedded notices are absent.
+
+A separate private Windows ZIP prototype preserves the exact original
+portable app and four icon bytes, adds the nine previously reviewed
+notice files, their pinned manifest and a candidate identity record.
+It has 16 regular members; each is verified and two independent
+local builds are byte-identical. Original binary and archive hashes
+are unchanged. The new package SHA-256 is
+f22c7ed470ac798393ec94b5d61245bb17afea8d78eca3c0d866f3033977cfb3.
+Local review SHA-256:
+3e19127f0dfeacb3a3b57a3e5220fd766fb17c8e231e73d3de6a7812d585b03b.
+
+Reproduce privately using the original Windows Actions ZIP and the
+previously reviewed notice directory:
+
+```sh
+python3 tools/build_consolidated_portable_notices.py --original windows.zip --notices /local/notices --archive private-portable-notices.zip --output private-portable-notices-review.json
+```
+
+No executable was changed, executed, uploaded or released by this
+step. The ZIP is a new package identity, not a selected replacement
+release asset. The scoped notice manifest includes Inno texts even
+in this portable prototype; their presence does not establish that
+every applicable notice or license term is covered. Windows SDK terms,
+remaining Inno provenance, Apple distribution scope, signing and
+human acceptance remain unresolved. A notice-bearing normal installer
+and a final portable packaging decision still require separate
+qualification. Preserve Apple bundle signatures; any separate notice
+packaging proposal must have its own archive identity. Publication
+remains BLOCKED.
