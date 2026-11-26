@@ -49,9 +49,10 @@ came from another time.
       57 physical cases remain NOT_RUN.
 - [x] Confirm the beta.61 Windows field launcher created both reports.
       All six 05/00 pairs agree on status bytes. Field 82 remained unverified.
-- [ ] Run combined candidate CI and bind the resulting platform archives.
+- [x] Complete consolidated candidate CI and bind the pinned platform
+      archives as recorded below.
 - [ ] Complete physical and interactive acceptance, distribution and signing
-      review, reproducibility comparison, and ENG-10 candidate admission.
+      review, and ENG-10 candidate admission.
 
 See the [release readiness record](BETA61_RELEASE_READINESS.md) for exact
 candidate identities, artifact links, field findings and remaining gates.
@@ -63,8 +64,9 @@ candidate identities, artifact links, field findings and remaining gates.
 - [x] Normalize ZIP order and timestamps for both Apple build scripts.
       Add a local comparison CLI that verifies both source archives and
       distinguishes a packaging difference from changed app files.
-- [ ] Verify independent native repeats for both Apple editions and Windows.
-      Record exact asset digests and explain any remaining differences.
+- [x] Verify independent native repeats for both Apple editions, Windows
+      portable and Windows Setup. The eight exact-source builds and
+      matching asset digests are recorded in [PR #282](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/282#verified-acceptance-artifacts).
 
 ### Consolidated beta.61 acceptance candidate
 
@@ -87,6 +89,9 @@ candidate identities, artifact links, field findings and remaining gates.
       portable EXE and Apple ZIPs. Review the four pinned NuGet versions
       against NuGet VulnerabilityInfo and OSV. Record hashes and scope in
       the [readiness record](BETA61_RELEASE_READINESS.md#dependency-evidence-for-the-pinned-beta61-candidate).
+- [x] Compare the exact Windows Setup.0 records and the launch predicate
+      with the reviewed installer source. See the
+      [static review](BETA61_RELEASE_READINESS.md#static-windows-installer-policy-for-the-pinned-beta61-candidate).
 - [ ] Review recorded physical and interactive results for this generation.
 - [ ] Resolve compiler/notice distribution and signing disposition.
       Record candidate admission and approval against final hashes.

@@ -1,3 +1,11 @@
+# Resume — beta.61 static installer review
+
+The exact b2c5ce9 setup passed full scoped Setup.0 record framing
+and launch policy review. The setup record verifier now accepts
+that exact setup and source pair with `--candidate b2c5ce9`.
+See the [replay command](docs/BETA61_RELEASE_READINESS.md#static-windows-installer-policy-for-the-pinned-beta61-candidate).
+Interactive UAC, field acceptance and distribution remain open.
+
 # Resume — beta.61 dependency evidence
 
 Validated three scoped SBOMs for the pinned `b2c5ce9` assets. NuGet
