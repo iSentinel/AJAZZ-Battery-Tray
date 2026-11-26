@@ -77,3 +77,80 @@ Windows build 26100.33828 reported NotSigned / None, no signer
 certificate or timestamp, for all three files. This is a scoped
 native observation, not trusted signing, SmartScreen or permission
 to distribute. No product binaries were retained by this run.
+
+## Compatibility with the existing release clients
+
+Reviewed the published beta.60 tag at
+e9c1f21acee64e51b7b064a97492e434ad41b52f and the exact proposed
+application source f939fea. Both Windows UpdateClient implementations
+select a supported release tag and construct a fixed GitHub release-page
+link, rather than select an asset or download/execute it. Changing asset
+names does not change this source-level release discovery contract.
+The experimental channel must be selected to discover beta tags; a
+stable-channel user is not automatically offered beta.61.
+No live client network or GUI behavior is asserted by this source review.
+
+Both LocalArtifactVerifier implementations accept exactly the existing
+AJAZZBatteryTray-win-x64.exe and AJAZZBatteryTray-Setup-win-x64.exe
+names with matching single-entry ASCII SHA-256 manifests.
+The proposed notice-bearing portable ZIP is not supported by that
+built-in dialog. The normalized Setup keeps its existing name and
+checksum format. macOS documentation expects the original inner ZIP
+and a single extraction; the proposed outer notice wrapper requires
+two extraction steps. No existing direct asset URL or one-step
+extraction contract is claimed compatible. Do not silently substitute
+these packages in the public release workflow.
+
+### Optional local companion checksums
+
+Append --checksum-dir checksums to the local proposal-review command
+above. The new directory contains companion .sha256 files named for
+the exact proposed packages with lowercase SHA-256, two ASCII spaces,
+filename and LF. The missing Setup does not receive a companion
+file. The same command with an actual matching Setup generates its
+existing compatible companion name. No original archive or existing
+directory is overwritten. The proposal identity remains unchanged.
+
+For an eventually approved distribution, keep the exact published
+filename and obtain its checksum separately from the intended release.
+For Windows Portable, verify the outer ZIP in PowerShell before
+extraction:
+
+```powershell
+$name = 'AJAZZBatteryTray-win-x64-notices.zip'
+$line = (Get-Content -LiteralPath 'AJAZZBatteryTray-win-x64-notices.sha256' -Raw).TrimEnd("`r", "`n")
+$pattern = '^[a-f0-9]{64}  ' + [regex]::Escape($name) + '$'
+if ($line -cnotmatch $pattern) { throw 'Unexpected checksum format' }
+if ((Get-FileHash -LiteralPath $name -Algorithm SHA256).Hash.ToLowerInvariant() -cne $line.Substring(0, 64)) {
+    throw 'Package checksum differs'
+}
+```
+
+After verification, extract to a fresh folder; retain Notices and Icons
+alongside AJAZZBatteryTray.exe. Do not use the old built-in verifier
+on the ZIP or rename it to EXE. This does not establish publisher trust.
+
+For macOS, verify the outer ZIP against its matching companion in the
+download directory, then extract to a fresh folder. For Universal:
+
+```sh
+shasum -a 256 -c AJAZZBatteryTray-macOS-universal-notices.sha256
+```
+
+Inside the extracted folder, verify the original inner ZIP:
+
+```sh
+shasum -a 256 -c AJAZZBatteryTray-macOS-universal.sha256
+```
+
+For High Sierra use the corresponding HighSierra-Intel names.
+Extract the verified inner ZIP and retain the outer LICENSE. Do not
+modify bundle contents or disable Gatekeeper. These instructions
+describe the proposed format, not an authorized release or installation.
+
+Actual local replay generated three sidecars and verified all three
+existing ZIPs with sha256sum -c. Setup remained NOT_PROVIDED; no Setup
+sidecar was created. Existing public names and the release hold remain
+unchanged. Selection of a compatible final asset strategy, public
+documentation, real package extraction/launch and publisher trust
+remain open.

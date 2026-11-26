@@ -1,10 +1,13 @@
 """Synthetic package proposal regressions without executable inputs."""
 
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
-from review_normalized_package_set import PACKAGES, check_package, proposal, review, subject_hash
+from review_normalized_package_set import (
+    PACKAGES, check_package, proposal, review, stage_checksums, subject_hash,
+)
 from validate_scoped_sbom_schema import digest
 
 
@@ -49,6 +52,31 @@ class PackageProposalTests(unittest.TestCase):
         self.assertEqual(matched['proposal_sha256'], baseline['proposal_sha256'])
         self.assertEqual(matched['package_selection'], 'NOT_VERIFIED')
         self.assertEqual(matched['release_admission'], 'BLOCKED')
+
+    def test_checksum_sidecars(self) -> None:
+        """Generate exact ASCII manifests only for locally verified identities."""
+        subject = proposal()
+        row = {'subject': subject, 'proposal_sha256': subject_hash(subject),
+               'local_files': {**{k: 'MATCH' for k in PACKAGES}, 'installer': 'NOT_PROVIDED'}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'checksums'
+            stage_checksums(row, root)
+            self.assertEqual(len(list(root.iterdir())), 3)
+            for edition in PACKAGES:
+                asset = subject['assets'][edition]
+                path = root / Path(asset['filename']).with_suffix('.sha256')
+                self.assertEqual(path.read_bytes(),
+                                 f"{asset['sha256']}  {asset['filename']}\n".encode('ascii'))
+            with self.assertRaises(FileExistsError):
+                stage_checksums(row, root)
+            row['local_files']['installer'] = 'MATCH'
+            stage_checksums(row, root.parent / 'complete')
+            self.assertTrue((root.parent / 'complete' /
+                             'AJAZZBatteryTray-Setup-win-x64.sha256').is_file())
+            row['subject']['assets']['windows']['sha256'] = 'wrong'
+            with self.assertRaises(ValueError):
+                stage_checksums(row, root.parent / 'bad')
+            self.assertFalse((root.parent / 'bad').exists())
 
     def test_package_substitution(self) -> None:
         """Reject a changed wrapper before parsing its members."""

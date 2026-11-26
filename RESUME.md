@@ -1,3 +1,13 @@
+# Resume — proposed package checksum and update compatibility
+
+#311 exact 5/5 merged 0f2dcc6. Reviewed exact public beta.60
+e9c1f21 and candidate f939fea: update discovery uses release page,
+existing Windows verifier accepts only named EXEs; Apple wrappers
+require two extraction steps. Add optional companion generation;
+actual three ZIPs sha256sum PASS, missing Setup omitted. Proposal
+f5cc9152 unchanged, no publication or asset selection. Native
+package use, real acceptance, signing and distribution open.
+
 # Resume — normalized package proposal and exact native signatures
 
 #310 exact 5/5 merged 5bef61e. Native original signature and
