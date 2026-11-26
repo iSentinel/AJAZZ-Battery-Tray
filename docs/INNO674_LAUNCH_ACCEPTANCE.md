@@ -83,3 +83,22 @@ not that cases passed. The summary omits observation text and always
 retains independent acceptance and release admission as unverified.
 The exact #246 setup is not available for download from its JSON-only
 qualification run. Do not substitute another binary or invent results.
+
+### Optional local binary binding
+
+Supply both exact executables to check their actual local bytes against
+the native qualification before creating or reviewing a checklist:
+
+```sh
+python3 tools/verify_interactive_acceptance.py --candidate migration-evidence.json --setup AJAZZBatteryTray-Setup-win-x64.exe --app AJAZZBatteryTray.exe --output interactive-checklist.json
+python3 tools/verify_interactive_acceptance.py --candidate migration-evidence.json --setup AJAZZBatteryTray-Setup-win-x64.exe --app AJAZZBatteryTray.exe --checklist interactive-checklist.json --output interactive-review.json
+```
+
+Both options must be supplied together. The existing bounded regular
+file reader rejects missing, oversized or symbolic-link inputs, and
+the hashes must match the exact candidate evidence. The review reports
+local_binary_binding MATCH or NOT_PROVIDED. A template generated after
+checking binaries has the same checklist schema as an older template;
+the check is repeated at review time. No binary is executed, no
+Authenticode trust or test execution is inferred, and no release is
+authorized. JSON-only hosted evidence does not supply the setup bytes.

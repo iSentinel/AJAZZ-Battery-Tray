@@ -1,3 +1,12 @@
+# Resume — interactive acceptance local binary binding
+
+#273 pending final Windows CI at latest review. Child adds paired
+optional setup/app paths and checks actual SHA-256 values before
+writing a checklist or review. Review local_binary_binding is
+MATCH or NOT_PROVIDED; original checklist schema unchanged.
+Two synthetic groups. Exact setup bytes and human acceptance
+remain unavailable/unverified; compiler and release hold unchanged.
+
 # Resume — hardware acceptance set review
 
 #271 exact 2/2 CI merged 38a4f5b; #272 exact 4/4 CI merged

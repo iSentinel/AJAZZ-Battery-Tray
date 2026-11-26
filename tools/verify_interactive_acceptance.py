@@ -8,6 +8,7 @@ import sys
 
 from run_offline_qa import write_json
 from validate_scoped_sbom_schema import digest, document, read
+from verify_windowsdesktop_provenance import read_local
 
 CASES = tuple(f'RG{i:02d}' for i in range(1, 7))
 STATUSES = ('NOT_RUN', 'NOT_VERIFIED', 'PASS', 'FAIL')
@@ -28,6 +29,16 @@ def candidate(raw: bytes) -> dict:
         if not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{%d}' % size, value):
             raise ValueError('invalid candidate identity')
     return {**result, 'engine_version': '6.7.4', 'native_evidence_sha256': digest(raw)}
+
+
+def verify_binaries(raw: bytes, setup: Path, app: Path) -> str:
+    """Match both local byte hashes without executing or authenticating binaries."""
+    identity = candidate(raw)
+    for path, key in ((setup, 'setup_sha256'), (app, 'app_sha256')):
+        data = read_local(path)
+        if not data or digest(data) != identity[key]:
+            raise ValueError('candidate binary digest differs')
+    return 'MATCH'
 
 
 def template(raw: bytes) -> dict:
@@ -51,7 +62,8 @@ def check_case(key: str, row: dict) -> str:
     return status
 
 
-def verify(raw: bytes, checklist: bytes) -> dict:
+def verify(raw: bytes, checklist: bytes,
+           setup: Path | None = None, app: Path | None = None) -> dict:
     """Validate identity and completeness, never authenticate human claims."""
     expected = template(raw)
     data = document(checklist)
@@ -65,8 +77,12 @@ def verify(raw: bytes, checklist: bytes) -> dict:
     results = {key: check_case(key, data['cases'][key]) for key in CASES}
     if not os_build and any(value != 'NOT_RUN' for value in results.values()):
         raise ValueError('record OS build before testing')
+    if (setup is None) != (app is None):
+        raise ValueError('both candidate binaries are required')
+    binding = verify_binaries(raw, setup, app) if setup is not None else 'NOT_PROVIDED'
     counts = {status: sum(value == status for value in results.values()) for status in STATUSES}
     return {'schema': 'interactive-acceptance-review-v1', 'candidate': expected['candidate'],
+            'local_binary_binding': binding,
             'checklist_sha256': digest(checklist), 'case_statuses': results, 'counts': counts,
             'coverage': 'COMPLETE_REPORTED' if counts['PASS'] == len(CASES) else 'INCOMPLETE',
             'human_observations': 'SELF_REPORTED_NOT_AUTHENTICATED',
@@ -79,11 +95,20 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--candidate', type=Path, required=True)
     parser.add_argument('--checklist', type=Path)
+    parser.add_argument('--setup', type=Path, help='Exact candidate setup executable')
+    parser.add_argument('--app', type=Path, help='Exact candidate installed application executable')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         raw = read(args.candidate)
-        result = verify(raw, read(args.checklist)) if args.checklist else template(raw)
+        if (args.setup is None) != (args.app is None):
+            raise ValueError('both candidate binaries are required')
+        if args.checklist:
+            result = verify(raw, read(args.checklist), args.setup, args.app)
+        else:
+            if args.setup is not None:
+                verify_binaries(raw, args.setup, args.app)
+            result = template(raw)
         write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):
         print('FAIL: interactive checklist identity or format', file=sys.stderr)
