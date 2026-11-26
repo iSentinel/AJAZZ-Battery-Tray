@@ -37,5 +37,21 @@ class ConsolidatedNoticeSetupTests(unittest.TestCase):
         self.assertNotIn('gh release upload', text)
 
 
+    def test_upgrade_uses_the_clean_setup_and_retains_json(self) -> None:
+        """Require upgrade/reinstall to use the same setup and notice evidence."""
+        text = WORKFLOW.read_text()
+        upgrade = text.index('name: Exercise exact setup upgrade and same-version reinstall')
+        upload = text.index('name: Retain exact candidate evidence only')
+        self.assertLess(text.index('name: Verify product notice lifecycle'), upgrade)
+        self.assertLess(upgrade, upload)
+        for item in ('Test-ProductNoticeUpgrade.ps1', '$clean.setup_sha256',
+                     '$upgrade.setup_sha256', 'reinstall_restores_missing_notice',
+                     'staged-evidence.json'):
+            self.assertIn(item, text[upgrade:upload])
+        for item in ('product-upgrade-lifecycle.json', 'product-upgrade-notices.json',
+                     'product-reinstall-notices.json'):
+            self.assertIn(item, text[upload:])
+
+
 if __name__ == '__main__':
     unittest.main()

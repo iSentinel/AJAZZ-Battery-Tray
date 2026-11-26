@@ -112,6 +112,28 @@ The AULA monitor separately reported two fresh 2.4 GHz observations,
 34 and 33. The AJAZZ receiver does not establish the mouse model. These
 observations guide follow-up and leave the `b2c5ce9` cases open.
 
+### Windows application observations from the owner
+
+The following files report Windows x64 build 26300 and one enumerated
+APEX receiver 3151:5007 revision 0002. Each diagnostic sweep has 65- and
+67-byte replies at 30, 100 and 250 ms. The ready flag is clear in all
+24 replies. Each sweep agrees internally on the numeric field.
+
+| Capture UTC | Reported app revision | APEX replies / verified charge | Unverified field | AULA state |
+| --- | --- | --- | ---: | --- |
+| 08:55:35 | `b2c5ce9` | 6 / 0 | 75 | Fresh 31% |
+| 09:25:59 | `b2c5ce9` | 6 / 0 | 89 | Cached 28%, two no-reply polls |
+| 10:23:17 | `b2c5ce9` | 6 / 0 | 100 | Cached 25%, fifteen no-reply polls |
+| 10:47:01 | `6fadeac` | 6 / 0 | 96 | Fresh 22% |
+
+The 09:25 capture's preceding ordinary poll reported field 88. The
+later full sweep reported 89. The evidence records changing values
+while the ready flag stays clear. It lacks a paired reference
+measurement, physical APEX model confirmation and a recorded AULA
+sleep/wake sequence. The 22% AULA result is from another executable.
+Keep all five exact `f939fea` checklists open. See the
+[hardware collection guide](BETA61_HARDWARE_FIELD_KIT.md).
+
 ## Scope and safety contract
 
 - Keep the Windows and macOS applications independent of official AJAZZ software.
@@ -2724,3 +2746,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       New setup bytes not retained; product trust, interactive,
       physical and distribution acceptance remain open.
       Release BLOCKED.
+
+### Exact setup upgrade and application hardware kit
+
+- [x] Independently replay native notice evidence from #302 and
+      confirm all five hosted checks.
+- [x] Recreate and validate five `f939fea` app checklists from three
+      original archives. [Collection guide](BETA61_HARDWARE_FIELD_KIT.md).
+- [x] Exercise upgrade and reinstall in the same hosted workflow
+      that compiles the notice-bearing setup. Check shared source,
+      app and setup hashes and retain JSON evidence.
+- [ ] Review the new hosted upgrade/reinstall result and perform
+      interactive and physical cases. Distribution, signing and
+      publication acceptance remain open.
