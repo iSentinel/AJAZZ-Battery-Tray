@@ -242,6 +242,45 @@ advisories require OS-build evidence from the target systems. The High
 Sierra security disposition remains open. This review records the feeds
 at one time and leaves release admission BLOCKED.
 
+## Static Windows installer policy for the pinned beta.61 candidate
+
+For setup `e1281508c8d337c3ea2202b92d8eb1db3bd6aca7b7ed2fa859a782e40bc1a15f`
+from PR #282, the scoped Setup.0 parser consumed all 46,193 decoded
+bytes. It matched the reviewed installer source at `b2c5ce9` and
+the pinned Inno Setup 6.7.1 English message inputs.
+
+| Scope | Result |
+| --- | --- |
+| Setup header | x64-compatible, per-machine admin install, Restart Manager close filter scoped to AJAZZBatteryTray.exe, automatic application restart disabled |
+| Files and shortcuts | Five payload destinations, generated uninstaller record, Start menu shortcut and optional unchecked desktop shortcut |
+| Post-install launch | One run entry with `nowait runasoriginaluser`, gated by the reviewed `ShouldLaunchTray` IFPS predicate |
+| Launch predicate | `LAUNCH=0` disables launch, `LAUNCH=1` requests launch, and the default requests launch only in non-silent setup |
+| Language and wizard | 281 standard and 12 custom English messages matched. Two wizard images identified by size and SHA-256. Image provenance is open. |
+
+The IFPS record SHA-256 is
+`ec37558245fc7a7712e9e023f36cce2ce5150d268f19c7c7fbe7a69cb8d27ebf`.
+The static evidence JSON SHA-256 is
+`79594667a301969ff3154854a959583d3b04c2120763c3f1a5dbd61b5439df25`.
+
+Use the verified Setup EXE from PR #282 and extract the installer source
+from the exact candidate commit. Obtain `Files/Default.isl` and
+`Projects/Src/Shared.SetupMessageIDs.pas` from the
+[pinned upstream Inno commit](https://github.com/jrsoftware/issrc/tree/cfdf48923178df4b4f040e038b423aa555a61ffc).
+The verifier checks the SHA-256 pins for all four inputs.
+
+```sh
+git show b2c5ce9197efb307f90ecd4e7f977bd3c7adf5cc:installer/AJAZZBatteryTray.iss > candidate.iss
+python3 tools/verify_inno_setup_records.py --candidate b2c5ce9 \
+  --setup AJAZZBatteryTray-Setup-win-x64.exe --installer-script candidate.iss \
+  --default-isl Default.isl --message-ids Shared.SetupMessageIDs.pas \
+  --output setup-records-b2c5ce9.json
+```
+
+The result is static. Actual UAC prompts, the launched process token
+and behavior on interactive install, upgrade and uninstall belong to
+the six existing manual cases. Signing and distribution disposition
+also remain open.
+
 ## Remaining release gates
 
 | Gate | Required evidence |

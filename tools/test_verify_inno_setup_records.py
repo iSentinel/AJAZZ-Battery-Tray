@@ -2,9 +2,12 @@
 
 import struct
 import unittest
+from unittest.mock import patch
 
 from verify_inno_ifps import Reader
-from verify_inno_setup_records import MIN_VERSION, check_task, custom_messages, wizard_data
+from verify_inno_setup_records import (
+    CANDIDATES, MIN_VERSION, check_task, custom_messages, verify, wizard_data,
+)
 
 
 def field(text: str) -> bytes:
@@ -15,6 +18,19 @@ def field(text: str) -> bytes:
 
 class SetupRecordTests(unittest.TestCase):
     """Check exact policy strings, flags and complete wizard framing."""
+
+    def test_candidate_rejects_mixed_source_and_setup(self) -> None:
+        """Reject an exact setup paired with the other reviewed source before decoding."""
+        reference_setup, reference_source = CANDIDATES['reference']
+        current_setup, current_source = CANDIDATES['b2c5ce9']
+        with patch('verify_inno_setup_records.recover') as recover:
+            with patch('verify_inno_setup_records.digest', side_effect=[current_setup, reference_source]):
+                with self.assertRaisesRegex(ValueError, 'installer source digest'):
+                    verify(b'', b'', b'', b'', candidate='b2c5ce9')
+            with patch('verify_inno_setup_records.digest', side_effect=[reference_setup, current_source]):
+                with self.assertRaisesRegex(ValueError, 'installer source digest'):
+                    verify(b'', b'', b'', b'')
+            recover.assert_not_called()
 
     def test_task(self) -> None:
         """Reject a default-checked task or altered task name."""

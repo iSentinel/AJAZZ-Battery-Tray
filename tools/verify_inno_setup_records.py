@@ -23,6 +23,11 @@ MIN_VERSION = struct.pack('<IIHIIH', 0, 0x06010000, 256, 0, 0, 0)
 HEADER = struct.Struct('<17iIIHIIHiiBB6iBBBqi9BqQ')
 FLAGS = (0, 1, 9, 11, 12, 13, 17, 20, 22, 23, 24, 25, 28, 29,
          30, 32, 35, 37, 39, 40)
+CANDIDATES = {
+    'reference': (SETUP_SHA, SCRIPT_SHA),
+    'b2c5ce9': ('e1281508c8d337c3ea2202b92d8eb1db3bd6aca7b7ed2fa859a782e40bc1a15f',
+                'a41fc727e7ff0a9b680958c981f668dca6bb7979c379e562ff136fe7159538bc'),
+}
 
 
 def strings(reader: Reader, count: int) -> list[str]:
@@ -141,10 +146,12 @@ def wizard_data(reader: Reader) -> list[dict]:
     return result
 
 
-def verify(setup: bytes, source: bytes, isl: bytes, ids: bytes) -> dict:
+def verify(setup: bytes, source: bytes, isl: bytes, ids: bytes,
+           *, candidate: str = 'reference') -> dict:
     """Bind exact artifact and source, compare records and account for the block."""
-    require(digest(setup), SETUP_SHA, 'setup digest')
-    require(digest(source), SCRIPT_SHA, 'installer source digest')
+    setup_sha, source_sha = CANDIDATES[candidate]
+    require(digest(setup), setup_sha, 'setup digest')
+    require(digest(source), source_sha, 'installer source digest')
     require(digest(isl), ISL_SHA, 'Default.isl digest')
     require(digest(ids), IDS_SHA, 'message enum digest')
     _, offsets = recover(setup)
@@ -156,23 +163,29 @@ def verify(setup: bytes, source: bytes, isl: bytes, ids: bytes) -> dict:
     check_files(reader)
     check_shortcuts_and_run(reader)
     images = wizard_data(reader)
-    return {'schema': 1, 'setup_sha256': SETUP_SHA, 'script': script,
-            'header_policy': 'MATCH_REVIEWED_SOURCE_AND_DEFAULTS',
-            'file_records': 6, 'shortcut_records': 2, 'run_records': 1,
-            'language': language, 'wizard_images': images,
-            'wizard_image_provenance': 'NOT_VERIFIED',
-            'trailing_bytes': 0, 'release_admission': 'NOT_VERIFIED'}
+    result = {'schema': 1, 'setup_sha256': setup_sha, 'script': script,
+              'header_policy': 'MATCH_REVIEWED_SOURCE_AND_DEFAULTS',
+              'file_records': 6, 'shortcut_records': 2, 'run_records': 1,
+              'language': language, 'wizard_images': images,
+              'wizard_image_provenance': 'NOT_VERIFIED',
+              'trailing_bytes': 0, 'release_admission': 'NOT_VERIFIED'}
+    if candidate != 'reference':
+        result['installer_source_sha256'] = source_sha
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
     """Write local evidence for scoped setup policy, not release admission."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--candidate', choices=CANDIDATES, default='reference',
+                        help='Select the pinned setup and installer source pair')
     for name in ('setup', 'installer-script', 'default-isl', 'message-ids', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         write_json(args.output, verify(read_local(args.setup), read_local(args.installer_script),
-                                           read_local(args.default_isl), read_local(args.message_ids)))
+                                           read_local(args.default_isl), read_local(args.message_ids),
+                                           candidate=args.candidate))
     except (OSError, ValueError, KeyError, struct.error):
         print('FAIL: scoped setup records', file=sys.stderr)
         return 2
