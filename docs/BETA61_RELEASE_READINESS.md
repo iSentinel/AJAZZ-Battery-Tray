@@ -193,12 +193,60 @@ leave release admission BLOCKED pending independent qualification,
 distribution and signing disposition, and explicit publication approval.
 The publication workflows retain their existing hold.
 
+## Dependency evidence for the pinned beta.61 candidate
+
+Reviewed on 26 November 2026 for source
+`b2c5ce9197efb307f90ecd4e7f977bd3c7adf5cc` and tree
+`d17f6725416b18e1a11cd7c29c1d2c22c48441ae` from PR #282. All four
+original release asset hashes matched the pinned manifest. Three scoped
+CycloneDX 1.6 SBOMs passed offline validation against the pinned schemas.
+Their application hashes were checked directly against the shipped
+portable EXE and both inner app ZIPs.
+
+| Scope | Inventory | SBOM SHA-256 |
+| --- | --- | --- |
+| Windows portable x64 | 265 embedded files and four pinned NuGet source packages | `0ec385b7bd8095e5ec12c11b156b794b48b10fc42472b7ee3812908d064b9158` |
+| macOS Universal | 7 shipped files and 24 external OS load commands per slice | `30f69be0fe12a0cec1d97f10ba68c5debacecc317e6e42fea24bb235f492a65a` |
+| macOS High Sierra Intel | 7 shipped files and 7 external OS load commands | `55d06656a5c91927a6c44acc06141530b93de3c848195cee05205ac66966b21f` |
+
+Retrieved the official [NuGet VulnerabilityInfo index](https://api.nuget.org/v3/vulnerabilities/index.json)
+and both advertised partitions at 07:47 UTC. Base was published
+20 November at 05:34 UTC and update 26 November at 05:34 UTC.
+The audit checked 211 ranges and found zero matches. A separate
+[OSV batch query](https://google.github.io/osv.dev/post-v1-querybatch/)
+at 07:47 UTC returned zero advisories for the same versions.
+
+| NuGet source package | Version | NuGet ranges examined |
+| --- | --- | ---: |
+| Microsoft.NETCore.App.Host.win-x64 | 11.0.0 | 1 |
+| Microsoft.NETCore.App.Runtime.win-x64 | 11.0.0 | 130 |
+| Microsoft.WindowsDesktop.App.Runtime.win-x64 | 11.0.0 | 80 |
+| Microsoft.Windows.SDK.NET.Ref | 10.0.19041.87 | 0 |
+
+NuGet index SHA-256
+`3e639b32ea0fb978e26a66ffe1a2ef8391aac97c38bc6e960f4fc01c98c15d64`.
+Base SHA-256
+`1eb8e70c6f384340d6033fc3c48fd9e5dbc5750d1dcd00d1463df4385637ae9a`.
+Update SHA-256
+`4bea167a58dcd05bff4210a96618a9b284267c77f9159655582fb6879ee8d302`.
+OSV response SHA-256
+`1d3b3028309f42f104f47f2023c84a49d3582b917a8eede35750fec991a596cf`.
+The dependency evidence manifest SHA-256 is
+`b95c1f37c68e283d70d1922cd2e8ad903ac14503c5b64f38bc443ca89623e4cf`.
+
+The Windows scan covers the four package versions in the portable EXE.
+The exact setup passed its asset hash check. Its compiler, payload
+notices and distribution terms remain in the distribution review.
+macOS load commands describe OS libraries. Their installed versions and
+advisories require OS-build evidence from the target systems. The High
+Sierra security disposition remains open. This review records the feeds
+at one time and leaves release admission BLOCKED.
+
 ## Remaining release gates
 
 | Gate | Required evidence |
 | --- | --- |
-| Combined candidate | Complete hosted checks for the integration including the history recovery work in [#266](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/266). Rebind each final archive to the resulting SHA/tree and verify checksums. |
 | Physical devices | Run the five profiles on Windows, Universal macOS, and High Sierra. Preserve the Windows unknown-versus-verified distinction. Re-test an awake 2.4 GHz mouse and record a GearHub result and both Tray modes close in time. |
 | Interactive installation | Exact setup and EXE for install, upgrade, uninstall, UAC and rollback review using the existing interactive acceptance checklist. |
-| Distribution and signing | Resolve the recorded dependency/notice and compiler decisions, signature policy, and reproducibility comparison for the actual final assets. See [distribution review](CANDIDATE_DISTRIBUTION_REVIEW.md). |
+| Distribution and signing | Resolve installer compiler and notice distribution, High Sierra security disposition and signing for the actual final assets. See [distribution review](CANDIDATE_DISTRIBUTION_REVIEW.md). |
 | Publication | Bind the admission record and owner approval to the final immutable source and asset hashes. The release workflow currently exits at the ENG-10 guard. |
