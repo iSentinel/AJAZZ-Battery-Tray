@@ -258,3 +258,44 @@ and a final portable packaging decision still require separate
 qualification. Preserve Apple bundle signatures; any separate notice
 packaging proposal must have its own archive identity. Publication
 remains BLOCKED.
+
+## Consolidated successor notice-bearing installer preflight and Apple wrappers
+
+The original f939fea Windows portable artifact was staged into a fresh
+detached checkout at f939fea7fb422aa588649138d29a750ce62cd22a using
+stage_local_inno674_payload.py. The four source icons matched and
+the staged app SHA-256 remained
+91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c.
+The reviewed 38-component Inno 6.7.4 compiler tree and nine-notice
+tree passed the existing builder dry-run on that exact checkout.
+Input snapshot SHA-256:
+382c4cedeaf7523d6ff54aa76dc3e1d3597f600ffd007dec7d89ef932cc200b9.
+The output directory remained empty. Linux preflight cannot compile
+or perform interactive Windows acceptance. An authorized local
+Windows compilation must obtain a new setup hash and new evidence;
+no previous setup or signing result transfers.
+
+For each Apple edition, a private external ZIP wrapper was built
+from its exact original CI artifact. It contains the unchanged
+inner app ZIP, original companion SHA-256 file, exact project MIT
+LICENSE from the reviewed source, and package identity JSON.
+The app bundle and its signature resources were not rewritten.
+This preserves bytes, not native signature trust or notarization.
+Each wrapper contains four regular files and independently replayed
+byte-identically.
+
+| Edition | Wrapper SHA-256 | Review SHA-256 |
+| --- | --- | --- |
+| Universal | a3c837a0d673de8eccac182cf224503e54cf7b64d0bbcf6adb51dce755c025d8 | b9dc1afba9a817cae695f2c8fd37a0e512b28c8fd00866de7691666469e2858e |
+| High Sierra | 7b514bd2a2af310f0803822f8f8bbd80043c0cfca0af38fbb45b1a25f7b39db4 | a9fd06bb19de63f5624f4b25a86aafdc0b4374d03a7e7193be2057b5c7331d35 |
+
+Example local replay:
+
+```sh
+python3 tools/build_consolidated_apple_notices.py --edition universal --original universal.zip --license LICENSE --archive private-universal-notices.zip --output private-universal-review.json
+```
+
+The wrapper is a new package identity, not a selected release
+asset. Project license transport does not resolve icon provenance,
+OS distribution obligations, trust or hardware acceptance. Neither
+wrapper nor any new executable was uploaded or published.

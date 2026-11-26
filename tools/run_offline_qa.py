@@ -35,6 +35,7 @@ CLI = ("review_beta61_admission", "stage_beta61_release", "compare_release_build
        "stage_windows_notices",
        "verify_windows_notice_transport",
        "build_portable_notice_prototype", "build_consolidated_portable_notices",
+       "build_consolidated_apple_notices",
        "build_scoped_windows_sbom",
        "build_product_notice_sbom",
        "validate_scoped_sbom_schema",
