@@ -9,14 +9,42 @@ import sys
 from run_offline_qa import write_json
 from validate_scoped_sbom_schema import digest, document, read
 from verify_windowsdesktop_provenance import read_local
+from verify_inno674_setup_records import ALIGNED_SOURCE
+from verify_windows_notice_transport import MANIFEST_SHA
 
 CASES = tuple(f'RG{i:02d}' for i in range(1, 7))
 STATUSES = ('NOT_RUN', 'NOT_VERIFIED', 'PASS', 'FAIL')
 
 
+def local_candidate(raw: bytes, row: dict) -> dict:
+    """Bind a private local build without claiming hosted qualification."""
+    fixed = {'schema': 'local-inno674-build-v1', 'engine_version': '6.7.4',
+             'installer_source_sha256': ALIGNED_SOURCE,
+             'notice_manifest_sha256': MANIFEST_SHA, 'input_identity': 'MATCH',
+             'source_provenance': 'NOT_VERIFIED', 'lifecycle': 'NOT_RUN',
+             'distribution_compliance': 'NOT_VERIFIED',
+             'release_admission': 'NOT_VERIFIED'}
+    fields = ('setup_sha256', 'app_sha256')
+    if (set(row) != set(fixed) | set(fields) | {'icons'}
+            or any(row[key] != value for key, value in fixed.items())):
+        raise ValueError('unexpected local build evidence')
+    icons = row['icons']
+    if not isinstance(icons, dict) or set(icons) != {
+            'AppIcon.ico', 'AppIcon-white.ico', 'AppIcon-black.ico', 'AppIcon-blue.ico'}:
+        raise ValueError('unexpected local icon inventory')
+    for value in [row[key] for key in fields] + list(icons.values()):
+        if not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value):
+            raise ValueError('invalid local build identity')
+    return {**{key: row[key] for key in fields}, 'engine_version': '6.7.4',
+            'local_build_evidence_sha256': digest(raw),
+            'source_provenance': 'NOT_VERIFIED', 'native_qualification': 'NOT_VERIFIED'}
+
+
 def candidate(raw: bytes) -> dict:
-    """Bind exact native qualification without trusting it as human acceptance."""
+    """Distinguish a private build from joined native qualification evidence."""
     row = document(raw)
+    if row.get('schema') == 'local-inno674-build-v1':
+        return local_candidate(raw, row)
     if (row.get('schema') != 'inno-674-migration-evidence-v1'
             or row.get('production_shape') != 'MATCH_SCOPED'
             or row.get('scoped_native_evidence') != 'MATCH'
@@ -39,6 +67,17 @@ def verify_binaries(raw: bytes, setup: Path, app: Path) -> str:
         if not data or digest(data) != identity[key]:
             raise ValueError('candidate binary digest differs')
     return 'MATCH'
+
+
+def binary_binding(raw: bytes, setup: Path | None, app: Path | None) -> str:
+    """Require actual local bytes for a build without native qualification."""
+    if (setup is None) != (app is None):
+        raise ValueError('both candidate binaries are required')
+    if setup is None:
+        if 'local_build_evidence_sha256' in candidate(raw):
+            raise ValueError('local build requires both exact binaries')
+        return 'NOT_PROVIDED'
+    return verify_binaries(raw, setup, app)
 
 
 def template(raw: bytes) -> dict:
@@ -77,9 +116,7 @@ def verify(raw: bytes, checklist: bytes,
     results = {key: check_case(key, data['cases'][key]) for key in CASES}
     if not os_build and any(value != 'NOT_RUN' for value in results.values()):
         raise ValueError('record OS build before testing')
-    if (setup is None) != (app is None):
-        raise ValueError('both candidate binaries are required')
-    binding = verify_binaries(raw, setup, app) if setup is not None else 'NOT_PROVIDED'
+    binding = binary_binding(raw, setup, app)
     counts = {status: sum(value == status for value in results.values()) for status in STATUSES}
     return {'schema': 'interactive-acceptance-review-v1', 'candidate': expected['candidate'],
             'local_binary_binding': binding,
@@ -93,7 +130,8 @@ def verify(raw: bytes, checklist: bytes,
 def main(argv: list[str] | None = None) -> int:
     """Emit a private checklist or a scoped review; no network or execution."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--candidate', type=Path, required=True)
+    parser.add_argument('--candidate', type=Path, required=True,
+                        help='Joined native JSON or private local build evidence JSON')
     parser.add_argument('--checklist', type=Path)
     parser.add_argument('--setup', type=Path, help='Exact candidate setup executable')
     parser.add_argument('--app', type=Path, help='Exact candidate installed application executable')
@@ -101,13 +139,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         raw = read(args.candidate)
-        if (args.setup is None) != (args.app is None):
-            raise ValueError('both candidate binaries are required')
         if args.checklist:
             result = verify(raw, read(args.checklist), args.setup, args.app)
         else:
-            if args.setup is not None:
-                verify_binaries(raw, args.setup, args.app)
+            binary_binding(raw, args.setup, args.app)
             result = template(raw)
         write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):

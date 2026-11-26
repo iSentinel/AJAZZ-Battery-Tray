@@ -102,3 +102,47 @@ checking binaries has the same checklist schema as an older template;
 the check is repeated at review time. No binary is executed, no
 Authenticode trust or test execution is inferred, and no release is
 authorized. JSON-only hosted evidence does not supply the setup bytes.
+
+### Private locally compiled candidate
+
+The qualification workflow in the public repository retains JSON
+evidence only. Its setup bytes are not available from that run.
+A separately compiled local candidate is a different identity even
+when the same compiler, source and version are selected. Never
+substitute it for an unavailable hosted executable.
+
+After reviewing applicable local-use terms and staging the exact
+inputs described in CANDIDATE_DISTRIBUTION_REVIEW.md, use a private
+Windows development environment and a fresh output directory.
+The existing local builder supports non-executing preflight and
+explicit compilation:
+
+```powershell
+python tools/build_local_inno674_candidate.py --compiler C:/local/inno674 --notices C:/local/notices --output C:/local/candidate --dry-run
+python tools/build_local_inno674_candidate.py --compiler C:/local/inno674 --notices C:/local/notices --output C:/local/candidate --compile
+```
+
+For the newly produced local candidate (not the hosted candidate),
+generate the RG01–RG06 record with both exact local executables:
+
+```powershell
+python tools/verify_interactive_acceptance.py --candidate C:/local/candidate/local-build-evidence.json --setup C:/local/candidate/AJAZZBatteryTray-Setup-win-x64.exe --app dist/app/AJAZZBatteryTray.exe --output C:/local/candidate/interactive-checklist.json
+```
+
+After authorized testing on an isolated test desktop, review the
+same original evidence and binaries:
+
+```powershell
+python tools/verify_interactive_acceptance.py --candidate C:/local/candidate/local-build-evidence.json --setup C:/local/candidate/AJAZZBatteryTray-Setup-win-x64.exe --app dist/app/AJAZZBatteryTray.exe --checklist C:/local/candidate/interactive-checklist.json --output C:/local/candidate/interactive-review.json
+```
+
+The local-build evidence schema, installer source and notice pins,
+engine version, icon hash inventory and two executable hashes are
+checked. Both binaries are mandatory in local-build mode, even for
+a blank checklist. The local candidate identity binds the exact
+local-build JSON bytes, not a hosted migration record; it expressly
+marks source provenance and native qualification NOT_VERIFIED.
+This does not independently verify compilation, notice contents,
+code signing or lifecycle behavior. Keep any resulting binaries
+private. No release admission, distribution approval or compiler
+migration is granted by this tool.

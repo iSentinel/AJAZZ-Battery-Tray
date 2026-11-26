@@ -1,3 +1,13 @@
+# Resume — private local interactive acceptance path
+
+#274 exact 4/4 CI merged 8e3625d. Public repository retains
+JSON-only native installer qualification. Interactive validator
+now accepts a distinct private local-build record with pinned
+fields and both exact local binaries required. Native qualification
+and source provenance NOT_VERIFIED. Two synthetic groups.
+Actual Windows compilation and human acceptance still open;
+no public binary upload, compiler migration or release authorization.
+
 # Resume — interactive acceptance local binary binding
 
 #273 pending final Windows CI at latest review. Child adds paired
