@@ -118,6 +118,24 @@ class IndependentBleMonitorTests(unittest.TestCase):
         self.assertLess(record.index('if (fresh is not int level) return;'),
                         record.index('state.Alerts.Evaluate('))
 
+    def test_unverified_presentation_is_not_snapshot_input(self) -> None:
+        """Guard the separate display-only USB field and strict API projection."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        dashboard = code.split('private void RefreshDashboard(', 1)[1].split(
+            'private void PublishLocalSnapshot(', 1)[0]
+        self.assertIn('UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now)', dashboard)
+        inputs = code.split('private List<LocalBatterySnapshot.Input> CollectSnapshotInputs(', 1)[1]
+        inputs = inputs.split('return inputs;', 1)[0]
+        self.assertIn('ReceiverMonitor.Dashboard(receiver, DateTimeOffset.UtcNow)', inputs)
+        self.assertNotIn('Unverified', inputs)
+        self.assertNotIn('ReceiverMonitor.Presentation', inputs)
+        monitor = (root / 'ReceiverMonitor.cs').read_text()
+        record = monitor.split('private static void Record(', 1)[1].split(
+            'internal static DeviceDashboardState Dashboard(', 1)[0]
+        self.assertNotIn('Unverified', record)
+        self.assertIn('int? percent = state.Reading.Percent;', record)
+
     def test_explicit_links_project_single_icon(self) -> None:
         """Keep link consent explicit, independent telemetry and local preferences."""
         root = ROOT / 'src/AjazzBatteryTray'

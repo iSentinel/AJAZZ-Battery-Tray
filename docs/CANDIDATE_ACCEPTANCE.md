@@ -19,7 +19,7 @@ diagnostic read. Keep a working wired input device available.
 
 | ID | Procedure | Required observable result |
 |---|---|---|
-| W01 | Start with USB receiver connected | Verified percent or explicit unknown; unverified raw HID field never displayed as charge |
+| W01 | Start with USB receiver connected | Verified percent, explicit unknown or explicitly marked display-only field; no unverified field promoted to telemetry |
 | W02 | Pair mouse; Bluetooth inspector > Read selected battery | Fresh GATT 2A19 explicitly identified, not Windows cache |
 | W03 | Enable selected BLE monitor (remember on this PC) | Automatic direct GATT continues while USB receiver remains inserted |
 | W04 | Restart application with Bluetooth mouse awake | Previously opted-in endpoint restored, no historical percentage before fresh GATT |
@@ -680,6 +680,17 @@ expires. No new HID request, history record or alert is generated
 by a presentation refresh. Validate actual Windows suspension,
 resume, linked transport selection and multi-icon display separately.
 This does not qualify ready-clear data as a battery reading.
+
+For the pinned beta.61 Windows candidate, W01 permits the existing
+question-mark numeric icon or Device Manager field with explicit
+unverified status. It does not permit an ordinary confirmed percentage
+from that field. The marker must disappear when the ordinary observation
+expires or presence becomes unknown; a verified cached or scheduled
+value takes precedence. Check the local API separately: no fresh or
+last-known battery number may originate from the unverified field.
+A marked field is not an independent battery reference. Keep the
+original candidate identity and checklist IDs; do not treat this
+clarification as a completed physical case.
 
 ## Apple retained observation age
 
