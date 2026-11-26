@@ -69,6 +69,19 @@ def normalized_identity(raw: bytes) -> dict:
     return identity
 
 
+def local_form_identity(raw: bytes, hosted: bytes) -> dict:
+    """Bind a local form to semantically identical reviewed build evidence."""
+    identity = normalized_identity(hosted)
+    with zipfile.ZipFile(BytesIO(hosted)) as archive:
+        original = archive.read('ajazz-notice-probe/local-build-evidence.json')
+    if document(raw) != document(original):
+        raise ValueError('local build evidence differs from normalized inputs')
+    local = interactive_candidate(raw)
+    if any(local[k] != identity[k] for k in identity if k != 'local_build_evidence_sha256'):
+        raise ValueError('local build identity differs')
+    return local
+
+
 def normalized_form(identity: dict, raw: bytes, setup: Path | None) -> dict:
     """Review a blank form, or require the matching Setup for actual results."""
     binding = 'NOT_PROVIDED'
@@ -83,9 +96,11 @@ def normalized_form(identity: dict, raw: bytes, setup: Path | None) -> dict:
 
 
 def review_normalized(raw: bytes, archives: dict[str, Path], checklists: Path,
-                      setup: Path | None = None) -> dict:
+                      setup: Path | None = None, local_build: Path | None = None) -> dict:
     """Review exact applications and normalized Setup evidence without publication."""
-    identity = normalized_identity(raw)
+    if local_build is not None and setup is None:
+        raise ValueError('local build evidence requires exact Setup bytes')
+    identity = local_form_identity(read(local_build), raw) if local_build else normalized_identity(raw)
     plan = normalized_plan()
     hardware = review_set(SOURCE, {edition: (archives[edition], plan['assets'][edition]['archive_sha256'])
                                    for edition in ARCHIVE_PROFILES}, checklists)
@@ -98,6 +113,8 @@ def review_normalized(raw: bytes, archives: dict[str, Path], checklists: Path,
     interactive = normalized_form(identity, read(checklists / 'interactive-checklist.json'), setup)
     result = report(plan, hardware, interactive)
     result['pending_review']['release_asset_selection'] = 'NOT_VERIFIED'
+    if local_build is not None:
+        result['local_build_evidence_sha256'] = identity['local_build_evidence_sha256']
     return result
 
 
@@ -165,13 +182,14 @@ def review(raw: bytes, archives: dict[str, Path], checklists: Path) -> dict:
 def review_request(args: argparse.Namespace, archives: dict[str, Path]) -> dict:
     """Dispatch to the selected reviewed candidate without mixing scopes."""
     if args.manifest is not None:
-        if args.installer_archive is None or args.setup is not None:
+        if args.installer_archive is None or args.setup is not None or args.local_build_evidence is not None:
             raise ValueError('original manifest mode requires only the Setup archive')
         return review(read(args.manifest), {**archives, 'installer': args.installer_archive},
                       args.checklist_dir)
     if args.installer_archive is not None:
         raise ValueError('normalized mode takes the actual Setup executable')
-    return review_normalized(read(args.normalized_evidence), archives, args.checklist_dir, args.setup)
+    return review_normalized(read(args.normalized_evidence), archives, args.checklist_dir,
+                             args.setup, args.local_build_evidence)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -184,6 +202,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument(f'--{profile}-archive', type=Path, required=True)
     parser.add_argument('--installer-archive', type=Path, help='Original CI Setup ZIP for --manifest')
     parser.add_argument('--setup', type=Path, help='Exact local Setup EXE for --normalized-evidence')
+    parser.add_argument('--local-build-evidence', type=Path,
+                        help='Exact local JSON used to create a normalized interactive form; requires --setup')
     parser.add_argument('--checklist-dir', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)

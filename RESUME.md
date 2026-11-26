@@ -1,3 +1,12 @@
+# Resume — normalized local interactive form compatibility
+
+Integration #307 at 2c64ad6, 13/13 hosted checks PASS. Normalized
+Setup e7195b38 previously reproduced and all 15 decoded inputs matched.
+Combined reviewer now supports exact local form evidence with semantically
+identical hosted build fields and mandatory matching Setup. Original
+baseline replay preserves subject 913bda76, 57+6 NOT_RUN. No private
+Setup or human result supplied. Release BLOCKED.
+
 # Resume — normalized Setup and physical acceptance preflight
 
 Native #305 matched Setup e7195b38 and all 15 decoded inputs.

@@ -638,3 +638,26 @@ cases at NOT_RUN. The subject SHA-256 is
 Exit 0 reports complete recorded coverage, 1 reports incomplete coverage,
 and 2 reports invalid or mismatched evidence. Every report leaves release
 admission blocked pending the applicable release decisions.
+
+
+### Normalized local interactive form compatibility
+
+The Windows runbook creates a local interactive form bound to the exact
+local-build-evidence JSON bytes. Different JSON serialization of otherwise
+identical build fields must not force the operator to rewrite a form.
+The combined reviewer now accepts an optional --local-build-evidence
+file only in normalized mode and only with the actual retained Setup.
+It requires semantic equality with the original pinned hosted local-build
+record and validates the form against its original local evidence digest.
+It preserves the immutable release subject and reports the additional
+local evidence digest separately. This verifies consistency, not the
+authenticity of the operator's claims. Changed build fields, missing
+Setup or mismatched binary/form identities fail closed.
+
+Actual replay of original normalized archive 15139373707 and the blank
+six-form baseline retained subject
+913bda7686afff10036e681471169542175aef67345ab3c8cbb4fbb843144da6,
+57 hardware and six interactive NOT_RUN. An equivalent synthetic
+reserialization of the original hosted build JSON passed the identity
+check. No retained local Setup or human test result was supplied.
+Release admission remains BLOCKED.

@@ -212,6 +212,20 @@ review can be run locally against those exact bytes before returning results.
 python .\tools\tools\verify_interactive_acceptance.py --candidate .\candidate\local-build-evidence.json --setup $setup --app $app --checklist .\candidate\interactive-checklist.json --output .\candidate\interactive-review.json
 ```
 
+For combined normalized admission, provide the original hosted evidence ZIP,
+three original application archives, five hardware forms and the local
+interactive form. A form generated from local build JSON must be reviewed
+with that same unedited JSON, even when its formatting differs from the
+hosted record. The normalized reviewer requires semantic equality of all
+build fields and the actual hash-matching Setup. For example, from the lab
+directory using the updated qualification tools:
+
+```powershell
+python .\tools\tools\review_beta61_admission.py --normalized-evidence .\normalized-evidence.zip --windows-archive .\windows.zip --universal-archive .\universal.zip --high-sierra-archive .\high-sierra.zip --checklist-dir .\checklists --setup $setup --local-build-evidence .\candidate\local-build-evidence.json --output .\candidate\combined-review.json
+```
+
+Do not edit the form identity or substitute the hosted build JSON for the
+local file. Exit 1 means incomplete coverage; exit 2 means invalid input.
 The reviewer needs access to the retained Setup through an approved private
 route for combined admission. User names,
 credentials, paths with personal data and device serials should be

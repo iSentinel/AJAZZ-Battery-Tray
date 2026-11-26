@@ -2778,3 +2778,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       channel and review physical and interactive observations.
       Final asset selection, signing, distribution and publication
       remain open.
+
+
+### Normalized local interactive form compatibility
+
+- [x] Recheck integration at 2c64ad6 (#307); all 13 hosted checks PASS.
+- [x] Add explicit local-build JSON binding for normalized combined review;
+      exact Setup required, all build fields must equal the hosted record,
+      original local checklist digest and immutable release subject preserved.
+- [x] Original evidence archive and blank baseline replay PASS;
+      seven targeted test groups PASS. No new human acceptance claimed.
+- [ ] Hosted CI for this change; retained private Setup and real physical
+      and interactive observations, final asset selection, signing,
+      distribution and publication remain open.
