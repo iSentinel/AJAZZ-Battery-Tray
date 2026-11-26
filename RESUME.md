@@ -1,3 +1,13 @@
+# Resume — consolidated installer preflight and Apple notice wrappers
+
+Exact f939fea staged Windows payload and reviewed 6.7.4 notice
+installer dry-run PASS; no compiler output. Both external Apple
+wrappers preserve original app ZIP/checksum and add exact MIT
+license and identity. Two synthetic groups and byte-identical
+actual replays PASS. Parent #298 must pass hosted CI and integrate
+before this change. Native compilation, trust, distribution and
+human acceptance remain open; no publication.
+
 # Resume — consolidated notice transport gap and private prototype
 
 #297 exact 5/5 merged 5da4ab4. Exact f939fea normal packages

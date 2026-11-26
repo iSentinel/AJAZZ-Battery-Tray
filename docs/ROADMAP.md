@@ -2668,3 +2668,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       notice-bearing normal installer on exact bytes. Distribution
       terms, signing and human acceptance remain open.
       No publication or replacement of previously pinned assets.
+
+### Consolidated installer preflight and Apple notice wrappers
+
+- [x] Exact f939fea staged Windows payload and existing 6.7.4
+      notice-bearing installer dry-run PASS; all reviewed inputs
+      match and output remains empty.
+- [x] Private external macOS Universal and High Sierra wrappers
+      preserve original app ZIP and checksum, add exact project MIT
+      license and package identity; two synthetic groups and
+      byte-identical independent replays for both editions PASS.
+- [ ] Complete hosted CI and integrate parent #298 before this
+      change; actual authorized Windows compile/interactive tests,
+      Apple native trust and physical tests, final package selection
+      and distribution disposition remain open. Release blocked.
