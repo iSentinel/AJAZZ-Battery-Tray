@@ -2383,3 +2383,19 @@ configuration commands. USB `VersionNumber` is a device revision,
       retained cache timestamp and expired cache. No HID changes.
 - [ ] Hosted CI and actual Windows suspend/resume and L99 acceptance.
       Parent #277 qualification required; release hold unchanged.
+
+### Bluetooth completion provenance
+
+- [x] #278 exact 7/7 CI merged d94c1c3 after tested-tree equality.
+- [x] Capture bounded direct GATT operation completion before UI
+      dispatch. Avoid UI-context capture in the reader await chain;
+      keep original paired-device API, read gate, timeouts and
+      uncached Battery Service requests. No pairing or writes.
+- [x] Use completion time for automatic readings and manual historical
+      evidence; require existing fresh visibility for low-battery
+      alerts and existing one-minute consent window for opt-in.
+- [x] One source wiring regression and four native synthetic assertions
+      for completion identity, delayed visibility and cache expiry.
+- [ ] Hosted Windows CI and physical BLE/suspend-resume acceptance.
+      Actual WinRT timing and thread behavior require native testing.
+      Release hold unchanged.

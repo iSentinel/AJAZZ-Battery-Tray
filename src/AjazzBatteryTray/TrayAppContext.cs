@@ -1856,21 +1856,24 @@ public sealed class TrayAppContext : ApplicationContext
     private async Task PollBluetoothFallbackAsync(BleSlot slot, BluetoothMultiSession.Request request)
     {
         BluetoothBatteryResult response;
+        DateTimeOffset completedAt;
         try
         {
-            response = await BluetoothOperationTimeout.Run(
+            (response, completedAt) = await BluetoothOperationTimeout.RunStamped(
                 BluetoothBatteryReader.ReadAsync(slot.Candidate), TimeSpan.FromSeconds(12));
         }
         catch (Exception error)
         {
             FileLog.Write(LogEvent.BluetoothFallbackFailed, error);
             response = new BluetoothBatteryResult(null, BluetoothBatterySource.Unavailable, "Read failed.");
+            completedAt = DateTimeOffset.UtcNow;
         }
         if (_closing) return;
         bool known = _latestUsbReading?.PresenceKnown == true;
         bool present = _latestUsbReading?.ReceiverPresent == true;
-        if (_ble.Complete(request, response, DateTimeOffset.UtcNow, known, present) &&
-            response.IsFreshGatt && response.Percent is int percent)
+        if (_ble.Complete(request, response, completedAt, known, present) &&
+            response.IsFreshGatt && response.Percent is int percent &&
+            _ble.VisiblePercent(request.Key, known, present, DateTimeOffset.UtcNow) == percent)
             ShowLowBatteryAlert(slot, percent);
         RefreshDeviceDisplay();
         // Continue with another due device, not another read of the same slot.

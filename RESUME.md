@@ -1,3 +1,12 @@
+# Resume — Bluetooth completion provenance
+
+#278 exact 7/7 CI merged d94c1c3. BLE reader await chain avoids
+UI capture; bounded completion UTC used for automatic telemetry
+and manual historical evidence. Fresh visibility gates alerts;
+one-minute consent age unchanged. One source wiring regression
+and four native assertions. Native Windows CI, physical BLE and
+suspend/resume acceptance pending; release hold unchanged.
+
 # Resume — AULA delayed UI delivery provenance
 
 Parent #277 has Windows/macOS and Python checks PASS, installer

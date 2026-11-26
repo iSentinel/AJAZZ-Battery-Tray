@@ -158,9 +158,9 @@ public sealed class BluetoothBatteryForm : Form
         SetBusy(true, UiText.Get("Reading selected mouse's GATT Battery Service..."));
         try
         {
-            var result = await BluetoothOperationTimeout.Run(
+            var (result, completedAt) = await BluetoothOperationTimeout.RunStamped(
                 BluetoothBatteryReader.ReadAsync(selected), TimeSpan.FromSeconds(15));
-            RecordManual(selected, result);
+            RecordManual(selected, result, completedAt);
             _result.Text = result.Percent.HasValue
                 ? $"{selected.DisplayName}: {result.Percent}% — {result.Status}"
                 : result.Status + " " + UiText.Get("No battery percentage inferred.");
@@ -168,7 +168,12 @@ public sealed class BluetoothBatteryForm : Form
             {
                 _verified = selected;
                 _verifiedResult = result;
-                _verifiedAt = DateTimeOffset.UtcNow;
+                _verifiedAt = completedAt;
+                if (!ConsentSampleCurrent(DateTimeOffset.UtcNow))
+                {
+                    ClearVerifiedSelection();
+                    _result.Text = UiText.Get("Read selected battery again before enabling monitoring.");
+                }
             }
         }
         catch (TimeoutException)
@@ -195,12 +200,16 @@ public sealed class BluetoothBatteryForm : Form
         UpdateConsentControls();
     }
 
+    private bool ConsentSampleCurrent(DateTimeOffset now)
+        => now >= _verifiedAt && now - _verifiedAt <= TimeSpan.FromMinutes(1);
+
     private void UpdateConsentControls()
     {
         var selected = _devices.SelectedItem as BluetoothCandidate;
         bool enabled = selected is not null && _isEnabled(selected);
         _automatic.Enabled = _find.Enabled && !enabled && _verified is not null &&
-            _verified == selected && _verifiedResult?.IsFreshGatt == true;
+            _verified == selected && _verifiedResult?.IsFreshGatt == true &&
+            ConsentSampleCurrent(DateTimeOffset.UtcNow);
         _remove.Enabled = _find.Enabled && enabled;
     }
 
@@ -209,7 +218,7 @@ public sealed class BluetoothBatteryForm : Form
         if (_verified is not { } candidate || _verifiedResult is not { IsFreshGatt: true } result ||
             candidate != _devices.SelectedItem as BluetoothCandidate) return;
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        if (now < _verifiedAt || now - _verifiedAt > TimeSpan.FromMinutes(1))
+        if (!ConsentSampleCurrent(now))
         {
             ClearVerifiedSelection();
             _result.Text = UiText.Get("Read selected battery again before enabling monitoring.");
@@ -227,10 +236,11 @@ public sealed class BluetoothBatteryForm : Form
 
     public void RefreshConsent() => UpdateConsentControls();
 
-    private void RecordManual(BluetoothCandidate selected, BluetoothBatteryResult result)
+    private void RecordManual(BluetoothCandidate selected, BluetoothBatteryResult result,
+        DateTimeOffset? completedAt = null)
     {
         _lastManual = BluetoothManualObservation.Create(selected.DisplayName,
-            selected.IsLowEnergy, result, DateTimeOffset.UtcNow);
+            selected.IsLowEnergy, result, completedAt ?? DateTimeOffset.UtcNow);
         if (result.IsFreshGatt) _lastFresh = _lastManual;
     }
 

@@ -85,6 +85,24 @@ class IndependentBleMonitorTests(unittest.TestCase):
             'private async Task RestoreBleConsentAsync(', 1)[0]
         self.assertIn('if (_aulaLatest is not null) UpdateAulaStatus();', timer)
 
+    def test_ble_completion_provenance(self) -> None:
+        """Use bounded operation completion for automatic and manual GATT paths."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('(response, completedAt) = await BluetoothOperationTimeout.RunStamped(', code)
+        self.assertIn('_ble.Complete(request, response, completedAt, known, present)', code)
+        self.assertIn('_ble.VisiblePercent(request.Key, known, present, DateTimeOffset.UtcNow) == percent', code)
+        form = (root / 'BluetoothBatteryForm.cs').read_text()
+        self.assertIn('RecordManual(selected, result, completedAt);', form)
+        self.assertIn('_verifiedAt = completedAt;', form)
+        self.assertIn('ConsentSampleCurrent(DateTimeOffset.UtcNow)', form)
+        timeout = (root / 'BluetoothOperationTimeout.cs').read_text()
+        self.assertIn('await Run(operation, limit).ConfigureAwait(false)', timeout)
+        reader = (root / 'BluetoothBatteryReader.cs').read_text()
+        read_path = reader.split('public static async Task<BluetoothBatteryResult> ReadAsync(', 1)[1]
+        self.assertEqual(read_path.count('await '), read_path.count('.ConfigureAwait(false)'))
+        self.assertEqual(read_path.count('.AsTask().ConfigureAwait(false)'), 4)
+
     def test_explicit_links_project_single_icon(self) -> None:
         """Keep link consent explicit, independent telemetry and local preferences."""
         root = ROOT / 'src/AjazzBatteryTray'

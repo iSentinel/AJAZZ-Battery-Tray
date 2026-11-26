@@ -128,11 +128,11 @@ public static class BluetoothBatteryReader
         if (!selected.IsLowEnergy) return ReadWindowsBattery(selected);
         // WaitAsync at the caller does not cancel WinRT. Hold the gate until
         // the underlying operation has actually finished, including on timeout.
-        if (!await ReadGate.WaitAsync(0))
+        if (!await ReadGate.WaitAsync(0).ConfigureAwait(false))
             return Missing("A previous Bluetooth read is still completing.");
         try
         {
-            return await ReadLowEnergyAsync(selected);
+            return await ReadLowEnergyAsync(selected).ConfigureAwait(false);
         }
         finally { ReadGate.Release(); }
     }
@@ -143,7 +143,7 @@ public static class BluetoothBatteryReader
         BluetoothBatteryResult gatt;
         try
         {
-            gatt = await ReadGattAsync(selected.DeviceId);
+            gatt = await ReadGattAsync(selected.DeviceId).ConfigureAwait(false);
         }
         catch (Exception error)
         {
@@ -168,15 +168,15 @@ public static class BluetoothBatteryReader
     private static async Task<BluetoothBatteryResult> ReadGattAsync(string deviceId)
     {
         using BluetoothLEDevice? device =
-            await BluetoothLEDevice.FromIdAsync(deviceId);
+            await BluetoothLEDevice.FromIdAsync(deviceId).AsTask().ConfigureAwait(false);
         if (device is null)
             return Missing("BLE endpoint cannot be opened by Windows.");
 
         var services = await device.GetGattServicesForUuidAsync(
-            GattServiceUuids.Battery, BluetoothCacheMode.Uncached);
+            GattServiceUuids.Battery, BluetoothCacheMode.Uncached).AsTask().ConfigureAwait(false);
         if (services.Status != GattCommunicationStatus.Success)
             return Missing("Battery Service is unavailable or the mouse is asleep.");
-        return await ReadServicesAsync(services.Services);
+        return await ReadServicesAsync(services.Services).ConfigureAwait(false);
     }
 
     private static async Task<BluetoothBatteryResult> ReadServicesAsync(
@@ -188,7 +188,7 @@ public static class BluetoothBatteryReader
                 return Missing("Battery Service (180F) not exposed.");
             foreach (GattDeviceService service in services)
             {
-                BluetoothBatteryResult result = await ReadServiceAsync(service);
+                BluetoothBatteryResult result = await ReadServiceAsync(service).ConfigureAwait(false);
                 if (result.IsFreshGatt) return result;
             }
             return Missing("No readable standard Battery Level (2A19).");
@@ -203,14 +203,14 @@ public static class BluetoothBatteryReader
         GattDeviceService service)
     {
         var found = await service.GetCharacteristicsForUuidAsync(
-            GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Uncached);
+            GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Uncached).AsTask().ConfigureAwait(false);
         if (found.Status != GattCommunicationStatus.Success)
             return Missing("Battery Level characteristic unavailable.");
 
         foreach (GattCharacteristic characteristic in found.Characteristics)
         {
             var read = await characteristic.ReadValueAsync(
-                BluetoothCacheMode.Uncached);
+                BluetoothCacheMode.Uncached).AsTask().ConfigureAwait(false);
             if (read.Status != GattCommunicationStatus.Success) continue;
             using DataReader reader = DataReader.FromBuffer(read.Value);
             byte[] value = new byte[read.Value.Length];
