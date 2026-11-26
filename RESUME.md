@@ -1,3 +1,12 @@
+# Resume — private installer payload staging
+
+#275 exact 4/4 CI merged 016da67. Successful 8e3625d CI portable
+artifact 15073934383 verified and staged in a detached checkout;
+38 compiler components, notices and four icons match. Dry-run
+PASS, no compiler executed. New local staging CLI passes four
+synthetic groups and actual replay. Native Windows compilation,
+human acceptance and release hold remain open.
+
 # Resume — private local interactive acceptance path
 
 #274 exact 4/4 CI merged 8e3625d. Public repository retains
