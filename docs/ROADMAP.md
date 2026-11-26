@@ -40,6 +40,22 @@ came from another time.
       report framing, both ready flags and admitted level. Repeat at
       another observed charge level. Direct app hardware acceptance remains open.
 
+## Beta.61 release preparation — 26 November 2026
+
+- [x] Verify four platform archives and nine successful workflows for the
+      reviewed integration generation. Match the installed app as recorded
+      by CI to the portable EXE hash and verify both Apple companion checksums.
+- [x] Generate and replay five exact-candidate hardware checklists.
+      57 physical cases remain NOT_RUN.
+- [x] Confirm the beta.61 Windows field launcher created both reports.
+      All six 05/00 pairs agree on status bytes. Field 82 remained unverified.
+- [ ] Run combined candidate CI and bind the resulting platform archives.
+- [ ] Complete physical and interactive acceptance, distribution and signing
+      review, reproducibility comparison, and ENG-10 candidate admission.
+
+See the [release readiness record](BETA61_RELEASE_READINESS.md) for exact
+candidate identities, artifact links, field findings and remaining gates.
+
 ## Scope and safety contract
 
 - Keep the Windows and macOS applications independent of official AJAZZ software.

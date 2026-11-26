@@ -1,3 +1,16 @@
+# Resume — beta.61 release preparation, 26 November 2026
+
+The reviewed #99 integration generation `d94c1c3` passed all nine workflows.
+Windows portable/setup and both Apple archives match GitHub digests. The
+five bound hardware profiles contain 57 NOT_RUN cases. The older field
+kit ran on the owner's Windows PC and produced both logs. Six matched 05/00
+pairs had equal status, field 82 and the read-ready flag clear. The later
+text report showed unverified field 81.
+
+Continue with the combined #266 candidate checks and rebind its final
+artifacts. Hardware, installer interactive acceptance and ENG-10 remain
+open. [Release readiness record](docs/BETA61_RELEASE_READINESS.md)
+
 # Resume — AULA delayed UI delivery provenance
 
 Parent #277 has Windows/macOS and Python checks PASS, installer
