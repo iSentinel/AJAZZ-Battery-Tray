@@ -18,6 +18,16 @@ CHUNK = 65536
 MAX_DICT = 64 * 1024 * 1024
 
 
+CANDIDATES = {
+    'reference': (SETUP_SHA, FILES),
+    'f939fea': (
+        '1cc71e5c2a7119070c80611160b5e263afd2b70155f33b13a88fac848d67542e',
+        (('AJAZZBatteryTray.exe', 149626979,
+          '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c'),)
+        + FILES[1:]),
+}
+
+
 def decoder_for(raw: bytes) -> lzma.LZMADecompressor:
     """Validate the documented LZMA2 dictionary property and chunk marker."""
     if len(raw) < 6 or raw[:4] != b'zlb\x1a' or raw[4] >= 40:
@@ -62,27 +72,29 @@ def file_hashes(raw: bytes, files: tuple, app_sink: BinaryIO | None = None) -> l
     return results
 
 
-def verify(raw: bytes) -> dict:
+def verify(raw: bytes, *, candidate: str = 'reference') -> dict:
     """Bind exact setup and location table before independent decoding."""
-    if digest(raw) != SETUP_SHA:
+    setup_sha, files = CANDIDATES[candidate]
+    if digest(raw) != setup_sha:
         raise ValueError('unexpected setup digest')
     _, record = recover(raw)
     _, second, _ = decode_setup0(raw[record['offset0']:record['engine_offset']])
     payload = raw[record['offset1']:record['offset0']]
-    locations(second, payload)
-    return {'schema': 1, 'setup_sha256': SETUP_SHA, 'compressed_bytes': len(payload) - 4,
-            'files': file_hashes(payload, FILES), 'solid_stream': 'MATCH',
+    locations(second, payload, files)
+    return {'schema': 1, 'setup_sha256': setup_sha, 'compressed_bytes': len(payload) - 4,
+            'files': file_hashes(payload, files), 'solid_stream': 'MATCH',
             'compiled_script': 'NOT_VERIFIED', 'release_admission': 'NOT_VERIFIED'}
 
 
 def main(argv: list[str] | None = None) -> int:
     """Verify bounded local bytes without extracting or executing payload files."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--candidate', choices=CANDIDATES, default='reference')
     parser.add_argument('--setup', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        write_json(args.output, verify(read_local(args.setup)))
+        write_json(args.output, verify(read_local(args.setup), candidate=args.candidate))
     except (OSError, ValueError, EOFError, lzma.LZMAError):
         print('FAIL: scoped solid stream verification', file=sys.stderr)
         return 2
