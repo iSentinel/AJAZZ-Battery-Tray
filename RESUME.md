@@ -1,3 +1,12 @@
+# Resume — exact native notice-bearing setup and Apple observation
+
+#300 exact 6/6 merged b4327e3. Original Apple native artifact
+15115382469 verified: codesign PASS both, AD_HOC, no Authority,
+Gatekeeper exit 3 on macOS 15.7.9. New exact f939fea Windows
+notice setup workflow reuses original EXE, pinned Inno 6.7.4,
+nine notices and isolated silent lifecycle, retaining JSON only.
+Hosted compilation pending; no new Setup hash or release approval.
+
 # Resume — consolidated Apple native signature observation
 
 #299 exact 5/5 merged c946160. Original f939fea Universal and

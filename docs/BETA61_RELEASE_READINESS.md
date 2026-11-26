@@ -495,3 +495,32 @@ The separate exact Windows Inno 6.7.4 preflight remains PASS;
 actual Windows compilation with the pinned original app, notices
 and reviewed compiler is still open. No new installer is claimed.
 Release admission remains blocked.
+
+### Consolidated native Apple observation and exact notice setup workflow
+
+PR #300 passed 6/6 hosted checks and merged b4327e3 after tested
+tree equality. Original native macOS run 45816167878 job
+139896353658 retained artifact 15115382469. Its ZIP SHA-256
+588681943eeb5020c601d97f8e544e25cab4a0566f52f96ef409fef230ed1f31
+and sole JSON SHA-256
+46d395be4a806482ac4ae55680ebba201040225efa012bf0b4d5e0cc17ddb7df
+were verified against the original f939fea inner archive pins.
+On macOS 15.7.9 both editions reported native strict codesign PASS,
+AD_HOC, no Authority and Gatekeeper assessment NONZERO (exit 3).
+These observations do not establish Developer ID trust, notarization,
+or behavior on an actual High Sierra host.
+
+A dedicated Windows workflow now checks out f939fea exactly,
+retrieves portable artifact 15110510075, and verifies the original
+archive, app and source icons before staging. It reuses the reviewed
+6.7.4 upstream publisher, immutable release attestation and component
+checks and the nine-notice staging process. It invokes the existing
+local build preflight and compiler with the unchanged original EXE,
+then performs the isolated silent install/uninstall probe, checking
+installed app, icon and notice bytes and absence of tray launch.
+Only JSON evidence is retained. No dotnet publish, release upload,
+or binary redistribution is performed by this workflow.
+Two source-contract tests passed locally. Hosted compilation and
+lifecycle observations are pending, and the new Setup hash is not
+yet known. Interactive and hardware acceptance, signing and
+distribution disposition remain open. Release admission is BLOCKED.

@@ -2695,3 +2695,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       notice-bearing Windows compilation and lifecycle qualification;
       distribution, trusted signing and human acceptance remain open.
       No publication or replacement of pinned artifacts.
+
+### Exact native notice-bearing setup and Apple observation
+
+- [x] #300 exact 6/6 CI merged b4327e3 after tested-tree equality.
+- [x] Review actual Apple signature artifact 15115382469: both
+      editions strict codesign PASS, AD_HOC, no Authority;
+      Gatekeeper exit 3 on macOS 15.7.9. Trust not verified.
+- [x] Add exact f939fea Windows native compilation workflow with
+      original portable, verified 6.7.4 compiler, pinned notices,
+      isolated silent install/uninstall and JSON-only retention.
+- [ ] Hosted CI compilation/lifecycle and original evidence review;
+      no public release asset selected. Interactive, physical,
+      trust and distribution acceptance remain open.
