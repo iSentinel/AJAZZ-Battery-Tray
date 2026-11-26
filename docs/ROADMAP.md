@@ -92,9 +92,22 @@ candidate identities, artifact links, field findings and remaining gates.
 - [x] Compare the exact Windows Setup.0 records and the launch predicate
       with the reviewed installer source. See the
       [static review](BETA61_RELEASE_READINESS.md#static-windows-installer-policy-for-the-pinned-beta61-candidate).
+- [x] Add a [Windows hardware evidence collector](AJAZZ-Hardware-Acceptance-Windows.md)
+      for the exact candidate. It verifies the EXE and saves a manifest and
+      phase-specific ZIP for AJ159, AJ179 and AULA L99 observations.
 - [ ] Review recorded physical and interactive results for this generation.
 - [ ] Resolve compiler/notice distribution and signing disposition.
       Record candidate admission and approval against final hashes.
+
+### Windows owner observations — 26 November 2026
+
+Two reports at 08:15 and 08:19 UTC identify an earlier beta.61 build
+`074067d9`. Both show an enumerated revision 0002 receiver and six
+successful transfers at 30, 100 and 250 ms, with zero validated battery
+replies. The ready flag stayed clear and the unverified field was 76.
+The AULA monitor separately reported two fresh 2.4 GHz observations,
+34 and 33. The AJAZZ receiver does not establish the mouse model. These
+observations guide follow-up and leave the `b2c5ce9` cases open.
 
 ## Scope and safety contract
 
