@@ -66,6 +66,19 @@ candidate identities, artifact links, field findings and remaining gates.
 - [ ] Verify independent native repeats for both Apple editions and Windows.
       Record exact asset digests and explain any remaining differences.
 
+### Consolidated beta.61 acceptance candidate
+
+- [x] Combine current integration `1f82db4` with the history
+      work from #266, the reproducible package fixes from #280 and the
+      APEX USB alert freshness guard from #281.
+- [x] Add byte-bound interactive checklist support for the normal hosted
+      setup ZIP. Reuse the exact archive, source and PE verification
+      before creating six NOT_RUN cases. Review requires both local EXEs.
+- [ ] Rebind the four archives after consolidated CI. Review recorded
+      physical and interactive results for this generation.
+- [ ] Resolve compiler/notice distribution and signing disposition.
+      Record candidate admission and approval against final hashes.
+
 ## Scope and safety contract
 
 - Keep the Windows and macOS applications independent of official AJAZZ software.

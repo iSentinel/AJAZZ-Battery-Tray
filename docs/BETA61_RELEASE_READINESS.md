@@ -104,6 +104,35 @@ and restores their original times afterward. This scoped change leaves
 the separately pinned Inno 6.7.4 notice qualification source intact.
 Check native installer repeats before accepting the change.
 
+## Interactive checklist for the normal Windows setup
+
+Use the same downloaded setup ZIP throughout. Pin its GitHub artifact
+SHA-256 and the actual workflow checkout SHA recorded by the build.
+The CLI creates a six-case checklist with every case set to NOT_RUN:
+
+```sh
+python3 tools/verify_interactive_acceptance.py --ci-archive setup.zip \
+  --archive-sha256 "$SETUP_ZIP_SHA256" --source-sha "$CI_CHECKOUT_SHA" \
+  --output interactive-checklist.json
+```
+
+Record OS build and observations using the case definitions in
+[installer acceptance](INNO674_LAUNCH_ACCEPTANCE.md#acceptance-matrix).
+Use the setup and application from this exact candidate. Review a filled
+checklist from the original archive and both exact local executables:
+
+```sh
+python3 tools/verify_interactive_acceptance.py --ci-archive setup.zip \
+  --archive-sha256 "$SETUP_ZIP_SHA256" --source-sha "$CI_CHECKOUT_SHA" \
+  --checklist interactive-checklist.json --setup AJAZZBatteryTray-Setup-win-x64.exe \
+  --app AJAZZBatteryTray.exe --output interactive-review.json
+```
+
+The archive verifier checks its bounded PE and candidate manifest. The
+review independently rehashes the supplied setup and app. Checklist
+validation preserves the distinction between reported observations
+and independently reviewed acceptance.
+
 ## Remaining release gates
 
 | Gate | Required evidence |

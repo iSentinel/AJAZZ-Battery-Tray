@@ -1,3 +1,12 @@
+# Resume — consolidated beta.61 acceptance candidate
+
+Combined the current integration with history recovery, reproducible
+packaging and the APEX USB alert timestamp guard. The normal hosted
+Windows setup archive now has a byte-bound interactive checklist path.
+The [readiness record](docs/BETA61_RELEASE_READINESS.md) contains the
+commands. Rebind consolidated archives after CI before recording
+physical tests, interactive observations or publication admission.
+
 # Resume — APEX USB alert sample age
 
 #279 exact 7/7 CI merged 1f82db4. USB sampled observations
