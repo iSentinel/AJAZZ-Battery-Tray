@@ -1,11 +1,16 @@
 """Candidate-bound release review regressions."""
 
+from io import BytesIO
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+import zipfile
 from unittest.mock import patch
 
-from review_beta61_admission import main, normalized_form, normalized_identity, report, review
+from review_beta61_admission import (
+    local_form_identity, main, normalized_form, normalized_identity, report, review, review_normalized,
+)
 from verify_interactive_acceptance import template_identity
 from stage_beta61_release import ASSETS, candidate
 from test_stage_beta61_release import encoded, fixture
@@ -20,6 +25,24 @@ def scopes(coverage: str = 'INCOMPLETE') -> tuple[dict, dict]:
     interactive = {'coverage': coverage, 'counts': {state: 1},
                    'checklist_sha256': 'b' * 64, 'local_binary_binding': 'MATCH'}
     return hardware, interactive
+
+
+def local_fixture() -> tuple[dict, bytes]:
+    """Return a synthetic local-build record and its hosted ZIP."""
+    from verify_inno674_setup_records import ALIGNED_SOURCE
+    from verify_windows_notice_transport import MANIFEST_SHA
+    row = {'schema': 'local-inno674-build-v1', 'engine_version': '6.7.4',
+           'setup_sha256': 'a' * 64, 'app_sha256': 'b' * 64,
+           'icons': {name: 'c' * 64 for name in (
+               'AppIcon.ico', 'AppIcon-white.ico', 'AppIcon-black.ico', 'AppIcon-blue.ico')},
+           'installer_source_sha256': ALIGNED_SOURCE, 'notice_manifest_sha256': MANIFEST_SHA,
+           'input_identity': 'MATCH', 'source_provenance': 'NOT_VERIFIED',
+           'lifecycle': 'NOT_RUN', 'distribution_compliance': 'NOT_VERIFIED',
+           'release_admission': 'NOT_VERIFIED'}
+    stream = BytesIO()
+    with zipfile.ZipFile(stream, 'w') as archive:
+        archive.writestr('ajazz-notice-probe/local-build-evidence.json', encoded(row))
+    return row, stream.getvalue()
 
 
 class BetaAdmissionReviewTests(unittest.TestCase):
@@ -73,6 +96,28 @@ class BetaAdmissionReviewTests(unittest.TestCase):
             result = normalized_form(identity, encoded(form), setup)
         self.assertEqual(result['local_binary_binding'], 'MATCH')
         self.assertEqual(result['counts']['PASS'], 1)
+
+    def test_local_form_semantic_equivalence(self) -> None:
+        """Retain the local evidence digest while rejecting changed input identities."""
+        from verify_interactive_acceptance import candidate as interactive_candidate
+        row, hosted = local_fixture()
+        identity = interactive_candidate(encoded(row))
+        with patch('review_beta61_admission.normalized_identity', return_value=identity):
+            local = json.dumps(row, separators=(',', ':')).encode()
+            result = local_form_identity(local, hosted)
+            self.assertEqual(result['local_build_evidence_sha256'], digest(local))
+            self.assertNotEqual(result, identity)
+            self.assertEqual(normalized_form(result, encoded(template_identity(result)), None)
+                             ['counts']['NOT_RUN'], 6)
+            for key in ('setup_sha256', 'app_sha256', 'icons', 'release_admission'):
+                altered = dict(row, **{key: 'changed'})
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    local_form_identity(encoded(altered), hosted)
+
+    def test_local_build_requires_setup(self) -> None:
+        """No local evidence path can bypass the retained Setup requirement."""
+        with self.assertRaisesRegex(ValueError, 'requires exact Setup'):
+            review_normalized(b'hosted', {}, Path('checklists'), local_build=Path('local.json'))
 
     def test_normalized_archive_pin(self) -> None:
         """Require the exact hosted evidence archive before decoding members."""
