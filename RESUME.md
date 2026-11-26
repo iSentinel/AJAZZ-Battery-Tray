@@ -1,3 +1,13 @@
+# Resume — successor integration and runtime binding
+
+#290 exact 7/7 merged 840f09d; #291 exact 5/5 merged bf4c7c6
+after tree equality. Owner reports basic display toggle/hiding
+and restart persistence work; partial functional acceptance only.
+The separate v2 display checklist pins the #290 archive and EXE
+and requires the exact reported runtime checkout version for
+recorded results. Two original-archive blank replays pass, 16
+NOT_RUN; independent physical acceptance and release hold remain.
+
 # Resume — separate successor display evidence
 
 #290 exact 7/7 CI PASS, retained separate from pinned b2c5ce9.

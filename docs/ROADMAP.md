@@ -2576,3 +2576,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI for acceptance tooling, actual Windows experiments
       and independent reference. Do not replace pinned release
       artifacts or publish without the existing admission gates.
+
+### Successor integration and runtime binding
+
+- [x] #290 exact 7/7 CI merged 840f09d after tested-tree equality.
+- [x] #291 exact 5/5 CI merged bf4c7c6 after retarget and tree equality.
+- [x] Owner-reported basic display toggle, hiding the number and
+      preference persistence work. Partial functional acceptance only.
+- [x] Pin the reviewed successor archive, EXE, source and actual
+      CI checkout in the separate display acceptance tool.
+      Require reported full runtime version for any recorded case.
+      Four synthetic test groups and two blank v2 form replays PASS.
+- [ ] Hosted CI for runtime binding; remaining UD scenarios, independent
+      charge reference, physical and interactive acceptance.
+      Pinned release candidate assets and publication hold unchanged.

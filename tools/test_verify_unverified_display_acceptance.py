@@ -4,10 +4,11 @@ import json
 import unittest
 
 from verify_hardware_acceptance import template as hardware_template
-from verify_unverified_display_acceptance import CASES, review, template
+from verify_unverified_display_acceptance import (CASES, PINNED_APP, PINNED_ARCHIVE,
+                                                  PINNED_SOURCE, review, template)
 
-IDENTITY = {'profile': 'windows-aj179', 'archive_sha256': 'a' * 64,
-            'source_sha': 'b' * 40, 'app_sha256': 'c' * 64}
+IDENTITY = {'profile': 'windows-aj179', 'archive_sha256': PINNED_ARCHIVE,
+            'source_sha': PINNED_SOURCE, 'app_sha256': PINNED_APP}
 
 
 def encode(row: dict) -> bytes:
@@ -37,10 +38,27 @@ class UnverifiedDisplayAcceptanceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             review(IDENTITY, encode(row))
         row['os_build'] = '10.0.26100'
+        with self.assertRaises(ValueError):
+            review(IDENTITY, encode(row))
+        row['observed_version'] = row['expected_version']
         result = review(IDENTITY, encode(row))
         self.assertEqual(result['coverage'], 'COMPLETE_REPORTED')
         self.assertEqual(result['release_admission'], 'NOT_VERIFIED')
         row['cases'][CASES[0]]['observation'] = ''
+        with self.assertRaises(ValueError):
+            review(IDENTITY, encode(row))
+
+    def test_runtime_binding(self) -> None:
+        """Reject mismatched versions and legacy forms; blank is not evidence."""
+        row = template(IDENTITY)
+        self.assertEqual(review(IDENTITY, encode(row))['runtime_version_binding'], 'NOT_REPORTED')
+        for version in ('0.3.0-beta.61', '0.3.0-beta.61+' + PINNED_SOURCE):
+            row['observed_version'] = version
+            with self.assertRaises(ValueError):
+                review(IDENTITY, encode(row))
+        row['observed_version'] = row['expected_version']
+        self.assertEqual(review(IDENTITY, encode(row))['runtime_version_binding'], 'MATCH_REPORTED')
+        row['schema'] = 'unverified-display-acceptance-v1'
         with self.assertRaises(ValueError):
             review(IDENTITY, encode(row))
 
