@@ -1,3 +1,12 @@
+# Resume — separate successor display evidence
+
+#290 exact 7/7 CI PASS, retained separate from pinned b2c5ce9.
+Windows run 45803577992 actual checkout tree matched head;
+artifact 15108187556 verified and all four icons match.
+Three ordinary Windows forms 35 NOT_RUN; new separate display
+acceptance tool validates two eight-case forms, 16 NOT_RUN.
+Physical/visual acceptance and release hold remain open.
+
 # Resume — successor experimental USB display preference
 
 #289 exact 4/4 CI merged fca569a. Separate successor branch adds
