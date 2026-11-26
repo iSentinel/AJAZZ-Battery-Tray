@@ -2352,3 +2352,18 @@ configuration commands. USB `VersionNumber` is a device revision,
       reject wrong digest, dirty checkout, existing output and links.
 - [ ] Hosted CI, authorized private Windows compilation, human
       interactive and physical acceptance. Release hold unchanged.
+
+### Windows age-only presentation refresh
+
+- [x] #276 exact 5/5 CI merged a92bfe9 after tested-tree equality.
+- [x] Reuse existing five-second independent UI/BLE timer to
+      reproject USB and AULA displays even when BLE is disabled
+      and USB polling is paused. Do not add HID requests, replay
+      history/alerts or publish a new API generation for this path.
+      Preserve active diagnostic capture status.
+- [x] Avoid rebuilding unchanged dashboard rows on this age-only
+      path, but refresh row action targets. Add source wiring
+      regression and native dashboard smoke for unchanged/expired
+      rows in all supported languages.
+- [ ] Hosted Windows CI and interactive visual acceptance.
+      Release hold unchanged.

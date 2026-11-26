@@ -160,8 +160,28 @@ internal sealed class DeviceDashboardForm : Form
         UpdateSelection();
     }
 
-    internal void SetEntries(IReadOnlyList<Entry> entries)
+    // Timer-only refresh: keep row widgets when presentation is unchanged.
+    private bool RefreshUnchangedEntries(IReadOnlyList<Entry> entries)
     {
+        if (_grid.Rows.Count != entries.Count) return false;
+        for (int i = 0; i < entries.Count; i++)
+        {
+            Entry next = entries[i];
+            if (_grid.Rows[i].Tag is not Entry old || old.Key != next.Key ||
+                old.State != next.State || old.TrayVisible != next.TrayVisible ||
+                old.UnverifiedPercent != next.UnverifiedPercent)
+                return false;
+        }
+        // Retain the widgets, but update the action targets.
+        for (int i = 0; i < entries.Count; i++)
+            _grid.Rows[i].Tag = entries[i];
+        UpdateSelection();
+        return true;
+    }
+
+    internal void SetEntries(IReadOnlyList<Entry> entries, bool skipUnchanged = false)
+    {
+        if (skipUnchanged && RefreshUnchangedEntries(entries)) return;
         Entry? previous = CurrentEntry();
         _updatingRows = true;
         _grid.SuspendLayout();

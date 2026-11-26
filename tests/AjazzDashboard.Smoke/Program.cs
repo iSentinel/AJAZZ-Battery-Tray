@@ -15,6 +15,7 @@ internal static class Program
             UiText.SetLanguage(language);
             CheckDashboard();
             CheckDashboardUnverifiedField(language);
+            CheckTimerPresentation(language);
             Console.WriteLine($"PASS: {language} minimum-size layout and device actions");
             foreach (float factor in new[] { 1.25f, 1.5f, 2f })
                 CheckScaledLayout(language, factor);
@@ -121,6 +122,25 @@ internal static class Program
         Require(grid.Rows[0].Cells["Battery"].ToolTipText == "98%",
             "Verified tooltip must replace previous candidate");
         Console.WriteLine($"PASS: {language} dashboard unverified field and state transitions");
+    }
+
+    private static void CheckTimerPresentation(string language)
+    {
+        using var form = new DeviceDashboardForm(() => { }, () => { }, () => { });
+        var at = DateTimeOffset.UtcNow;
+        var fresh = ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 72, at, at);
+        var entry = new DeviceDashboardForm.Entry(fresh, Key: "usb");
+        var grid = form.Controls.OfType<TableLayoutPanel>().Single().Controls.OfType<DataGridView>().Single();
+        form.SetEntries(new[] { entry });
+        var row = grid.Rows[0];
+        var replacement = entry with { ShowHistory = () => { } };
+        form.SetEntries(new[] { replacement }, skipUnchanged: true);
+        Require(ReferenceEquals(row, grid.Rows[0]), "Unchanged timer refresh recreated row");
+        Require(ReferenceEquals(replacement, row.Tag), "Timer refresh must update action targets");
+        var expired = ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 72, at, at.AddMinutes(6));
+        form.SetEntries(new[] { entry with { State = expired } }, skipUnchanged: true);
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "—", "Expired timer value retained");
+        Console.WriteLine($"PASS: {language} timer-only unchanged rows and expired charge");
     }
 
     private static void CheckDashboard()

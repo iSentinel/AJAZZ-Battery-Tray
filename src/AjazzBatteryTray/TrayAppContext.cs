@@ -317,9 +317,9 @@ public sealed class TrayAppContext : ApplicationContext
         _dashboard.BringToFront();
     }
 
-    private void RefreshDashboard()
+    private void RefreshDashboard(bool publishSnapshot = true)
     {
-        PublishLocalSnapshot();
+        if (publishSnapshot) PublishLocalSnapshot();
         if (_dashboard is not { IsDisposed: false }) return;
         List<DeviceDashboardForm.Entry> entries = new();
         foreach (var receiver in _receivers.Devices)
@@ -349,7 +349,7 @@ public sealed class TrayAppContext : ApplicationContext
             () => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName)));
         foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
             entries.Add(new(BluetoothDashboardState(pair.Key, pair.Value), Key: $"BLE:{pair.Value.Number}"));
-        _dashboard.SetEntries(entries);
+        _dashboard.SetEntries(entries, skipUnchanged: !publishSnapshot);
     }
 
     private void PublishLocalSnapshot()
@@ -1373,6 +1373,10 @@ public sealed class TrayAppContext : ApplicationContext
             _ = RestoreBleConsentAsync();
         StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
         if (BleEnabled) RefreshDeviceDisplay();
+        // The USB timer pauses during I/O. Age the UI even with BLE disabled,
+        // without publishing a new API generation or replaying a measurement.
+        else if (_latestUsbReading is not null || _aulaLatest is not null)
+            RefreshDeviceDisplay(publishSnapshot: false);
     }
 
     private async Task RestoreBleConsentAsync()
@@ -1927,15 +1931,16 @@ public sealed class TrayAppContext : ApplicationContext
             ToolTipIcon.Warning);
     }
 
-    private void RefreshDeviceDisplay()
+    private void RefreshDeviceDisplay(bool publishSnapshot = true)
     {
         if (_closing) return;
         UpdateTrayDisplay(_latestUsbReading ??
-            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false, Issue: UsbReadIssue.NotChecked));
+            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false, Issue: UsbReadIssue.NotChecked),
+            publishSnapshot);
     }
 
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
-    private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
+    private void UpdateTrayDisplay(AjazzHidReader.Reading reading, bool publishSnapshot = true)
     {
         string? primaryBle = PrimaryBleKey;
         int? blePercent = primaryBle is not null
@@ -2035,7 +2040,7 @@ public sealed class TrayAppContext : ApplicationContext
             if (unverified is int raw) value = UsbTrayStatus.UnverifiedField(raw);
         }
         string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
-        if (_statusItem.Text != status) _statusItem.Text = status;
+        if (!_diagnosticsBusy && _statusItem.Text != status) _statusItem.Text = status;
         string color = linkedPrimary is { } linkedIcon ? DeviceColor(linkedIcon.UsbKey) :
             aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
             !bluetoothPrimary && receiver is not null ? DeviceColor(receiver.Key) : _settings.DefaultTrayColor;
@@ -2055,7 +2060,7 @@ public sealed class TrayAppContext : ApplicationContext
                     (x.UsbKey, x.Name, x.Display.Percent, x.Display.Cached,
                     x.Display.Percent is null ? "2.4 GHz / Bluetooth" : x.Display.Bluetooth ? "Bluetooth" : "2.4 GHz")).ToArray());
         UpdateBluetoothStatus();
-        RefreshDashboard();
+        RefreshDashboard(publishSnapshot);
     }
 
     private sealed record LinkedTrayDevice(string UsbKey, string Name, TransportLinks.Display Display);

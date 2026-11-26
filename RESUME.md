@@ -1,3 +1,12 @@
+# Resume — Windows age-only presentation refresh
+
+#276 exact 5/5 CI merged a92bfe9. Existing five-second timer
+now reprojects USB/AULA even without BLE, no new HID operations
+or API generation on this age-only path. Active capture text
+preserved; unchanged dashboard rows retained. Source wiring
+regression and native dashboard smoke added. Hosted CI and
+physical/visual acceptance pending; release hold unchanged.
+
 # Resume — private installer payload staging
 
 #275 exact 4/4 CI merged 016da67. Successful 8e3625d CI portable
