@@ -80,6 +80,9 @@ candidate identities, artifact links, field findings and remaining gates.
 - [x] Validate and stage the four exact CI assets locally with generated
       checksums and separate High Sierra output. Verified dry run and
       byte-for-byte replay against the pinned acceptance archives.
+- [x] Bind the exact candidate and the six existing checklists to a single
+      local admission report. Verified the real `b2c5ce9` baseline and its
+      57 hardware and six interactive NOT_RUN results.
 - [ ] Review recorded physical and interactive results for this generation.
 - [ ] Resolve compiler/notice distribution and signing disposition.
       Record candidate admission and approval against final hashes.
