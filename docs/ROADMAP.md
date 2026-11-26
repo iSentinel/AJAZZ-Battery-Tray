@@ -2803,3 +2803,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI; retained private Setup, real hardware/interactive
       results, signing, distribution and final release decisions.
       No publication or new acceptance claim.
+
+### Normalized package proposal
+
+- [x] Revalidate the three private notice-bearing prototypes against
+      exact original archives and normalized evidence.
+- [x] Bind a separate immutable proposed asset subject; retain the
+      original acceptance subject, require exact Setup when supplied,
+      and keep missing Setup distinct from local matches.
+- [ ] Review final package selection, extraction/launch and update-client
+      compatibility, private Setup retention, actual acceptance, signing,
+      distribution and publication. See
+      [package proposal](BETA61_PACKAGE_PROPOSAL.md). Release blocked.

@@ -1,3 +1,12 @@
+# Resume — normalized package proposal
+
+#309 merged 2ae646f, 13/13 integration CI PASS. #310 native
+signature CI still pending at this checkpoint. Three private
+notice-bearing prototypes reverified against original archives.
+Proposal f5cc9152 binds them and expected Setup e7195b38 without
+changing acceptance subject 913bda76. Setup NOT_PROVIDED, package
+selection and real acceptance remain open. Publication BLOCKED.
+
 # Resume — normalized blank acceptance kit
 
 #308 exact 4/4 merged 9848e0e. One offline command now validates
