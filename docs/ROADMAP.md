@@ -2816,3 +2816,19 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Review actual native signature observation; retained private
       Setup and human acceptance, signing disposition, distribution,
       final selection and publication remain open.
+
+### Normalized package proposal
+
+- [x] Revalidate the three private notice-bearing prototypes against
+      exact original archives and normalized evidence.
+- [x] Bind a separate immutable proposed asset subject; retain the
+      original acceptance subject, require exact Setup when supplied,
+      and keep missing Setup distinct from local matches.
+- [ ] Review final package selection, extraction/launch and update-client
+      compatibility, private Setup retention, actual acceptance, signing,
+      distribution and publication. See
+      [package proposal](BETA61_PACKAGE_PROPOSAL.md). Release blocked.
+
+- [x] #310 exact 5/5 CI merged 5bef61e; same-run normalized
+      product signature and lifecycle artifacts verified. All three
+      product EXEs report NotSigned on Windows build 26100.33828.
