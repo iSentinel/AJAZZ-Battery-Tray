@@ -2561,3 +2561,18 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI and physical/visual acceptance of successor build.
       Do not substitute successor binaries for pinned b2c5ce9;
       admission of either candidate remains separately gated.
+
+### Separate successor display evidence
+
+- [x] #290 exact 7/7 CI PASS; retained as separate successor draft.
+      Verified actual Windows checkout tree and four preference
+      assertions plus three language smoke results.
+- [x] Retrieve Windows artifact 15108187556, verify outer digest,
+      portable inventory and source icons. Three ordinary Windows
+      forms remain 35 NOT_RUN.
+- [x] Add separate byte-bound display acceptance CLI and eight
+      cases per APEX profile; three synthetic groups and actual
+      two-form replay PASS (16 NOT_RUN, no physical acceptance).
+- [ ] Hosted CI for acceptance tooling, actual Windows experiments
+      and independent reference. Do not replace pinned release
+      artifacts or publish without the existing admission gates.

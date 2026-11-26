@@ -853,3 +853,50 @@ an alert or publish a new API generation. Diagnostics remain available
 regardless of the display preference. Check save failure and restart,
 and repeat with EN, RU and UK. No independent battery verification or
 release approval follows from this display option.
+
+### Separate successor display acceptance
+
+The #290 successor passed all seven hosted checks. Windows run
+45803577992 checked out 6fadeac262c84252a21298cce57d418e48b9ad0a
+with tree 0eb9b029609eee033e34653116b23420bbacf426, identical to
+the PR head d75e92fdba1c20226105291d0c6fe8eebeb6fe58 tree.
+The four native preference assertions and EN/RU/UK dashboard smoke
+passed. Windows portable artifact 15108187556 was retrieved and
+checked against its archive SHA-256
+eda76563161e4ece990435a7d8e89d577363c596a178439241c644aa810b7b81.
+The EXE SHA-256 is
+482542de35b4d2e089ff41eaf34debba1dacd67015fb45d467ef4b587a7cb894.
+All four icon files match the reviewed source.
+
+Use the original archive for the separate display-only test form.
+Do not substitute the pinned release archive or transfer results.
+Run on an isolated test desktop with an existing APEX receiver,
+using only ordinary device operations and consented diagnostics.
+
+| ID | Procedure and expected outcome |
+| --- | --- |
+| UD01 | New settings or legacy settings without the preference: off, no unverified number. |
+| UD02 | Request enable and decline confirmation: remains off. Accept confirmation: current eligible field marked with question mark and explicit unverified status. |
+| UD03 | Check main tray, extra receiver icon, receiver submenu and Device Manager. Toggle off: unverified number disappears without another poll. Mark NOT_VERIFIED if an extra receiver is unavailable. |
+| UD04 | Restart after saving on and off; verify the corresponding preference. In an isolated writable test profile, test a save failure only if safe; check rollback. |
+| UD05 | Check all three languages and that verified fresh, cached or scheduled charge takes precedence when observed. |
+| UD06 | Let an observation become ineligible or remove receiver: no retained unverified number. Do not force HID failure or change firmware. |
+| UD07 | With consented diagnostics and local API if enabled, verify that unverified values are absent from numeric telemetry, history and alerts; diagnostics still report the field. |
+| UD08 | Compare with an independently observed reference when available; record any discrepancy or NOT_VERIFIED, not inferred accuracy. |
+
+Generate a blank form from the reviewed original archive, substituting
+your local filename:
+
+```sh
+python3 tools/verify_unverified_display_acceptance.py --archive portable.zip --archive-sha256 eda76563161e4ece990435a7d8e89d577363c596a178439241c644aa810b7b81 --source-sha d75e92fdba1c20226105291d0c6fe8eebeb6fe58 --profile windows-aj179 --output aj179-optin.json
+```
+
+Use the same arguments with `--checklist aj179-optin.json` and a new
+`--output aj179-optin-review.json` to review recorded observations.
+Use windows-aj159 separately for that device. The source and feature
+association remain caller-reviewed; an archive hash alone cannot
+establish feature provenance. No observations are authenticated.
+Keep forms private and omit raw identifiers and vendor buffers.
+Actual replay: both forms passed structural review with eight
+NOT_RUN cases each. Three ordinary Windows hardware forms separately
+remain 35 NOT_RUN. This does not admit a release.
