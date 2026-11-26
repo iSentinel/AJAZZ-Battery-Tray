@@ -289,3 +289,45 @@ also remain open.
 | Interactive installation | Exact setup and EXE for install, upgrade, uninstall, UAC and rollback review using the existing interactive acceptance checklist. |
 | Distribution and signing | Resolve installer compiler and notice distribution, High Sierra security disposition and signing for the actual final assets. See [distribution review](CANDIDATE_DISTRIBUTION_REVIEW.md). |
 | Publication | Bind the admission record and owner approval to the final immutable source and asset hashes. The release workflow currently exits at the ENG-10 guard. |
+
+## Consolidated successor archive review (26 November 2026)
+
+The #99 integration generation bf4c7c6cb8060cfbd690f1c33baafe38266b3c84
+passed ten hosted checks. The Windows portable, normal installer,
+Universal and High Sierra job logs each identify actual checkout
+f939fea7fb422aa588649138d29a750ce62cd22a. Its tree
+cd90b485b8e45d4702ec31cd4a09154a4e417226 matches the integration head.
+The subsequent #292 acceptance-tool change was merged separately
+after four successful hosted checks and tested-tree equality.
+
+| Platform | Actions run | Artifact | Outer SHA-256 | Release asset SHA-256 |
+| --- | --- | --- | --- | --- |
+| Windows portable | 45805755082 | 15110510075 | `e06bda2f95725a37f206cfbaffe6f3b333c735ea0a8e580fe092ccbfed340302` | `91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c` |
+| Windows installer | 45805754709 | 15109661194 | `73de3837a16ac39deeb99ebfb314501203b58a3092e91bb0989df92b2b38c99c` | `1cc71e5c2a7119070c80611160b5e263afd2b70155f33b13a88fac848d67542e` |
+| Universal | 45805754690 | 15108849028 | `abd8e67afe1da82c3b1930592e4cba7696b327d7626131d0637a711254bc4a0f` | `b3e27be66e9927ed8ef4cb143c2a24c11f754567cf7157ac17f62530fabf5d6f` |
+| High Sierra | 45805754634 | 15109082825 | `a31f73c49887c3a950352eec57439775656b0bf3b7f1e301fe2cc209bbdb5241` | `c1221524f473cc731e1f3ca1bc59d953b205d45ea083626bc97ca6ff1666a02a` |
+
+All four original Actions ZIPs match the advertised SHA-256 digests
+and pass ZIP integrity checks. The scoped archive parsers match the
+expected layout, versions and Apple companion checksums. The Windows
+installer candidate's recorded app SHA-256 matches the portable EXE,
+and four portable icon bytes match source. The staging dry run matches
+all four release assets without publishing or changing pinned files.
+
+A separate candidate manifest and six new blank forms were created
+using the actual checkout identity. The admission review returned
+exit 1 (incomplete coverage), with 57 hardware and six interactive
+NOT_RUN, and MATCH for the archive-derived installer/app binding.
+The subject SHA-256 is
+`9ebd0085c87293999e5ebf38b19d4f66de380c536e1b776b1ab971bb59edea51`.
+Manifest SHA-256:
+`90496658493a838ee2cab0fff82a1aa98876979c2e959280150e51043f10c030`.
+Review SHA-256:
+`f8a84c815e4f8c7edf3673730b863d4467ebfdd1f5f0965df836e763f5b0e44a`.
+
+The b2c5ce9 pinned release assets and the separately tested #290
+artifact remain distinct. No earlier physical results, signing
+observations or scoped dependency evidence are transferred to these
+new bytes. This is a consolidated successor review, not a replacement
+release selection. Requalify dependency and installer evidence for
+the chosen final asset set; publication remains BLOCKED.
