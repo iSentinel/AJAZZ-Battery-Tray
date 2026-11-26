@@ -1,3 +1,12 @@
+# Resume — consolidated successor dependency and setup replay
+
+#293 exact 2/2 merged 2ec40bc. Regenerated scoped f939fea Windows
+and Apple BOMs, three schema checks PASS; retained NuGet snapshot
+replay and OSV package identity reviewed, no fresh retrieval.
+New pinned setup record/launch policy replay PASS with substitution
+regression. No interactive, full dependency or release admission.
+Continue remaining physical, distribution and signing gates.
+
 # Resume — consolidated successor archive review
 
 #292 exact 4/4 CI merged 5cd37a6. #99 bf4c7c6 passed 10/10;

@@ -27,6 +27,8 @@ CANDIDATES = {
     'reference': (SETUP_SHA, SCRIPT_SHA),
     'b2c5ce9': ('e1281508c8d337c3ea2202b92d8eb1db3bd6aca7b7ed2fa859a782e40bc1a15f',
                 'a41fc727e7ff0a9b680958c981f668dca6bb7979c379e562ff136fe7159538bc'),
+    'f939fea': ('1cc71e5c2a7119070c80611160b5e263afd2b70155f33b13a88fac848d67542e',
+                'a41fc727e7ff0a9b680958c981f668dca6bb7979c379e562ff136fe7159538bc'),
 }
 
 

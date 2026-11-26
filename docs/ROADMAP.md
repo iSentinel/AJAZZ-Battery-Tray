@@ -2604,3 +2604,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Requalify dependency and installer evidence for chosen final
       asset set; hardware, interactive, signing, distribution and
       publication approval remain open. Do not replace pinned assets.
+
+### Consolidated successor dependency and setup replay
+
+- [x] #293 exact 2/2 CI merged 2ec40bc after tested-tree equality.
+- [x] Regenerate three scoped BOMs from f939fea exact assets; all
+      offline schema checks PASS. 269/31/14 components; roots match.
+- [x] Replay retained NuGet snapshot (211 ranges, zero matches);
+      correlate retained OSV query pairs, no IDs in response.
+      No fresh scan, complete coverage or advisory clearance claimed.
+- [x] Pin and verify f939fea Setup.0 records against exact script
+      and message inputs; add cross-candidate setup substitution test.
+- [ ] Hosted CI, interactive and physical acceptance, OS advisory
+      scope, distribution and signing disposition. Release blocked.
