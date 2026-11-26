@@ -1,3 +1,11 @@
+# Resume — pinned beta.61 unverified presentation boundary
+
+#288 exact 2/2 CI merged cffcb01. The pinned b2c5ce9 release assets
+remain unchanged. Clarify W01 display-only status, add a timer-only
+dashboard smoke for unverified expiry and verified precedence, and
+guard strict API/history/alert wiring. No production source changes.
+Hosted CI and independent physical acceptance remain open.
+
 # Resume — beta.61 static installer review
 
 The exact b2c5ce9 setup passed full scoped Setup.0 record framing

@@ -2530,3 +2530,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       No HID or ready-clear interpretation changes.
 - [ ] Hosted Windows CI, physical USB/BLE/AULA and suspend/resume
       acceptance. Release hold unchanged.
+
+### Pinned beta.61 unverified presentation boundary
+
+- [x] #288 exact 2/2 CI merged cffcb01 after tested-tree equality.
+- [x] Review the existing separate Windows unverified display paths;
+      keep the original pinned b2c5ce9 binaries unchanged.
+- [x] Clarify W01: marked display-only values are not verified charge.
+      Add a native dashboard smoke for timer-only expiry and verified
+      cache/scheduled precedence, plus a source wiring regression
+      separating UI-only values from snapshot and history/alert inputs.
+- [ ] Hosted CI for added tests and physical acceptance on the exact
+      pinned candidate. Independent charge reference remains required.
+      Signing, distribution and publication hold unchanged.

@@ -16,6 +16,7 @@ internal static class Program
             CheckDashboard();
             CheckDashboardUnverifiedField(language);
             CheckTimerPresentation(language);
+            CheckUnverifiedTimerPresentation(language);
             Console.WriteLine($"PASS: {language} minimum-size layout and device actions");
             foreach (float factor in new[] { 1.25f, 1.5f, 2f })
                 CheckScaledLayout(language, factor);
@@ -141,6 +142,34 @@ internal static class Program
         form.SetEntries(new[] { entry with { State = expired } }, skipUnchanged: true);
         Require((string?)grid.Rows[0].Cells["Battery"].Value == "—", "Expired timer value retained");
         Console.WriteLine($"PASS: {language} timer-only unchanged rows and expired charge");
+    }
+
+    private static void CheckUnverifiedTimerPresentation(string language)
+    {
+        using var form = new DeviceDashboardForm(() => { }, () => { }, () => { });
+        var at = DateTimeOffset.UtcNow;
+        var observation = ApexDisplayPolicy.Dashboard("Receiver", true, true, false, null, at, at);
+        var entry = new DeviceDashboardForm.Entry(observation, Key: "usb",
+            UnverifiedPercent: ApexDisplayPolicy.Unverified(true, true, false, 37, at, at));
+        var grid = form.Controls.OfType<TableLayoutPanel>().Single().Controls.OfType<DataGridView>().Single();
+        form.SetEntries(new[] { entry });
+        var row = grid.Rows[0];
+        form.SetEntries(new[] { entry }, skipUnchanged: true);
+        Require(ReferenceEquals(row, grid.Rows[0]), "Unchanged unverified row recreated");
+        Require((string?)row.Cells["Battery"].Value == "37?", "Unverified field not marked");
+        var expired = entry with { UnverifiedPercent = ApexDisplayPolicy.Unverified(
+            true, true, false, 37, at, at.AddMinutes(6)) };
+        form.SetEntries(new[] { expired }, skipUnchanged: true);
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "—", "Expired unverified field retained");
+        Require(grid.Rows[0].Cells["Battery"].ToolTipText == "—", "Expired unverified tooltip retained");
+        var cached = entry with { State = observation with { Status = DeviceDashboardStatus.Cached,
+            Percent = 62, MeasuredAt = at } };
+        form.SetEntries(new[] { cached }, skipUnchanged: true);
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "62%*", "Verified cache must win");
+        var scheduled = entry with { State = cached.State with { Status = DeviceDashboardStatus.Scheduled } };
+        form.SetEntries(new[] { scheduled }, skipUnchanged: true);
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "62%", "Scheduled value must win");
+        Console.WriteLine($"PASS: {language} timer-only unverified expiry and verified precedence");
     }
 
     private static void CheckDashboard()
