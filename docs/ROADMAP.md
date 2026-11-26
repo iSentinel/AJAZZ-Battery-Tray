@@ -95,6 +95,9 @@ candidate identities, artifact links, field findings and remaining gates.
 - [x] Add a [Windows hardware evidence collector](AJAZZ-Hardware-Acceptance-Windows.md)
       for the exact candidate. It verifies the EXE and saves a manifest and
       phase-specific ZIP for AJ159, AJ179 and AULA L99 observations.
+      One Windows host reported `ScriptContainedMaliciousContent` before
+      collector execution. The guide provides the built-in, hash-checked
+      diagnostic path. The detection name and vendor assessment are open.
 - [ ] Review recorded physical and interactive results for this generation.
 - [ ] Resolve compiler/notice distribution and signing disposition.
       Record candidate admission and approval against final hashes.
