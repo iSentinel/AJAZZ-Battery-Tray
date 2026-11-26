@@ -66,5 +66,18 @@ class ConsolidatedNoticeSetupTests(unittest.TestCase):
         self.assertIn('setup-repeat-observation.json', uploaded)
 
 
+    def test_private_build_replay_verifies_the_actual_setup(self) -> None:
+        """Require scoped binary comparison and independent payload hashes."""
+        text = WORKFLOW.read_text()
+        start = text.index('name: Check out private build tooling')
+        upload = text.index('name: Retain exact candidate evidence only')
+        self.assertLess(start, upload)
+        for item in ('--reproducible --dry-run', '--reproducible --compile',
+                     'primary != repeat', 'locations(second, payload, files)',
+                     'file_hashes(payload, files)', 'script_header(first)'):
+            self.assertIn(item, text[start:upload])
+        self.assertIn('candidate-payload-replay.json', text[upload:])
+
+
 if __name__ == '__main__':
     unittest.main()
