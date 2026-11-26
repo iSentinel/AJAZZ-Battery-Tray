@@ -411,6 +411,23 @@ Check("APEX unverified field only on current ordinary observation",
     ApexDisplayPolicy.Unverified(true, true, true, 83, scheduleMeasurement, scheduleMeasurement) is null &&
     ApexDisplayPolicy.Unverified(true, true, false, 83, scheduleMeasurement, scheduleMeasurement.AddMinutes(6)) is null &&
     ApexDisplayPolicy.Unverified(false, true, false, 83, scheduleMeasurement, scheduleMeasurement) is null);
+Check("APEX verified current USB sample permits alerts",
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, scheduleMeasurement,
+        scheduleMeasurement.AddMinutes(5)) == 9);
+Check("APEX expired or future timestamp cannot trigger an alert",
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, scheduleMeasurement,
+        scheduleMeasurement.AddMinutes(5).AddTicks(1)) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, scheduleMeasurement,
+        scheduleMeasurement.AddTicks(-1)) is null);
+Check("APEX missing timestamp or scheduled sample cannot trigger an alert",
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, null, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, true, 9, scheduleMeasurement, scheduleMeasurement) is null);
+Check("APEX unknown or absent receiver and invalid charge cannot trigger alerts",
+    ApexDisplayPolicy.AlertPercent(false, true, false, 9, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, false, false, 9, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, 0, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, 101, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, null, scheduleMeasurement, scheduleMeasurement) is null);
 var receiverFresh = ApexDisplayPolicy.Dashboard("Fresh", true, true, false, 71,
     scheduleMeasurement, scheduleMeasurement);
 var receiverScheduled = ApexDisplayPolicy.Dashboard("Scheduled", true, true, true, 64,

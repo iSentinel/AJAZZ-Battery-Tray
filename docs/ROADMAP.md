@@ -2465,3 +2465,22 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted Windows CI and physical BLE/suspend-resume acceptance.
       Actual WinRT timing and thread behavior require native testing.
       Release hold unchanged.
+
+### APEX USB alert sample age
+
+- [x] #279 exact 7/7 CI merged 1f82db4 after tested-tree equality.
+- [x] Require the actual receiver measurement UTC for sampled
+      observations. Missing or future timestamps clear numeric
+      presentation and display/streak caches instead of substituting
+      UI delivery time; do not append synthetic history.
+- [x] Preserve original valid historical measurement timestamps.
+      Gate low-battery alert evaluation and confirmed-online
+      connection observation on the existing five-minute ordinary
+      sample freshness policy, known presence and verified 1–100%.
+      Scheduled, expired and invalid values cannot consume or reset
+      battery alert thresholds. Confirmed absence handling unchanged.
+- [x] Add one source wiring regression and four native synthetic
+      assertions covering age, timestamp, presence and value boundaries.
+      No HID or ready-clear interpretation changes.
+- [ ] Hosted Windows CI, physical USB/BLE/AULA and suspend/resume
+      acceptance. Release hold unchanged.

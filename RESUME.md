@@ -1,3 +1,13 @@
+# Resume — APEX USB alert sample age
+
+#279 exact 7/7 CI merged 1f82db4. USB sampled observations
+retain actual measurement UTC; missing/future timestamps rejected
+without synthetic history or cache. Historical valid readings retain
+their time. Alert evaluation and online connection observation
+require current ordinary verified USB sample. One source wiring
+regression and four native assertions. Native Windows CI and
+physical acceptance pending; release hold unchanged.
+
 # Resume — Bluetooth completion provenance
 
 #278 exact 7/7 CI merged d94c1c3. BLE reader await chain avoids
