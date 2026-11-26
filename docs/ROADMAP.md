@@ -2772,6 +2772,8 @@ configuration commands. USB `VersionNumber` is a device revision,
       decoded input files matched their pinned hashes.
 - [x] Review the three exact original application archives and
       normalized installer in one [combined preflight](BETA61_RELEASE_READINESS.md#combined-preflight-for-the-normalized-setup).
+- [x] Document exact [Windows build and test steps](BETA61_WINDOWS_RUNBOOK.md)
+      for the six Setup cases and the three Windows hardware profiles.
 - [ ] Retain Setup on an authorized private Windows system or approved
       channel and review physical and interactive observations.
       Final asset selection, signing, distribution and publication
