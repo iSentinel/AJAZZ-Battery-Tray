@@ -74,8 +74,13 @@ candidate identities, artifact links, field findings and remaining gates.
 - [x] Add byte-bound interactive checklist support for the normal hosted
       setup ZIP. Reuse the exact archive, source and PE verification
       before creating six NOT_RUN cases. Review requires both local EXEs.
-- [ ] Rebind the four archives after consolidated CI. Review recorded
-      physical and interactive results for this generation.
+- [x] Rebind the four archives after consolidated CI. Eight repeat builds
+      produced matching release bytes. Integrated #282 as `838c3bf`
+      with the same tree as the pinned build source `b2c5ce9`.
+- [x] Validate and stage the four exact CI assets locally with generated
+      checksums and separate High Sierra output. Verified dry run and
+      byte-for-byte replay against the pinned acceptance archives.
+- [ ] Review recorded physical and interactive results for this generation.
 - [ ] Resolve compiler/notice distribution and signing disposition.
       Record candidate admission and approval against final hashes.
 

@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = ("source-toolchain.json", "code-audit.json", "python-results.xml",
             "summary.json")
-CLI = ("compare_release_builds", "analyze_windows_cli_diagnostics", "analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease", "code_audit",
+CLI = ("stage_beta61_release", "compare_release_builds", "analyze_windows_cli_diagnostics", "analyze_aula_sleep", "analyze_apple_diagnostics", "check_apple_io_lease", "code_audit",
        "compare_apex_reports", "normalize_device_diagnostics", "compare_diagnostic_timeline", "verify_diagnostic_session_roundtrip", "verify_installer_candidate", "verify_uninstaller_evidence", "verify_installer_payload", "compare_inno_compiler", "verify_inno_issig", "compare_inno_loader", "verify_inno_inner_engine", "verify_inno_uninstaller", "verify_inno_resources", "verify_inno_setup_data", "verify_inno_solid", "verify_inno_ifps", "verify_inno_setup_records", "verify_inno_wizard", "compare_get_ids", "compare_job_cpu",
        "compare_ready_clear", "compare_tray_resources",
        "compare_windows_hid_logs", "inventory_dotnet_bundle",

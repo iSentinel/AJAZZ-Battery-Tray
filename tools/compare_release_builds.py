@@ -17,9 +17,8 @@ from verify_windowsdesktop_provenance import read_local
 PROFILES = ('windows', 'installer', 'universal', 'high-sierra')
 
 
-def inspect(path: Path, expected: str, source: str, profile: str) -> dict:
-    """Validate the downloaded archive against the reviewed digest and layout."""
-    raw = read_local(path)
+def inspect_archive(raw: bytes, expected: str, source: str, profile: str) -> dict:
+    """Validate one in-memory archive against the reviewed digest and layout."""
     if not re.fullmatch(r'[0-9a-f]{64}', expected) or digest(raw) != expected:
         raise ValueError('archive SHA-256 differs')
     if profile == 'installer':
@@ -33,6 +32,11 @@ def inspect(path: Path, expected: str, source: str, profile: str) -> dict:
     data = apple(raw, profile)
     return {'asset_sha256': data['inner_archive_sha256'],
             'payload_sha256': data['payload_sha256']}
+
+
+def inspect(path: Path, expected: str, source: str, profile: str) -> dict:
+    """Read and validate a bounded local build archive."""
+    return inspect_archive(read_local(path), expected, source, profile)
 
 
 def compare(left: dict, right: dict) -> dict:
