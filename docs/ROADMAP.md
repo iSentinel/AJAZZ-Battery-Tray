@@ -2767,7 +2767,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Add a reproducible private Windows build path and a hosted
       independent payload replay with a byte-bound six-case form.
       [Build and acceptance commands](BETA61_RELEASE_READINESS.md#reproducible-windows-setup-for-private-interactive-acceptance).
-- [ ] Review native payload replay and retain the Setup on an
-      authorized private Windows system or approved channel.
-      Interactive and physical acceptance, signing, distribution
-      and publication remain open.
+- [x] Review the native replay and byte-bound form from #305. The
+      private build matched normalized Setup `e7195b38` and all 15
+      decoded input files matched their pinned hashes.
+- [x] Review the three exact original application archives and
+      normalized installer in one [combined preflight](BETA61_RELEASE_READINESS.md#combined-preflight-for-the-normalized-setup).
+- [ ] Retain Setup on an authorized private Windows system or approved
+      channel and review physical and interactive observations.
+      Final asset selection, signing, distribution and publication
+      remain open.
