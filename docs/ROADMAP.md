@@ -2682,3 +2682,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       change; actual authorized Windows compile/interactive tests,
       Apple native trust and physical tests, final package selection
       and distribution disposition remain open. Release blocked.
+
+### Consolidated Apple native signature observation
+
+- [x] #299 exact 5/5 CI merged c946160 after tested-tree equality.
+- [x] Stage both exact original Apple archives, verify outer/inner
+      hashes, companion checksums and scoped ad-hoc resource seals;
+      two synthetic groups and actual input replay PASS.
+- [x] Add native macOS read-only codesign and Gatekeeper observation
+      with original member byte and executable-mode checks.
+- [ ] Review actual hosted observation for both editions; exact
+      notice-bearing Windows compilation and lifecycle qualification;
+      distribution, trusted signing and human acceptance remain open.
+      No publication or replacement of pinned artifacts.

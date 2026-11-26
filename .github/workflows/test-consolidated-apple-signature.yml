@@ -1,0 +1,103 @@
+name: Observe exact consolidated Apple signatures
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-consolidated-apple-signature.yml'
+      - 'tools/stage_consolidated_apple_signature.py'
+      - 'tools/test_stage_consolidated_apple_signature.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  consolidated-apple-signature:
+    runs-on: macos-15-intel
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Retrieve and verify original Apple archives
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/ajazz-apple-signatures"
+          mkdir -m 700 "$root"
+          for pair in universal:15108849028 high-sierra:15109082825; do
+            edition="${pair%:*}"
+            id="${pair#*:}"
+            gh api "repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/$id/zip" > "$root/$edition.zip"
+            python3 tools/stage_consolidated_apple_signature.py --edition "$edition" --archive "$root/$edition.zip" --output "$root/$edition-app.zip"
+          done
+      - name: Observe native code signature and Gatekeeper without launching apps
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/ajazz-apple-signatures" <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          root = Path(sys.argv[1])
+          sys.path.insert(0, 'tools')
+          from build_consolidated_apple_notices import PINS
+          from inventory_apple_archive import EDITIONS, archive_members
+
+          def command(*args):
+              return subprocess.run(args, capture_output=True, text=True, timeout=90)
+
+          def observe(edition):
+              inner = root / (edition + '-app.zip')
+              raw = inner.read_bytes()
+              sha = hashlib.sha256(raw).hexdigest()
+              if sha != PINS[edition][1]:
+                  raise ValueError('inner archive changed')
+              dest = root / (edition + '-extracted')
+              dest.mkdir(mode=0o700)
+              subprocess.run(['/usr/bin/ditto', '-x', '-k', str(inner), str(dest)],
+                             check=True, timeout=60)
+              for name, (data, mode) in archive_members(raw).items():
+                  path = dest / name
+                  if path.is_symlink() or path.read_bytes() != data:
+                      raise ValueError('extracted member differs')
+                  if path.stat().st_mode & 0o111 != mode & 0o111:
+                      raise ValueError('executable mode differs')
+              app = str(dest / EDITIONS[edition][0])
+              verified = command('/usr/bin/codesign', '--verify', '--deep', '--strict',
+                                 '--all-architectures', app)
+              details = command('/usr/bin/codesign', '-dv', '--verbose=4', app)
+              assessment = command('/usr/sbin/spctl', '--assess', '--type', 'execute', app)
+              if verified.returncode or details.returncode:
+                  raise ValueError('native signature integrity or description failed')
+              return {'inner_archive_sha256': sha, 'native_codesign_verify': 'PASS',
+                      'signature_kind': 'AD_HOC' if 'Signature=adhoc' in details.stderr.splitlines()
+                      else 'OTHER_NOT_QUALIFIED',
+                      'authority_present': any(x.startswith('Authority=')
+                                               for x in details.stderr.splitlines()),
+                      'gatekeeper_exit_code': assessment.returncode,
+                      'gatekeeper_assessment': 'EXIT_ZERO' if assessment.returncode == 0
+                      else 'NONZERO', 'signer_trust': 'NOT_VERIFIED',
+                      'notarization': 'NOT_VERIFIED'}
+
+          record = {'schema': 'consolidated-apple-signature-observation-v1',
+                    'source_sha': 'f939fea7fb422aa588649138d29a750ce62cd22a',
+                    'runner_os': command('/usr/bin/sw_vers', '-productVersion').stdout.strip(),
+                    'editions': {edition: observe(edition) for edition in PINS},
+                    'release_admission': 'NOT_VERIFIED'}
+          with (root / 'apple-signatures.json').open('x', encoding='utf-8') as stream:
+              json.dump(record, stream, indent=2, sort_keys=True)
+              stream.write('\n')
+          PY
+      - name: Retain observation only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: consolidated-apple-signature-observation
+          path: ${{ runner.temp }}/ajazz-apple-signatures/apple-signatures.json
+          if-no-files-found: error
+          retention-days: 7
