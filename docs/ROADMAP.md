@@ -2832,3 +2832,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] #310 exact 5/5 CI merged 5bef61e; same-run normalized
       product signature and lifecycle artifacts verified. All three
       product EXEs report NotSigned on Windows build 26100.33828.
+
+### Proposed package checksum and update compatibility
+
+- [x] #311 exact 5/5 hosted checks merged 0f2dcc6; tested-tree equality.
+- [x] Review exact published beta.60 and f939fea update lookup,
+      built-in checksum verifier and macOS download contracts.
+      Release-page discovery independent of asset names; ZIP unsupported
+      by existing Windows verifier; Apple wrappers require two extracts.
+- [x] Generate separate local checksum companions for verified proposal
+      files; actual 3/3 sha256sum replay PASS, missing Setup excluded.
+      Five targeted groups PASS. No original binary or release change.
+- [ ] Hosted CI; decide final names/compatibility strategy and execute
+      native package extraction/launch, hardware and interactive tests.
+      Signing, distribution and publication remain blocked.

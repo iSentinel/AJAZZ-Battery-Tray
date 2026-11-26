@@ -79,6 +79,24 @@ def review(evidence: bytes, packages: dict[str, Path], originals: dict[str, Path
             'publication_approval': 'NOT_VERIFIED', 'release_admission': 'BLOCKED'}
 
 
+def stage_checksums(result: dict, output: Path) -> None:
+    """Emit ASCII sidecars only for verified local files, never missing Setup."""
+    if result['subject'] != proposal() or result['proposal_sha256'] != subject_hash(proposal()):
+        raise ValueError('unexpected proposal identity')
+    local = result['local_files']
+    if (set(local) != set(proposal()['assets'])
+            or any(local[k] != 'MATCH' for k in PACKAGES)
+            or local['installer'] not in ('MATCH', 'NOT_PROVIDED')):
+        raise ValueError('unexpected local availability')
+    output.mkdir(mode=0o700, exist_ok=False)
+    for edition, row in sorted(result['subject']['assets'].items()):
+        if local[edition] != 'MATCH':
+            continue
+        name = row['filename']
+        with (output / Path(name).with_suffix('.sha256')).open('xb') as stream:
+            stream.write(f"{row['sha256']}  {name}\n".encode('ascii'))
+
+
 def main(argv: list[str] | None = None) -> int:
     """Review private files: exit 0 all match, 1 missing Setup, 2 invalid input."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -89,12 +107,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--license', type=Path, required=True)
     parser.add_argument('--setup', type=Path)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--checksum-dir', type=Path,
+                        help='New directory for sidecars of locally matched packages only')
     args = parser.parse_args(argv)
     try:
         packages = {k: getattr(args, k.replace('-', '_') + '_package') for k in PACKAGES}
         originals = {k: getattr(args, k.replace('-', '_') + '_archive') for k in PACKAGES}
         result = review(read(args.normalized_evidence), packages, originals,
                         read(args.license), args.setup)
+        if args.checksum_dir is not None:
+            if args.output.exists() or args.output.is_symlink():
+                raise ValueError('review output already exists')
+            if args.checksum_dir.resolve() in (args.output.resolve(), *args.output.resolve().parents):
+                raise ValueError('review output must be outside checksum directory')
+            stage_checksums(result, args.checksum_dir)
         write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError,
             NotImplementedError, zipfile.BadZipFile, struct.error, zlib.error):
