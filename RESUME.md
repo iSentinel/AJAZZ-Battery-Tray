@@ -1,3 +1,12 @@
+# Resume — normalized Setup and physical acceptance preflight
+
+Native #305 matched Setup e7195b38 and all 15 decoded inputs.
+Combined preflight now validates the exact hosted evidence ZIP, three
+original f939fea app archives and six baseline forms. Observed
+interactive results require the matching retained Setup. Physical
+and interactive acceptance, final asset selection, distribution,
+signing and publication decisions remain open.
+
 # Resume — reproducible private Setup build and payload replay
 
 Two Windows CI runs matched normalized Setup `e7195b38`. Added a

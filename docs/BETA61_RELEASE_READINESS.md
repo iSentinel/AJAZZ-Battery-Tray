@@ -608,3 +608,33 @@ Setup are approved for testing. Collect the OS build, UAC behavior,
 child token, and install, upgrade and uninstall outcomes. The hosted
 job retains JSON evidence. Signing, distribution and official release
 admission are separately reviewed.
+
+### Combined preflight for the normalized Setup
+
+The native [payload replay and six-case form](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/305#hosted-result)
+match Setup `e7195b38` and the original `f939fea` application.
+Download [original evidence ZIP 15139373707](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45865417976/artifacts/15139373707)
+as `normalized-evidence.zip`. Use the three original application archives
+from the [hardware collection guide](BETA61_HARDWARE_FIELD_KIT.md).
+Place the five hardware forms and `interactive-checklist.json` in one
+folder. The blank interactive form is a member of the evidence ZIP.
+
+```powershell
+python tools/review_beta61_admission.py --normalized-evidence normalized-evidence.zip --windows-archive windows.zip --universal-archive universal.zip --high-sierra-archive high-sierra.zip --checklist-dir checklists --output normalized-admission.json
+```
+
+This mode binds the original application bytes and the expected Setup SHA-256
+in one review. With the blank interactive form, it can report pending
+coverage before the Setup is retained. Supply `--setup PATH` after obtaining
+and retaining the matching private Windows Setup. Any observed interactive
+case requires the matching EXE. The three original app archives remain
+required. The release asset selection, trusted signing, distribution review
+and publication approval remain separate.
+
+The original six-form baseline replay reports 57 hardware and six interactive
+cases at NOT_RUN. The subject SHA-256 is
+`913bda7686afff10036e681471169542175aef67345ab3c8cbb4fbb843144da6`.
+
+Exit 0 reports complete recorded coverage, 1 reports incomplete coverage,
+and 2 reports invalid or mismatched evidence. Every report leaves release
+admission blocked pending the applicable release decisions.

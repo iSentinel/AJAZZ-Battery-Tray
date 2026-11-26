@@ -5,7 +5,8 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from review_beta61_admission import main, report, review
+from review_beta61_admission import main, normalized_form, normalized_identity, report, review
+from verify_interactive_acceptance import template_identity
 from stage_beta61_release import ASSETS, candidate
 from test_stage_beta61_release import encoded, fixture
 from validate_scoped_sbom_schema import digest
@@ -51,6 +52,32 @@ class BetaAdmissionReviewTests(unittest.TestCase):
               patch('review_beta61_admission.archive_identity', return_value=identity)):
             with self.assertRaisesRegex(ValueError, 'interactive binaries differ'):
                 review(b'manifest', archives, Path('checklists'))
+
+    def test_normalized_setup_required_for_observed_case(self) -> None:
+        """Only known Setup bytes can bind a completed interactive case."""
+        actual = b'local normalized setup fixture'
+        identity = {'app_sha256': 'a' * 64, 'setup_sha256': digest(actual)}
+        form = template_identity(identity)
+        self.assertEqual(normalized_form(identity, encoded(form), None)['local_binary_binding'],
+                         'NOT_PROVIDED')
+        form['os_build'] = '10.0.22631'
+        form['cases']['RG01'] = {'status': 'PASS', 'observation': 'Observed fixture install'}
+        with self.assertRaisesRegex(ValueError, 'require the exact local Setup'):
+            normalized_form(identity, encoded(form), None)
+        with TemporaryDirectory() as folder:
+            setup = Path(folder) / 'installer.exe'
+            setup.write_bytes(b'different setup')
+            with self.assertRaisesRegex(ValueError, 'local Setup differs'):
+                normalized_form(identity, encoded(form), setup)
+            setup.write_bytes(actual)
+            result = normalized_form(identity, encoded(form), setup)
+        self.assertEqual(result['local_binary_binding'], 'MATCH')
+        self.assertEqual(result['counts']['PASS'], 1)
+
+    def test_normalized_archive_pin(self) -> None:
+        """Require the exact hosted evidence archive before decoding members."""
+        with self.assertRaisesRegex(ValueError, 'evidence archive differs'):
+            normalized_identity(b'other hosted evidence')
 
     def test_incomplete_exit_and_no_overwrite(self) -> None:
         """Incomplete coverage exits nonzero and an existing report is preserved."""
