@@ -1,3 +1,11 @@
+# Resume — beta.61 dependency evidence
+
+Validated three scoped SBOMs for the pinned `b2c5ce9` assets. NuGet
+VulnerabilityInfo and OSV returned zero matches for the four reviewed
+Windows package versions. See the [readiness record](docs/BETA61_RELEASE_READINESS.md#dependency-evidence-for-the-pinned-beta61-candidate)
+for hashes, feed coverage and remaining installer, macOS OS-build,
+signing, hardware and publication review.
+
 # Resume — beta.61 candidate-bound admission review
 
 The admission review revalidated the real `b2c5ce9` archives and six

@@ -83,6 +83,10 @@ candidate identities, artifact links, field findings and remaining gates.
 - [x] Bind the exact candidate and the six existing checklists to a single
       local admission report. Verified the real `b2c5ce9` baseline and its
       57 hardware and six interactive NOT_RUN results.
+- [x] Validate three scoped CycloneDX SBOMs for the exact `b2c5ce9`
+      portable EXE and Apple ZIPs. Review the four pinned NuGet versions
+      against NuGet VulnerabilityInfo and OSV. Record hashes and scope in
+      the [readiness record](BETA61_RELEASE_READINESS.md#dependency-evidence-for-the-pinned-beta61-candidate).
 - [ ] Review recorded physical and interactive results for this generation.
 - [ ] Resolve compiler/notice distribution and signing disposition.
       Record candidate admission and approval against final hashes.
