@@ -47,6 +47,7 @@ CLI = ("review_beta61_admission", "stage_beta61_release", "compare_release_build
        "verify_interactive_acceptance",
        "verify_hardware_acceptance", "verify_hardware_acceptance_set",
        "verify_unverified_display_acceptance", "stage_consolidated_signature_inputs",
+       "verify_consolidated_signature_observation",
        "build_local_inno674_candidate", "stage_local_inno674_payload",
        "audit_product_sbom_advisories",
        "crosscheck_product_sbom_osv",
