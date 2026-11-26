@@ -7,6 +7,7 @@ import unittest
 
 from verify_interactive_acceptance import CASES, main, template, verify
 from validate_scoped_sbom_schema import digest
+from test_verify_installer_candidate import SOURCE, artifact, bootstrap
 from verify_inno674_setup_records import ALIGNED_SOURCE
 from verify_windows_notice_transport import MANIFEST_SHA
 
@@ -153,6 +154,57 @@ class InteractiveAcceptanceTests(unittest.TestCase):
         data['cases']['RG01']['observation'] = ''
         with self.assertRaises(ValueError):
             verify(raw, encode(data))
+
+
+class HostedInstallerAcceptanceTests(unittest.TestCase):
+    """Bind the normal hosted installer and the binaries used for acceptance."""
+
+    def test_archive_template_and_review(self) -> None:
+        """Validate the ZIP and both executable hashes before review output."""
+        raw = artifact({'app_sha256': digest(b'portable app')})
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive, plan = root / 'setup.zip', root / 'checklist.json'
+            archive.write_bytes(raw)
+            args = archive_args(archive, raw)
+            self.assertEqual(main(args + ['--output', str(plan)]), 0)
+            checklist = json.loads(plan.read_text())
+            self.assertEqual(checklist['candidate']['installer_profile'], 'ci-beta61')
+            self.assertEqual(checklist['candidate']['archive_sha256'], digest(raw))
+            self.assertEqual(set(x['status'] for x in checklist['cases'].values()), {'NOT_RUN'})
+            out = root / 'review.json'
+            review = args + ['--checklist', str(plan), '--output', str(out)]
+            self.assertEqual(main(review), 2)
+            self.assertFalse(out.exists())
+            setup, app = root / 'setup.exe', root / 'app.exe'
+            setup.write_bytes(bootstrap())
+            app.write_bytes(b'portable app')
+            self.assertEqual(main(review + ['--setup', str(setup), '--app', str(app)]), 0)
+            result = json.loads(out.read_text())
+            self.assertEqual(result['local_binary_binding'], 'MATCH')
+            self.assertEqual(result['release_admission'], 'NOT_VERIFIED')
+
+    def test_rejects_mismatched_archive_or_binaries(self) -> None:
+        """Reject another source, modified archive and an unrelated app."""
+        raw = artifact()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive, out = root / 'setup.zip', root / 'checklist.json'
+            archive.write_bytes(raw)
+            args = archive_args(archive, raw)
+            self.assertEqual(main(args + ['--source-sha', 'c' * 40, '--output', str(out)]), 2)
+            self.assertEqual(main(args + ['--archive-sha256', 'e' * 64, '--output', str(out)]), 2)
+            setup, app = root / 'setup.exe', root / 'app.exe'
+            setup.write_bytes(bootstrap())
+            app.write_bytes(b'wrong app')
+            self.assertEqual(main(args + ['--setup', str(setup), '--app', str(app),
+                                          '--output', str(out)]), 2)
+            self.assertFalse(out.exists())
+
+
+def archive_args(path: Path, raw: bytes) -> list[str]:
+    """Return shared command arguments for the synthetic hosted fixture."""
+    return ['--ci-archive', str(path), '--archive-sha256', digest(raw), '--source-sha', SOURCE]
 
 
 if __name__ == '__main__':

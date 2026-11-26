@@ -103,6 +103,21 @@ class IndependentBleMonitorTests(unittest.TestCase):
         self.assertEqual(read_path.count('await '), read_path.count('.ConfigureAwait(false)'))
         self.assertEqual(read_path.count('.AsTask().ConfigureAwait(false)'), 4)
 
+    def test_usb_alert_sample_age(self) -> None:
+        """USB history retains sample time but only current samples can mutate alerts."""
+        code = (ROOT / 'src/AjazzBatteryTray/ReceiverMonitor.cs').read_text()
+        self.assertIn('state.MeasuredAt = item.MeasuredAt;', code)
+        self.assertNotIn('item.MeasuredAt ?? now', code)
+        self.assertIn('state.MeasuredAt is not { } measured || measured > now', code)
+        self.assertIn('Percent = null, UnverifiedPercent = null', code)
+        self.assertIn('Record(state, settings, notifier, bluetoothEnabled, measured, now);', code)
+        record = code.split('private static void Record(', 1)[1].split(
+            'internal static DeviceDashboardState Dashboard(', 1)[0]
+        self.assertIn('state.History.Record(measured, percent, state.Present);', record)
+        self.assertIn('ApexDisplayPolicy.AlertPercent(', record)
+        self.assertLess(record.index('if (fresh is not int level) return;'),
+                        record.index('state.Alerts.Evaluate('))
+
     def test_explicit_links_project_single_icon(self) -> None:
         """Keep link consent explicit, independent telemetry and local preferences."""
         root = ROOT / 'src/AjazzBatteryTray'

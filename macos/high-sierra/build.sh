@@ -48,6 +48,6 @@ if [[ "$(uname -m)" == "x86_64" ]]; then
 else
   echo "SKIP: executable smoke test needs Intel runner"
 fi
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+bash "$ROOT/macos/package-app.sh" "$APP" "$ZIP"
 (cd "$ROOT/dist" && shasum -a 256 "$(basename "$ZIP")"   > AJAZZBatteryTray-macOS-HighSierra-Intel.sha256)
 echo "PASS: $ZIP"

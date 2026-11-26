@@ -1,5 +1,5 @@
 import Foundation
-import AppKit
+import Darwin
 
 /// Saves battery observations to a local CSV without serial numbers.
 final class BatteryHistoryWriter {
@@ -55,14 +55,20 @@ final class BatteryHistoryWriter {
             Date(timeIntervalSince1970: floor(time.timeIntervalSince1970)))
         let row = "\(timestamp),\(value),\(state)\n"
         do {
-            if !FileManager.default.fileExists(atPath: file.path) {
-                try "utc_timestamp,percent,state\n".write(
-                    to: file, atomically: true, encoding: .utf8)
-            }
-            let handle = try FileHandle(forWritingTo: file)
+            let fd = open(file.path, O_RDWR | O_CREAT | O_APPEND, 0o600)
+            guard fd >= 0 else { return false }
+            let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
             defer { try? handle.close() }
-            _ = try handle.seekToEnd()
-            try handle.write(contentsOf: Data(row.utf8))
+            let size = try handle.seekToEnd()
+            var prefix = ""
+            if size == 0 {
+                prefix = "utc_timestamp,percent,state\n"
+            } else {
+                try handle.seek(toOffset: size - 1)
+                let last = try handle.read(upToCount: 1)?.first
+                if last != 10 && last != 13 { prefix = "\n" }
+            }
+            try handle.write(contentsOf: Data((prefix + row).utf8))
             return true
         } catch {
             return false
@@ -74,8 +80,9 @@ final class BatteryHistoryWriter {
             return
         }
         let cutoff = now.addingTimeInterval(-30 * 86400)
-        let entries = text.split(separator: "\n").filter { row in
-            guard let observation = BatteryHistoryReader.parse(String(row)) else {
+        let decoder = HistoryRowDecoder()
+        let entries = text.split(whereSeparator: \.isNewline).filter { row in
+            guard let observation = decoder.parse(String(row)) else {
                 return false
             }
             return observation.timestamp >= cutoff &&

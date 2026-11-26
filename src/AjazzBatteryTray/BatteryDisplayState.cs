@@ -47,6 +47,12 @@ public static class ApexDisplayPolicy
             IsCurrent(known, present, scheduled, measured, now) && percent is >= 1 and <= 100
                 ? percent : null, measured, scheduled: scheduled);
 
+    /// <summary>Only a current, sampled, verified USB reading may mutate alert state.</summary>
+    public static int? AlertPercent(bool known, bool present, bool scheduled,
+        int? percent, DateTimeOffset? measured, DateTimeOffset now)
+        => !scheduled && IsCurrent(known, present, false, measured, now) &&
+            percent is >= 1 and <= 100 ? percent : null;
+
     /// <summary>Prefer fresh over retained scheduled readings, then unknown.</summary>
     public static int SelectionRank(DeviceDashboardState state)
         => state.Percent is >= 1 and <= 100

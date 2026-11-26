@@ -37,6 +37,6 @@ codesign --verify --verbose "$APP"
 "$APP/Contents/MacOS/AJAZZBatteryTray" --help
 AJAZZ_TEST_CORPUS="$ROOT/tests/fixtures/apex-f7-v1.csv" "$APP/Contents/MacOS/AJAZZBatteryTray" --self-test
 "$APP/Contents/MacOS/AJAZZBatteryTray" --self-test-bounded-poll
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$OUT"
+bash "$ROOT/macos/package-app.sh" "$APP" "$OUT"
 shasum -a 256 "$OUT" | sed "s|$ROOT/dist/||" > "$ROOT/dist/AJAZZBatteryTray-macOS-universal.sha256"
 echo "PASS: $OUT"
