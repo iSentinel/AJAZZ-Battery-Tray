@@ -2590,3 +2590,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI for runtime binding; remaining UD scenarios, independent
       charge reference, physical and interactive acceptance.
       Pinned release candidate assets and publication hold unchanged.
+
+### Consolidated successor archive review
+
+- [x] #292 exact 4/4 CI merged 5cd37a6 after tested-tree equality.
+- [x] #99 bf4c7c6 exact 10/10 CI; all four native build job logs
+      identify f939fea checkout with equal integration tree.
+- [x] Retrieve four original CI ZIPs, verify archive and asset hashes,
+      installer recorded app identity, Apple companion checksums
+      and four Windows source icons; staging dry-run PASS.
+- [x] Separate manifest and six blank forms; admission review
+      57 hardware and six interactive NOT_RUN, release BLOCKED.
+- [ ] Requalify dependency and installer evidence for chosen final
+      asset set; hardware, interactive, signing, distribution and
+      publication approval remain open. Do not replace pinned assets.

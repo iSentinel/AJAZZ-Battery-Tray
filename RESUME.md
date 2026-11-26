@@ -1,3 +1,12 @@
+# Resume — consolidated successor archive review
+
+#292 exact 4/4 CI merged 5cd37a6. #99 bf4c7c6 passed 10/10;
+all four native build logs identify f939fea checkout, equal tree.
+Original CI archives and asset identities verified; staging dry-run
+PASS. Separate blank admission review: 57 hardware and six interactive
+NOT_RUN, release BLOCKED. Pinned b2c5ce9 and #290 bytes unchanged.
+Requalify dependency and installer evidence for the chosen asset set.
+
 # Resume — successor integration and runtime binding
 
 #290 exact 7/7 merged 840f09d; #291 exact 5/5 merged bf4c7c6
