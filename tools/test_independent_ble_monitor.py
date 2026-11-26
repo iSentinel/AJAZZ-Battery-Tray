@@ -124,7 +124,7 @@ class IndependentBleMonitorTests(unittest.TestCase):
         code = (root / 'TrayAppContext.cs').read_text()
         dashboard = code.split('private void RefreshDashboard(', 1)[1].split(
             'private void PublishLocalSnapshot(', 1)[0]
-        self.assertIn('UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now)', dashboard)
+        self.assertIn('UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now, _settings.ShowUnverifiedUsbCharge)', dashboard)
         inputs = code.split('private List<LocalBatterySnapshot.Input> CollectSnapshotInputs(', 1)[1]
         inputs = inputs.split('return inputs;', 1)[0]
         self.assertIn('ReceiverMonitor.Dashboard(receiver, DateTimeOffset.UtcNow)', inputs)
@@ -135,6 +135,24 @@ class IndependentBleMonitorTests(unittest.TestCase):
             'internal static DeviceDashboardState Dashboard(', 1)[0]
         self.assertNotIn('Unverified', record)
         self.assertIn('int? percent = state.Reading.Percent;', record)
+
+    def test_unverified_display_opt_in_wiring(self) -> None:
+        """Keep local display opt-in on each UI path and out of diagnostics."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('ReceiverMonitor.Unverified(receiver, usbNow, _settings.ShowUnverifiedUsbCharge)', code)
+        self.assertIn('_settings.ShowUnverifiedUsbCharge, _settings.MouseTrayIcon,', code)
+        self.assertEqual(code.count('state => EditDeviceInterval(state.Key, state.DisplayLabel),'
+                                    ' _settings.ShowUnverifiedUsbCharge);'), 2)
+        toggle = code.split('private ToolStripMenuItem BuildUnverifiedUsbDisplayToggle()', 1)[1]
+        toggle = toggle.split('private ToolStripMenuItem BuildUpdateSettingsMenu()', 1)[0]
+        self.assertIn('MessageBoxDefaultButton.Button2', toggle)
+        self.assertIn('_settings.ShowUnverifiedUsbCharge = previous;', toggle)
+        self.assertIn('RefreshDeviceDisplay(publishSnapshot: false);', toggle)
+        monitor = (root / 'ReceiverMonitor.cs').read_text()
+        self.assertIn('ApexDisplayPolicy.UnverifiedForDisplay(showUnverified,', monitor)
+        self.assertIn('Unverified(pair.Value, now, showUnverified)', monitor)
+        self.assertNotIn('ShowUnverifiedUsbCharge', (root / 'PreferencesBackup.cs').read_text())
 
     def test_explicit_links_project_single_icon(self) -> None:
         """Keep link consent explicit, independent telemetry and local preferences."""

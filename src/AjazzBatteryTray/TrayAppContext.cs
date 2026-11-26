@@ -141,11 +141,11 @@ public sealed class TrayAppContext : ApplicationContext
         _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
             ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
             state => EditDeviceAlerts(state.Key, state.DisplayLabel),
-            state => EditDeviceInterval(state.Key, state.DisplayLabel));
+            state => EditDeviceInterval(state.Key, state.DisplayLabel), _settings.ShowUnverifiedUsbCharge);
         _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
             ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
             state => EditDeviceAlerts(state.Key, state.DisplayLabel),
-            state => EditDeviceInterval(state.Key, state.DisplayLabel));
+            state => EditDeviceInterval(state.Key, state.DisplayLabel), _settings.ShowUnverifiedUsbCharge);
         menu.Items.Add(_devicesMenu);
         menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
@@ -332,7 +332,7 @@ public sealed class TrayAppContext : ApplicationContext
                 () => EditTrayColor(receiver.Key, receiver.DisplayLabel),
                 () => EditDeviceAlerts(receiver.Key, receiver.DisplayLabel),
                 () => EditDeviceInterval(receiver.Key, receiver.DisplayLabel),
-                UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now)));
+                UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now, _settings.ShowUnverifiedUsbCharge)));
         }
         if (entries.Count == 0)
         {
@@ -709,6 +709,7 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(UiText.Get("Save selected icon..."), null, (_, _) => ExportApplicationIcon());
         menu.DropDownItems.Add(BuildAppearanceMenu(false));
         menu.DropDownItems.Add(BuildMouseStyleMenu());
+        menu.DropDownItems.Add(BuildUnverifiedUsbDisplayToggle());
         menu.DropDownItems.Add(BuildNotificationsMenu());
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
@@ -827,6 +828,30 @@ public sealed class TrayAppContext : ApplicationContext
             }
             item.Checked = _settings.MouseTrayIcon;
             RefreshDeviceDisplay();
+        };
+        return item;
+    }
+
+    private ToolStripMenuItem BuildUnverifiedUsbDisplayToggle()
+    {
+        var item = new ToolStripMenuItem(UiText.Get("Show unverified USB charge (experimental)"))
+            { Checked = _settings.ShowUnverifiedUsbCharge };
+        item.Click += (_, _) =>
+        {
+            if (_closing) return;
+            bool previous = _settings.ShowUnverifiedUsbCharge;
+            if (!previous && MessageBox.Show(UiText.Get(
+                    "Unverified USB values may be stale or inaccurate. Show them with a question mark?"),
+                    UiText.Get("Settings"), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+            _settings.ShowUnverifiedUsbCharge = !previous;
+            if (!_settings.Save())
+            {
+                _settings.ShowUnverifiedUsbCharge = previous;
+                MessageBox.Show(UiText.Get("Unable to save device preference."));
+            }
+            item.Checked = _settings.ShowUnverifiedUsbCharge;
+            RefreshDeviceDisplay(publishSnapshot: false);
         };
         return item;
     }
@@ -2041,7 +2066,7 @@ public sealed class TrayAppContext : ApplicationContext
             value += " (" + UiText.Get("Last scheduled reading") + ")";
         bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null;
         int? unverified = unknownUsb && receiver is not null && reading.PresenceKnown
-            ? ReceiverMonitor.Unverified(receiver, usbNow) : null;
+            ? ReceiverMonitor.Unverified(receiver, usbNow, _settings.ShowUnverifiedUsbCharge) : null;
         if (unknownUsb)
         {
             var usb = receiver?.Reading ?? reading;
@@ -2067,7 +2092,7 @@ public sealed class TrayAppContext : ApplicationContext
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
                 bluetoothPrimary || linkedPrimary is not null ? null : receiver?.Key, hiddenUsb, DeviceColor,
                 BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null),
-                _settings.MouseTrayIcon, linked.Where(x => x != linkedPrimary).Select(x =>
+                _settings.ShowUnverifiedUsbCharge, _settings.MouseTrayIcon, linked.Where(x => x != linkedPrimary).Select(x =>
                     (x.UsbKey, x.Name, x.Display.Percent, x.Display.Cached,
                     x.Display.Percent is null ? "2.4 GHz / Bluetooth" : x.Display.Bluetooth ? "Bluetooth" : "2.4 GHz")).ToArray());
         UpdateBluetoothStatus();

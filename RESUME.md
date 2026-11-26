@@ -1,3 +1,12 @@
+# Resume — successor experimental USB display preference
+
+#289 exact 4/4 CI merged fca569a. Separate successor branch adds
+local default-off ShowUnverifiedUsbCharge with explicit confirmation,
+save rollback and EN/RU/UK strings. All standalone USB display
+paths gated; no diagnostics, history, alerts or API changes.
+Pinned b2c5ce9 candidate unchanged. Hosted CI and visual/physical
+acceptance of successor remain open. Release hold unchanged.
+
 # Resume — pinned beta.61 unverified presentation boundary
 
 #288 exact 2/2 CI merged cffcb01. The pinned b2c5ce9 release assets

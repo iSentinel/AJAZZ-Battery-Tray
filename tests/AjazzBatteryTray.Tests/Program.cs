@@ -820,6 +820,26 @@ Check("Appearance preferences round trip",
         { ApplicationIconColor = "blue", DefaultTrayColor = "white", MouseTrayIcon = false }))
         is { ApplicationIconColor: "blue", DefaultTrayColor: "white", MouseTrayIcon: false });
 
+Check("Unverified USB display defaults off for new and legacy preferences",
+    !new AppSettings().ShowUnverifiedUsbCharge &&
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>("{}") is { ShowUnverifiedUsbCharge: false });
+Check("Unverified USB local opt-in survives settings round trip",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(new AppSettings { ShowUnverifiedUsbCharge = true }))
+        is { ShowUnverifiedUsbCharge: true });
+Check("Unverified USB display opt-in does not alter portable backup",
+    !System.Text.Encoding.UTF8.GetString(PreferencesBackup.Capture(
+        new AppSettings { ShowUnverifiedUsbCharge = true }).Export()).Contains("ShowUnverifiedUsbCharge"));
+Check("Unverified USB display requires opt-in and valid ordinary sample",
+    ApexDisplayPolicy.UnverifiedForDisplay(false, true, true, false, 37,
+        scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.UnverifiedForDisplay(true, true, true, false, 37,
+        scheduleMeasurement, scheduleMeasurement) == 37 &&
+    ApexDisplayPolicy.UnverifiedForDisplay(true, true, true, true, 37,
+        scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.UnverifiedForDisplay(true, true, true, false, 37,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(6)) is null);
+
 // Tray visibility must not alter receiver measurement identity.
 string trayKeyA = new string('A', 64);
 string trayKeyB = new string('B', 64);

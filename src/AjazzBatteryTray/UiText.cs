@@ -81,6 +81,12 @@ public static class UiText
         ["Refresh now"] = ("Обновить сейчас", "Оновити зараз"),
         ["AJAZZ receivers"] = ("Приёмники AJAZZ", "Приймачі AJAZZ"),
         ["Legacy battery history..."] = ("Старая история заряда...", "Стара історія заряду..."),
+        ["Show unverified USB charge (experimental)"] =
+            ("Показывать неподтверждённый заряд USB (экспериментально)",
+             "Показувати непідтверджений заряд USB (експериментально)"),
+        ["Unverified USB values may be stale or inaccurate. Show them with a question mark?"] =
+            ("Неподтверждённые значения USB могут быть устаревшими или неточными. Показывать их со знаком вопроса?",
+             "Непідтверджені значення USB можуть бути застарілими або неточними. Показувати їх зі знаком питання?"),
         ["Separate tray icons"] = ("Отдельные иконки в трее", "Окремі значки в треї"),
         ["Battery history..."] = ("История заряда...", "Історія заряду..."),
         ["Check paired Bluetooth battery..."] = ("Проверить батарею Bluetooth...", "Перевірити батарею Bluetooth..."),

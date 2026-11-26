@@ -21,6 +21,7 @@ public sealed class AppSettings
     public string DefaultTrayColor { get; set; } = TrayColorRules.Default;
     public bool MouseTrayIcon { get; set; } = true;
     public bool MultipleTrayIcons { get; set; } = true;
+    public bool ShowUnverifiedUsbCharge { get; set; } = false;
     // Local consent only; no raw endpoint IDs, names or saved battery levels.
     public HashSet<string> ConsentedBleEndpoints { get; set; } = new(StringComparer.Ordinal);
     public Dictionary<string, string> BleUsbLinks { get; set; } = new(StringComparer.Ordinal);

@@ -78,6 +78,11 @@ public static class ApexDisplayPolicy
     public static string DiagnosticSample(DateTimeOffset? measured, bool scheduled)
         => $"USB sample UTC: {measured?.ToUniversalTime().ToString("O") ?? "never"}; scheduled: {scheduled}";
 
+    /// <summary>Apply local opt-in to presentation only; diagnostics remain independent.</summary>
+    public static int? UnverifiedForDisplay(bool enabled, bool known, bool present,
+        bool scheduled, int? field, DateTimeOffset? measured, DateTimeOffset now)
+        => enabled ? Unverified(known, present, scheduled, field, measured, now) : null;
+
     public static int? Unverified(bool known, bool present, bool scheduled,
         int? field, DateTimeOffset? measured, DateTimeOffset now)
         => !scheduled && IsCurrent(known, present, false, measured, now) &&

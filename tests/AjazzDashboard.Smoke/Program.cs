@@ -150,13 +150,19 @@ internal static class Program
         var at = DateTimeOffset.UtcNow;
         var observation = ApexDisplayPolicy.Dashboard("Receiver", true, true, false, null, at, at);
         var entry = new DeviceDashboardForm.Entry(observation, Key: "usb",
-            UnverifiedPercent: ApexDisplayPolicy.Unverified(true, true, false, 37, at, at));
+            UnverifiedPercent: ApexDisplayPolicy.UnverifiedForDisplay(true, true, true, false, 37, at, at));
         var grid = form.Controls.OfType<TableLayoutPanel>().Single().Controls.OfType<DataGridView>().Single();
         form.SetEntries(new[] { entry });
         var row = grid.Rows[0];
         form.SetEntries(new[] { entry }, skipUnchanged: true);
         Require(ReferenceEquals(row, grid.Rows[0]), "Unchanged unverified row recreated");
         Require((string?)row.Cells["Battery"].Value == "37?", "Unverified field not marked");
+        var disabled = entry with { UnverifiedPercent = ApexDisplayPolicy.UnverifiedForDisplay(
+            false, true, true, false, 37, at, at) };
+        form.SetEntries(new[] { disabled }, skipUnchanged: true);
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "—", "Opt-out must hide field");
+        form.SetEntries(new[] { entry }, skipUnchanged: true);
+        Require((string?)grid.Rows[0].Cells["Battery"].Value == "37?", "Opt-in must restore current field");
         var expired = entry with { UnverifiedPercent = ApexDisplayPolicy.Unverified(
             true, true, false, 37, at, at.AddMinutes(6)) };
         form.SetEntries(new[] { expired }, skipUnchanged: true);

@@ -2543,3 +2543,21 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI for added tests and physical acceptance on the exact
       pinned candidate. Independent charge reference remains required.
       Signing, distribution and publication hold unchanged.
+
+### Successor Windows experimental USB display preference
+
+- [x] #289 exact 4/4 CI merged fca569a after tested-tree equality.
+- [x] Add local ShowUnverifiedUsbCharge preference, false for new and
+      legacy settings. Require explicit confirmation before enabling;
+      persist locally, roll back on save failure, retain existing gray
+      question-mark presentation. EN/RU/UK labels and warning.
+- [x] Gate main and extra tray icons, receiver menu and dashboard on
+      this preference; keep diagnostics independent and preserve
+      verified precedence and ordinary-sample expiry. Toggle only
+      presentation; no HID request, history, alert or API publication.
+      Exclude the opt-in from portable preferences backup.
+- [x] Add source wiring regression, four native synthetic assertions
+      and extend dashboard smoke for opt-out/opt-in transitions.
+- [ ] Hosted CI and physical/visual acceptance of successor build.
+      Do not substitute successor binaries for pinned b2c5ce9;
+      admission of either candidate remains separately gated.
