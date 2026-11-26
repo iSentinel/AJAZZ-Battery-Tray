@@ -1,3 +1,12 @@
+# Resume — reproducible private Setup build and payload replay
+
+Two Windows CI runs matched normalized Setup `e7195b38`. Added a
+private Windows reproducible build path against the pinned f939fea
+application and a native payload replay. The workflow creates an
+interactive form bound to exact Setup and app bytes and retains
+JSON. Hosted result, private executable retention and operator
+acceptance remain open. Publication is held.
+
 # Resume — exact original app notice-bearing hosted setup evidence
 
 #301 exact 5/5 merged e51a31b. Original f939fea app compiled

@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/test-consolidated-notice-setup.yml'
       - 'tools/test_consolidated_notice_setup.py'
+      - 'tools/build_local_inno674_candidate.py'
+      - 'tools/test_build_local_inno674_candidate.py'
   workflow_dispatch:
 
 permissions:
@@ -332,6 +334,73 @@ jobs:
               throw 'Upgrade notice evidence differs from staged notices'
             }
           }
+      - name: Check out private build tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: qualification-tools
+          persist-credentials: false
+      - name: Independently validate the scoped normalized Setup and local build path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          $noticeRoot = Join-Path $root 'staged'
+          $private = Join-Path $root 'private-build-replay'
+          New-Item -ItemType Directory -Path $private | Out-Null
+          $builder = 'qualification-tools/tools/build_local_inno674_candidate.py'
+          python $builder --source (Get-Location).Path --compiler $compiler --notices $noticeRoot --output $private --reproducible --dry-run
+          if ($LASTEXITCODE -ne 0 -or @(Get-ChildItem -LiteralPath $private).Count) {
+            throw 'Private build preflight failed or wrote files'
+          }
+          python $builder --source (Get-Location).Path --compiler $compiler --notices $noticeRoot --output $private --reproducible --compile
+          if ($LASTEXITCODE -ne 0) { throw 'Private build replay failed' }
+          @'
+          from pathlib import Path
+          import sys
+
+          sys.path.insert(0, "tools")
+          from compare_inno_loader import digest
+          from run_offline_qa import write_json
+          from validate_scoped_sbom_schema import document
+          from verify_inno674_solid_payload import inventory, locations, script_header
+          from verify_inno_inner_engine import recover
+          from verify_inno_setup_data import decode_setup0
+          from verify_inno_solid import file_hashes
+          from verify_windowsdesktop_provenance import read_local
+
+          root, private = map(Path, sys.argv[1:])
+          basename = "AJAZZBatteryTray-Setup-win-x64.exe"
+          primary = read_local(root / basename)
+          repeat = read_local(private / basename)
+          app = read_local(Path("dist/app/AJAZZBatteryTray.exe"))
+          sha = digest(primary)
+          records = [document(read_local(path / "local-build-evidence.json")) for path in (root, private)]
+          if (primary != repeat or records[0] != records[1] or
+                  records[0]["setup_sha256"] != sha or records[0]["app_sha256"] != digest(app)):
+              raise ValueError("Private build identity differs from normalized primary")
+          _, offsets = recover(primary)
+          data_start, records_start, engine_start = (offsets[key] for key in
+              ("offset1", "offset0", "engine_offset"))
+          first, second, framing = decode_setup0(primary[records_start:engine_start])
+          payload = primary[data_start:records_start]
+          files = inventory(app, Path("src/AjazzBatteryTray/Assets"), root / "staged")
+          locations(second, payload, files)
+          write_json(root / "candidate-payload-replay.json", {
+              "schema": "normalized-notice-setup-payload-v1",
+              "source_sha": "f939fea7fb422aa588649138d29a750ce62cd22a",
+              "setup_sha256": sha, "app_sha256": digest(app),
+              "private_build_match": True, "files": file_hashes(payload, files),
+              "script": script_header(first), "framing": framing,
+              "installer_bytes_retained": False, "release_admission": "NOT_VERIFIED",
+          })
+          '@ | python - $root $private
+          if ($LASTEXITCODE -ne 0) { throw 'Exact payload verification failed' }
+          $app = 'dist/app/AJAZZBatteryTray.exe'
+          $setup = Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe'
+          python tools/verify_interactive_acceptance.py --candidate (Join-Path $root 'local-build-evidence.json') --setup $setup --app $app --output (Join-Path $root 'interactive-checklist.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Exact interactive checklist creation failed' }
       - name: Retain exact candidate evidence only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -347,6 +416,8 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/production-shape.json
             ${{ runner.temp }}/ajazz-notice-probe/exercised-uninstaller.json
             ${{ runner.temp }}/ajazz-notice-probe/setup-repeat-observation.json
+            ${{ runner.temp }}/ajazz-notice-probe/candidate-payload-replay.json
+            ${{ runner.temp }}/ajazz-notice-probe/interactive-checklist.json
             ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-lifecycle.json
             ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-notices.json
             ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json

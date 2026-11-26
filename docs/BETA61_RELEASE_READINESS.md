@@ -562,3 +562,49 @@ acceptance for these bytes. A further authorized native qualification
 must bind its own exact setup hash, and an authorized local build
 requires its own binary and acceptance evidence. No substitution of
 the original release assets or publication.
+
+### Reproducible Windows Setup for private interactive acceptance
+
+Runs [45862047435](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45862047435)
+and [45862619971](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45862619971)
+produced the same normalized Setup across the two Windows runners.
+The exact Setup SHA-256 is
+`e7195b3817e919eeff47606c036089a2e9fabc44b2238eae466918b992da90a8`.
+Changing just the app's modification time changed the loader and file
+location table hashes. The compressed payload, setup records and inner
+engine matched. The original hosted evidence is recorded in
+[PR #304](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/304#independent-hosted-repeat).
+
+On a reviewed private Windows build environment, keep separate checkouts
+for the qualification tools and the exact application source
+`f939fea7fb422aa588649138d29a750ce62cd22a`.
+Prepare the verified 6.7.4 portable compiler and the staged notice tree
+as described in the [distribution review](CANDIDATE_DISTRIBUTION_REVIEW.md).
+Use the original [portable CI ZIP](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45805755082/artifacts/15110510075).
+From the qualification tools checkout, with these inputs and a new empty
+output directory, run:
+
+```powershell
+python tools/stage_local_inno674_payload.py --source C:/ajazz/source --source-sha f939fea7fb422aa588649138d29a750ce62cd22a --archive C:/ajazz/portable.zip --archive-sha256 e06bda2f95725a37f206cfbaffe6f3b333c735ea0a8e580fe092ccbfed340302
+python tools/build_local_inno674_candidate.py --source C:/ajazz/source --compiler C:/ajazz/inno674 --notices C:/ajazz/notices --output C:/ajazz/candidate --reproducible --dry-run
+python tools/build_local_inno674_candidate.py --source C:/ajazz/source --compiler C:/ajazz/inno674 --notices C:/ajazz/notices --output C:/ajazz/candidate --reproducible --compile
+Get-FileHash -LiteralPath C:/ajazz/candidate/AJAZZBatteryTray-Setup-win-x64.exe -Algorithm SHA256
+```
+
+The new mode temporarily applies the fixed UTC timestamp to the
+application, icons, notices and notice manifest during compilation.
+The exact input bytes remain pinned. Require equality with the hosted
+Setup SHA-256 before transferring existing qualification to a local
+copy. A different hash requires separately scoped qualification.
+
+To create the six-case local form, bind that Setup and the reviewed app:
+
+```powershell
+python tools/verify_interactive_acceptance.py --candidate C:/ajazz/candidate/local-build-evidence.json --setup C:/ajazz/candidate/AJAZZBatteryTray-Setup-win-x64.exe --app C:/ajazz/source/dist/app/AJAZZBatteryTray.exe --output C:/ajazz/candidate/interactive-checklist.json
+```
+
+Use the interactive case procedure when the environment and actual
+Setup are approved for testing. Collect the OS build, UAC behavior,
+child token, and install, upgrade and uninstall outcomes. The hosted
+job retains JSON evidence. Signing, distribution and official release
+admission are separately reviewed.

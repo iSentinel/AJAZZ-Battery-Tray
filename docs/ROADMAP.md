@@ -2762,6 +2762,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [x] Apply the reviewed UTC input timestamp policy to the 6.7.4
       qualification path and collect same-run normalized repeats
       plus a control that varies only the app file timestamp.
-- [ ] Verify repeat results across independent runners before
-      choosing the final reproducible Setup. Interactive and physical
-      acceptance, signing, distribution and publication remain open.
+- [x] Verify two independent Windows runs for normalized Setup
+      `e7195b38`. [Both archived results](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/304#independent-hosted-repeat).
+- [x] Add a reproducible private Windows build path and a hosted
+      independent payload replay with a byte-bound six-case form.
+      [Build and acceptance commands](BETA61_RELEASE_READINESS.md#reproducible-windows-setup-for-private-interactive-acceptance).
+- [ ] Review native payload replay and retain the Setup on an
+      authorized private Windows system or approved channel.
+      Interactive and physical acceptance, signing, distribution
+      and publication remain open.
