@@ -2630,3 +2630,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI, actual interactive/hardware acceptance, native
       signature observation and distribution disposition. Release
       hold unchanged.
+
+### Consolidated successor exercised uninstaller and native signature scope
+
+- [x] #295 exact 4/4 CI merged 0295836 after tested-tree equality.
+- [x] Retrieve exact exercised uninstaller archive, bind candidate
+      and reported uninstall smoke; verify scoped 6.7.1 engine,
+      uninstall mode and message framing.
+- [x] Stage the three exact original EXEs using pinned archives
+      and file hashes; two synthetic tests and actual replay PASS.
+- [x] Add read-only Windows CI Authenticode observation, retaining
+      JSON only and never executing the candidate files.
+- [ ] Review native CI observation and remaining trust, distribution,
+      hardware and interactive acceptance gates. Release blocked.

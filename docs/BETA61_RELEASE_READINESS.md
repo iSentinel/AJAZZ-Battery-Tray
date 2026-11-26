@@ -400,3 +400,36 @@ SmartScreen, or the actual generated uninstaller's signature.
 No native signature check or signing operation was performed.
 Interactive acceptance, legal distribution and release admission
 remain open; no pinned asset was replaced.
+
+### Consolidated successor exercised uninstaller and native signature observation
+
+The original upgrade job 45805754709 (actual checkout f939fea)
+retained artifact 15109731177. Its outer SHA-256
+98177de43879038203f36a1a4bbcf0b0f6d6ab10166813e124517d8d3677d9ce
+matches the downloaded archive. The original candidate ZIP and
+manifest bind source, setup, installed app, and the 4520194-byte
+uninstaller (SHA-256
+9548d6786c0ae2531a4e4bcd183db9805bd88b7c98571fd033f1b4f05967da65).
+The retained beta60_to_beta61 uninstall smoke reports PASS;
+this is hosted evidence, not interactive desktop acceptance.
+Binding evidence SHA-256:
+d443bb39d3c5358fed5c1c7cbe3a62f298581177eadcf1251562f1c9b99fc876.
+
+The independent 6.7.1 template attribution passed: recovered engine
+non-resource bytes match, uninstaller PE matches the recovered engine
+apart from the documented uninstall mode marker, AppId hash and
+message framing match. The 281-message structure and CRC match;
+message semantics and engine resource provenance remain unverified
+in this replay. Attribution evidence SHA-256:
+8083b2a9ea7a3925f01c65bba418f669f6842c32d94ea53723261ff914b2903a.
+Static PE embedded certificate tables are absent for all three EXEs.
+
+The dedicated Windows signature observation workflow retrieves
+the three exact original CI archives by pinned artifact IDs, checks
+all archive and binary hashes, stages into a fresh directory, and
+calls Get-AuthenticodeSignature on the three EXEs without executing
+them. Only JSON observations are retained. Actual archive staging
+passed locally. Native observation is pending CI; a successful
+workflow means evidence collection, not signing or trust approval.
+Expired original artifacts must fail rather than trigger a rebuild.
+Publication remains blocked.
