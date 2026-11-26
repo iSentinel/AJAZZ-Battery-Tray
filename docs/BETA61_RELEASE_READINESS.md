@@ -93,6 +93,17 @@ records changed assets or packaging. Exit 2 indicates missing or invalid
 inputs. The result is scoped to the inspected archives. Release admission,
 trusted signing, distribution and physical acceptance have their own gates.
 
+### Windows Setup timestamp difference
+
+Two Inno 6.7.1 upgrade-validated runs from `10f9b4d` produced different
+setup bytes with identical embedded app hashes. The recovered Setup.0
+header was identical. All five decoded file locations differed only in
+the file modification timestamp. The Inno 6.7.1 build wrapper now uses
+a fixed timestamp for the app and four icon inputs during compilation
+and restores their original times afterward. This scoped change leaves
+the separately pinned Inno 6.7.4 notice qualification source intact.
+Check native installer repeats before accepting the change.
+
 ## Remaining release gates
 
 | Gate | Required evidence |
