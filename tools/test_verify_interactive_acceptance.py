@@ -7,6 +7,8 @@ import unittest
 
 from verify_interactive_acceptance import CASES, main, template, verify
 from validate_scoped_sbom_schema import digest
+from verify_inno674_setup_records import ALIGNED_SOURCE
+from verify_windows_notice_transport import MANIFEST_SHA
 
 
 def encode(row: dict) -> bytes:
@@ -20,6 +22,18 @@ def fixture() -> bytes:
                    'scoped_native_evidence': 'MATCH', 'engine_version': '6.7.4',
                    'release_admission': 'NOT_VERIFIED', 'source_sha': 'a' * 40,
                    'setup_sha256': 'b' * 64, 'app_sha256': 'c' * 64})
+
+
+def local_fixture() -> dict:
+    """Construct a private synthetic build record, with no lifecycle qualification."""
+    return {'schema': 'local-inno674-build-v1', 'engine_version': '6.7.4',
+            'setup_sha256': digest(b'synthetic setup'), 'app_sha256': digest(b'synthetic app'),
+            'icons': {name: 'd' * 64 for name in
+                      ('AppIcon.ico', 'AppIcon-white.ico', 'AppIcon-black.ico', 'AppIcon-blue.ico')},
+            'installer_source_sha256': ALIGNED_SOURCE, 'notice_manifest_sha256': MANIFEST_SHA,
+            'input_identity': 'MATCH', 'source_provenance': 'NOT_VERIFIED',
+            'lifecycle': 'NOT_RUN', 'distribution_compliance': 'NOT_VERIFIED',
+            'release_admission': 'NOT_VERIFIED'}
 
 
 class InteractiveAcceptanceTests(unittest.TestCase):
@@ -87,6 +101,41 @@ class InteractiveAcceptanceTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertEqual(main(args + ['--setup', str(setup), '--app', str(app)]), 0)
             self.assertEqual(json.loads(output.read_text()), template(raw.read_bytes()))
+
+    def test_private_local_build(self) -> None:
+        """Require local binaries and keep native and local identities disjoint."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            raw, setup, app = root / 'build.json', root / 'setup.exe', root / 'app.exe'
+            raw.write_bytes(encode(local_fixture()))
+            setup.write_bytes(b'synthetic setup')
+            app.write_bytes(b'synthetic app')
+            output = root / 'checklist.json'
+            args = ['--candidate', str(raw), '--output', str(output)]
+            self.assertEqual(main(args), 2)
+            self.assertFalse(output.exists())
+            self.assertEqual(main(args + ['--setup', str(setup), '--app', str(app)]), 0)
+            data = json.loads(output.read_text())
+            self.assertNotIn('source_sha', data['candidate'])
+            self.assertEqual(data['candidate']['native_qualification'], 'NOT_VERIFIED')
+            with self.assertRaises(ValueError):
+                verify(raw.read_bytes(), encode(data))
+            result = verify(raw.read_bytes(), encode(data), setup, app)
+            self.assertEqual(result['local_binary_binding'], 'MATCH')
+            self.assertEqual(result['counts']['NOT_RUN'], 6)
+            self.assertEqual(result['release_admission'], 'NOT_VERIFIED')
+            with self.assertRaises(ValueError):
+                verify(fixture(), encode(data), setup, app)
+
+    def test_invalid_local_evidence(self) -> None:
+        """Reject altered pins and invented native or release qualification."""
+        for key, value in (
+                ('installer_source_sha256', 'e' * 64),
+                ('notice_manifest_sha256', 'e' * 64),
+                ('lifecycle', 'MATCH'), ('release_admission', 'PASS'),
+                ('source_sha', 'a' * 40), ('icons', {})):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                template(encode(dict(local_fixture(), **{key: value})))
 
     def test_reported_pass_not_admitted(self) -> None:
         """Complete self-reports do not establish independent acceptance."""

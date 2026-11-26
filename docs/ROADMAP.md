@@ -2323,3 +2323,18 @@ configuration commands. USB `VersionNumber` is a device revision,
       bytes, missing partner and CLI output behavior.
 - [ ] Hosted CI and exact installer bytes for real interactive
       acceptance; compiler migration and release remain on hold.
+
+### Private local interactive acceptance path
+
+- [x] #274 exact 4/4 CI merged 8e3625d after tested-tree equality.
+- [x] Confirm public repository and existing JSON-only Inno 6.7.4
+      qualification workflow. Do not upload setup or change release hold.
+- [x] Extend interactive validator to accept the distinct local-build
+      evidence schema, check pinned fields and require both actual
+      local executable hashes for template creation and review.
+      Local identity cannot substitute for native joined evidence;
+      source provenance and native qualification remain NOT_VERIFIED.
+      Two new synthetic groups, documentation with dry-run/compile
+      and checklist commands.
+- [ ] Hosted CI, authorized Windows local compilation and human
+      interactive/physical acceptance. No distribution authorization.
