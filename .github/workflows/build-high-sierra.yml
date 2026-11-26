@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/package-app.sh'
       - 'macos/AppIcon*.icns'
       - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'
@@ -18,6 +19,7 @@ on:
     branches: [main]
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/package-app.sh'
       - 'macos/AppIcon*.icns'
       - 'tools/measure_apple_worker.py'
       - 'macos/AjazzBatteryReport.h'

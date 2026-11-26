@@ -61,6 +61,38 @@ effect on status in this matrix. A same-awake-mouse cross-application comparison
 at a confirmed level remains open. Continue to apply the existing admission
 checks for history, alerts and API telemetry.
 
+## Repeat-build comparison for ENG-10
+
+The original macOS archives used the build clock in ZIP entry metadata.
+Two High Sierra CI runs from the same checkout produced identical bundle
+files and different release ZIP hashes. Both build scripts now call
+`macos/package-app.sh`, which uses a stable file order and timestamp
+while preserving file bytes and executable permissions.
+
+Use independently completed native CI runs for the same exact checkout.
+Record the toolchain versions and obtain each original artifact digest from
+its GitHub workflow run before downloading. Run one comparison per profile
+from the repository root:
+
+```sh
+python3 tools/compare_release_builds.py --profile high-sierra \
+  --source-sha "$SOURCE_SHA" --run-ids "$FIRST_RUN" "$SECOND_RUN" \
+  --first first-ci.zip --first-sha256 "$FIRST_SHA256" \
+  --second second-ci.zip --second-sha256 "$SECOND_SHA256" \
+  --output high-sierra-repeat.json
+```
+
+Profile choices are `windows`, `installer`, `universal` and `high-sierra`.
+The comparison checks the portable EXE, setup EXE and Apple inner release
+ZIPs respectively. The outer Actions artifact digest authenticates neither
+the contents nor the source. The reviewer correlates each run, commit,
+toolchain and artifact ID independently.
+
+Exit 0 means the selected release asset matched byte for byte. Exit 1
+records changed assets or packaging. Exit 2 indicates missing or invalid
+inputs. The result is scoped to the inspected archives. Release admission,
+trusted signing, distribution and physical acceptance have their own gates.
+
 ## Remaining release gates
 
 | Gate | Required evidence |

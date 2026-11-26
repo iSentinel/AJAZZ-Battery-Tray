@@ -56,6 +56,16 @@ came from another time.
 See the [release readiness record](BETA61_RELEASE_READINESS.md) for exact
 candidate identities, artifact links, field findings and remaining gates.
 
+### ENG-10 build reproducibility
+
+- [x] Capture a repeat-build mismatch on High Sierra with identical signed
+      bundle files and different release ZIP bytes.
+- [x] Normalize ZIP order and timestamps for both Apple build scripts.
+      Add a local comparison CLI that verifies both source archives and
+      distinguishes a packaging difference from changed app files.
+- [ ] Verify independent native repeats for both Apple editions and Windows.
+      Record exact asset digests and explain any remaining differences.
+
 ## Scope and safety contract
 
 - Keep the Windows and macOS applications independent of official AJAZZ software.

@@ -1,3 +1,12 @@
+# Resume — public release reproducibility
+
+The High Sierra repeats from `10f9b4d` had equal app file hashes and
+different release ZIP hashes. Both Apple build entry points now use the
+shared deterministic packager. The offline comparator checks both original
+artifact digests and compares the actual final payload. Native repeats and
+the remaining ENG-10 admission gates are recorded in the
+[beta.61 readiness record](docs/BETA61_RELEASE_READINESS.md).
+
 # Resume — beta.61 release preparation, 26 November 2026
 
 The reviewed #99 integration generation `d94c1c3` passed all nine workflows.
