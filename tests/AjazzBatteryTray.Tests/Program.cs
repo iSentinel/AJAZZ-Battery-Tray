@@ -1621,6 +1621,28 @@ Check("Opt-out invalidates an in-flight restored read", pendingConsent is not nu
     !restoredBle.Complete(pendingConsent, bleDirect, multiAt, true, true) &&
     restoredBle.Count == 0);
 
+// Simulate a direct GATT completion delivered after a paused UI.
+var delayedBle = new BluetoothMultiSession(independent: true);
+delayedBle.Restore("delayed");
+var delayedRequest = delayedBle.TryBegin(true, true, multiAt);
+var bleCompletedAt = multiAt.AddSeconds(1);
+Check("BLE delayed delivery preserves worker timestamp",
+    delayedRequest is not null && delayedBle.Complete(delayedRequest, bleDirect, bleCompletedAt, true, true) &&
+    delayedBle.LastSuccess("delayed") == bleCompletedAt);
+Check("BLE delayed delivery loses fresh alert eligibility",
+    delayedBle.VisiblePercent("delayed", true, true, bleCompletedAt.AddMinutes(2)) == 83 &&
+    delayedBle.VisiblePercent("delayed", true, true, bleCompletedAt.AddMinutes(2).AddTicks(1)) is null &&
+    delayedBle.VisiblePercent("delayed", true, true, bleCompletedAt.AddTicks(-1)) is null);
+Check("BLE delayed delivery retains only bounded historical cache",
+    delayedBle.CachedPercent("delayed", bleCompletedAt.AddMinutes(10)) == 83 &&
+    delayedBle.CachedPercent("delayed", bleCompletedAt.AddMinutes(30)) is null);
+var stampBefore = DateTimeOffset.UtcNow;
+var stampedBle = BluetoothOperationTimeout.RunStamped(Task.FromResult(bleDirect),
+    TimeSpan.FromSeconds(1)).GetAwaiter().GetResult();
+Check("BLE bounded stamped result preserves source and completion",
+    stampedBle.Result == bleDirect && stampedBle.CompletedAt >= stampBefore &&
+    stampedBle.CompletedAt <= DateTimeOffset.UtcNow);
+
 // BLE cache is presentation-only, independent of the USB device.
 var bleCache = new BluetoothMultiSession(independent: true);
 bleCache.Enable("cache", bleDirect, multiAt);
