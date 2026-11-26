@@ -1,3 +1,13 @@
+# Resume — AULA delayed UI delivery provenance
+
+Parent #277 has Windows/macOS and Python checks PASS, installer
+checks pending at review. Child timestamps AULA worker completion
+before UI dispatch, shares the freshness predicate for alert
+admission and presentation, and updates AULA submenu on the
+independent timer. One source regression plus four native
+assertions. No new HID operations. Actual suspend/resume and
+physical acceptance remain unverified; release hold unchanged.
+
 # Resume — Windows age-only presentation refresh
 
 #276 exact 5/5 CI merged a92bfe9. Existing five-second timer

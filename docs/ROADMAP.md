@@ -2367,3 +2367,19 @@ configuration commands. USB `VersionNumber` is a device revision,
       rows in all supported languages.
 - [ ] Hosted Windows CI and interactive visual acceptance.
       Release hold unchanged.
+
+### AULA delayed UI delivery provenance
+
+- [x] Preserve the background worker completion UTC when delivering
+      an AULA result to the UI after a blocked message loop or suspend.
+      Use the original completion timestamp for cache, diagnostics and
+      history; do not renew freshness on delayed UI delivery.
+- [x] Share the existing five-minute fresh-sample predicate between
+      dashboard projection and low-battery notification admission.
+      Confirmed presence is required for the notification.
+      Refresh the AULA submenu from the existing independent timer.
+- [x] Add one source-wiring test and four native synthetic assertions
+      for exact freshness boundary, delayed delivery, clock rollback,
+      retained cache timestamp and expired cache. No HID changes.
+- [ ] Hosted CI and actual Windows suspend/resume and L99 acceptance.
+      Parent #277 qualification required; release hold unchanged.

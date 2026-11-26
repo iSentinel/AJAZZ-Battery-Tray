@@ -592,7 +592,7 @@ public sealed class TrayAppContext : ApplicationContext
         string value = _aulaPoll.IsBusy
             ? UiText.Get("AULA L99: checking battery...")
             : $"{state.Name} · {state.Transport}: {state.MenuStatus(_aulaBattery.LastGoodAt)}";
-        _aulaStatus.Text = value;
+        if (_aulaStatus.Text != value) _aulaStatus.Text = value;
     }
 
     private void ArmAulaTimer(int milliseconds)
@@ -632,17 +632,21 @@ public sealed class TrayAppContext : ApplicationContext
         UpdateAulaStatus();
         try
         {
-            AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
+            var (result, completedAt) = await Task.Run(async () =>
+            {
+                var reading = await _aulaReader.ReadAsync().ConfigureAwait(false);
+                return (reading, DateTimeOffset.UtcNow);
+            });
             if (_closing || !_aulaPoll.MayApply(ticket)) return;
             if (_aulaContinuity.MustReset(result.PresenceKnown,
                 result.ReceiverPresent, result.LocalKey))
                 _aulaBattery.Reset();
             _aulaLatest = result;
-            _aulaLastReadAt = DateTimeOffset.UtcNow;
+            _aulaLastReadAt = completedAt;
             _aulaBattery.Observe(result.ReceiverPresent, result.PresenceKnown,
-                result.Percent, _aulaLastReadAt.Value);
+                result.Percent, completedAt);
             if (_settings.RecordBatteryHistory)
-                _aulaHistory.Record(DateTimeOffset.UtcNow, result.Percent,
+                _aulaHistory.Record(completedAt, result.Percent,
                     result.ReceiverPresent || !result.PresenceKnown);
             if (_settings.MonitorAulaL99)
             {
@@ -653,7 +657,10 @@ public sealed class TrayAppContext : ApplicationContext
                     _tray.ShowBalloonTip(4000, AulaName,
                         UiText.Get("The 2.4 GHz receiver is no longer detected."),
                         ToolTipIcon.Warning);
-                if (result.Percent is int percent) NotifyAulaBattery(percent);
+                if (result.PresenceKnown && result.ReceiverPresent &&
+                    result.Percent is int percent &&
+                    _aulaBattery.IsFreshSample(percent, completedAt, DateTimeOffset.UtcNow))
+                    NotifyAulaBattery(percent);
             }
         }
         catch (Exception error)
@@ -1377,6 +1384,7 @@ public sealed class TrayAppContext : ApplicationContext
         // without publishing a new API generation or replaying a measurement.
         else if (_latestUsbReading is not null || _aulaLatest is not null)
             RefreshDeviceDisplay(publishSnapshot: false);
+        if (_aulaLatest is not null) UpdateAulaStatus();
     }
 
     private async Task RestoreBleConsentAsync()
