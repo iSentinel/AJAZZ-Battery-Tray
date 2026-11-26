@@ -401,6 +401,51 @@ jobs:
           $setup = Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe'
           python tools/verify_interactive_acceptance.py --candidate (Join-Path $root 'local-build-evidence.json') --setup $setup --app $app --output (Join-Path $root 'interactive-checklist.json')
           if ($LASTEXITCODE -ne 0) { throw 'Exact interactive checklist creation failed' }
+      - name: Observe native signature status of the exact normalized product
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $source = 'f939fea7fb422aa588649138d29a750ce62cd22a'
+          $setupHash = 'e7195b3817e919eeff47606c036089a2e9fabc44b2238eae466918b992da90a8'
+          $appHash = '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c'
+          $record = Get-Content -LiteralPath (Join-Path $root 'exercised-uninstaller.json') -Raw | ConvertFrom-Json
+          if ((git rev-parse HEAD) -cne $source -or $record.source_sha -cne $source -or
+              $record.setup_sha256 -cne $setupHash -or $record.app_sha256 -cne $appHash -or
+              $record.uninstaller_sha256 -cnotmatch '^[0-9a-f]{64}$' -or
+              $record.uninstall_result -cne 'REMOVED' -or $record.release_admission -cne 'NOT_VERIFIED') {
+            throw 'Normalized signature observation identity differs'
+          }
+          $files = [ordered]@{
+            'app' = @{ path = 'dist/app/AJAZZBatteryTray.exe'; sha256 = $appHash }
+            'setup' = @{ path = (Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe'); sha256 = $setupHash }
+            'uninstaller' = @{ path = (Join-Path $root 'exercised-unins000.exe'); sha256 = $record.uninstaller_sha256 }
+          }
+          $observations = [ordered]@{}
+          foreach ($name in $files.Keys) {
+            $file = $files[$name]
+            $before = (Get-FileHash -LiteralPath $file.path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($before -cne $file.sha256) { throw 'Exact signature input differs' }
+            $signature = Get-AuthenticodeSignature -LiteralPath $file.path
+            $after = (Get-FileHash -LiteralPath $file.path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($before -cne $after) { throw 'Signature input changed' }
+            $observations[$name] = [ordered]@{
+              sha256 = $before
+              status = $signature.Status.ToString()
+              signature_type = $signature.SignatureType.ToString()
+              signer_present = ($null -ne $signature.SignerCertificate)
+              timestamp_present = ($null -ne $signature.TimeStamperCertificate)
+            }
+          }
+          $win = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+          [ordered]@{
+            schema = 'normalized-product-authenticode-observation-v1'
+            source_sha = $source
+            os_build = "$($win.CurrentBuildNumber).$($win.UBR)"
+            files = $observations
+            product_trust = 'NOT_VERIFIED'
+            release_admission = 'NOT_VERIFIED'
+          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $root 'normalized-product-signatures.json') -Encoding utf8
       - name: Retain exact candidate evidence only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -423,5 +468,14 @@ jobs:
             ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json
             ${{ runner.temp }}/ajazz-inno-674-publisher/authenticode.json
             ${{ runner.temp }}/ajazz-inno-674-publisher/release-attestation.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Retain normalized product signature observation only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: normalized-product-signature-observation
+          path: ${{ runner.temp }}/ajazz-notice-probe/normalized-product-signatures.json
           if-no-files-found: error
           retention-days: 7

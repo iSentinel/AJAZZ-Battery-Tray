@@ -1,3 +1,13 @@
+# Resume — exact normalized product signature and runbook consistency
+
+#309 exact 5/5 merged 2ae646f. Windows runbook now pins that
+tool revision and explicitly assembles the local interactive and
+five hardware forms. Add native Authenticode observation of exact
+e7195b38 Setup, original app and exercised uninstaller, separate
+JSON only. Hosted observation pending; Gateway lists only Linux
+Proxmox, no enrolled Windows desktop. Actual human acceptance and
+distribution/signing decisions remain open. Release BLOCKED.
+
 # Resume — normalized blank acceptance kit
 
 #308 exact 4/4 merged 9848e0e. One offline command now validates

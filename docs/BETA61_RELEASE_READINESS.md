@@ -681,3 +681,26 @@ Four new synthetic test groups passed. See the
 for the operator command. Actual retained Setup, human observations,
 final asset selection, signing and distribution remain outstanding.
 Release admission remains BLOCKED.
+
+### Exact normalized product signature observation
+
+PR #309 passed all five hosted checks and merged 2ae646f after
+tested-tree equality. The Windows runbook now pins this exact
+qualification-tool revision, which includes both the blank-kit generator
+and local-build-aware combined reviewer. It explicitly assembles the
+five hardware forms and the locally bound interactive form in a fresh
+combined directory, without modifying either original form identity.
+
+The normalized native qualification workflow now separately observes
+Authenticode on the original app, the exact e7195b38 Setup and the
+captured exercised uninstaller. It requires the pinned source and
+app/Setup hashes, the same clean lifecycle identity and the captured
+uninstaller hash, and checks hashes before and after signature
+observation. It retains a separate JSON-only artifact containing
+Windows build, status, signature type and signer/timestamp presence.
+This observation step does not execute or sign the product files.
+The existing normalized evidence ZIP inventory and original pin are
+unchanged. Native results are pending; earlier 6.7.1 product signature
+observations cannot be transferred to the normalized 6.7.4 Setup.
+Trust, physical/interactive acceptance, final asset selection,
+distribution and publication remain unverified.
