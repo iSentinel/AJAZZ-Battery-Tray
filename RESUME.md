@@ -1,3 +1,13 @@
+# Resume — exact original app notice-bearing hosted setup evidence
+
+#301 exact 5/5 merged e51a31b. Original f939fea app compiled
+with Inno 6.7.4, clean silent install/uninstall PASS, setup
+2512ef43, artifact 15121985132 (JSON only). Ten-document
+exact replay PASS, three synthetic groups. Setup/uninstaller
+bytes not retained; upgrade/reinstall and independent payload
+attribution remain open for the exact-original setup workflow.
+No release selection, signing or publication.
+
 # Resume — exact native notice-bearing setup and Apple observation
 
 #300 exact 6/6 merged b4327e3. Original Apple native artifact

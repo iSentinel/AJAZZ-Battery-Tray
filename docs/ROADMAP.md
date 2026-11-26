@@ -2708,3 +2708,19 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI compilation/lifecycle and original evidence review;
       no public release asset selected. Interactive, physical,
       trust and distribution acceptance remain open.
+
+### Exact original app notice-bearing hosted setup evidence
+
+- [x] #301 exact 5/5 CI merged e51a31b after tested-tree equality.
+- [x] Exact f939fea app compiled with verified 6.7.4, clean silent
+      install/uninstall with all nine notices and no observed tray
+      launch; original artifact 15121985132 reviewed.
+- [x] Pin original ZIP and ten JSON digests, validate shared identity,
+      compiler/notice equality, publisher and attestation subject;
+      actual replay and three synthetic groups PASS.
+- [ ] Hosted CI of local evidence verifier. Extend exact-original
+      native qualification to upgrade/reinstall and independent
+      payload/record attribution before selecting final setup.
+      New setup bytes not retained; product trust, interactive,
+      physical and distribution acceptance remain open.
+      Release BLOCKED.

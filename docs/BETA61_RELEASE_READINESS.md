@@ -524,3 +524,41 @@ Two source-contract tests passed locally. Hosted compilation and
 lifecycle observations are pending, and the new Setup hash is not
 yet known. Interactive and hardware acceptance, signing and
 distribution disposition remain open. Release admission is BLOCKED.
+
+### Exact original app notice-bearing hosted setup evidence
+
+PR #301 passed 5/5 hosted checks and merged e51a31b after tested
+tree equality. Run 45827978336, job 139936980666 checked out
+f939fea7fb422aa588649138d29a750ce62cd22a, staged the exact
+original app and compiled with verified Inno 6.7.4. The clean silent
+install/uninstall probe passed without observed tray launch.
+
+- New setup SHA-256: 2512ef432c8acd75622157e16eda04694b41705294f1876547130ccd21b2147b
+- Original app SHA-256: 91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c
+- Exercised uninstaller SHA-256: 9f07d326d9136adfa67658ba5719731a17e1a1a3ac7ef66e441d35673e99804e
+- Original JSON-only artifact 15121985132 ZIP SHA-256:
+  fa752c9e5534aad2b9278d4d94fdf332a57752079ee70db1c90103105c9942f9
+
+Ten exact documents were verified; the 38 compiler input
+observations before/after are byte-identical and nine staged
+notice observations match installed notices byte-for-byte.
+The hosted upstream compiler signature is reported Valid for
+Pyrsys B.V.; the retained attestation subject matches the pinned
+vendor asset. The local replay is not independent cryptographic
+attestation verification, nor a product signing observation.
+
+Replay:
+
+```sh
+python3 tools/verify_consolidated_notice_setup.py --archive notice-setup-evidence.zip --output notice-setup-review.json
+```
+
+Review SHA-256:
+47257dab2cb210b3da83d373f1513626e0696b0aa8f942b21f98bbf1fc5faf33.
+Actual original-archive replay and three synthetic test groups passed.
+The new Setup and uninstaller binaries were not retained. Do not
+claim independent decoding, upgrade/reinstall, physical or interactive
+acceptance for these bytes. A further authorized native qualification
+must bind its own exact setup hash, and an authorized local build
+requires its own binary and acceptance evidence. No substitution of
+the original release assets or publication.
