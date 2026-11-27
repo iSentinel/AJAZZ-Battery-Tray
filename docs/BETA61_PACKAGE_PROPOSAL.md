@@ -177,3 +177,44 @@ test groups cover missing, modified and extra files and executable
 mode loss. Native workflow results are pending. Actual Finder/Explorer
 interaction, GUI launch, device behavior, publisher trust, distribution
 terms and final package selection remain unverified.
+
+## Original native extraction observations and scoped CLI self-tests
+
+PR #313 passed 7/7 hosted checks and merged 5f79094 after tested-tree
+equality. Original extraction run 45913895693 retained the following
+JSON-only archives, both downloaded and digest-checked:
+
+- Windows job 140228414253, artifact 15160688838, ZIP SHA-256
+  ec855b81c861b6176435070c8d47f26778509a79fb8f59821e775024beef696c,
+  sole JSON SHA-256
+  f05cc29bad585ab6d805a0f4fae9b1e8dffe2e0e28bcfa1d991409be2e829b6a.
+- Apple job 140228414102, artifact 15161287908, ZIP SHA-256
+  2218fb0b70fc1b6586b163498e2bf0109042a516c248701ec70f33d9226e59f8.
+  Universal JSON SHA-256
+  ca2ba0399e324b0a8a57eb0884a8d54d93f1ffc3e110564e50b9953e788d8921;
+  High Sierra JSON SHA-256
+  e959a15c2e85e1dfdcd7bc827fe3a3ee2d8a9f3e068785da6bc77e1c1974feb7.
+
+All three observations match the pinned source and proposal package
+hashes. Windows Server 2025 build 26100 preserved all 16 files using
+Expand-Archive. macOS 15.7.9 Intel preserved all four outer and seven
+inner regular files per edition, executable mode bits and native
+strict codesign integrity using ditto. No app was launched in that run.
+
+The next workflow extension invokes only the reviewed original
+synthetic CLI modes from those exact extracted packages. It verifies
+the pinned shared synthetic corpus, exact package and extracted file
+inventory before launch, executable digest before each fixed case,
+and the complete package inventory after the series. Five Windows
+cases, three Universal cases and four High Sierra cases have bounded
+execution deadlines; the Windows synthetic watchdog requires exit
+124 and at least one second elapsed rather than treating every
+nonzero exit as a pass. Windows process-tree timeout cleanup follows
+the original CI policy. Separate JSON-only artifacts record the
+expected/actual exit codes and original package/executable hashes.
+
+Three new synthetic test groups passed locally. Native self-test
+results are pending. These scoped CLI tests do not run normal Tray
+GUI, perform real hardware acceptance, prove Gatekeeper trust, or
+demonstrate operation on macOS 10.13 or Apple Silicon. No new binary
+retention, signing, distribution approval or publication.

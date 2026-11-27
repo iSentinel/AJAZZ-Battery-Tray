@@ -2860,3 +2860,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       private Setup retention, physical and interactive acceptance,
       final package selection, distribution and signing remain open.
       Publication BLOCKED.
+
+### Native extraction observations and synthetic CLI launch
+
+- [x] #313 exact 7/7 hosted checks merged 5f79094 after tested-tree equality.
+- [x] Review original Windows and Apple native extraction artifacts:
+      all 16/4/4 outer and 7/7 Apple inner files match; Apple executable
+      mode bits and codesign PASS on macOS 15.7.9 Intel.
+- [x] Extend native workflow with 12 fixed synthetic CLI cases, exact
+      package/executable/corpus checks, bounded timeout and post-test
+      inventory; separate JSON-only observations. Three synthetic groups PASS.
+- [ ] Review actual hosted CLI self-test results. Native GUI and physical
+      acceptance, retained private Setup, interactive installer acceptance,
+      final selection, trusted signing and distribution remain open.
+      Publication BLOCKED.
