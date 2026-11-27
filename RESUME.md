@@ -1,3 +1,14 @@
+# Resume — Apple background journal writer candidate
+
+#335 merged 39e3502 after 4 workflows / 6 jobs PASS; all six changed
+blobs match tested checkout 3bede5c. Linux and Intel macOS queue fixtures
+PASS (jobs 140630103603/140630103072). Added standalone pthread writer
+with short queue lock, sink outside lock, seal, monotonic bounded wait
+and explicit join only after completion. Synthetic concurrent producer,
+blocked sink, overflow, idle wake and shutdown tests prepared. Hosted
+qualification pending. No actual GUI integration, latency claim, HID or
+retained beta.61 change. Release BLOCKED.
+
 # Resume — bounded Apple journal queue core
 
 #334 merged 7e72b83, 5 workflows / 7 jobs PASS, eight changed blobs
