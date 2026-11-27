@@ -2874,3 +2874,15 @@ configuration commands. USB `VersionNumber` is a device revision,
       acceptance, retained private Setup, interactive installer acceptance,
       final selection, trusted signing and distribution remain open.
       Publication BLOCKED.
+
+### Native self-test completion and independent retained-evidence replay
+
+- [x] #314 all 5 workflows / 7 jobs PASS, merged 25ca8a2. All eight
+      changed blob identities match tested checkout 2a0b91f. Native
+      run 45914776932: Windows 5/5, Universal 3/3, High Sierra 4/4.
+- [x] Add independent offline replay of two exact retained evidence
+      ZIPs and all three pinned original application archives, plus
+      synthetic rejection tests and a read-only hosted replay workflow.
+- [ ] Verify actual replay and synthetic tests in CI. Retained Setup,
+      GUI, hardware and interactive acceptance, final selection,
+      distribution and signing remain open; publication BLOCKED.
