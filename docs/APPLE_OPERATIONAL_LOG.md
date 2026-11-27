@@ -140,3 +140,21 @@ or clock action is scheduled. UTC timestamp remains wall-clock metadata.
 Synthetic checks cover exact optional field, invalid durations, unchanged
 untimed records and mixed storage for both editions. Actual performance
 and GUI/physical qualification remain separate.
+
+## Sixth stage: synthetic storage overhead benchmark
+
+The separate C benchmark executes exactly 4096 identical closed timed
+records through the production Universal edition storage helper in a
+fresh private temporary directory, using the production 256 KiB cap.
+It measures monotonic append latency in nanoseconds; normal and expected
+rotation writes have separate counts and nearest-rank p50/p95/max.
+The rotation classification follows the exact encoded record size and
+fixed generation capacity, with both retained generations reopened and
+all retained record bytes checked. The write-loop elapsed time and
+process user+system CPU delta are reported separately; peak RSS is the
+whole benchmark process high-water mark, normalized to bytes (Darwin
+bytes, Linux KiB). Temporary fixture files are removed after verification.
+Linux and Intel macOS hosted jobs compile with -O2 and warnings as errors,
+retain only aggregate JSON, and fail on execution or integrity failure.
+No latency threshold, durability/fsync guarantee, physical HID, real GUI
+or tray CPU/RAM inference is made. Benchmark metrics are observational.
