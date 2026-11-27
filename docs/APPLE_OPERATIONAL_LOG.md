@@ -224,3 +224,27 @@ pthread and the existing warnings-as-errors policy. Hosted results are
 pending. No production journal sink or GUI call site is connected, and
 no actual application performance, physical device or 10.13 runtime
 claim is made. The pinned beta.61 and HID policy are unchanged.
+
+## Tenth stage: edition-specific background storage adapter
+
+AjazzOperationalEditionWriter.h owns a bounded absolute support path
+(maximum 4095 bytes plus terminator), edition flag and the existing writer.
+Creation copies the path and starts an idle worker without filesystem
+access. The sink invokes the unchanged AjazzJournalEditionTimedEvent on
+the worker thread; edition paths, owner checks, permissions, rotation,
+lease and closed record encoding retain their existing semantics.
+Successful enqueue does not mean persistence. A timeout is not a flush.
+The single lifecycle owner must stop producers, seal, and destroy only
+after completion; unsuccessful destruction leaves ownership intact.
+The adapter does not log its path and has no automatic synchronous
+fallback. The null snapshot is empty and must not be treated as evidence
+of successful initialization.
+
+The standalone fixture uses private temporary storage, checks exact
+start/timed timeout/stop bytes for both editions, proves the input path
+is copied, checks post-seal drops and refuses premature destruction.
+A pre-existing 0755 edition directory must remain unchanged without
+creating an active log or lease; both queued events count as failed.
+Null, relative and oversized paths are rejected. Hosted Linux and Intel
+macOS results are pending. No real GUI, user profile, HID or pinned
+release candidate changes. Production lifecycle integration is separate.
