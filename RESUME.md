@@ -1,3 +1,15 @@
+# Resume — isolated profile recovery rehearsal
+
+#317 all 4 workflows PASS, merged d600514; six changed blobs match
+5488537. Added a dedicated fresh-sibling recovery rehearsal, three
+synthetic regressions and native Windows test workflow. Hosted CI
+pending. No live profile writes, app launch or real rollback claimed.
+Owner confirms f939fea unverified APEX field 82 -> 81 without mouse
+power cycling. Latest report 00:54:17 UTC, 6/6 successful/agreeing,
+0/6 admitted. Issue #53 comment 7206866201. No parser relaxation.
+Physical and interactive acceptance, retained normalized Setup,
+Windows ACL and actual rollback remain open. Release BLOCKED.
+
 
 # Resume — private Windows profile backup
 
