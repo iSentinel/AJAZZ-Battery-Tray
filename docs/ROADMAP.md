@@ -3128,3 +3128,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI, actual GUI lifecycle/High Sierra/arm64 qualification;
       poll/clock events, monotonic durations and runtime overhead remain
       separate. No release changes, no hardware policy changes.
+
+### ENG-05 Apple scoped operation result logging
+
+- [x] #330 merged bcbb1bc after 5/5 workflows and 7/7 jobs PASS; all
+      nine changed blobs match tested checkout 1eb8a78. Encoder/storage
+      run 46000425285 jobs 140510359985 and 140510360359 passed lifecycle
+      records and refusal checks. Both Apple native build groups PASS.
+- [x] Wire isolated mode marker and explicit isolated timeout for both
+      editions, existing High Sierra in-process watchdog timeout and
+      Universal attempted dock clock transfer outcome. No inferred
+      failures from unknown/absent receiver, no new HID operations.
+      Add exact closed operation byte tests for both edition journals.
+- [ ] Hosted CI; actual GUI/hardware, timing, richer error classification
+      and runtime overhead remain open. Publication BLOCKED.
