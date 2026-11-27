@@ -71,13 +71,29 @@ jobs:
               throw 'Installed version differs'
             }
           }
-          function Remove-Checked {
-            $registered = (Get-ItemProperty -LiteralPath $key -Name UninstallString).UninstallString
+          function Resolve-UninstallName([string]$Registered) {
             # Accept only the registered Inno executable in the exact install directory.
             # Never evaluate registry text or forward registry-provided arguments.
             $pattern = '\A"' + [regex]::Escape($dir) + '\\(unins[0-9]{3}\.exe)"\z'
             if ($registered -notmatch $pattern) { throw 'Unexpected registered uninstall command' }
-            $name = $Matches[1]
+            return $Matches[1]
+          }
+          foreach ($name in @('unins000.exe','unins001.exe')) {
+            if ((Resolve-UninstallName ('"' + (Join-Path $dir $name) + '"')) -ne $name) {
+              throw 'Uninstaller name regression'
+            }
+          }
+          foreach ($bad in @(
+              ('"' + (Join-Path $dir 'unins000.exe') + '" /SILENT'),
+              ('"' + (Join-Path $dir '..\unins000.exe') + '"'),
+              ('"' + (Join-Path $dir 'other.exe') + '"'))) {
+            $rejected = $false
+            try { $null = Resolve-UninstallName $bad } catch { $rejected = $true }
+            if (-not $rejected) { throw 'Unexpected uninstall command accepted' }
+          }
+          function Remove-Checked {
+            $registered = (Get-ItemProperty -LiteralPath $key -Name UninstallString).UninstallString
+            $name = Resolve-UninstallName $registered
             $uninstaller = Join-Path $dir $name
             $item = Get-Item -LiteralPath $uninstaller
             if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
