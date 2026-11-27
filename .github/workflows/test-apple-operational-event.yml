@@ -1,0 +1,39 @@
+name: Test Apple operational event encoding
+
+on:
+  pull_request:
+    paths:
+      - 'macos/AjazzOperationalEvent.h'
+      - 'tests/fixtures/apple-operational-event.c'
+      - '.github/workflows/test-apple-operational-event.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'macos/AjazzOperationalEvent.h'
+      - 'tests/fixtures/apple-operational-event.c'
+      - '.github/workflows/test-apple-operational-event.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  encoder:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-15-intel]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Compile and exercise the shared closed encoder
+        shell: bash
+        run: |
+          set -euo pipefail
+          compiler=(cc -std=c11 -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror)
+          if [[ "$(uname -s)" == Darwin ]]; then
+            compiler+=( -mmacosx-version-min=10.13 )
+          fi
+          "${compiler[@]}" tests/fixtures/apple-operational-event.c -o "$RUNNER_TEMP/ajazz-event-test"
+          TZ=UTC "$RUNNER_TEMP/ajazz-event-test"
+          TZ=Pacific/Honolulu "$RUNNER_TEMP/ajazz-event-test"
