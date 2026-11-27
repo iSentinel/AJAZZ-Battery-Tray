@@ -2931,3 +2931,12 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted recovery CI and actual Windows ACL/restore/rollback rehearsal.
       Independent APEX reference comparison, physical/interactive acceptance
       and normalized Setup retention remain open. Publication BLOCKED.
+
+- [x] Native Windows run 45919770690 exposed a false change detection
+      in the original profile reader: seven of nine cases failed at
+      the first cross-API metadata comparison. CPython issue #157671
+      describes different Windows ctime semantics for path and descriptor.
+      Compare birthtime for Windows cross-API identity, retain full
+      same-API before/after checks and add a synthetic timestamp regression.
+- [ ] Re-run native Windows and offline CI on the corrected head before
+      using the profile backup helper on Windows. No live restore.
