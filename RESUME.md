@@ -1,3 +1,13 @@
+# Resume — bounded Apple journal queue core
+
+#334 merged 7e72b83, 5 workflows / 7 jobs PASS, eight changed blobs
+match 27afe99. Native encoder 80 combinations and five classifications
+PASS. Added fixed FIFO state core with 63 ordinary slots plus reserved
+stop, single in-flight claim, saturating written/failed/dropped counters.
+Deterministic CI fixture pending. Queue requires caller serialization;
+no background adapter or GUI migration yet. Next: serialized producer,
+one writer, bounded shutdown and concurrency tests. Release BLOCKED.
+
 # Resume — isolated Apple supervisor outcome provenance
 
 #333 merged cadd079, 4 workflows / 6 jobs PASS, five changed blobs
