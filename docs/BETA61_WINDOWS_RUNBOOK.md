@@ -106,11 +106,21 @@ Hashes are local integrity checks, not authentication or encryption.
 The two reads detect ordinary concurrent changes but do not guarantee an
 atomic snapshot or resistance to adversarial filesystem races.
 
-For recovery, keep the backup unchanged and verify it again. Use a
-disposable restored desktop or VM checkpoint first; do not copy over a
-running application or erase the newer profile. Automatic overwrite,
-cross-version restore compatibility and interactive rollback remain
-unqualified. No restore action is implemented by this utility.
+For an isolated recovery rehearsal, keep the backup unchanged. Use a fresh
+sibling directory with the required dedicated name:
+
+```powershell
+$rehearsal = Join-Path (Split-Path -Parent $backup) ('AJAZZ-rehearsal-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+python tools/backup_windows_profile.py --source $backup --rehearse $rehearsal
+if ($LASTEXITCODE -ne 0) { throw 'Isolated recovery rehearsal failed' }
+```
+
+This copies only the verified settings/history bytes, independently rereads
+the resulting files and rechecks the backup. It does not start the app, write
+to the live profile or overwrite existing destinations. Treat the rehearsal
+directory as equally private. A partial failed copy is not usable evidence.
+Actual profile restore, Windows ACL qualification, cross-version compatibility
+and interactive installer rollback remain separate and unqualified.
 
 ## Prepare a local Setup
 
