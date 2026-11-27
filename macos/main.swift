@@ -310,23 +310,24 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.button?.title = "🔋?"
         NSApp.applicationIconImage = TrayAppearance.appIcon(TrayAppearance.choice("ApplicationIconColor"))
         buildStatusMenu()
-        recordJournalLifecycle(stopping: false)
+        recordJournalEvent(AjazzEventStarted, AjazzReasonNone)
+        if isolatedPolling { recordJournalEvent(AjazzEventIsolatedPollingEnabled, AjazzReasonNone) }
         configureTimer()
         refresh()
     }
 
-    /// Record only GUI lifecycle events; journal failure never prevents startup or exit.
-    private func recordJournalLifecycle(stopping: Bool) {
+    /// Record closed GUI events; journal failure never prevents normal operation.
+    private func recordJournalEvent(_ event: AjazzOperationalEvent, _ reason: AjazzOperationalReason) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory,
                                                 in: .userDomainMask).first
         let ok = support?.withUnsafeFileSystemRepresentation { path in
-            AjazzJournalLifecycle(path, false, stopping, time(nil))
+            AjazzJournalEditionEvent(path, false, event, reason, time(nil))
         } ?? false
         if !ok && journalFailedWrites < UInt64.max { journalFailedWrites += 1 }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        recordJournalLifecycle(stopping: true)
+        recordJournalEvent(AjazzEventStopped, AjazzReasonNone)
     }
 
     private func command(_ key: String, _ action: Selector) -> NSMenuItem {
@@ -952,6 +953,9 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // not create an immediate retry loop. Only a new queued request does so.
         let queued = manualClockSync
         if manual && value.compatibleReceiverPresent == nil { manualClockSync = true }
+        if value == .timedOut && isolatedPolling {
+            recordJournalEvent(AjazzEventIsolatedPollTimedOut, AjazzReasonTimeout)
+        }
         if attempted { recordClockResult(sent) }
         sessionObservation.observe(value, at: observedAt)
         update(value)
@@ -961,6 +965,8 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func recordClockResult(_ sent: Bool) {
         lastClockAttempt = Date()
         lastClockSent = sent
+        recordJournalEvent(sent ? AjazzEventDockClockSucceeded : AjazzEventDockClockFailed,
+                           sent ? AjazzReasonNone : AjazzReasonUnsuccessful)
         updateClockStatus()
     }
 
