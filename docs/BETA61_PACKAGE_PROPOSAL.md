@@ -218,3 +218,37 @@ results are pending. These scoped CLI tests do not run normal Tray
 GUI, perform real hardware acceptance, prove Gatekeeper trust, or
 demonstrate operation on macOS 10.13 or Apple Silicon. No new binary
 retention, signing, distribution approval or publication.
+
+## Completed scoped native self-tests and retained-evidence replay
+
+PR #314 passed 5 workflows / 7 jobs and merged 25ca8a2. All eight
+changed Git blob identities matched the tested merge checkout
+2a0b91f60b8b057290e4cd9815728aa81d9e4b59. Run 45914776932 logs
+record Windows 5/5 (exit 0, 0, 124, 0, 0), Universal 3/3 and
+High Sierra 4/4 (all exit 0). Pre/post inventory matched. The
+previous Windows failure disappeared after byte-preserving CSV
+checkout and scoped diagnostic logging; the precise original failure
+was not logged, so CRLF conversion remains a probable cause.
+
+Original self-test ZIP identities reported by GitHub:
+
+- Windows artifact 15161214672:
+  `82d294e587d8d45c811b672e39dddaa9e859f4c7f8c3b415f5facf9f89915a0f`.
+- Apple artifact 15161801759:
+  `458cfb48e6239468755e53207d82cbc4066bbeac2360c1d960cd073f6eaabd7a`.
+
+The new verifier replays these exact original ZIPs, strict JSON scope
+and all 12 cases, independently deriving the executable digests from
+the three original pinned app archives. It never launches a binary.
+Five synthetic regression groups and a dedicated read-only CI replay
+are added; actual CI and independent ZIP replay results are pending.
+Expired or substituted original artifacts must fail, not be rebuilt.
+
+```sh
+python tools/verify_native_package_selftests.py --windows-evidence windows-evidence.zip --apple-evidence apple-evidence.zip --windows-archive windows.zip --universal-archive universal.zip --high-sierra-archive high-sierra.zip --output selftest-review.json
+```
+
+No normal GUI, hardware, interactive installation, trusted signing,
+package selection or distribution approval is established. High Sierra
+CLI was exercised on a newer Intel macOS runner, not macOS 10.13.
+Publication remains BLOCKED.

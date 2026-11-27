@@ -1,3 +1,14 @@
+# Resume — exact native package self-test replay
+
+#314 5 workflows / 7 jobs PASS merged 25ca8a2; all eight changed
+blob identities match tested checkout 2a0b91f. Run 45914776932:
+Windows 5/5, Universal 3/3 and High Sierra 4/4 scoped native CLI
+cases PASS, as reviewed from logs. Added independent offline replay
+of the two pinned JSON ZIPs and three original app archives, synthetic
+regressions and hosted replay workflow. Replay CI pending. Actual GUI,
+physical and interactive acceptance, retained Setup, selection,
+signing and distribution remain open. Release BLOCKED.
+
 # Resume — native extraction observations and synthetic CLI launch
 
 #313 exact 7/7 merged 5f79094. Original native extraction artifacts
