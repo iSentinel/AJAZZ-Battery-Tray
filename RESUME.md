@@ -1,3 +1,16 @@
+# Resume — native replay completion and private test handoff
+
+#315 5/5 workflows and 6/6 jobs PASS merged d9d4421. All seven changed
+blobs match 0eaab88. Original replay run 45917165490 passed five tests
+and checked all 12 native observations against three original apps.
+Review artifact 15162827040, ZIP SHA-256 0b1bbd240610e2b09177d0a94fc16835a5865b26e0dfad4b4274b9a50d795029
+(GitHub metadata and hosted logs reviewed; derived ZIP not independently
+downloaded here). Existing original Inno 6.7.1 Setup artifact 15109661194
+remains available until 2026-12-03T10:57:24Z; documented private test
+route distinct from normalized e7195b38. No new package selected.
+Owner GUI/hardware/interactive observations, normalized Setup retention,
+distribution and signing remain open. Release BLOCKED.
+
 # Resume — exact native package self-test replay
 
 #314 5 workflows / 7 jobs PASS merged 25ca8a2; all eight changed
