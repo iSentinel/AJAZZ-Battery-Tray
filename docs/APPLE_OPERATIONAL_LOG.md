@@ -276,3 +276,33 @@ raw exceptions are emitted. The shared C fixture exercises start,
 duplicate start, stop retry, exact FIFO records, cached final status
 and missing path for both editions. Hosted native builds and actual
 GUI/hardware performance and shutdown qualification remain separate.
+
+## Twelfth stage: paced synthetic producer benchmark
+
+The fixed standalone fixture submits 4096 timed events through the
+same GUI adapter as the two applications, in batches of 32. The
+producer-only monotonic measurement excludes explicit batch drain
+waits. The total elapsed time and process CPU include the consumer
+and pacing; peak RSS is process-wide, not a measured incremental
+tray cost. The first shutdown observation is recorded separately;
+additional attempts are solely for safe benchmark cleanup.
+
+Qualification requires 4098 completed records including start/stop,
+zero failed, dropped and unavailable events, and exact ordered
+content of both retained generations. Synthetic timestamps distinguish
+record ordering. Only aggregate JSON is retained. This is a paced
+workload, not an unbounded stress test or real AppKit measurement.
+No comparison of different scopes implies real UI latency or battery
+polling performance. Parent #338 and hosted results remain required.
+
+Initial benchmark evidence: #339 run 46039186400, tested checkout
+a637182, jobs 140642238193 (Linux) and 140642237745 (Intel macOS).
+Both hosts completed 4096 offers and 4098 writes; zero drops, failures
+and unavailable events, exact retained generations MATCH. Linux offer
+p50/p95/max 50/391/17042 ns; Intel macOS 0/1000/106000 ns (clock
+resolution limits the zero median). First stop 1069364/4941000 ns,
+both complete. Process CPU 120133/922929 us and peak RSS
+1986560/729088 bytes. These are scoped paced synthetic observations,
+not incremental tray resource use or a real UI speedup. Parent #338
+merged 37c2529 with 5/5 workflows, 7/7 jobs and all nine changed blobs
+matching e0ee3b9. Repeat qualification against integrated base required.
