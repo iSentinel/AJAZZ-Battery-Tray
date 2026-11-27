@@ -1,3 +1,14 @@
+
+# Resume — private Windows profile backup
+
+Integration 2fb735e (#316), original f939fea application unchanged.
+ENG-07 local-only profile backup tool added with dry-run, explicit fresh
+backup and independent verification, six synthetic test groups and CLI
+help gate. No logs copied, no actual user data used in CI, no restore or
+installer execution. Hosted checks pending; Windows ACL and actual
+rollback remain unverified. Owner physical acceptance and retained
+normalized Setup remain open. Release BLOCKED.
+
 # Resume — native replay completion and private test handoff
 
 #315 5/5 workflows and 6/6 jobs PASS merged d9d4421. All seven changed
