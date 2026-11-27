@@ -1,3 +1,16 @@
+# Resume — exact original installer rollback rehearsal
+
+#318 merged ecfdf9c; all 4 workflows / 5 jobs PASS and all six changed
+Git blobs match tested checkout 783235c. Native run 45919940986
+confirmed 10/10 profile backup/recovery tests PASS. The corrected
+Windows helper supersedes #317. Added exact original f939fea Setup
+rollback CI using the retained 6.7.1 artifact and pinned beta.60 Setup,
+four synthetic profile files and isolated recovery; hosted result pending.
+No new binaries or live restoration. Exact original artifact expiry
+2026-12-03T10:57:24Z. Actual interactive/physical acceptance, cross-version
+application interpretation and normalized Setup retention remain open.
+Release BLOCKED.
+
 # Resume — isolated profile recovery rehearsal
 
 #317 all 4 workflows PASS, merged d600514; six changed blobs match
