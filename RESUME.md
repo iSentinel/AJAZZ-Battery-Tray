@@ -1,3 +1,13 @@
+# Resume — Apple operational journal storage candidate
+
+#327 merged a78a0e6, 5/5 workflows PASS, nine changed blobs match
+eac0ac6. macOS artifact upload infrastructure failure recovered with
+same-head retry, artifact 15187706950. #328 encoder passed 70 closed
+combinations under two TZs on Linux and Intel macOS on older base.
+Carry it unchanged onto a78a0e6 and add bounded private journal storage
+and standalone fixtures. Combined CI pending; #328 not merged. No app
+call sites, real profile writes, hardware or release change. Release BLOCKED.
+
 # Resume — bounded inventory QA correction
 
 #327 initial native Windows recovery 11/11 PASS, Windows/macOS/HA PASS;
