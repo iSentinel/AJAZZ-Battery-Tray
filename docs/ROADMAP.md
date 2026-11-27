@@ -3074,3 +3074,12 @@ configuration commands. USB `VersionNumber` is a device revision,
       after verification. Three new regression groups. No schema change.
 - [ ] Hosted Linux and native Windows qualification; atomic snapshots,
       actual ACLs and ENG-05 Apple logging remain open. Release BLOCKED.
+
+- [x] Initial #327 native Windows recovery run 45973042062/job
+      140417894488 passed 11/11 cases; Windows, macOS and HA also PASS.
+      Offline run 45973041921 failed the common gate; artifact
+      15186490081 retained (metadata only reviewed). Source inspection
+      identified a missing docstring on the nested synthetic iterator,
+      which violates the exact zero-debt AST gate. Add the docstring,
+      preserve assertions and expose bounded source audit on CI failure.
+- [ ] Repeat all triggered CI; exact failed artifact contents not reviewed.
