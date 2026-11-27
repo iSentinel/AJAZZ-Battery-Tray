@@ -6,6 +6,8 @@ on:
       - 'macos/AjazzOperationalEvent.h'
       - 'macos/AjazzOperationalJournal.h'
       - 'macos/AjazzOperationalQueue.h'
+      - 'macos/AjazzOperationalWriter.h'
+      - 'tests/fixtures/apple-operational-writer.c'
       - 'tests/fixtures/apple-operational-queue.c'
       - 'tests/fixtures/apple-operational-journal.c'
       - 'tests/fixtures/apple-operational-journal-benchmark.c'
@@ -17,6 +19,8 @@ on:
       - 'macos/AjazzOperationalEvent.h'
       - 'macos/AjazzOperationalJournal.h'
       - 'macos/AjazzOperationalQueue.h'
+      - 'macos/AjazzOperationalWriter.h'
+      - 'tests/fixtures/apple-operational-writer.c'
       - 'tests/fixtures/apple-operational-queue.c'
       - 'tests/fixtures/apple-operational-journal.c'
       - 'tests/fixtures/apple-operational-journal-benchmark.c'
@@ -52,6 +56,8 @@ jobs:
           "$RUNNER_TEMP/ajazz-journal-test"
           "${compiler[@]}" tests/fixtures/apple-operational-queue.c -o "$RUNNER_TEMP/ajazz-queue-test"
           "$RUNNER_TEMP/ajazz-queue-test"
+          "${compiler[@]}" -pthread tests/fixtures/apple-operational-writer.c -o "$RUNNER_TEMP/ajazz-writer-test"
+          "$RUNNER_TEMP/ajazz-writer-test"
       - name: Measure synthetic journal storage overhead
         shell: bash
         run: |
