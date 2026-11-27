@@ -88,7 +88,8 @@ static bool lifecycle_records(const char *root, int parent, bool legacy) {
 /// Refuse unsafe preexisting directories without modifying their permissions.
 static bool lifecycle_refusals(const char *root, int parent) {
     const char *name = "AJAZZBatteryTray-Journal";
-    if (mkdirat(parent, name, 0755) != 0) return false;
+    if (mkdirat(parent, name, 0700) != 0 ||
+        fchmodat(parent, name, 0755, 0) != 0) return false;
     struct stat info;
     bool ok = !AjazzJournalLifecycle(root, false, false, 0) &&
         fstatat(parent, name, &info, AT_SYMLINK_NOFOLLOW) == 0 &&
