@@ -51,6 +51,12 @@ jobs:
           name: offline-python-qa
           path: artifacts/offline-qa-*/*
           if-no-files-found: error
+      - name: Report bounded source audit failures
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/code_audit.py --baseline config/code-audit-baseline.json
       - name: Verify exact offline case and command coverage
         shell: bash
         run: |
