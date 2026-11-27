@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from backup_windows_profile import backup, collect, main, verify
+from backup_windows_profile import backup, collect, main, rehearse, verify
 
 HISTORY = 'ajazz-' + 'A' * 64 + '-history.csv'
 
@@ -85,6 +85,36 @@ class ProfileBackupTests(unittest.TestCase):
         path.hardlink_to(self.source / HISTORY)
         with self.assertRaises(ValueError):
             collect(self.source)
+
+
+    def test_rehearsal_exact_bytes(self) -> None:
+        """Restore a verified copy only to a fresh dedicated sibling."""
+        before = backup(self.source, self.target)
+        dest = self.root / 'AJAZZ-rehearsal-test'
+        self.assertEqual(rehearse(self.target, dest), before)
+        self.assertEqual(collect(dest, strict=True), collect(self.source))
+        self.assertEqual(verify(self.target), before)
+        self.assertFalse((dest / 'backup.json').exists())
+        with self.assertRaises(OSError):
+            rehearse(self.target, dest)
+
+    def test_rehearsal_invalid_destination(self) -> None:
+        """Reject live-profile names and nested or unrelated destinations."""
+        backup(self.source, self.target)
+        for dest in (self.root / 'AJAZZBatteryTray',
+                     self.target / 'AJAZZ-rehearsal-test'):
+            with self.subTest(dest=dest.name), self.assertRaises(ValueError):
+                rehearse(self.target, dest)
+            self.assertFalse(dest.exists())
+
+    def test_rehearsal_rejects_tampering(self) -> None:
+        """Do not create a destination for a modified backup."""
+        backup(self.source, self.target)
+        (self.target / 'settings.json').write_bytes(b'{}')
+        dest = self.root / 'AJAZZ-rehearsal-test'
+        self.assertEqual(main(['--source', str(self.target),
+                               '--rehearse', str(dest)]), 2)
+        self.assertFalse(dest.exists())
 
 
 if __name__ == '__main__':
