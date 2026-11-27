@@ -85,6 +85,41 @@ static bool lifecycle_records(const char *root, int parent, bool legacy) {
     return unlinkat(parent, name, AT_REMOVEDIR) == 0 && ok;
 }
 
+/// Check closed operation records through the same edition storage entry point.
+static bool operation_records(const char *root, int parent, bool legacy) {
+    const char *name = legacy ? "AJAZZBatteryTrayHighSierra-Journal" :
+                                "AJAZZBatteryTray-Journal";
+    const AjazzOperationalEvent events[] = {
+        AjazzEventIsolatedPollingEnabled, AjazzEventIsolatedPollTimedOut,
+        AjazzEventPollFailed, AjazzEventDockClockSucceeded, AjazzEventDockClockFailed
+    };
+    const AjazzOperationalReason reasons[] = {
+        AjazzReasonNone, AjazzReasonTimeout, AjazzReasonTimeout,
+        AjazzReasonNone, AjazzReasonUnsuccessful
+    };
+    char expected[1024], actual[1024] = {0};
+    size_t size = 0;
+    bool ok = !AjazzJournalEditionEvent(root, legacy, AjazzEventCount, AjazzReasonNone, 0);
+    for (size_t i = 0; i < sizeof(events) / sizeof(events[0]); ++i) {
+        size_t n = AjazzEncodeOperationalEvent(expected + size, sizeof(expected) - size,
+            events[i], reasons[i], (time_t)i);
+        ok = ok && n && AjazzJournalEditionEvent(root, legacy, events[i], reasons[i], (time_t)i);
+        size += n;
+    }
+    int dir = openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
+    if (dir < 0) return false;
+    int fd = openat(dir, AJAZZ_JOURNAL_ACTIVE, O_RDONLY | O_NOFOLLOW);
+    if (fd >= 0) {
+        ok = ok && read(fd, actual, sizeof(actual)) == (ssize_t)size &&
+            memcmp(actual, expected, size) == 0;
+        close(fd);
+    } else ok = false;
+    unlinkat(dir, AJAZZ_JOURNAL_ACTIVE, 0);
+    unlinkat(dir, AJAZZ_JOURNAL_LEASE, 0);
+    close(dir);
+    return unlinkat(parent, name, AT_REMOVEDIR) == 0 && ok;
+}
+
 /// Refuse unsafe preexisting directories without modifying their permissions.
 static bool lifecycle_refusals(const char *root, int parent) {
     const char *name = "AJAZZBatteryTray-Journal";
@@ -107,7 +142,8 @@ int main(void) {
     int dir = open(root, O_RDONLY | O_DIRECTORY);
     bool ok = dir >= 0 && rotation(root, dir) && tail_and_contention(root, dir) &&
         refusals(root, dir) && lifecycle_records(root, dir, false) &&
-        lifecycle_records(root, dir, true) && lifecycle_refusals(root, dir);
+        lifecycle_records(root, dir, true) && operation_records(root, dir, false) &&
+        operation_records(root, dir, true) && lifecycle_refusals(root, dir);
     if (dir >= 0) {
         unlinkat(dir, "alias", 0);
         unlinkat(dir, AJAZZ_JOURNAL_ACTIVE, 0);
@@ -122,5 +158,6 @@ int main(void) {
     }
     puts("PASS: private journal rotation, torn tail, contention and unsafe-file refusals");
     puts("PASS: edition-specific lifecycle records and unsafe-directory refusals");
+    puts("PASS: closed operation records through both edition journals");
     return 0;
 }
