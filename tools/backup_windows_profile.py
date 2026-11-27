@@ -120,6 +120,8 @@ def rehearse(source: Path, output: Path) -> dict:
     # Restrict rehearsal to a sibling of the backup, not the live profile.
     if output.parent.resolve() != source.parent.resolve():
         raise ValueError('rehearsal must be a sibling of the backup')
+    if not re.fullmatch(r'AJAZZ-rehearsal-[A-Za-z0-9-]{1,64}', output.name):
+        raise ValueError('expected dedicated rehearsal directory name')
     if source.resolve() == output.resolve():
         raise ValueError('rehearsal must differ from backup')
     expected = verify(source)
