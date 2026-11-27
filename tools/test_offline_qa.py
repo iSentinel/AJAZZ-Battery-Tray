@@ -122,6 +122,49 @@ class OfflineQaTests(unittest.TestCase):
                     verify_manifest(root)
                 self.assertEqual(check.call_count, 2)
 
+    def test_manifest_rejects_late_file_mutation(self) -> None:
+        """Catch a mutation after an earlier file has already been verified."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_text("synthetic")
+            write_json(root / "manifest.json", verify_inventory(root))
+
+            def mutate_after_read(path: Path) -> bytes:
+                """Change the first evidence file after reading the last."""
+                raw = read_evidence(path)
+                if path.name == REQUIRED[-1]:
+                    (root / REQUIRED[0]).write_text("late mutation")
+                return raw
+
+            with patch("run_offline_qa.read_evidence",
+                       side_effect=mutate_after_read):
+                with self.assertRaisesRegex(ValueError, "inventory changed"):
+                    verify_manifest(root)
+
+    def test_manifest_rejects_late_manifest_replacement(self) -> None:
+        """Reject a new manifest inode even when its contents are identical."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_text("synthetic")
+            manifest = root / "manifest.json"
+            write_json(manifest, verify_inventory(root))
+
+            def replace_after_read(path: Path) -> bytes:
+                """Replace the already-read manifest with identical bytes."""
+                raw = read_evidence(path)
+                if path.name == REQUIRED[-1]:
+                    replacement = root / "replacement"
+                    replacement.write_bytes(manifest.read_bytes())
+                    replacement.replace(manifest)
+                return raw
+
+            with patch("run_offline_qa.read_evidence",
+                       side_effect=replace_after_read):
+                with self.assertRaisesRegex(ValueError, "inventory changed"):
+                    verify_manifest(root)
+
     def test_manifest_rejects_duplicate_or_invalid_entry(self) -> None:
         """Reject duplicate required names and Boolean byte counts."""
         with tempfile.TemporaryDirectory() as tmp:
