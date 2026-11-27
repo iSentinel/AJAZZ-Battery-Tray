@@ -87,6 +87,25 @@ def write_json(path: Path, value: dict) -> None:
         output.write("\n")
 
 
+def publish_manifest(directory: Path) -> None:
+    """Publish a complete manifest without replacing an existing destination."""
+    value = verify_inventory(directory)
+    destination = directory / "manifest.json"
+    descriptor, name = tempfile.mkstemp(prefix=".manifest-", dir=directory)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+            json.dump(value, output, indent=2, sort_keys=True)
+            output.write("\n")
+            output.flush()
+            os.fsync(output.fileno())
+        # Same-directory link is atomic and refuses an occupied name.
+        # Unsupported filesystems fail closed; never fall back to replace.
+        os.link(temporary, destination)
+    finally:
+        temporary.unlink()
+
+
 def git_value(*args: str) -> str:
     """Query bounded local Git metadata only, without network access."""
     return subprocess.check_output(
@@ -304,7 +323,7 @@ def run_qa(directory: Path) -> int:
         "commit": source["commit"], "tree": source["tree"], "tests": counts,
         "native_build": "NOT_RUN", "hardware": "NOT_RUN", "steps": steps,
     })
-    write_json(directory / "manifest.json", verify_inventory(directory))
+    publish_manifest(directory)
     verify_manifest(directory)
     return 0 if passed else 1
 
