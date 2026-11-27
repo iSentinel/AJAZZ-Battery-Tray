@@ -13,6 +13,8 @@ on:
       - 'tests/fixtures/apex-f7-v1.csv'
       - 'macos/AjazzIoLease.h'
       - 'tools/check_apple_io_lease.py'
+      - 'tools/verify_apple_group_catalog.py'
+      - 'tests/fixtures/apple-native-groups-v1.json'
       - '.github/workflows/build-high-sierra.yml'
       - '.github/workflows/release-high-sierra.yml'
   push:
@@ -28,6 +30,8 @@ on:
       - 'tests/fixtures/apex-f7-v1.csv'
       - 'macos/AjazzIoLease.h'
       - 'tools/check_apple_io_lease.py'
+      - 'tools/verify_apple_group_catalog.py'
+      - 'tests/fixtures/apple-native-groups-v1.json'
       - '.github/workflows/build-high-sierra.yml'
   workflow_dispatch:
 
@@ -48,7 +52,22 @@ jobs:
           clang --version | sed -n '1p'
           xcrun --sdk macosx --show-sdk-version
       - name: Build native Intel app and run parser tests
-        run: bash macos/high-sierra/build.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          capture="$RUNNER_TEMP/ajazz-high-sierra-build.txt"
+          review="$RUNNER_TEMP/ajazz-high-sierra-group-review.json"
+          test ! -e "$capture"
+          test ! -e "$review"
+          bash macos/high-sierra/build.sh | tee "$capture"
+          python3 tools/verify_apple_group_catalog.py --edition high-sierra --capture "$capture" --output "$review"
+      - name: Retain scoped native Apple group review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: apple-high-sierra-native-group-review
+          path: ${{ runner.temp }}/ajazz-high-sierra-group-review.json
+          if-no-files-found: error
       - name: Verify shared vendor I/O gate without HID
         run: |
           python3 tools/check_apple_io_lease.py --exe "dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra"
