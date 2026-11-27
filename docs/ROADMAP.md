@@ -3212,3 +3212,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       journal sink and edition GUI lifecycle in a separate stage.
       Actual UI latency, resources, High Sierra runtime and physical
       acceptance remain open. Release BLOCKED.
+
+### ENG-05 Apple background edition storage adapter
+
+- [x] #336 writer fixtures PASS on Linux and Intel macOS, offline QA PASS.
+      Parent full CI and integration required; no release change.
+- [x] Connect the existing edition-specific secure storage to the writer
+      through an owned bounded absolute path and explicit lifetime.
+      Producer offers do not perform file I/O; no persistence claim on offer.
+- [x] Add synthetic exact FIFO records for both editions, invalid paths,
+      post-seal refusal, premature destruction and unsafe directory
+      failure accounting. Reuse existing rotation and permission checks.
+- [ ] Qualify dependent adapter in hosted CI after parent integration;
+      then add Swift/Objective-C lifecycle and diagnostics wiring.
+      Actual GUI and High Sierra runtime remain NOT_RUN; release BLOCKED.
