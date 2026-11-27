@@ -1,3 +1,14 @@
+# Resume — Apple GUI lifecycle journal candidate
+
+#329 merged 23520a9; 4/4 workflows PASS, eight changed blobs match
+7f7b0a2. Linux and Intel macOS storage/encoder run 45989480249 PASS.
+#328 closed as superseded, branch retained. Added fixed edition private
+journal directories, actual AppKit start/stop hooks and saturating process
+failure counters in existing diagnostics; synthetic lifecycle/refusal
+fixtures, High Sierra header path triggers. CI pending; real GUI not run.
+No poll/clock events yet, no hardware policy or retained candidate changes.
+Release BLOCKED.
+
 # Resume — Darwin journal fixture compilation correction
 
 #329 initial run 45987778921: Linux encoder/storage PASS; macOS
