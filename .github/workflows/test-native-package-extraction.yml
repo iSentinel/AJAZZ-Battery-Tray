@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/test-native-package-extraction.yml'
       - 'tools/observe_native_package_extraction.py'
+      - 'tools/observe_native_package_selftests.py'
+      - 'tools/test_observe_native_package_selftests.py'
       - 'tools/test_observe_native_package_extraction.py'
       - 'tools/build_consolidated_portable_notices.py'
       - 'tools/build_consolidated_apple_notices.py'
@@ -71,12 +73,27 @@ jobs:
           $notices = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe/staged'
           python tools/observe_native_package_extraction.py --edition windows --original (Join-Path $env:RUNNER_TEMP 'original-windows.zip') --license LICENSE --notices $notices --root (Join-Path $env:RUNNER_TEMP 'windows-package') --output (Join-Path $env:RUNNER_TEMP 'windows-extraction.json')
           if ($LASTEXITCODE -ne 0) { throw 'Native package extraction failed' }
+      - name: Run exact extracted Windows synthetic CLI self-tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python tools/observe_native_package_selftests.py --edition windows --original (Join-Path $env:RUNNER_TEMP 'original-windows.zip') --license LICENSE --corpus tests/fixtures/apex-f7-v1.csv --root (Join-Path $env:RUNNER_TEMP 'windows-package') --output (Join-Path $env:RUNNER_TEMP 'windows-selftests.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Native synthetic self-tests failed' }
       - name: Retain Windows observation only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           archive: true
           name: windows-package-extraction-observation
           path: ${{ runner.temp }}/windows-extraction.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Retain Windows self-test observation only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-package-selftest-observation
+          path: ${{ runner.temp }}/windows-selftests.json
           if-no-files-found: error
           retention-days: 7
 
@@ -102,6 +119,13 @@ jobs:
           for edition in universal high-sierra; do
             python3 tools/observe_native_package_extraction.py --edition "$edition" --original "$RUNNER_TEMP/original-$edition.zip" --license LICENSE --root "$RUNNER_TEMP/$edition-package" --output "$RUNNER_TEMP/$edition-extraction.json"
           done
+      - name: Run exact extracted Apple synthetic CLI self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for edition in universal high-sierra; do
+            python3 tools/observe_native_package_selftests.py --edition "$edition" --original "$RUNNER_TEMP/original-$edition.zip" --license LICENSE --corpus tests/fixtures/apex-f7-v1.csv --root "$RUNNER_TEMP/$edition-package" --output "$RUNNER_TEMP/$edition-selftests.json"
+          done
       - name: Retain Apple observations only
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -110,5 +134,16 @@ jobs:
           path: |
             ${{ runner.temp }}/universal-extraction.json
             ${{ runner.temp }}/high-sierra-extraction.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Retain Apple self-test observations only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: apple-package-selftest-observation
+          path: |
+            ${{ runner.temp }}/universal-selftests.json
+            ${{ runner.temp }}/high-sierra-selftests.json
           if-no-files-found: error
           retention-days: 7

@@ -1,3 +1,14 @@
+# Resume — native extraction observations and synthetic CLI launch
+
+#313 exact 7/7 merged 5f79094. Original native extraction artifacts
+15160688838 and 15161287908 verified; Windows 16 files and both
+Apple 4 outer/7 inner files, modes and codesign MATCH. Extended
+workflow runs 12 fixed synthetic CLI modes on exact extracted
+packages, with corpus and executable pins, deadlines and post-test
+inventory. Three synthetic groups PASS; native self-test CI pending.
+GUI, physical and interactive acceptance, retained Setup, final
+selection, signing and distribution remain open. Release BLOCKED.
+
 # Resume — native proposed package extraction
 
 #312 exact 4/4 merged 7cf2211. All three actual proposed packages
