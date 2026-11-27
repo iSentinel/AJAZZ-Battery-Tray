@@ -1,0 +1,34 @@
+{
+  "schema": "windows-dashboard-group-catalog-v1",
+  "reference": {
+    "run_id": 45956565055,
+    "job_id": 140364303218,
+    "checkout": "89002231b290824ace4b825e05a3bd9721d2e241"
+  },
+  "groups": [
+    "28 numeric icon ink bounds including AULA 76% and 100%",
+    "four ICO exports and existing-file protection",
+    "four embedded app icons and red critical rendering",
+    "en dashboard unverified field and state transitions",
+    "en timer-only unchanged rows and expired charge",
+    "en timer-only unverified expiry and verified precedence",
+    "en minimum-size layout and device actions",
+    "en synthetic font/window scale 125%; not real DPI",
+    "en synthetic font/window scale 150%; not real DPI",
+    "en synthetic font/window scale 200%; not real DPI",
+    "ru dashboard unverified field and state transitions",
+    "ru timer-only unchanged rows and expired charge",
+    "ru timer-only unverified expiry and verified precedence",
+    "ru minimum-size layout and device actions",
+    "ru synthetic font/window scale 125%; not real DPI",
+    "ru synthetic font/window scale 150%; not real DPI",
+    "ru synthetic font/window scale 200%; not real DPI",
+    "uk dashboard unverified field and state transitions",
+    "uk timer-only unchanged rows and expired charge",
+    "uk timer-only unverified expiry and verified precedence",
+    "uk minimum-size layout and device actions",
+    "uk synthetic font/window scale 125%; not real DPI",
+    "uk synthetic font/window scale 150%; not real DPI",
+    "uk synthetic font/window scale 200%; not real DPI"
+  ]
+}
