@@ -1,3 +1,12 @@
+# Resume — Windows Dashboard smoke group coverage
+
+#325 merged aff0744; 5 workflows / 6 jobs PASS, nine changed blobs
+match 8900223. Universal 21 and High Sierra six native groups verified.
+Added observed reference for 24 Windows Dashboard groups, ordered
+coverage check, three regression groups and existing smoke CI review.
+Nine scaling groups explicitly synthetic, not real DPI. Hosted QA
+pending. No application, hardware protocol or release changes.
+
 # Resume — Apple native build group coverage
 
 #324 merged e0a4205; 4/4 workflows and 5/5 jobs PASS, eight changed
