@@ -3312,3 +3312,13 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [ ] Repeat hosted CI against integrated base, then qualify and
       close superseded field-plan PR. Bind coverage to verified bytes
       separately. Native ACL, actual GUI and release admission open.
+
+### ENG-16 bind coverage analysis to verified evidence bytes
+
+- [x] Read the exact four evidence documents into a bounded inventory
+      while validating manifest digests and metadata. Preserve the public
+      verification CLI and use the same bytes for semantic coverage and
+      JUnit count checks. Recheck observed path identities at completion.
+- [x] Add a regression covering five reads and late summary mutation.
+- [ ] Qualify after #343 integration; native ACL and actual GUI/hardware
+      remain open. Release BLOCKED.
