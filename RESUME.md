@@ -1,3 +1,14 @@
+# Resume — exact rollback CI harness correction
+
+#319 initial run 45931292999: verified original inputs and reached
+successful four-file recovery rehearsal after reinstalling beta.60;
+final uninstall failed because hardcoded unins000.exe was absent.
+Use the exact AppId registry command, strictly allowlist the executable
+basename and directory and reject extra arguments. Added native command
+fixtures and phase markers. Repeat CI required. The actual registered
+filename from the failed run is unknown. No new binary, live profile,
+HID, GUI or release action. Release BLOCKED.
+
 # Resume — exact original installer rollback rehearsal
 
 #318 merged ecfdf9c; all 4 workflows / 5 jobs PASS and all six changed
