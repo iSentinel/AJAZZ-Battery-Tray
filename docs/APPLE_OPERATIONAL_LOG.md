@@ -103,3 +103,22 @@ runtime overhead. Existing history directories and permissions are unchanged.
 The standalone fixture verifies both fixed names and exact start/stop
 records, private permissions, refusal of an unsafe existing directory
 without chmod, and refusal of a symlink. Actual GUI launch is NOT_RUN.
+
+## Fourth stage: scoped GUI operation events
+
+The edition-relative helper now accepts closed event/reason enums. Both
+GUI delegates log IsolatedPollingEnabled when the existing opt-in mode
+is active and IsolatedPollTimedOut on actual isolated worker timeout.
+High Sierra's existing 20-second in-process watchdog emits PollFailed
+with reason timeout once for that watchdog callback, not on every display
+refresh or the eventual ordinary completion. Closing/cancelled operations
+are not interpreted as failures. Universal records DockClockSucceeded or
+DockClockFailed only for an attempted clock operation through its existing
+result handler. Success means the existing transfer returned true, not
+verified dock time; failure means unsuccessful, not a diagnosed cause.
+High Sierra has no equivalent clock action wired here. Unknown charge,
+absence, unsupported collection and unattempted operations do not emit
+new failure events. Polling policy, worker deadlines and HID writes are
+unchanged. No operation durations or real GUI observations are claimed.
+Synthetic fixtures verify five event/reason pairs through both edition
+storage paths, in addition to existing encoder and lifecycle tests.

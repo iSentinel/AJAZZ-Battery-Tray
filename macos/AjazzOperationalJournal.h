@@ -103,9 +103,10 @@ static inline bool AjazzJournalWrite(const char *path, AjazzOperationalEvent eve
 
 /// Use a fixed edition-specific child of existing user Application Support.
 /// Refuse unsafe existing permissions; never chmod or replace a directory.
-static inline bool AjazzJournalLifecycle(const char *support, bool legacy,
-    bool stopping, time_t timestamp) {
-    if (!support) return false;
+static inline bool AjazzJournalEditionEvent(const char *support, bool legacy,
+    AjazzOperationalEvent event, AjazzOperationalReason reason, time_t timestamp) {
+    if (!support || (unsigned)event >= AjazzEventCount ||
+        (unsigned)reason >= AjazzReasonCount) return false;
     int parent = open(support, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
     if (parent < 0) return false;
     struct stat info;
@@ -118,11 +119,17 @@ static inline bool AjazzJournalLifecycle(const char *support, bool legacy,
         return false;
     }
     int dir = openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    bool ok = AjazzJournalWriteAt(dir, stopping ? AjazzEventStopped : AjazzEventStarted,
-                                   AjazzReasonNone, timestamp, AJAZZ_JOURNAL_LIMIT);
+    bool ok = AjazzJournalWriteAt(dir, event, reason, timestamp, AJAZZ_JOURNAL_LIMIT);
     if (dir >= 0) close(dir);
     close(parent);
     return ok;
+}
+
+/// Retain the lifecycle wrapper for callers and regression fixtures.
+static inline bool AjazzJournalLifecycle(const char *support, bool legacy,
+    bool stopping, time_t timestamp) {
+    return AjazzJournalEditionEvent(support, legacy,
+        stopping ? AjazzEventStopped : AjazzEventStarted, AjazzReasonNone, timestamp);
 }
 
 #endif

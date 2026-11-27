@@ -1,3 +1,14 @@
+# Resume — Apple scoped operation result journal
+
+#330 merged bcbb1bc; 5 workflows / 7 jobs PASS, nine changed blobs
+match 1eb8a78. Native lifecycle fixtures and both builds PASS. Extend
+closed journal events for isolated polling enabled/actual timeout,
+High Sierra existing watchdog timeout, Universal attempted clock transfer
+result. No inferred failures for unknown/absent, no new HID operations.
+Five synthetic operation pairs through each edition storage path added.
+Hosted qualification pending. Actual GUI, durations and real hardware
+remain open. Retained beta.61 unchanged; release BLOCKED.
+
 # Resume — Apple GUI lifecycle journal candidate
 
 #329 merged 23520a9; 4/4 workflows PASS, eight changed blobs match
