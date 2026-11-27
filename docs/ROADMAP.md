@@ -3198,3 +3198,17 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Qualify queue state in CI, then implement synchronized producer and
       one background writer; test contention and bounded termination.
       No GUI migration or actual latency claim yet. Release BLOCKED.
+
+### ENG-05 Apple serialized background writer
+
+- [x] #335 merged 39e3502 after 4/4 workflows and 6/6 jobs PASS; all six
+      changed blobs match tested checkout 3bede5c. Queue fixtures PASS
+      on Linux and Intel macOS (jobs 140630103603/140630103072).
+- [x] Standalone single-consumer pthread adapter: short serialized state
+      operations, sink outside lock, reserved stop, monotonic bounded
+      wait, explicit completed-worker join and status snapshot. Add
+      synthetic concurrent producer, blocked sink and idle wake tests.
+- [ ] Hosted CI and review adapter lifecycle, then connect production
+      journal sink and edition GUI lifecycle in a separate stage.
+      Actual UI latency, resources, High Sierra runtime and physical
+      acceptance remain open. Release BLOCKED.
