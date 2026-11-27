@@ -276,3 +276,21 @@ raw exceptions are emitted. The shared C fixture exercises start,
 duplicate start, stop retry, exact FIFO records, cached final status
 and missing path for both editions. Hosted native builds and actual
 GUI/hardware performance and shutdown qualification remain separate.
+
+## Twelfth stage: paced synthetic producer benchmark
+
+The fixed standalone fixture submits 4096 timed events through the
+same GUI adapter as the two applications, in batches of 32. The
+producer-only monotonic measurement excludes explicit batch drain
+waits. The total elapsed time and process CPU include the consumer
+and pacing; peak RSS is process-wide, not a measured incremental
+tray cost. The first shutdown observation is recorded separately;
+additional attempts are solely for safe benchmark cleanup.
+
+Qualification requires 4098 completed records including start/stop,
+zero failed, dropped and unavailable events, and exact ordered
+content of both retained generations. Synthetic timestamps distinguish
+record ordering. Only aggregate JSON is retained. This is a paced
+workload, not an unbounded stress test or real AppKit measurement.
+No comparison of different scopes implies real UI latency or battery
+polling performance. Parent #338 and hosted results remain required.
