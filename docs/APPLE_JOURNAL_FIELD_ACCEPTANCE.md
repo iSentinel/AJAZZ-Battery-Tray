@@ -3,6 +3,8 @@
 This is a developer-only check of the background journal integration in
 PR #338, not beta.61 release admission. Hosted build and synthetic
 results are PASS; actual AppKit/High Sierra/arm64 observations are NOT_RUN.
+The field plan uses the exact #338 binaries, not later QA-tool changes;
+#341 integrated at fc70039 does not change either tested binary.
 
 ## Exact development build
 
@@ -113,7 +115,7 @@ vanishes and report only the passing attempt.
 
 Report per case PASS, FAIL, INCONCLUSIVE or NOT_RUN, edition, OS build,
 architecture, artifact/executable identity and a short scoped
-observation. Record all attempts. A responsive menu observation is not
+observation. Record all attempts. Never combine results from different executable hashes. A responsive menu observation is not
 a frame-time measurement. Real resource/GUI data cannot be inferred
 from synthetic benchmark metrics. Receiver-attached tests are separate:
 follow [isolated polling acceptance](ISOLATED_POLLING_ACCEPTANCE.md)
