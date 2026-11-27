@@ -1,3 +1,14 @@
+# Resume — Apple native build group coverage
+
+#324 merged e0a4205; 4/4 workflows and 5/5 jobs PASS, eight changed
+blobs match 47a60b7. Windows run 45955903247 verified all 1028 ordered
+assertions with zero FAIL, artifact 15178716878. Added observed Apple
+reference (21 Universal, six High Sierra build self-test groups), exact
+coverage verifier, three regression groups and both Apple CI checks.
+Hosted qualification pending. Group labels are not individual assertions.
+No application/build script or release changes. Dashboard, physical
+acceptance and release gates remain open.
+
 # Resume — Windows native assertion coverage
 
 #323 merged 7e575ac; 4/4 workflows PASS, six changed blobs match
