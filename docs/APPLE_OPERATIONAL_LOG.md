@@ -77,3 +77,29 @@ replacement. Keep each edition's directory distinct to preserve its own
 operational provenance. Establish closed failure counters before adding
 periodic poll events; do not label ordinary disconnected/unknown states
 as transport failures. This is a design checkpoint, not wired behavior.
+
+## Third stage: GUI lifecycle integration candidate
+
+#329 qualified the shared encoder and storage on Linux and Intel macOS.
+The new lifecycle helper opens the existing user Application Support
+directory without following its final symlink, verifies ownership and
+rejects group/other write permissions, then creates a fixed edition child
+using mkdirat (0700). It never chmods existing directories. The child is
+opened relative to the held parent descriptor; existing journal storage
+checks still apply. Universal uses AJAZZBatteryTray-Journal and High
+Sierra uses AJAZZBatteryTrayHighSierra-Journal. Missing support directory,
+unsafe permissions and failed writes are refused; no alternate location.
+Parent ancestors and ACLs remain outside the qualification.
+
+Both actual AppKit delegates record ApplicationStarted after menu setup
+and ApplicationStopped only in applicationWillTerminate. A deferred
+termination request is not a stopped event. Forced termination can omit
+that final record. Only GUI lifecycle paths call the helper; synthetic
+self-tests, CLI diagnostics and workers do not. The saturating process
+failure counter is included in the existing menu diagnostic snapshot;
+no path or journal contents are exported. Failures do not prevent startup
+or exit. This stage does not add poll, history or clock events or measure
+runtime overhead. Existing history directories and permissions are unchanged.
+The standalone fixture verifies both fixed names and exact start/stop
+records, private permissions, refusal of an unsafe existing directory
+without chmod, and refusal of a symlink. Actual GUI launch is NOT_RUN.
