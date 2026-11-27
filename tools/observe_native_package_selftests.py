@@ -79,6 +79,7 @@ def run_case(exe: Path, case: tuple, env: dict) -> dict:
     result = subprocess.run(command, cwd=exe.parent, env=env, timeout=timeout + 10,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             check=False)
+    print(f'CASE: {mode}; exit={result.returncode}; expected={expected}', flush=True)
     return check_result(mode, result.returncode, expected, time.monotonic() - start)
 
 
@@ -86,7 +87,9 @@ def observe(root: Path, edition: str, original: bytes, license_bytes: bytes, cor
     """Execute fixed modes only after exact validation and recheck bytes afterwards."""
     if digest(read_local(corpus)) != CORPUS_SHA:
         raise ValueError('synthetic corpus differs')
+    print('PASS: pinned synthetic corpus', flush=True)
     exe, sha = inputs(root, edition, original, license_bytes)
+    print('PASS: pre-test package inventory', flush=True)
     env = {**os.environ, 'AJAZZ_TEST_CORPUS': str(corpus.resolve())}
     results = []
     for case in CASES[edition]:
@@ -119,8 +122,8 @@ def main(argv: list[str] | None = None) -> int:
         row = observe(args.root.resolve(), args.edition, read_local(args.original),
                       read_local(args.license), args.corpus)
         write_json(args.output, row)
-    except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
-        print('FAIL: native package synthetic self-tests', file=sys.stderr)
+    except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
+        print(f'FAIL: native package synthetic self-tests ({type(error).__name__})', file=sys.stderr)
         return 2
     print('PASS: native synthetic self-tests; GUI NOT_RUN; release BLOCKED')
     return 0
