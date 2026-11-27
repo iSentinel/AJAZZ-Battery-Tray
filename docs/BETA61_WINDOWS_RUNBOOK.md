@@ -68,6 +68,50 @@ can instead be extracted to a fresh folder after archive and executable
 hash verification. Preserve the four Icons files. Neither path constitutes
 release admission.
 
+## Back up the existing Windows profile before testing an upgrade
+
+The Windows portable and installed applications share the usual user profile.
+Close the tray application and any other processes using the profile before
+starting. The portable preferences export does not include all local history
+or device-specific consent. The new local-only backup utility copies the
+exact reviewed settings and history files, including per-receiver history.
+It deliberately excludes logs, temporary files and unrelated files.
+
+Use a new directory in an owner-controlled, access-restricted local location.
+The following example assumes an existing checkout of the qualification tools
+containing `backup_windows_profile.py` and Python 3.13.
+
+```powershell
+$profile = Join-Path $env:APPDATA 'AJAZZBatteryTray'
+$backup = Join-Path $env:USERPROFILE ('AJAZZ-backup-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+python tools/backup_windows_profile.py --source $profile --dry-run
+if ($LASTEXITCODE -ne 0) { throw 'Profile preflight failed' }
+python tools/backup_windows_profile.py --source $profile --backup $backup
+if ($LASTEXITCODE -ne 0) { throw 'Profile backup failed' }
+python tools/backup_windows_profile.py --verify $backup
+if ($LASTEXITCODE -ne 0) { throw 'Profile backup verification failed' }
+```
+
+Dry-run does not write files. Exit 0 means the scoped read or backup integrity
+check passed, not that installation or restore was tested. Exit 2 means
+invalid inputs or failure. An interrupted backup may leave an incomplete
+destination; use a new directory and do not trust the incomplete copy.
+If the profile does not exist, this procedure is not applicable.
+
+The backup contains private settings (including same-user device keys and
+consents) and battery history. Never upload it, attach it to issues, copy it
+to another user/device, or commit it. On Windows, directory ACLs are the
+operator's responsibility; this utility does not qualify or change ACLs.
+Hashes are local integrity checks, not authentication or encryption.
+The two reads detect ordinary concurrent changes but do not guarantee an
+atomic snapshot or resistance to adversarial filesystem races.
+
+For recovery, keep the backup unchanged and verify it again. Use a
+disposable restored desktop or VM checkpoint first; do not copy over a
+running application or erase the newer profile. Automatic overwrite,
+cross-version restore compatibility and interactive rollback remain
+unqualified. No restore action is implemented by this utility.
+
 ## Prepare a local Setup
 
 Use Git, Python 3.13, `curl.exe`, and a recent GitHub CLI with
