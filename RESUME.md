@@ -1,3 +1,15 @@
+# Resume — ENG-16 atomic manifest publication candidate
+
+#341 merged fc70039 after 4 workflows / 5 jobs PASS; all five changed
+blobs match 9bcd26d. Offline QA and artifact roundtrip PASS, Windows,
+Universal and HA PASS. #340 field plan passed its previous base, updated
+for current integration and requires repeat CI; field tests NOT_RUN.
+Add same-directory private temporary manifest, flush/fsync and atomic
+no-replace link, then unlink temp and reverify complete inventory.
+Four regressions: success/collision, partial serialization, unsupported
+link and fsync failure. Hosted qualification pending. Whole-directory
+atomicity, crash durability and native ACLs remain open; release BLOCKED.
+
 # Resume — ENG-16 complete-inventory identity recheck
 
 #339 merged b5b7dee after 4 workflows / 6 jobs PASS; five changed blobs
