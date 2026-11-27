@@ -317,11 +317,12 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Record closed GUI events; journal failure never prevents normal operation.
-    private func recordJournalEvent(_ event: AjazzOperationalEvent, _ reason: AjazzOperationalReason) {
+    private func recordJournalEvent(_ event: AjazzOperationalEvent, _ reason: AjazzOperationalReason,
+                                    durationMs: Int64 = -1) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory,
                                                 in: .userDomainMask).first
         let ok = support?.withUnsafeFileSystemRepresentation { path in
-            AjazzJournalEditionEvent(path, false, event, reason, time(nil))
+            AjazzJournalEditionTimedEvent(path, false, event, reason, time(nil), durationMs)
         } ?? false
         if !ok && journalFailedWrites < UInt64.max { journalFailedWrites += 1 }
     }
@@ -910,17 +911,23 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let lastAttempt = lastClockAttempt
         let previouslyPresent = receiverWasPresent
         DispatchQueue.global(qos: .utility).async { [weak self] in
+            let readStart = ProcessInfo.processInfo.systemUptime
             let value = Self.readForPoll(token)
+            let readMs = AjazzElapsedMilliseconds(readStart, ProcessInfo.processInfo.systemUptime)
             let observedAt = Date()
             let elapsed = Date().timeIntervalSince(lastAttempt)
             let due = elapsed < 0 || elapsed >= 300
             let shouldSync = token?.isCancelled != true &&
                 value.compatibleReceiverPresent == true && (manual ||
                 (automatic && (due || !previouslyPresent)))
+            let clockStart = ProcessInfo.processInfo.systemUptime
             let sent = shouldSync ? Self.clockForPoll(token) : false
+            let clockMs = shouldSync ? AjazzElapsedMilliseconds(clockStart,
+                ProcessInfo.processInfo.systemUptime) : -1
             DispatchQueue.main.async {
                 self?.completePoll(value, observedAt: observedAt, manual: manual,
-                                   attempted: shouldSync, sent: sent)
+                                   attempted: shouldSync, sent: sent,
+                                   readMs: readMs, clockMs: clockMs)
             }
         }
     }
@@ -942,7 +949,7 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func completePoll(_ value: ApexBattery.Status, observedAt: Date, manual: Bool,
-                              attempted: Bool, sent: Bool) {
+                              attempted: Bool, sent: Bool, readMs: Int64, clockMs: Int64) {
         activeCancellation = nil
         if closing {
             polling = false
@@ -954,19 +961,19 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let queued = manualClockSync
         if manual && value.compatibleReceiverPresent == nil { manualClockSync = true }
         if value == .timedOut && isolatedPolling {
-            recordJournalEvent(AjazzEventIsolatedPollTimedOut, AjazzReasonTimeout)
+            recordJournalEvent(AjazzEventIsolatedPollTimedOut, AjazzReasonTimeout, durationMs: readMs)
         }
-        if attempted { recordClockResult(sent) }
+        if attempted { recordClockResult(sent, durationMs: clockMs) }
         sessionObservation.observe(value, at: observedAt)
         update(value)
         if queued { refresh() }
     }
 
-    private func recordClockResult(_ sent: Bool) {
+    private func recordClockResult(_ sent: Bool, durationMs: Int64) {
         lastClockAttempt = Date()
         lastClockSent = sent
         recordJournalEvent(sent ? AjazzEventDockClockSucceeded : AjazzEventDockClockFailed,
-                           sent ? AjazzReasonNone : AjazzReasonUnsuccessful)
+                           sent ? AjazzReasonNone : AjazzReasonUnsuccessful, durationMs: durationMs)
         updateClockStatus()
     }
 
