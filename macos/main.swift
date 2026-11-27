@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Darwin
 import IOKit.hid
 import ServiceManagement
 
@@ -298,6 +299,7 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var displayedStatus = ApexBattery.Status.accessUnknown
     private var sessionObservation = ApexSessionObservation()
     private var lastClockSent: Bool?
+    private var journalFailedWrites: UInt64 = 0
 
     deinit { AjazzSessionDestroy(diagnosticSession) }
 
@@ -308,8 +310,23 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.button?.title = "🔋?"
         NSApp.applicationIconImage = TrayAppearance.appIcon(TrayAppearance.choice("ApplicationIconColor"))
         buildStatusMenu()
+        recordJournalLifecycle(stopping: false)
         configureTimer()
         refresh()
+    }
+
+    /// Record only GUI lifecycle events; journal failure never prevents startup or exit.
+    private func recordJournalLifecycle(stopping: Bool) {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                in: .userDomainMask).first
+        let ok = support?.withUnsafeFileSystemRepresentation { path in
+            AjazzJournalLifecycle(path, false, stopping, time(nil))
+        } ?? false
+        if !ok && journalFailedWrites < UInt64.max { journalFailedWrites += 1 }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        recordJournalLifecycle(stopping: true)
     }
 
     private func command(_ key: String, _ action: Selector) -> NSMenuItem {
@@ -730,6 +747,7 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             "Last ordinary status: \(last.state); battery: \(battery)\n" +
             "Last verified USB UTC (session): \(sample)\n" +
             "Polling active: \(polling); isolated: \(isolatedPolling)\n" +
+            "Operational journal failed writes (process): \(journalFailedWrites)\n" +
             (bluetoothWindow?.diagnosticSummary ?? "Bluetooth discovery: not requested\n" +
                 "Bluetooth manual 180F/2A19 pending: false\nBluetooth last manual read: not requested") + "\n" +
             "No serial numbers, device paths or Bluetooth addresses collected."

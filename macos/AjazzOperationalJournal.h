@@ -72,27 +72,56 @@ static inline bool AjazzJournalAppend(int directory, const char *record,
     return written == (ssize_t)size && closed == 0;
 }
 
-/// Append only a closed event to an existing private directory.
-/// Nonblocking cooperating-writer coordination, not an adversarial sandbox.
-static inline bool AjazzJournalWrite(const char *path, AjazzOperationalEvent event,
+/// Append to a held, owner-private directory descriptor.
+static inline bool AjazzJournalWriteAt(int directory, AjazzOperationalEvent event,
     AjazzOperationalReason reason, time_t timestamp, size_t limit) {
-    if (!path || limit < 128 || limit > AJAZZ_JOURNAL_LIMIT) return false;
+    if (directory < 0 || limit < 128 || limit > AJAZZ_JOURNAL_LIMIT) return false;
     char record[256];
     size_t size = AjazzEncodeOperationalEvent(record, sizeof(record), event, reason, timestamp);
     if (!size || size > limit) return false;
-    int directory = open(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
     struct stat info;
-    if (directory < 0) return false;
     if (fstat(directory, &info) != 0 || !S_ISDIR(info.st_mode) ||
-        info.st_uid != geteuid() || (info.st_mode & 07777) != 0700) {
-        close(directory);
+        info.st_uid != geteuid() || (info.st_mode & 07777) != 0700)
         return false;
-    }
     int lease = AjazzJournalOpen(directory, AJAZZ_JOURNAL_LEASE, O_RDWR | O_CREAT, 0);
     bool ok = lease >= 0 && flock(lease, LOCK_EX | LOCK_NB) == 0 &&
         AjazzJournalAppend(directory, record, size, limit);
     if (lease >= 0) close(lease);
-    close(directory);
+    return ok;
+}
+
+/// Append only to an existing private directory; no final symlink traversal.
+static inline bool AjazzJournalWrite(const char *path, AjazzOperationalEvent event,
+    AjazzOperationalReason reason, time_t timestamp, size_t limit) {
+    if (!path) return false;
+    int dir = open(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (dir < 0) return false;
+    bool ok = AjazzJournalWriteAt(dir, event, reason, timestamp, limit);
+    close(dir);
+    return ok;
+}
+
+/// Use a fixed edition-specific child of existing user Application Support.
+/// Refuse unsafe existing permissions; never chmod or replace a directory.
+static inline bool AjazzJournalLifecycle(const char *support, bool legacy,
+    bool stopping, time_t timestamp) {
+    if (!support) return false;
+    int parent = open(support, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (parent < 0) return false;
+    struct stat info;
+    const char *name = legacy ? "AJAZZBatteryTrayHighSierra-Journal" :
+                                "AJAZZBatteryTray-Journal";
+    bool safe = fstat(parent, &info) == 0 && S_ISDIR(info.st_mode) &&
+        info.st_uid == geteuid() && (info.st_mode & 0022) == 0;
+    if (!safe || (mkdirat(parent, name, 0700) != 0 && errno != EEXIST)) {
+        close(parent);
+        return false;
+    }
+    int dir = openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    bool ok = AjazzJournalWriteAt(dir, stopping ? AjazzEventStopped : AjazzEventStarted,
+                                   AjazzReasonNone, timestamp, AJAZZ_JOURNAL_LIMIT);
+    if (dir >= 0) close(dir);
+    close(parent);
     return ok;
 }
 

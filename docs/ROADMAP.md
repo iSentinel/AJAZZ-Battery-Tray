@@ -3112,3 +3112,19 @@ configuration commands. USB `VersionNumber` is a device revision,
       directory, no chmod of existing profile, start/actual termination
       hooks, and exclusion of CLI/worker execution.
 - [ ] Repeat exact combined CI; lifecycle call sites not implemented.
+
+### ENG-05 Apple GUI lifecycle journal integration
+
+- [x] #329 merged 23520a9 after 4/4 workflows PASS; all eight changed
+      blobs match tested checkout 7f7b0a2. Run 45989480249 Linux job
+      140473379027 and Intel macOS job 140473378692 passed all 70 closed
+      combinations under both TZs and storage rotation/tail/lease/refusal.
+      #328 closed as superseded without merge; branch retained.
+- [x] Add fixed edition private directory helper and wire startup and
+      actual termination into Swift and Objective-C delegates. Saturating
+      per-process failure counter in existing diagnostic snapshot.
+      Add synthetic lifecycle byte and unsafe-directory checks. Ensure
+      High Sierra workflow triggers on shared journal header changes.
+- [ ] Hosted CI, actual GUI lifecycle/High Sierra/arm64 qualification;
+      poll/clock events, monotonic durations and runtime overhead remain
+      separate. No release changes, no hardware policy changes.

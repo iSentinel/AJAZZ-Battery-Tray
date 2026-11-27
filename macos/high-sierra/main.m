@@ -534,6 +534,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 @property(nonatomic, assign) BOOL polling;
 @property(nonatomic, assign) BOOL isolatedPolling;
 @property(nonatomic, assign) BOOL closing;
+@property(nonatomic, assign) uint64_t journalFailedWrites;
 @property(nonatomic, assign) AjazzDiagnosticSession *diagnosticSession;
 @property(nonatomic, strong) NSMenuItem *sessionStatusItem;
 @property(nonatomic, strong) NSMenuItem *sessionStartItem;
@@ -587,8 +588,21 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     self.diagnosticSession = AjazzSessionCreate();
     NSApp.applicationIconImage = AppearanceAppIcon(AppearanceChoice(@"ApplicationIconColor"));
     [self buildMenu];
+    [self recordJournalLifecycle:NO];
     [self scheduleTimer];
     [self refresh:nil];
+}
+
+/// Record GUI lifecycle only; journal failure never blocks normal operation.
+- (void)recordJournalLifecycle:(BOOL)stopping {
+    NSURL *support = [[[NSFileManager defaultManager]
+        URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] firstObject];
+    if (!AjazzJournalLifecycle(support.fileSystemRepresentation, true, stopping, time(NULL)) &&
+        self.journalFailedWrites < UINT64_MAX) self.journalFailedWrites++;
+}
+
+- (void)applicationWillTerminate:(NSNotification *)notification {
+    [self recordJournalLifecycle:YES];
 }
 
 - (NSString *)appearanceLabel:(NSString *)color {
@@ -1057,6 +1071,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
          @"OS: %@\nVID:PID: 3151:5007\nUsage: FFFF:0002\n"
          @"Battery state: %@; battery: %@\nMatching HID collections: %ld\n"
          @"Last verified USB UTC (session): %@\nPolling active: %@; isolated: %@\n"
+         @"Operational journal failed writes (process): %llu\n"
          @"Bluetooth discovery: %@\nBluetooth manual 180F/2A19 pending: %@\n"
          @"Bluetooth last manual read: %@\n"
          @"Firmware and device serial numbers were not queried.",
@@ -1065,6 +1080,7 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
          [utc stringFromDate:[NSDate dateWithTimeIntervalSince1970:floor([[NSDate date] timeIntervalSince1970])]], [[NSProcessInfo processInfo] operatingSystemVersionString],
          state, battery, (long)current.collections, sample,
          self.polling ? @"True" : @"False", self.isolatedPolling ? @"True" : @"False",
+         (unsigned long long)self.journalFailedWrites,
          self.bluetoothDiscovery ?: @"not requested", self.selectedPeripheral ? @"True" : @"False",
          self.bluetoothLastRead ?: @"not requested"];
 }
