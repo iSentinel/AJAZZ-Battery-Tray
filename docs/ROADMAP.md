@@ -2954,3 +2954,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Review actual hosted rollback result. Real Windows ACLs, GUI,
       application data compatibility, physical and interactive acceptance,
       normalized Setup retention and release admission remain open.
+
+- [x] Initial exact rollback run 45931292999 verified both installers,
+      candidate EXE, baseline reinstallation and four preserved/rehearsed
+      synthetic profile files, then failed at final uninstall because
+      hardcoded unins000.exe was not present. The actual registered
+      filename was not observed in that run. Resolve the uninstall
+      executable from the exact AppId registry record, permit only
+      quoted uninsNNN.exe in the fixed install directory, reject arguments
+      and reparse points, and log the selected basename. Two accepted and
+      three rejected command fixtures added. No change to installer bytes.
+- [ ] Repeat native CI and verify final uninstall and final backup check.
