@@ -3083,3 +3083,32 @@ configuration commands. USB `VersionNumber` is a device revision,
       which violates the exact zero-debt AST gate. Add the docstring,
       preserve assertions and expose bounded source audit on CI failure.
 - [ ] Repeat all triggered CI; exact failed artifact contents not reviewed.
+
+### ENG-16 completion and ENG-05 Apple journal storage candidate
+
+- [x] #327 merged a78a0e6 after 5/5 workflows PASS; all nine changed
+      blobs match tested checkout eac0ac6. Offline QA corrected; macOS
+      run 45973920825 initial artifact CreateArtifact ENOTFOUND, same-head
+      failed-job rerun 140432268097 PASS, artifact 15187706950. Native
+      Windows recovery 11/11 PASS on initial head and corrected run PASS.
+- [x] #328 encoder reference passed 4/4 workflows; Linux job 140432918006
+      and Intel macOS job 140432917380 each exercised all 70 combinations
+      twice (UTC and Pacific/Honolulu). Old base b83d4dd; carry encoder
+      onto a78a0e6 for exact combined qualification, not a stale-base merge.
+- [x] Add shared private Apple journal storage header and standalone
+      synthetic rotation, torn-tail, contention, recovery, permission,
+      hard-link, symlink and oversize refusal fixtures. Same-host CI added.
+- [ ] Combined CI and review; app call sites, operation durations, actual
+      High Sierra/arm64, ACLs, and adversarial filesystem/atomicity limits
+      remain separate. No live journal writes or release admission.
+
+- [x] #329 initial Linux encoder/storage PASS (140467678485); Intel
+      macOS encoder PASS under both TZs, storage compile FAIL because
+      strict POSIX mode hides Darwin O_NOFOLLOW/flock/mkdtemp declarations
+      (140467678902). Windows, Universal app build and offline QA PASS.
+      Add Darwin-only feature macro, preserve Werror and deployment 10.13.
+- [x] Inspect both actual app delegate lifecycle hooks and existing
+      Universal history directory. Document separate private journal
+      directory, no chmod of existing profile, start/actual termination
+      hooks, and exclusion of CLI/worker execution.
+- [ ] Repeat exact combined CI; lifecycle call sites not implemented.
