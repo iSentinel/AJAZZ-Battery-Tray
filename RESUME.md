@@ -1,3 +1,12 @@
+# Resume — synthetic Apple journal storage overhead
+
+#332 merged 03d5115, 5 workflows / 7 jobs PASS, nine changed blobs
+match cb14bed. Added fixed 4096-write production-helper synthetic
+benchmark with normal/rotation latency, CPU delta and process peak RSS;
+verify all retained records, aggregate JSON only. Linux/Intel macOS CI
+pending. Measurements are not actual tray or HID performance. Retained
+beta.61 and HID policy unchanged; release BLOCKED.
+
 # Resume — measured Apple operation duration
 
 #331 merged 62f2750; 5 workflows / 7 jobs PASS, seven changed blobs

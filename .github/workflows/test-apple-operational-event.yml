@@ -6,6 +6,7 @@ on:
       - 'macos/AjazzOperationalEvent.h'
       - 'macos/AjazzOperationalJournal.h'
       - 'tests/fixtures/apple-operational-journal.c'
+      - 'tests/fixtures/apple-operational-journal-benchmark.c'
       - 'tests/fixtures/apple-operational-event.c'
       - '.github/workflows/test-apple-operational-event.yml'
   push:
@@ -14,6 +15,7 @@ on:
       - 'macos/AjazzOperationalEvent.h'
       - 'macos/AjazzOperationalJournal.h'
       - 'tests/fixtures/apple-operational-journal.c'
+      - 'tests/fixtures/apple-operational-journal-benchmark.c'
       - 'tests/fixtures/apple-operational-event.c'
       - '.github/workflows/test-apple-operational-event.yml'
 
@@ -44,3 +46,23 @@ jobs:
           TZ=Pacific/Honolulu "$RUNNER_TEMP/ajazz-event-test"
           "${compiler[@]}" tests/fixtures/apple-operational-journal.c -o "$RUNNER_TEMP/ajazz-journal-test"
           "$RUNNER_TEMP/ajazz-journal-test"
+      - name: Measure synthetic journal storage overhead
+        shell: bash
+        run: |
+          set -euo pipefail
+          compiler=(cc -std=c11 -O2 -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Werror)
+          if [[ "$(uname -s)" == Darwin ]]; then
+            compiler+=( -D_DARWIN_C_SOURCE -mmacosx-version-min=10.13 )
+          fi
+          report="$RUNNER_TEMP/apple-journal-benchmark.json"
+          test ! -e "$report"
+          "${compiler[@]}" tests/fixtures/apple-operational-journal-benchmark.c -o "$RUNNER_TEMP/ajazz-journal-bench"
+          "$RUNNER_TEMP/ajazz-journal-bench" | tee "$report"
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["writes"] == 4096 and r["normal"]["count"] + r["rotation"]["count"] == 4096 and r["retained_records"] == "MATCH" and r["gui"] == r["hardware"] == "NOT_RUN"' "$report"
+      - name: Retain scoped synthetic benchmark
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: apple-journal-benchmark-${{ matrix.runner }}
+          path: ${{ runner.temp }}/apple-journal-benchmark.json
+          if-no-files-found: error

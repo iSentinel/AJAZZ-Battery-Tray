@@ -3155,3 +3155,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       duration. Add converter, encoder and mixed storage regression cases.
 - [ ] Hosted qualification, synthetic journal overhead benchmark and
       actual GUI/hardware/resource observations. Release BLOCKED.
+
+### ENG-05 Apple journal overhead measurement
+
+- [x] #332 merged 03d5115 after 5/5 workflows and 7/7 jobs PASS; nine
+      changed blobs match tested checkout cb14bed. Duration converter,
+      optional field and mixed journal cases PASS in jobs 140611911557
+      and 140611912155; both native Apple builds PASS.
+- [x] Add fixed 4096-write synthetic benchmark using production edition
+      helper and 256 KiB cap, normal/rotation nearest-rank p50/p95/max,
+      write-loop CPU and elapsed time, process peak RSS in bytes; verify
+      all retained records and retain aggregate JSON in Linux/Intel CI.
+- [ ] Hosted benchmark results, actual app overhead, richer failure
+      classification, GUI/physical acceptance. No release admission.
