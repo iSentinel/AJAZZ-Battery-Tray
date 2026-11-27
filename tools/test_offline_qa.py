@@ -95,6 +95,7 @@ class OfflineQaTests(unittest.TestCase):
                 entries = scan.return_value.__enter__.return_value
 
                 def stream() -> Iterator[SimpleNamespace]:
+                    """Yield one unexpected entry and forbid further enumeration."""
                     yield SimpleNamespace(name="unexpected")
                     raise AssertionError("Unexpected further enumeration")
 
@@ -109,6 +110,7 @@ class OfflineQaTests(unittest.TestCase):
             for name in REQUIRED:
                 (root / name).write_text("synthetic")
             write_json(root / "manifest.json", verify_inventory(root))
+
             def mutate_after_first(directory: Path) -> None:
                 """Simulate an extra entry between the two inventory scans."""
                 check_directory(directory)
