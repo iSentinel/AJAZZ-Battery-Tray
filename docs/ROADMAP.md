@@ -2910,9 +2910,9 @@ configuration commands. USB `VersionNumber` is a device revision,
       logs and other files, refuse links, changing inputs and existing output.
 - [x] Document dry-run, explicit backup and independent local verification.
       Six synthetic regression groups added; shared CLI gate registered.
-- [ ] Hosted tests and real Windows backup/ACL/restore rehearsal. No live
-      restoration or cross-version rollback qualification. Existing pinned
-      f939fea application and release admission unchanged.
+- [x] Hosted synthetic Windows backup/recovery qualification completed in #318.
+- [ ] Real Windows ACLs and live restore, application data interpretation
+      and interactive rollback. Existing f939fea release admission unchanged.
 
 ### ENG-07 isolated recovery rehearsal and new field observation
 
@@ -2928,7 +2928,8 @@ configuration commands. USB `VersionNumber` is a device revision,
       See [issue #53](https://github.com/iSentinel/AJAZZ-Battery-Tray/issues/53#issuecomment-7206866201).
       This confirms a spontaneous field change, not charge accuracy,
       physical model or telemetry admission. AULA fresh 81 is independent.
-- [ ] Hosted recovery CI and actual Windows ACL/restore/rollback rehearsal.
+- [x] Hosted recovery CI passed in #318 (10/10 native cases).
+- [ ] Actual Windows ACL/restore/rollback rehearsal.
       Independent APEX reference comparison, physical/interactive acceptance
       and normalized Setup retention remain open. Publication BLOCKED.
 
@@ -2938,8 +2939,8 @@ configuration commands. USB `VersionNumber` is a device revision,
       describes different Windows ctime semantics for path and descriptor.
       Compare birthtime for Windows cross-API identity, retain full
       same-API before/after checks and add a synthetic timestamp regression.
-- [ ] Re-run native Windows and offline CI on the corrected head before
-      using the profile backup helper on Windows. No live restore.
+- [x] Native Windows and offline CI passed on the corrected #318 head.
+      No live restore.
 
 ### ENG-07 exact-original installer rollback rehearsal
 
@@ -2951,9 +2952,9 @@ configuration commands. USB `VersionNumber` is a device revision,
       uninstall, four synthetic profile files and isolated backup/recovery.
       Reuse retained 6.7.1 Setup 15109661194, expires 2026-12-03.
       No new compiler run, app binary, retention or live profile restore.
-- [ ] Review actual hosted rollback result. Real Windows ACLs, GUI,
-      application data compatibility, physical and interactive acceptance,
-      normalized Setup retention and release admission remain open.
+- [x] Hosted rollback result PASS (see completion below).
+- [ ] Real Windows ACLs, GUI, application data compatibility, physical and
+      interactive acceptance, normalized Setup retention and release admission.
 
 - [x] Initial exact rollback run 45931292999 verified both installers,
       candidate EXE, baseline reinstallation and four preserved/rehearsed
@@ -2964,4 +2965,13 @@ configuration commands. USB `VersionNumber` is a device revision,
       quoted uninsNNN.exe in the fixed install directory, reject arguments
       and reparse points, and log the selected basename. Two accepted and
       three rejected command fixtures added. No change to installer bytes.
-- [ ] Repeat native CI and verify final uninstall and final backup check.
+- [x] #319 merged 2b50265 after 4/4 workflows, 5/5 jobs PASS;
+      all four changed blobs match tested checkout b12b71b.
+      Run 45947656299/job 140335949658: exact original rollback PASS,
+      two accepted and three rejected uninstall commands, beta.61
+      unins000.exe, reinstalled beta.60 unins001.exe; four synthetic
+      profile files preserved, isolated rehearsal and final backup PASS.
+      No actual user profile, GUI or HID. Original Setup expires Dec 3.
+- [ ] ENG-07 remaining: real application compatibility and interactive
+      rollback, Windows ACL/restore qualification. Do not repeat the
+      same hosted scenario solely for new evidence. Publication BLOCKED.
