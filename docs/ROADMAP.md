@@ -3030,3 +3030,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       Retain aggregate JSON only, no raw capture artifact.
 - [ ] Hosted qualification; Apple and dashboard assertion catalogs,
       actual GUI/hardware and release admission remain separate.
+
+### ENG-08 Apple native build self-test group coverage
+
+- [x] #324 merged e0a4205 after 4/4 workflows and 5/5 jobs PASS;
+      all eight changed blobs match tested checkout 47a60b7. Windows
+      run 45955903247/job 140362193200 verified 1028 exact assertions,
+      zero FAIL; aggregate artifact 15178716878 (logs reviewed).
+- [x] Record 21 Universal and six High Sierra emitted build test groups
+      from reviewed hosted logs, verify exact order and package success
+      marker, add three regression groups and both native build CI checks.
+      No application or build script change, only aggregate JSON artifacts.
+- [ ] Hosted qualification; dashboard and finer-grained Apple assertions,
+      actual GUI/hardware and release admission remain separate.
