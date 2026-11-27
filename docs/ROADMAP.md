@@ -2902,3 +2902,14 @@ configuration commands. USB `VersionNumber` is a device revision,
       Setup, final package selection, distribution and signing decisions.
       Keep incomplete hardware/interactive observations NOT_RUN.
       Publication BLOCKED.
+
+### ENG-07 private Windows profile backup
+
+- [x] Add a local-only bounded copy and integrity verifier for the existing
+      Windows settings, main/AULA and per-receiver history files. Exclude
+      logs and other files, refuse links, changing inputs and existing output.
+- [x] Document dry-run, explicit backup and independent local verification.
+      Six synthetic regression groups added; shared CLI gate registered.
+- [ ] Hosted tests and real Windows backup/ACL/restore rehearsal. No live
+      restoration or cross-version rollback qualification. Existing pinned
+      f939fea application and release admission unchanged.
