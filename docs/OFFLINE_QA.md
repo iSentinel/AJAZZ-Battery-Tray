@@ -99,3 +99,24 @@ coverage. The reported checkout identifies the verifier's local checkout,
 not independently authenticated capture provenance. Exit 0 means matching
 reported assertions; exit 2 means invalid evidence or output. No dashboard,
 Apple, physical or release qualification is implied.
+
+## Apple native build self-test group reference
+
+The ordered reference in tests/fixtures/apple-native-groups-v1.json records
+21 Universal groups from run 45955903257/job 140362193936 and six High
+Sierra groups from run 45952170403/job 140350319184 (checkout abbreviation
+0a5fc9c as logged). These are emitted group labels, not counts of individual
+internal assertions. Build stdout must contain the exact ordered groups
+followed by the exact package success marker. CI requires a successful
+build pipeline with pipefail separately. The raw capture stays on the
+runner; only aggregate JSON is uploaded.
+
+    python3 tools/verify_apple_group_catalog.py --edition universal --capture build.txt --output group-review.json
+    python3 tools/verify_apple_group_catalog.py --edition high-sierra --capture build.txt --output group-review.json
+
+Run the verifier from the same checkout where the build was performed;
+the final package marker contains that checkout's dist path. Exit 0 means
+matching reported groups, exit 2 invalid evidence or output. Later lease,
+benchmark and watchdog workflow steps are separate. Native runner group
+coverage does not establish actual High Sierra OS, arm64 or physical device
+acceptance. Review intentional changes to the observed reference explicitly.
