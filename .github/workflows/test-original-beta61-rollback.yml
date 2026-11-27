@@ -75,8 +75,9 @@ jobs:
             # Accept only the registered Inno executable in the exact install directory.
             # Never evaluate registry text or forward registry-provided arguments.
             $pattern = '\A"' + [regex]::Escape($dir) + '\\(unins[0-9]{3}\.exe)"\z'
-            if ($registered -notmatch $pattern) { throw 'Unexpected registered uninstall command' }
-            return $Matches[1]
+            $match = [regex]::Match($Registered, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            if (-not $match.Success) { throw 'Unexpected registered uninstall command' }
+            return $match.Groups[1].Value
           }
           foreach ($name in @('unins000.exe','unins001.exe')) {
             if ((Resolve-UninstallName ('"' + (Join-Path $dir $name) + '"')) -ne $name) {
@@ -91,6 +92,7 @@ jobs:
             try { $null = Resolve-UninstallName $bad } catch { $rejected = $true }
             if (-not $rejected) { throw 'Unexpected uninstall command accepted' }
           }
+          Write-Host 'PASS: registered uninstall command allowlist, 2 accepted and 3 rejected'
           function Remove-Checked {
             $registered = (Get-ItemProperty -LiteralPath $key -Name UninstallString).UninstallString
             $name = Resolve-UninstallName $registered
