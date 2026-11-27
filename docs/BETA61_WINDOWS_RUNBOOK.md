@@ -78,8 +78,11 @@ exact reviewed settings and history files, including per-receiver history.
 It deliberately excludes logs, temporary files and unrelated files.
 
 Use a new directory in an owner-controlled, access-restricted local location.
-The following example assumes an existing checkout of the qualification tools
-containing `backup_windows_profile.py` and Python 3.13.
+The following example assumes Python 3.13 and a checkout of the native-tested
+qualification tools at `ecfdf9c766c9922fb85f01f3c6dc8fa085923458` (#318).
+Do not use the earlier #317 Windows helper: the corrected path/descriptor
+timestamp comparison passed all ten synthetic native Windows tests in
+run 45919940986. This does not qualify actual user ACLs or live restoration.
 
 ```powershell
 $profile = Join-Path $env:APPDATA 'AJAZZBatteryTray'
@@ -121,6 +124,28 @@ to the live profile or overwrite existing destinations. Treat the rehearsal
 directory as equally private. A partial failed copy is not usable evidence.
 Actual profile restore, Windows ACL qualification, cross-version compatibility
 and interactive installer rollback remain separate and unqualified.
+
+## Rollback planning for the original private Setup
+
+The known published baseline is
+[beta.60 Setup](https://github.com/iSentinel/AJAZZ-Battery-Tray/releases/download/v0.3.0-beta.60/AJAZZBatteryTray-Setup-win-x64.exe),
+SHA-256 `555b957b809c2f1bb4228c10a818abadad2df78e455925871713ee7779970672`.
+Verify the downloaded file, keep the backup and recovery rehearsal separate,
+and use a disposable Windows desktop or VM checkpoint for any rollback
+test. Close the tray before uninstalling beta.61 through Installed apps.
+Do not install an older version over a running or newer installed app.
+Do not erase or overwrite the current profile. Stop if the baseline
+installer or data verification fails. Preserve the pre-upgrade backup.
+
+The exact-original rollback CI is scoped to the existing 6.7.1 Setup
+artifact 15109661194, not the normalized 6.7.4 Setup. It tests
+beta.60 -> original beta.61 -> uninstall -> beta.60 -> uninstall on a
+clean hosted Windows runner, four synthetic profile files and isolated
+recovery. No app GUI or physical HID operation is intentionally launched.
+The workflow cannot run after the pinned artifact expires unless the exact
+original is available through a separately reviewed path; no substitute.
+Hosted result pending. Actual cross-version application data interpretation,
+interactive UAC and real rollback remain unqualified.
 
 ## Prepare a local Setup
 

@@ -1,0 +1,150 @@
+name: Rehearse exact original beta.61 rollback
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-original-beta61-rollback.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  rollback:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.17'
+      - name: Retrieve and verify pinned installers
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-exact-rollback'
+          if (Test-Path -LiteralPath $root) { throw 'Expected fresh runner directory' }
+          New-Item -ItemType Directory -Path $root | Out-Null
+          $zip = Join-Path $root 'original.zip'
+          # Binary stdout is written directly, without PowerShell text conversion.
+          python -c "import subprocess,sys; f=open(sys.argv[1],'xb'); subprocess.run(['gh','api','repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15109661194/zip'],stdout=f,check=True,timeout=120); f.close()" $zip
+          if ($LASTEXITCODE -ne 0) { throw 'Exact original artifact unavailable; no substitution' }
+          python tools/verify_installer_candidate.py --archive $zip --sha256 73de3837a16ac39deeb99ebfb314501203b58a3092e91bb0989df92b2b38c99c --source-sha f939fea7fb422aa588649138d29a750ce62cd22a --output (Join-Path $root 'verified.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Original archive verification failed' }
+          Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $root 'original')
+          $candidate = Join-Path $root 'original/AJAZZBatteryTray-Setup-win-x64.exe'
+          if ((Get-FileHash -LiteralPath $candidate).Hash -ne '1cc71e5c2a7119070c80611160b5e263afd2b70155f33b13a88fac848d67542e') { throw 'Original Setup hash differs' }
+          $old = Join-Path $root 'beta60.exe'
+          Invoke-WebRequest -Uri 'https://github.com/iSentinel/AJAZZ-Battery-Tray/releases/download/v0.3.0-beta.60/AJAZZBatteryTray-Setup-win-x64.exe' -OutFile $old -TimeoutSec 120
+          if ((Get-FileHash -LiteralPath $old).Hash -ne '555b957b809c2f1bb4228c10a818abadad2df78e455925871713ee7779970672') { throw 'Baseline Setup hash differs' }
+      - name: Exercise uninstall and reinstall of exact baseline
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-exact-rollback'
+          $old = Join-Path $root 'beta60.exe'
+          $candidate = Join-Path $root 'original/AJAZZBatteryTray-Setup-win-x64.exe'
+          $dir = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'
+          $data = Join-Path $env:APPDATA 'AJAZZBatteryTray'
+          $installed = Join-Path $dir 'AJAZZBatteryTray.exe'
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9829045F-37F0-4AC3-ACBD-1B5E4129A179}_is1'
+          if ((Test-Path $dir) -or (Test-Path $data) -or (Test-Path $key) -or
+              (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue)) {
+            throw 'Expected clean ephemeral Windows runner'
+          }
+          function Invoke-Bounded([string]$Path, [string[]]$Flags) {
+            $p = Start-Process -FilePath $Path -ArgumentList $Flags -PassThru
+            try {
+              if (-not $p.WaitForExit(90000)) { $p.Kill($true); throw 'Installer timed out' }
+              if ($p.ExitCode -ne 0) { throw "Installer exit: $($p.ExitCode)" }
+            } finally { $p.Dispose() }
+            if (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) { throw 'Unexpected tray launch' }
+          }
+          function Install-Checked([string]$Path, [string]$Version) {
+            Invoke-Bounded $Path @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-')
+            if (!(Test-Path $installed) -or (Get-ItemProperty -LiteralPath $key).DisplayVersion -ne $Version) {
+              throw 'Installed version differs'
+            }
+          }
+          function Resolve-UninstallName([string]$Registered) {
+            # Accept only the registered Inno executable in the exact install directory.
+            # Never evaluate registry text or forward registry-provided arguments.
+            $pattern = '\A"' + [regex]::Escape($dir) + '\\(unins[0-9]{3}\.exe)"\z'
+            $match = [regex]::Match($Registered, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            if (-not $match.Success) { throw 'Unexpected registered uninstall command' }
+            return $match.Groups[1].Value
+          }
+          foreach ($name in @('unins000.exe','unins001.exe')) {
+            if ((Resolve-UninstallName ('"' + (Join-Path $dir $name) + '"')) -ne $name) {
+              throw 'Uninstaller name regression'
+            }
+          }
+          foreach ($bad in @(
+              ('"' + (Join-Path $dir 'unins000.exe') + '" /SILENT'),
+              ('"' + (Join-Path $dir '..\unins000.exe') + '"'),
+              ('"' + (Join-Path $dir 'other.exe') + '"'))) {
+            $rejected = $false
+            try { $null = Resolve-UninstallName $bad } catch { $rejected = $true }
+            if (-not $rejected) { throw 'Unexpected uninstall command accepted' }
+          }
+          Write-Host 'PASS: registered uninstall command allowlist, 2 accepted and 3 rejected'
+          function Remove-Checked {
+            $registered = (Get-ItemProperty -LiteralPath $key -Name UninstallString).UninstallString
+            $name = Resolve-UninstallName $registered
+            $uninstaller = Join-Path $dir $name
+            $item = Get-Item -LiteralPath $uninstaller
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
+                $item.Length -le 0 -or $item.Length -gt 16777216) {
+              throw 'Unexpected registered uninstall executable'
+            }
+            Write-Host "Removing registered Inno executable: $name"
+            Invoke-Bounded $uninstaller @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART')
+            if ((Test-Path $installed) -or (Test-Path $key)) { throw 'Uninstall incomplete' }
+          }
+          function Assert-Profile([string]$Path, [hashtable]$Expected) {
+            foreach ($name in $Expected.Keys) {
+              if ((Get-FileHash -LiteralPath (Join-Path $Path $name)).Hash -ne $Expected[$name]) {
+                throw 'Synthetic profile bytes differ'
+              }
+            }
+          }
+          Install-Checked $old '0.3.0-beta.60'
+          Write-Host 'PASS: baseline install'
+          $oldHash = (Get-FileHash -LiteralPath $installed).Hash
+          New-Item -ItemType Directory -Path $data | Out-Null
+          $settings = 'settings.json'
+          '{"Language":"uk","PollSeconds":60,"AutomaticUpdateChecks":false,"AutomaticDockClockSync":false}' | Set-Content -LiteralPath (Join-Path $data $settings) -Encoding utf8
+          $names = @($settings,'battery-history.csv','aula-l99-history.csv',('ajazz-' + ('A' * 64) + '-history.csv'))
+          foreach ($name in $names[1..3]) {
+            @('utc_timestamp,percent,state','2026-11-24T00:00:00Z,83,online') | Set-Content -LiteralPath (Join-Path $data $name) -Encoding utf8
+          }
+          $hashes = @{}
+          foreach ($name in $names) { $hashes[$name] = (Get-FileHash -LiteralPath (Join-Path $data $name)).Hash }
+          $backup = Join-Path $root 'backup'
+          $rehearsal = Join-Path $root 'AJAZZ-rehearsal-ci'
+          python tools/backup_windows_profile.py --source $data --backup $backup
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetic profile backup failed' }
+          Install-Checked $candidate '0.3.0-beta.61'
+          if ((Get-FileHash -LiteralPath $installed).Hash -ne '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c') { throw 'Candidate EXE differs' }
+          Assert-Profile $data $hashes
+          Write-Host 'PASS: exact candidate and preserved profile'
+          Remove-Checked
+          Assert-Profile $data $hashes
+          Write-Host 'PASS: candidate removal and preserved profile'
+          Install-Checked $old '0.3.0-beta.60'
+          if ((Get-FileHash -LiteralPath $installed).Hash -ne $oldHash) { throw 'Rollback baseline EXE differs' }
+          Assert-Profile $data $hashes
+          Write-Host 'PASS: baseline reinstall, matching EXE and preserved profile'
+          python tools/backup_windows_profile.py --source $backup --rehearse $rehearsal
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetic recovery rehearsal failed' }
+          Assert-Profile $rehearsal $hashes
+          Remove-Checked
+          Assert-Profile $data $hashes
+          python tools/backup_windows_profile.py --verify $backup
+          if ($LASTEXITCODE -ne 0) { throw 'Final backup verification failed' }
+          Write-Host 'PASS: exact beta.60 -> original beta.61 -> uninstall -> exact beta.60 -> uninstall; four synthetic profile files preserved; isolated recovery matched; no tray/HID; interactive and application compatibility NOT_RUN'
