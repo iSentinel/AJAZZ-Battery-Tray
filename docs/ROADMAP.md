@@ -3142,3 +3142,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       Add exact closed operation byte tests for both edition journals.
 - [ ] Hosted CI; actual GUI/hardware, timing, richer error classification
       and runtime overhead remain open. Publication BLOCKED.
+
+### ENG-05 Apple measured operation duration
+
+- [x] #331 merged 62f2750 after 5/5 workflows and 7/7 jobs PASS; seven
+      changed blobs match tested checkout 9ca9655. Native operation
+      records PASS in jobs 140542243486 and 140542244023; both Apple
+      build group reviews PASS.
+- [x] Add optional bounded duration_ms for isolated worker timeout and
+      attempted Universal clock result, measured with existing monotonic
+      systemUptime. Preserve untimed byte format; no fabricated watchdog
+      duration. Add converter, encoder and mixed storage regression cases.
+- [ ] Hosted qualification, synthetic journal overhead benchmark and
+      actual GUI/hardware/resource observations. Release BLOCKED.
