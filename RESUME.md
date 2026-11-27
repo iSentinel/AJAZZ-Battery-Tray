@@ -1,14 +1,13 @@
 # Resume — background edition journal sink candidate
 
-PR #336 head 29b6c54: Linux/Intel macOS writer tests PASS (jobs
-140634266952/140634267471); offline QA PASS. Windows and Universal
-builds were still running at the start of this stage. A separate
-dependent branch connects the existing secure edition storage to the
+#336 merged 5b72631 after 4 workflows / 6 jobs PASS; all six changed
+blobs match tested checkout 43ae56d. Linux/Intel macOS writer tests PASS
+(jobs 140634266952/140634267471); offline, Windows and Universal PASS.
+A separate dependent branch connects the existing secure edition storage to the
 single background writer, with owned bounded path and explicit lifetime.
 Synthetic tests cover both edition files, exact timed/untimed FIFO bytes,
 invalid path arguments, early destruction refusal and unsafe directory
-accounting. Hosted qualification and parent integration required before
-merging. GUI, real profile, runtime latency and release remain untouched.
+accounting. Hosted qualification required before merging. GUI, real profile, runtime latency and release remain untouched.
 
 # Resume — Apple background journal writer candidate
 
