@@ -3267,3 +3267,19 @@ both complete. Process CPU 120133/922929 us and peak RSS
 not incremental tray resource use or a real UI speedup. Parent #338
 merged 37c2529 with 5/5 workflows, 7/7 jobs and all nine changed blobs
 matching e0ee3b9. Repeat qualification against integrated base required.
+
+### ENG-16 full evidence inventory identity recheck
+
+- [x] #339 merged b5b7dee after 4 workflows / 6 jobs PASS, five changed
+      blobs match 880c649. Repeat benchmark jobs 140646996877 and
+      140646997128: 4098 writes each, no losses, exact retained records.
+      Linux/Intel macOS offer p95 240/1000 ns; stop 1.067/2.881 ms.
+      Real GUI remains NOT_RUN; #340 separate field acceptance plan.
+- [x] Detect changes to previously read evidence and manifest replacement
+      by comparing bounded lstat identities of the root and all five
+      entries before and after digest verification. Preserve schema,
+      existing per-read checks and bounded enumeration. Add two tests.
+- [ ] Hosted qualification, atomic publication and native ACL review.
+      This is an observed metadata consistency check, not an atomic
+      snapshot, authentication or defense against all same-user races.
+      Release BLOCKED.
