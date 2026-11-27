@@ -1,3 +1,11 @@
+# Resume — offline automated case coverage
+
+#321 merged 3888fa2; 4 workflows / 5 jobs PASS, all six changed blobs
+match tested checkout 14a271a. Added offline automated catalog and
+same-checkout manifest/JUnit/command coverage comparison, two regression
+groups and separate hosted coverage review. CI pending. No runtime,
+existing evidence schema, hardware result or release change.
+
 # Resume — acceptance catalog
 
 Integration bfecefc (#320), full draft #99 CI 16/16 PASS. Historical
