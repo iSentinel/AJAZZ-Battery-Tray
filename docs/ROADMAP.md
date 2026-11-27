@@ -3215,14 +3215,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 
 ### ENG-05 Apple background edition storage adapter
 
-- [x] #336 writer fixtures PASS on Linux and Intel macOS, offline QA PASS.
-      Parent full CI and integration required; no release change.
+- [x] #336 merged 5b72631 after 4/4 workflows and 6/6 jobs PASS; all six
+      changed blobs match checkout 43ae56d. Native writer tests PASS on
+      Linux and Intel macOS; no release change.
 - [x] Connect the existing edition-specific secure storage to the writer
       through an owned bounded absolute path and explicit lifetime.
       Producer offers do not perform file I/O; no persistence claim on offer.
 - [x] Add synthetic exact FIFO records for both editions, invalid paths,
       post-seal refusal, premature destruction and unsafe directory
       failure accounting. Reuse existing rotation and permission checks.
-- [ ] Qualify dependent adapter in hosted CI after parent integration;
+- [ ] Qualify the adapter in hosted CI;
       then add Swift/Objective-C lifecycle and diagnostics wiring.
       Actual GUI and High Sierra runtime remain NOT_RUN; release BLOCKED.
