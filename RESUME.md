@@ -1,3 +1,14 @@
+# Resume — bounded evidence directory scans
+
+#326 merged b83d4dd; 4/4 workflows PASS, eight changed blobs match
+53a8aa6. Windows run 45962546491 verified 1028 assertions and 24
+Dashboard groups, artifact 15182150086. ENG-08 scoped catalogs integrated.
+Next ENG-16: streaming profile scan with 4096 total entry cap, exact
+QA inventory scan and final recheck, reject directory reparse points.
+Three regression groups added; hosted and native qualification pending.
+No runtime, live profile, evidence schema or release change. Atomicity,
+ACLs and Apple logging remain open.
+
 # Resume — Windows Dashboard smoke group coverage
 
 #325 merged aff0744; 5 workflows / 6 jobs PASS, nine changed blobs
