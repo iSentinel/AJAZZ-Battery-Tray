@@ -8,7 +8,7 @@
 #include "AjazzIoLease.h"
 #include "AjazzDiagnosticExport.h"
 #include "AjazzSessionArchive.h"
-#include "AjazzOperationalJournal.h"
+#include "AjazzGuiJournal.h"
 #endif
 
 // Presentation only: absent, future, non-finite and expired sample ages are invalid.
