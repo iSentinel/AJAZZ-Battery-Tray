@@ -1,5 +1,6 @@
 """Exercise the offline QA result contract with synthetic suites and files."""
 
+from collections.abc import Iterator
 import json
 from types import SimpleNamespace
 from pathlib import Path
@@ -93,7 +94,7 @@ class OfflineQaTests(unittest.TestCase):
             with patch("run_offline_qa.os.scandir") as scan:
                 entries = scan.return_value.__enter__.return_value
 
-                def stream() -> object:
+                def stream() -> Iterator[SimpleNamespace]:
                     yield SimpleNamespace(name="unexpected")
                     raise AssertionError("Unexpected further enumeration")
 
@@ -108,8 +109,15 @@ class OfflineQaTests(unittest.TestCase):
             for name in REQUIRED:
                 (root / name).write_text("synthetic")
             write_json(root / "manifest.json", verify_inventory(root))
-            with patch("run_offline_qa.check_directory", wraps=check_directory) as check:
-                verify_manifest(root)
+            def mutate_after_first(directory: Path) -> None:
+                """Simulate an extra entry between the two inventory scans."""
+                check_directory(directory)
+                (directory / "unexpected.txt").write_text("synthetic")
+
+            with patch("run_offline_qa.check_directory",
+                       side_effect=mutate_after_first) as check:
+                with self.assertRaises(ValueError):
+                    verify_manifest(root)
                 self.assertEqual(check.call_count, 2)
 
     def test_manifest_rejects_duplicate_or_invalid_entry(self) -> None:
