@@ -144,3 +144,18 @@ refuses an unexpected entry immediately, rejects directory reparse points
 and checks the inventory again after digest verification. The manifest
 must contain exactly four file records. These checks detect observed
 inventory changes, not a fully atomic snapshot or adversarial races.
+
+## Complete inventory metadata consistency
+
+The verifier captures the directory and five required entry identities
+before reading the manifest, and compares them again after the final
+inventory scan. The existing per-file read and digest checks remain.
+The two new fixtures modify an already-read evidence file or replace
+the already-read manifest with byte-identical content during a later
+read; both must be rejected. Schema 1 is unchanged.
+
+This bounds the number of additional lstat calls and detects observed
+late mutations, but is not an atomic multi-file snapshot: concurrent
+changes between observations, restored metadata, adversarial parent
+path races and native ACLs remain outside the guarantee. No producer
+authentication or release admission follows from verification.
