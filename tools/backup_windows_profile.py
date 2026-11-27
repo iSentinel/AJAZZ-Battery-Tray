@@ -31,6 +31,17 @@ def fingerprint(info: os.stat_result) -> tuple:
             info.st_ctime_ns, info.st_nlink)
 
 
+def cross_fingerprint(info: os.stat_result) -> tuple:
+    """Compare path and descriptor using compatible timestamp semantics."""
+    # Windows path stat may expose creation time as ctime while fstat
+    # exposes change time (CPython #157671). Compare birthtime there.
+    stamp = getattr(info, 'st_birthtime_ns', None) if os.name == 'nt' else info.st_ctime_ns
+    if stamp is None:
+        raise ValueError('missing compatible file timestamp')
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
+            stamp, info.st_nlink)
+
+
 def read_file(path: Path) -> bytes:
     """Read a bounded single-link regular file and detect observed mutation."""
     before = safe_stat(path)
@@ -38,10 +49,12 @@ def read_file(path: Path) -> bytes:
             or not 0 <= before.st_size <= LIMIT):
         raise ValueError('unsupported profile file')
     with path.open('rb') as stream:
-        if fingerprint(os.fstat(stream.fileno())) != fingerprint(before):
-            raise ValueError('profile file changed')
+        opened = os.fstat(stream.fileno())
+        if (not stat.S_ISREG(opened.st_mode)
+                or cross_fingerprint(opened) != cross_fingerprint(before)):
+            raise ValueError('profile path and descriptor differ')
         data = stream.read(LIMIT + 1)
-        if fingerprint(os.fstat(stream.fileno())) != fingerprint(before):
+        if fingerprint(os.fstat(stream.fileno())) != fingerprint(opened):
             raise ValueError('profile file changed')
     if len(data) != before.st_size or fingerprint(safe_stat(path)) != fingerprint(before):
         raise ValueError('profile file changed')
