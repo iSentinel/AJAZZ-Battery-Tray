@@ -176,3 +176,18 @@ be visible before completion. No parent-directory fsync or power-loss
 durability, full atomic multi-file snapshot, Windows ACL or authentication
 guarantee is established. Retain the existing schema and exit-code
 contract. Tests cover no-replace, partial JSON, link and fsync failure.
+
+## Real offline QA artifact roundtrip (candidate)
+
+In addition to the synthetic two-artifact merge check, the independent
+artifact-roundtrip job consumes the actual offline-python-qa upload ID
+and digest. It checks exact artifact name, run identity, digest and
+expiry via GitHub metadata, downloads by ID with digest mismatch fatal,
+and reopens the exact five-file evidence inventory. It accepts only
+a flat extraction or a single expected directory wrapper. The same
+workflow checkout and pinned Python version verify manifest and exact
+source/command/case coverage; reported status must be PASS.
+Only the aggregate downloaded coverage observation is retained again.
+This checks actual artifact transport, not producer authentication,
+a full atomic filesystem snapshot or independent execution of the
+reported tests. Parent manifest publication and hosted CI required.
