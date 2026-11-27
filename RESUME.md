@@ -1,3 +1,12 @@
+# Resume — bounded inventory QA correction
+
+#327 initial native Windows recovery 11/11 PASS, Windows/macOS/HA PASS;
+offline run 45973041921 failed common gate. Artifact 15186490081 retained,
+contents not independently inspected. Source inspection found missing
+nested iterator docstring, corrected without changing assertions. Added
+failure-only bounded AST report. Repeat CI required before integration.
+No runtime or user profile change. Release BLOCKED.
+
 # Resume — bounded evidence directory scans
 
 #326 merged b83d4dd; 4/4 workflows PASS, eight changed blobs match
