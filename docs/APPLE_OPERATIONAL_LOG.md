@@ -30,3 +30,25 @@ This is an encoder component, not a complete operational journal.
 
 No release authorization, package replacement or application behavior
 change follows from this first-stage implementation.
+
+## Second stage: bounded private storage candidate
+
+AjazzOperationalJournal.h accepts a closed event and a caller-provided
+existing owner-private directory (0700). It opens the final directory
+without following symlinks, uses directory-relative opens, requires
+regular single-link owner files (0600), and coordinates cooperating
+writers through a persistent zero-byte lock with nonblocking flock.
+Active and previous files are each limited to 256 KiB; oversized or
+unsafe existing files are refused. A partial tail is preserved by
+rotation. A short write is reported as failure, not retried; no fsync
+or multi-file transaction is claimed. No live application call sites
+are connected yet. Parent path trust and adversarial same-user races
+remain outside this design; native ACL and actual OS tests are open.
+
+The standalone synthetic storage fixture uses a fresh /tmp directory,
+a 256-byte cap and checks rotation, torn-tail preservation, lock
+contention, recovery, permissions, hard links, symlinks and oversized
+previous files. CI uses Linux and Intel macOS; the deployment target
+is 10.13, not an actual High Sierra execution. Retained beta.61 bytes
+are not changed. Original encoder reference #328 passed 70 combinations
+under two TZ values on both hosts; combined checkout must pass again.
