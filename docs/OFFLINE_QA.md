@@ -159,3 +159,20 @@ late mutations, but is not an atomic multi-file snapshot: concurrent
 changes between observations, restored metadata, adversarial parent
 path races and native ACLs remain outside the guarantee. No producer
 authentication or release admission follows from verification.
+
+## Atomic manifest completion marker
+
+The runner now stages the manifest in an exclusive private temporary file
+in the same run directory, serializes, flushes and fsyncs it, then creates
+the final name via a hard link that cannot replace an existing name.
+It removes its temporary name before the existing complete verification.
+Filesystems without supported hard links fail closed; no replace fallback.
+The final manifest is never intentionally exposed with partial JSON.
+A reader racing link/unlink may reject the temporary name or two links;
+retry only after the producer exits, not to override a failed run.
+A crash may leave a temporary name or a missing manifest; such a directory
+is incomplete and must not be admitted. Other evidence files can still
+be visible before completion. No parent-directory fsync or power-loss
+durability, full atomic multi-file snapshot, Windows ACL or authentication
+guarantee is established. Retain the existing schema and exit-code
+contract. Tests cover no-replace, partial JSON, link and fsync failure.
