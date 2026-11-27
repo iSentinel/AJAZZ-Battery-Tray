@@ -1,15 +1,17 @@
 """Exercise the offline QA result contract with synthetic suites and files."""
 
+from collections.abc import Iterator
 import json
 from types import SimpleNamespace
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from qa_unittest import execute
 from run_offline_qa import (REQUIRED, create_run, junit_counts, read_evidence,
                             verify_inventory, verify_manifest, write_json,
-                            file_identity)
+                            file_identity, check_directory)
 
 
 def sample_case(kind: str) -> unittest.TestCase:
@@ -84,6 +86,41 @@ class OfflineQaTests(unittest.TestCase):
             (root / REQUIRED[0]).write_text("different")
             with self.assertRaises(ValueError):
                 verify_manifest(root)
+
+    def test_inventory_stops_at_first_unknown_entry(self) -> None:
+        """Do not exhaust an unbounded iterator of unrelated entries."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with patch("run_offline_qa.os.scandir") as scan:
+                entries = scan.return_value.__enter__.return_value
+
+                def stream() -> Iterator[SimpleNamespace]:
+                    """Yield one unexpected entry and forbid further enumeration."""
+                    yield SimpleNamespace(name="unexpected")
+                    raise AssertionError("Unexpected further enumeration")
+
+                entries.__iter__.side_effect = stream
+                with self.assertRaises(ValueError):
+                    check_directory(root)
+
+    def test_manifest_rechecks_directory_after_reads(self) -> None:
+        """Reject an additional entry appearing after the first inventory."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_text("synthetic")
+            write_json(root / "manifest.json", verify_inventory(root))
+
+            def mutate_after_first(directory: Path) -> None:
+                """Simulate an extra entry between the two inventory scans."""
+                check_directory(directory)
+                (directory / "unexpected.txt").write_text("synthetic")
+
+            with patch("run_offline_qa.check_directory",
+                       side_effect=mutate_after_first) as check:
+                with self.assertRaises(ValueError):
+                    verify_manifest(root)
+                self.assertEqual(check.call_count, 2)
 
     def test_manifest_rejects_duplicate_or_invalid_entry(self) -> None:
         """Reject duplicate required names and Boolean byte counts."""

@@ -76,6 +76,10 @@ starting. The portable preferences export does not include all local history
 or device-specific consent. The new local-only backup utility copies the
 exact reviewed settings and history files, including per-receiver history.
 It deliberately excludes logs, temporary files and unrelated files.
+The updated qualification helper streams the directory and refuses more
+than 4096 entries (including unrelated entries), 128 selected files,
+8 MiB per file or 64 MiB total selected data. It never traverses child
+directories. An excessive inventory is refused before creating a backup.
 
 Use a new directory in an owner-controlled, access-restricted local location.
 The following example assumes Python 3.13 and a checkout of the native-tested

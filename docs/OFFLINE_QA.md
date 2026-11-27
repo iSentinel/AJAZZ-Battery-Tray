@@ -136,3 +136,11 @@ No individual assertion count, actual monitor DPI, real keyboard/desktop
 acceptance or physical HID qualification is inferred. Exit 0 means
 matching reported group coverage, exit 2 invalid evidence or output.
 Review any intentional catalog changes explicitly.
+
+## Bounded evidence inventory
+
+The manifest verifier streams the exact five-entry directory inventory,
+refuses an unexpected entry immediately, rejects directory reparse points
+and checks the inventory again after digest verification. The manifest
+must contain exactly four file records. These checks detect observed
+inventory changes, not a fully atomic snapshot or adversarial races.

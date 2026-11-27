@@ -1,3 +1,23 @@
+# Resume — bounded inventory QA correction
+
+#327 initial native Windows recovery 11/11 PASS, Windows/macOS/HA PASS;
+offline run 45973041921 failed common gate. Artifact 15186490081 retained,
+contents not independently inspected. Source inspection found missing
+nested iterator docstring, corrected without changing assertions. Added
+failure-only bounded AST report. Repeat CI required before integration.
+No runtime or user profile change. Release BLOCKED.
+
+# Resume — bounded evidence directory scans
+
+#326 merged b83d4dd; 4/4 workflows PASS, eight changed blobs match
+53a8aa6. Windows run 45962546491 verified 1028 assertions and 24
+Dashboard groups, artifact 15182150086. ENG-08 scoped catalogs integrated.
+Next ENG-16: streaming profile scan with 4096 total entry cap, exact
+QA inventory scan and final recheck, reject directory reparse points.
+Three regression groups added; hosted and native qualification pending.
+No runtime, live profile, evidence schema or release change. Atomicity,
+ACLs and Apple logging remain open.
+
 # Resume — Windows Dashboard smoke group coverage
 
 #325 merged aff0744; 5 workflows / 6 jobs PASS, nine changed blobs

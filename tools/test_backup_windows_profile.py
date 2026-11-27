@@ -66,6 +66,16 @@ class ProfileBackupTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 collect(self.source)
 
+    def test_all_directory_entries_bounded(self) -> None:
+        """Count unrelated entries too; refuse before creating any backup."""
+        with patch('backup_windows_profile.ENTRY_LIMIT', 3):
+            self.assertEqual(len(collect(self.source)), 2)
+            (self.source / 'unrelated.txt').write_bytes(b'ignored')
+            with self.assertRaises(ValueError):
+                backup(self.source, self.target)
+            self.assertFalse(self.target.exists())
+        self.assertEqual(len(collect(self.source)), 2)
+
     def test_dry_run_and_verify_cli(self) -> None:
         """Dry-run writes nothing; verify cannot accept a source argument."""
         self.assertEqual(main(['--source', str(self.source), '--dry-run']), 0)

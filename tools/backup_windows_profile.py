@@ -16,6 +16,7 @@ from verify_windows_notice_transport import safe_stat
 LIMIT = 8 * 1024 * 1024
 TOTAL = 64 * 1024 * 1024
 COUNT = 128
+ENTRY_LIMIT = 4096
 MANIFEST = 'backup.json'
 FIXED = {'settings.json', 'battery-history.csv', 'aula-l99-history.csv'}
 
@@ -66,13 +67,17 @@ def inventory(root: Path, strict: bool = False) -> list[str]:
     if not stat.S_ISDIR(safe_stat(root).st_mode):
         raise ValueError('expected profile directory')
     names = []
-    for path in root.iterdir():
-        if allowed(path.name):
-            names.append(path.name)
-            if len(names) > COUNT:
-                raise ValueError('profile count exceeds limit')
-        elif strict and path.name != MANIFEST:
-            raise ValueError('unexpected backup entry')
+    # scandir streams entries; Path.iterdir can materialize the entire directory.
+    with os.scandir(root) as entries:
+        for index, entry in enumerate(entries, 1):
+            if index > ENTRY_LIMIT:
+                raise ValueError('profile directory entry limit exceeded')
+            if allowed(entry.name):
+                names.append(entry.name)
+                if len(names) > COUNT:
+                    raise ValueError('profile count exceeds limit')
+            elif strict and entry.name != MANIFEST:
+                raise ValueError('unexpected backup entry')
     return sorted(names)
 
 

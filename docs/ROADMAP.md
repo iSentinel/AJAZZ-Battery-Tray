@@ -3057,3 +3057,29 @@ configuration commands. USB `VersionNumber` is a device revision,
       gate and existing Windows smoke CI aggregate report.
 - [ ] Hosted qualification. Real DPI, high contrast, keyboard/desktop,
       physical hardware and release admission remain separate.
+
+### ENG-08 dashboard completion and ENG-16 bounded inventory
+
+- [x] #326 merged b83d4dd after 4/4 workflows PASS; all eight changed
+      blobs match tested checkout 53a8aa6. Native Windows run 45962546491
+      job 140383519117: 1028 console assertions and 24 ordered Dashboard
+      groups PASS; aggregate artifact 15182150086 (hosted logs reviewed).
+- [x] ENG-08 scoped catalogs integrated: human profiles, offline Python,
+      native package CLI, Windows assertions, Apple and Dashboard groups.
+      Finer-grained Apple assertions and real hardware/desktop acceptance
+      remain separate; do not imply complete native branch coverage.
+- [x] ENG-16: bound profile traversal to 4096 total entries using streaming
+      scandir, retain existing selected count and byte limits; bound exact
+      QA directory enumeration, reject reparse points and check inventory
+      after verification. Three new regression groups. No schema change.
+- [ ] Hosted Linux and native Windows qualification; atomic snapshots,
+      actual ACLs and ENG-05 Apple logging remain open. Release BLOCKED.
+
+- [x] Initial #327 native Windows recovery run 45973042062/job
+      140417894488 passed 11/11 cases; Windows, macOS and HA also PASS.
+      Offline run 45973041921 failed the common gate; artifact
+      15186490081 retained (metadata only reviewed). Source inspection
+      identified a missing docstring on the nested synthetic iterator,
+      which violates the exact zero-debt AST gate. Add the docstring,
+      preserve assertions and expose bounded source audit on CI failure.
+- [ ] Repeat all triggered CI; exact failed artifact contents not reviewed.

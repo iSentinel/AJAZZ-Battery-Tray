@@ -213,17 +213,30 @@ def verify_inventory(directory: Path) -> dict:
     return {"schema": 1, "files": entries}
 
 
+def check_directory(directory: Path) -> None:
+    """Refuse reparse points and stop at the first unexpected inventory entry."""
+    info = directory.lstat()
+    reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    if not stat.S_ISDIR(info.st_mode) or getattr(info, "st_file_attributes", 0) & reparse:
+        raise ValueError("Expected regular evidence directory")
+    remaining = set(REQUIRED) | {"manifest.json"}
+    with os.scandir(directory) as entries:
+        for entry in entries:
+            if entry.name not in remaining:
+                raise ValueError("Unexpected evidence entry")
+            remaining.remove(entry.name)
+    if remaining:
+        raise ValueError("Missing evidence entries")
+
+
 def verify_manifest(directory: Path) -> None:
     """Check exact required inventory, metadata and current SHA-256 digests."""
-    if directory.is_symlink() or not directory.is_dir():
-        raise ValueError("Expected regular evidence directory")
-    expected = set(REQUIRED) | {"manifest.json"}
-    if {entry.name for entry in directory.iterdir()} != expected:
-        raise ValueError("Unexpected or missing evidence entries")
+    check_directory(directory)
     manifest = json.loads(read_evidence(directory / "manifest.json"))
     if (not isinstance(manifest, dict) or set(manifest) != {"schema", "files"}
             or type(manifest["schema"]) is not int or manifest["schema"] != 1
-            or not isinstance(manifest["files"], list)):
+            or not isinstance(manifest["files"], list)
+            or len(manifest["files"]) != len(REQUIRED)):
         raise ValueError("Invalid manifest schema")
     seen = set()
     for entry in manifest["files"]:
@@ -240,6 +253,7 @@ def verify_manifest(directory: Path) -> None:
             raise ValueError("Evidence digest or size mismatch")
     if seen != set(REQUIRED):
         raise ValueError("Incomplete manifest")
+    check_directory(directory)
 
 
 def run_qa(directory: Path) -> int:
