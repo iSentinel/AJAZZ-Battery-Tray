@@ -191,3 +191,12 @@ Only the aggregate downloaded coverage observation is retained again.
 This checks actual artifact transport, not producer authentication,
 a full atomic filesystem snapshot or independent execution of the
 reported tests. Parent manifest publication and hosted CI required.
+
+Initial real artifact roundtrip passed on checkout 4390a20 (run
+46054285012, job 140693031539). Metadata identifies original QA
+artifact 15226435261 and downloaded coverage 15225487642; logs
+confirm manifest and exact source coverage. Archive bytes were not
+independently downloaded in the review. Parent #342 merged 7605db9
+with all five changed blobs matching 1234fc3. Repeat combined
+qualification is required. The unchanged #340 field plan is carried
+into the same review to avoid another stale-base merge.
