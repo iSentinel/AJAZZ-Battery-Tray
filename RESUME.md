@@ -1,3 +1,15 @@
+# Resume — ENG-16 complete-inventory identity recheck
+
+#339 merged b5b7dee after 4 workflows / 6 jobs PASS; five changed blobs
+match checkout 880c649. Repeat benchmark: Linux offer p95 240 ns,
+Intel macOS 1000 ns, 4098 writes each, zero losses, exact retained bytes.
+First stop 1.067/2.881 ms, synthetic only. #340 field plan open;
+real GUI, physical and release acceptance remain NOT_RUN.
+ENG-16: capture path identities of all five manifest inventory entries
+and their root before and after digest verification. Add late-file
+mutation and byte-identical manifest replacement regressions. Hosted
+qualification pending; no atomic snapshot or authenticity claim.
+
 # Resume — paced Apple journal producer benchmark candidate
 
 #338 merged 37c2529 after 5 workflows / 7 jobs PASS; all nine changed
