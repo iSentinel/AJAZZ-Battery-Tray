@@ -912,7 +912,7 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let previouslyPresent = receiverWasPresent
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let readStart = ProcessInfo.processInfo.systemUptime
-            let value = Self.readForPoll(token)
+            let (value, outcome) = Self.readForPoll(token)
             let readMs = AjazzElapsedMilliseconds(readStart, ProcessInfo.processInfo.systemUptime)
             let observedAt = Date()
             let elapsed = Date().timeIntervalSince(lastAttempt)
@@ -927,18 +927,14 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             DispatchQueue.main.async {
                 self?.completePoll(value, observedAt: observedAt, manual: manual,
                                    attempted: shouldSync, sent: sent,
-                                   readMs: readMs, clockMs: clockMs)
+                                   readMs: readMs, clockMs: clockMs, outcome: outcome)
             }
         }
     }
 
-    private static func readForPoll(_ token: ApexWorkerCancellation?) -> ApexBattery.Status {
-        guard let token = token else { return ApexBattery.read() }
-        switch ApexBoundedWorker.read(cancellation: token) {
-        case .reply(let value): return value
-        case .timeout: return .timedOut
-        default: return .accessUnknown
-        }
+    private static func readForPoll(_ token: ApexWorkerCancellation?) -> (ApexBattery.Status, AjazzRoutineOutcome) {
+        guard let token = token else { return (ApexBattery.read(), AjazzRoutineReply) }
+        return ApexBoundedWorker.routineOutcome(ApexBoundedWorker.read(cancellation: token))
     }
 
     private static func clockForPoll(_ token: ApexWorkerCancellation?) -> Bool {
@@ -949,7 +945,8 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func completePoll(_ value: ApexBattery.Status, observedAt: Date, manual: Bool,
-                              attempted: Bool, sent: Bool, readMs: Int64, clockMs: Int64) {
+                              attempted: Bool, sent: Bool, readMs: Int64, clockMs: Int64,
+                              outcome: AjazzRoutineOutcome) {
         activeCancellation = nil
         if closing {
             polling = false
@@ -960,8 +957,10 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // not create an immediate retry loop. Only a new queued request does so.
         let queued = manualClockSync
         if manual && value.compatibleReceiverPresent == nil { manualClockSync = true }
-        if value == .timedOut && isolatedPolling {
-            recordJournalEvent(AjazzEventIsolatedPollTimedOut, AjazzReasonTimeout, durationMs: readMs)
+        let event = AjazzRoutineJournalEvent(outcome)
+        if isolatedPolling && event != AjazzEventCount {
+            recordJournalEvent(event, AjazzRoutineJournalReason(outcome),
+                               durationMs: outcome == AjazzRoutineTimeout ? readMs : -1)
         }
         if attempted { recordClockResult(sent, durationMs: clockMs) }
         sessionObservation.observe(value, at: observedAt)
