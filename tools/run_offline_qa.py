@@ -229,9 +229,26 @@ def check_directory(directory: Path) -> None:
         raise ValueError("Missing evidence entries")
 
 
+def evidence_snapshot(directory: Path) -> dict:
+    """Capture bounded path identities for the complete manifest inventory."""
+    root = directory.lstat()
+    reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    if (not stat.S_ISDIR(root.st_mode) or not root.st_ino
+            or getattr(root, "st_file_attributes", 0) & reparse):
+        raise ValueError("Expected regular evidence directory")
+    identities = {".": file_identity(root)}
+    for name in (*REQUIRED, "manifest.json"):
+        info = (directory / name).lstat()
+        if not regular_evidence(info) or info.st_size > MAX_EVIDENCE:
+            raise ValueError("Unsafe evidence inventory")
+        identities[name] = file_identity(info)
+    return identities
+
+
 def verify_manifest(directory: Path) -> None:
     """Check exact required inventory, metadata and current SHA-256 digests."""
     check_directory(directory)
+    initial = evidence_snapshot(directory)
     manifest = json.loads(read_evidence(directory / "manifest.json"))
     if (not isinstance(manifest, dict) or set(manifest) != {"schema", "files"}
             or type(manifest["schema"]) is not int or manifest["schema"] != 1
@@ -254,6 +271,8 @@ def verify_manifest(directory: Path) -> None:
     if seen != set(REQUIRED):
         raise ValueError("Incomplete manifest")
     check_directory(directory)
+    if evidence_snapshot(directory) != initial:
+        raise ValueError("Evidence inventory changed during verification")
 
 
 def run_qa(directory: Path) -> int:
