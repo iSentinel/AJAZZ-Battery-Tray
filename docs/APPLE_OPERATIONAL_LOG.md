@@ -52,3 +52,28 @@ previous files. CI uses Linux and Intel macOS; the deployment target
 is 10.13, not an actual High Sierra execution. Retained beta.61 bytes
 are not changed. Original encoder reference #328 passed 70 combinations
 under two TZ values on both hosts; combined checkout must pass again.
+
+## Native qualification correction and lifecycle integration design
+
+Initial combined run 45987778921: Linux job 140467678485 passed encoding
+and storage. Intel macOS job 140467678902 passed the encoder under both
+TZ values, but strict POSIX C compilation hid O_NOFOLLOW, flock, LOCK_EX,
+LOCK_NB and mkdtemp. Expose Darwin extensions with -D_DARWIN_C_SOURCE
+only on Darwin, preserving -Werror and the 10.13 deployment target.
+Repeat combined CI before integration; do not remove no-follow or locking.
+
+Review of a78a0e6 identifies the actual tray delegate methods in both
+macos/main.swift and macos/high-sierra/main.m. The first integration should
+emit ApplicationStarted from applicationDidFinishLaunching and
+ApplicationStopped from a new applicationWillTerminate callback. Do not
+log stopped in applicationShouldTerminate: that callback may defer exit
+until a diagnostic or poll worker is reaped. Keep CLI/self-tests and
+child workers out of the live journal. Universal's BatteryHistoryWriter
+already creates Application Support/AJAZZBatteryTray without guaranteeing
+0700; do not change existing history-directory permissions. Use a separate
+private journal directory under the user-owned support location, validate
+it before writing, and refuse unsafe existing entries without chmod or
+replacement. Keep each edition's directory distinct to preserve its own
+operational provenance. Establish closed failure counters before adding
+periodic poll events; do not label ordinary disconnected/unknown states
+as transport failures. This is a design checkpoint, not wired behavior.
