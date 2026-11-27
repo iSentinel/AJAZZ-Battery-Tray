@@ -2886,3 +2886,19 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Verify actual replay and synthetic tests in CI. Retained Setup,
       GUI, hardware and interactive acceptance, final selection,
       distribution and signing remain open; publication BLOCKED.
+
+### Native replay completion and owner test handoff
+
+- [x] #315 5/5 workflows and 6/6 jobs PASS, merged d9d4421;
+      seven changed Git blobs match tested checkout 0eaab88.
+      Run 45917165490 verified the two exact evidence archives and
+      three original application archives: 12/12 cases, five replay
+      regression tests PASS. Review artifact 15162827040.
+- [x] Recheck availability of the existing f939fea Windows Setup
+      artifact 15109661194 (expires 2026-12-03T10:57:24Z), and document
+      exact archive/EXE verification for private owner testing separately
+      from the normalized e7195b38 Setup. No new build or public release.
+- [ ] Owner-controlled tests or authorized private retention of normalized
+      Setup, final package selection, distribution and signing decisions.
+      Keep incomplete hardware/interactive observations NOT_RUN.
+      Publication BLOCKED.

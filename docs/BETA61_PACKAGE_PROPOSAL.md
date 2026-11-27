@@ -252,3 +252,19 @@ No normal GUI, hardware, interactive installation, trusted signing,
 package selection or distribution approval is established. High Sierra
 CLI was exercised on a newer Intel macOS runner, not macOS 10.13.
 Publication remains BLOCKED.
+
+## Completed exact retained-evidence replay
+
+PR #315 passed all five workflows and six jobs, merged d9d4421.
+All seven changed Git blobs matched tested checkout 0eaab885188fba33a8eed3d9adb10dea36df96a8.
+Run 45917165490, job 140239050550, successfully retrieved the two original
+self-test evidence ZIPs and three original application archives, passed
+five regression tests and verified all 12 scoped native observations.
+GitHub reported derived review artifact 15162827040 ZIP SHA-256
+0b1bbd240610e2b09177d0a94fc16835a5865b26e0dfad4b4274b9a50d795029.
+Hosted logs and metadata reviewed; the derived review ZIP itself was not
+independently downloaded in this review. The original Inno 6.7.1 Setup
+remains a separate existing owner-test option (see Windows runbook),
+not a substitute for the normalized proposal or a release decision.
+Real GUI, hardware, interactive installation, trusted signing and
+public distribution remain unverified. Publication BLOCKED.
