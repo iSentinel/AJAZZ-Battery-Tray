@@ -1,3 +1,16 @@
+# Resume — exact original rollback completed
+
+#319 merged 2b50265; 4 workflows / 5 jobs PASS. All four changed blobs
+match tested checkout b12b71b. Native job 140335949658 in run
+45947656299 verified beta.60 -> original f939fea beta.61 -> uninstall ->
+beta.60 -> uninstall; registered unins000.exe then unins001.exe.
+Four synthetic profile files, initial and reinstalled baseline EXE hash,
+isolated recovery and final backup matched. No actual profile, GUI or HID.
+Original Setup 15109661194 expires 2026-12-03T10:57:24Z. Actual application
+compatibility, ACL/live restore, interactive and physical acceptance,
+normalized Setup retention and distribution/signing disposition remain
+open. No new binary or publication. Release BLOCKED.
+
 # Resume — exact rollback CI harness correction
 
 #319 initial run 45931292999: verified original inputs and reached
