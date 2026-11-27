@@ -22,6 +22,52 @@ Keep the binaries in the agreed test environment. The
 [release readiness record](https://github.com/iSentinel/AJAZZ-Battery-Tray/blob/0c22bf959a6bae9a34c0e6806e9146a3d54d8c58/docs/BETA61_RELEASE_READINESS.md#reproducible-windows-setup-for-private-interactive-acceptance)
 describes the qualification and the approval scope.
 
+## Existing private test installer (alternative to local compilation)
+
+The original f939fea candidate also has a retained, **unpublished** Windows
+Setup from Inno Setup 6.7.1. For owner-controlled testing, this is an
+alternative to compiling the normalized 6.7.4 Setup below. It is not the
+notice-bearing package proposal, is unsigned, and is not selected or
+approved for public distribution. Do not use its observations as evidence
+for the normalized Setup.
+
+Download [original installer artifact 15109661194](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45805754709/artifacts/15109661194)
+from the authenticated GitHub Actions page, save it as `installer.zip`,
+and verify the outer archive and exact inner executable. GitHub reported
+this artifact available on 2026-11-27, with expiration on
+2026-12-03T10:57:24Z. Retain the original ZIP privately if needed.
+Do not substitute a later build if the original expires.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$zip = (Resolve-Path -LiteralPath '.\installer.zip').Path
+if ((Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash -ne '73de3837a16ac39deeb99ebfb314501203b58a3092e91bb0989df92b2b38c99c') {
+    throw 'Original installer archive differs'
+}
+$dest = Join-Path (Get-Location).Path 'beta61-original-setup'
+if (Test-Path -LiteralPath $dest) { throw 'Use a fresh destination' }
+Expand-Archive -LiteralPath $zip -DestinationPath $dest
+$originalSetup = Join-Path $dest 'AJAZZBatteryTray-Setup-win-x64.exe'
+if ((Get-FileHash -LiteralPath $originalSetup -Algorithm SHA256).Hash -ne '1cc71e5c2a7119070c80611160b5e263afd2b70155f33b13a88fac848d67542e') {
+    throw 'Original Setup differs'
+}
+'PASS: original archive and Setup identities match; publisher trust not verified'
+```
+
+The verification block does not install or launch anything. The original
+hosted job 139860432091 passed baseline/upgrade/retained-data/uninstall
+checks. It does not prove interactive UAC, SmartScreen or physical-device
+behavior. If the test environment permits, back up existing user settings
+and close the tray before manually opening the verified Setup. Keep OS
+protection enabled; record any block rather than bypassing it.
+Use Installed apps for uninstall. The normalized six-case interactive form
+below is **not** applicable to this original Setup.
+
+For use without an installer, the exact portable artifact linked above
+can instead be extracted to a fresh folder after archive and executable
+hash verification. Preserve the four Icons files. Neither path constitutes
+release admission.
+
 ## Prepare a local Setup
 
 Use Git, Python 3.13, `curl.exe`, and a recent GitHub CLI with
