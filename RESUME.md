@@ -1,3 +1,15 @@
+# Resume — isolated Apple supervisor outcome provenance
+
+#333 merged cadd079, 4 workflows / 6 jobs PASS, five changed blobs
+match 61ddc6b. Benchmark both hosts 4096 writes, exact retained records;
+macOS ordinary p95 346 us, max 83028 us, single rotation per host.
+Artifacts 15213888566/15213843768 (logs and metadata reviewed). Added
+separate closed supervisor outcome in Swift and High Sierra, busy reason,
+explicit unavailable events; valid unknown/absent replies and cancellations
+are not failures. 80 combinations and native mapping tests prepared.
+Hosted CI pending; actual GUI/resource performance not qualified.
+Retained beta.61 and HID policy unchanged. Release BLOCKED.
+
 # Resume — synthetic Apple journal storage overhead
 
 #332 merged 03d5115, 5 workflows / 7 jobs PASS, nine changed blobs
