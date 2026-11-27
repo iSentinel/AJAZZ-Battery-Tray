@@ -1,3 +1,13 @@
+# Resume — native package synthetic CLI catalog
+
+#322 merged dc2e0a1; 4/4 workflows PASS, seven changed blobs match
+0f60327. Coverage review run 45953248309 PASS, artifact 15177437809
+(metadata/logs checked). Added catalog of the existing 12 native package
+CLI scenarios with stable edition-qualified IDs, expected exits, deadlines
+and pinned identities, two regression groups and common help gate.
+Hosted QA pending. Full native assertion catalog and actual hardware/GUI
+remain separate. No new application or publication. Release BLOCKED.
+
 # Resume — offline automated case coverage
 
 #321 merged 3888fa2; 4 workflows / 5 jobs PASS, all six changed blobs
