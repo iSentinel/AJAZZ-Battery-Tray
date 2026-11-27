@@ -113,14 +113,37 @@ def backup(source: Path, output: Path) -> dict:
     return verify(output)
 
 
+def rehearse(source: Path, output: Path) -> dict:
+    """Restore exact verified bytes into a new isolated directory only."""
+    if not stat.S_ISDIR(safe_stat(output.parent).st_mode):
+        raise ValueError('expected output parent')
+    # Restrict rehearsal to a sibling of the backup, not the live profile.
+    if output.parent.resolve() != source.parent.resolve():
+        raise ValueError('rehearsal must be a sibling of the backup')
+    if source.resolve() == output.resolve():
+        raise ValueError('rehearsal must differ from backup')
+    expected = verify(source)
+    files = collect(source, strict=True)
+    if manifest(files) != expected or verify(source) != expected:
+        raise ValueError('backup changed')
+    output.mkdir(mode=0o700, exist_ok=False)
+    for name, raw in files.items():
+        with (output / name).open('xb') as stream:
+            stream.write(raw)
+    if collect(output, strict=True) != files or verify(source) != expected:
+        raise ValueError('rehearsal bytes differ')
+    return expected
+
+
 def main(argv: list[str] | None = None) -> int:
-    """Exit 0 for matched scope, 2 for invalid inputs; never restore or install."""
+    """Exit 0 for matched scope, 2 for invalid inputs; no live restore."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, help='Closed tray user profile')
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument('--dry-run', action='store_true')
     action.add_argument('--backup', type=Path, help='Fresh private directory')
     action.add_argument('--verify', type=Path, help='Existing private backup')
+    action.add_argument('--rehearse', type=Path, help='New sibling rehearsal directory')
     args = parser.parse_args(argv)
     try:
         if args.verify is not None:
@@ -130,12 +153,18 @@ def main(argv: list[str] | None = None) -> int:
         else:
             if args.source is None:
                 raise ValueError('source required')
-            row = (manifest(collect(args.source)) if args.dry_run
-                   else backup(args.source, args.backup))
+            if args.rehearse is not None:
+                row = rehearse(args.source, args.rehearse)
+            else:
+                row = (manifest(collect(args.source)) if args.dry_run
+                       else backup(args.source, args.backup))
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):
         print('FAIL: local profile backup or verification', file=sys.stderr)
         return 2
-    print(f"PASS: {len(row['files'])} profile files; restore NOT_RUN")
+    if args.rehearse is not None:
+        print(f"PASS: {len(row['files'])} rehearsal files; live restore NOT_RUN")
+    else:
+        print(f"PASS: {len(row['files'])} profile files; restore NOT_RUN")
     print('Local private data: do not upload or share')
     return 0
 
