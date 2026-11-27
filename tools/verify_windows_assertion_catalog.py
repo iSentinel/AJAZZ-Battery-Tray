@@ -2,12 +2,13 @@
 """Check Windows console assertion coverage against a reviewed reference."""
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
 import sys
 
-from run_offline_qa import ROOT, read_evidence, write_json
+from run_offline_qa import ROOT, git_value, read_evidence, write_json
 
 REFERENCE = ROOT / 'tests/fixtures/windows-native-assertions-v1.json'
 
@@ -55,7 +56,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        result = verify(read_evidence(args.capture), catalog(read_evidence(REFERENCE)))
+        reference = read_evidence(REFERENCE)
+        result = verify(read_evidence(args.capture), catalog(reference))
+        result['catalog_sha256'] = hashlib.sha256(reference).hexdigest()
+        result['checkout'] = git_value('rev-parse', 'HEAD')
         write_json(args.output, result)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):
         print('FAIL: Windows native assertion coverage', file=sys.stderr)
