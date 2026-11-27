@@ -2913,3 +2913,30 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted tests and real Windows backup/ACL/restore rehearsal. No live
       restoration or cross-version rollback qualification. Existing pinned
       f939fea application and release admission unchanged.
+
+### ENG-07 isolated recovery rehearsal and new field observation
+
+- [x] #317 merged d600514 after all four workflows passed; all six
+      changed Git blobs match tested checkout 5488537.
+- [x] Add isolated byte-exact recovery rehearsal into a fresh dedicated
+      sibling directory, without a live profile restore. Three new
+      synthetic regression groups and native Windows synthetic QA added.
+- [x] Record owner-confirmed f939fea APEX field 82 -> 81 during
+      continuous use, without switching the mouse off/on. Latest report
+      2026-11-27 00:54:17 UTC, six F7/05 replies, 0/6 admitted,
+      6/6 agreeing ready-clear field 81; two ordinary samples 26 s apart.
+      See [issue #53](https://github.com/iSentinel/AJAZZ-Battery-Tray/issues/53#issuecomment-7206866201).
+      This confirms a spontaneous field change, not charge accuracy,
+      physical model or telemetry admission. AULA fresh 81 is independent.
+- [ ] Hosted recovery CI and actual Windows ACL/restore/rollback rehearsal.
+      Independent APEX reference comparison, physical/interactive acceptance
+      and normalized Setup retention remain open. Publication BLOCKED.
+
+- [x] Native Windows run 45919770690 exposed a false change detection
+      in the original profile reader: seven of nine cases failed at
+      the first cross-API metadata comparison. CPython issue #157671
+      describes different Windows ctime semantics for path and descriptor.
+      Compare birthtime for Windows cross-API identity, retain full
+      same-API before/after checks and add a synthetic timestamp regression.
+- [ ] Re-run native Windows and offline CI on the corrected head before
+      using the profile backup helper on Windows. No live restore.
