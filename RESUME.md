@@ -1,3 +1,16 @@
+# Resume — Apple GUI background journal integration
+
+#337 merged 75c93b5 after 4 workflows / 6 jobs PASS; all six changed
+blobs match tested checkout 2cc8908. Edition storage tests PASS on
+Linux and Intel macOS (jobs 140635688913/140635688358). Both AppKit
+delegates now use the shared main-thread lifecycle adapter and one
+independent writer. The stop event is reserved once; shutdown observes
+completion for up to 100 ms best effort, retains heap state on timeout.
+Diagnostics distinguish write failures, drops and unavailable events.
+Shared synthetic lifecycle fixture extended; hosted qualification
+pending. Actual GUI latency, real High Sierra and hardware NOT_RUN.
+No HID or retained beta.61 change. Release BLOCKED.
+
 # Resume — background edition journal sink candidate
 
 #336 merged 5b72631 after 4 workflows / 6 jobs PASS; all six changed
