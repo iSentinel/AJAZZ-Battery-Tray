@@ -41,7 +41,7 @@ static void *produce(void *argument) {
 }
 
 static bool fill_while_blocked(AjazzOperationalWriter *writer) {
-    Producer producers[4];
+    static Producer producers[4];
     pthread_t threads[4];
     for (size_t i = 0; i < 4; ++i) {
         producers[i] = (Producer){writer, 1 + i * 16, 0};
@@ -73,8 +73,8 @@ static bool validate_records(TestSink *sink) {
 }
 
 static bool blocked_writer(void) {
-    TestSink sink = {.lock = PTHREAD_MUTEX_INITIALIZER, .ready = PTHREAD_COND_INITIALIZER};
-    AjazzOperationalWriter writer;
+    static TestSink sink = {.lock = PTHREAD_MUTEX_INITIALIZER, .ready = PTHREAD_COND_INITIALIZER};
+    static AjazzOperationalWriter writer;
     if (!AjazzWriterStart(&writer, gated_sink, &sink) ||
         !AjazzWriterOffer(&writer, sample(0))) return false;
     pthread_mutex_lock(&sink.lock);
@@ -100,9 +100,9 @@ static bool blocked_writer(void) {
 
 /// Idle seal must wake the consumer and deliver the stop even without offers.
 static bool idle_writer(void) {
-    TestSink sink = {.lock = PTHREAD_MUTEX_INITIALIZER, .ready = PTHREAD_COND_INITIALIZER,
+    static TestSink sink = {.lock = PTHREAD_MUTEX_INITIALIZER, .ready = PTHREAD_COND_INITIALIZER,
                      .released = true};
-    AjazzOperationalWriter writer;
+    static AjazzOperationalWriter writer;
     if (AjazzWriterStart(&writer, NULL, &sink) ||
         !AjazzWriterStart(&writer, gated_sink, &sink) ||
         !AjazzWriterSeal(&writer, 100) || !AjazzWriterWait(&writer, 5000)) return false;
