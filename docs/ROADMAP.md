@@ -3043,3 +3043,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       No application or build script change, only aggregate JSON artifacts.
 - [ ] Hosted qualification; dashboard and finer-grained Apple assertions,
       actual GUI/hardware and release admission remain separate.
+
+### ENG-08 Windows Dashboard smoke group coverage
+
+- [x] #325 merged aff0744 after 5/5 workflows and 6/6 jobs PASS;
+      all nine changed blobs match tested checkout 8900223. Apple
+      Universal 21 and High Sierra six groups verified; aggregate
+      artifacts 15178986945 and 15179470507 (hosted logs reviewed).
+- [x] Record 24 unique Dashboard smoke groups from Windows run
+      45956565055/job 140364303218. Three shared groups and seven per
+      EN/RU/UK, including nine explicitly synthetic scaling checks.
+      Add ordered coverage verifier, three regression groups, CLI help
+      gate and existing Windows smoke CI aggregate report.
+- [ ] Hosted qualification. Real DPI, high contrast, keyboard/desktop,
+      physical hardware and release admission remain separate.

@@ -82,7 +82,24 @@ jobs:
             Remove-Item -LiteralPath $archive -ErrorAction SilentlyContinue
           }
       - name: Smoke-test localized Device Manager controls
-        run: dotnet run -c Release --project tests/AjazzDashboard.Smoke
+        shell: pwsh
+        run: |
+          $capture = Join-Path $env:RUNNER_TEMP 'ajazz-dashboard-groups.txt'
+          $review = Join-Path $env:RUNNER_TEMP 'ajazz-dashboard-group-review.json'
+          if ((Test-Path -LiteralPath $capture) -or (Test-Path -LiteralPath $review)) {
+            throw 'Expected fresh Dashboard evidence paths'
+          }
+          dotnet run -c Release --project tests/AjazzDashboard.Smoke | Tee-Object -FilePath $capture
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard smoke failed' }
+          python tools/verify_dashboard_group_catalog.py --capture $capture --output $review
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard group coverage differs' }
+      - name: Retain scoped Dashboard group review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-dashboard-group-review
+          path: ${{ runner.temp }}/ajazz-dashboard-group-review.json
+          if-no-files-found: error
       - name: Smoke-test cumulative process-tree CPU accounting
         shell: pwsh
         run: ./tools/Measure-TrayJobCpu.ps1 -SelfTest
