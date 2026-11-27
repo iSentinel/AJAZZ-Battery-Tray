@@ -1,3 +1,13 @@
+# Resume — paced Apple journal producer benchmark candidate
+
+PR #338 head 663ab1a: shared lifecycle fixtures and offline QA PASS;
+Windows and both native Apple builds still pending at benchmark start.
+Dependent branch adds a fixed 4096-offer paced benchmark (32 per batch),
+4098 completed writes including start/stop, exact retained generations,
+producer-only latency, total process CPU/RSS and first stop observation.
+Hosted benchmark qualification and parent integration required. No real
+AppKit UI, HID, High Sierra hardware or release admission claim.
+
 # Resume — Apple GUI background journal integration
 
 #337 merged 75c93b5 after 4 workflows / 6 jobs PASS; all six changed
