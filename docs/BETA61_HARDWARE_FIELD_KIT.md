@@ -13,6 +13,22 @@ generated from the three verified GitHub Actions archives listed below.
 | `universal.checklist.json` | macOS Universal on the tested Intel or Apple Silicon system | 11 |
 | `high-sierra.checklist.json` | macOS 10.13 on the tested Intel Mac | 11 |
 
+## Machine-readable case catalog
+
+```sh
+python tools/export_acceptance_catalog.py --output acceptance-catalog.json
+```
+
+The export reads the existing hardware and installer case tables and checks
+the exact IDs against the six checklist profiles. It contains 35 unique
+definitions and 63 profile/case instances (57 physical, six interactive).
+The action and expected-result text comes directly from the existing
+documents. The catalog is not a checklist, evidence or approval; no
+observations are collected and no acceptance result is changed.
+Use the linked guides for prerequisites and exact candidate verification.
+Exit 0 means catalog coverage matched, exit 2 means invalid inputs or output.
+Use a fresh output filename; an existing file is not overwritten.
+
 ## Candidate files
 
 Download the original Actions archive for the applicable platform. Match

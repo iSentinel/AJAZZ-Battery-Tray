@@ -1,3 +1,12 @@
+# Resume — acceptance catalog
+
+Integration bfecefc (#320), full draft #99 CI 16/16 PASS. Historical
+#247 closed as superseded, not merged. ENG-08 catalog exporter reads
+existing hardware and normalized interactive case tables, requires exact
+IDs and profile coverage (35 definitions, 63 instances). Three regression
+groups and common CLI help gate added. Hosted QA pending. No checklist
+schema, application bytes, observations or release state changed.
+
 # Resume — exact original rollback completed
 
 #319 merged 2b50265; 4 workflows / 5 jobs PASS. All four changed blobs
