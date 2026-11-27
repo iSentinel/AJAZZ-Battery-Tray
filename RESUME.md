@@ -1,3 +1,13 @@
+# Resume — native proposed package extraction
+
+#312 exact 4/4 merged 7cf2211. All three actual proposed packages
+and Apple inner archives passed local Python extraction/inventory
+checks (mode bits explicitly restored for Linux replay). Native
+Expand-Archive/ditto workflow checks exact package identity, every
+file, Apple executable bits and codesign; no application launch.
+Native CI pending; retained Setup, human acceptance, final package
+selection, signing and distribution remain open. Release BLOCKED.
+
 # Resume — proposed package checksum and update compatibility
 
 #311 exact 5/5 merged 0f2dcc6. Reviewed exact public beta.60
