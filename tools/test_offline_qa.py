@@ -3,6 +3,7 @@
 from collections.abc import Iterator
 import json
 from types import SimpleNamespace
+from typing import TextIO
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,7 +12,7 @@ from unittest.mock import patch
 from qa_unittest import execute
 from run_offline_qa import (REQUIRED, create_run, junit_counts, read_evidence,
                             verify_inventory, verify_manifest, write_json,
-                            file_identity, check_directory)
+                            file_identity, check_directory, publish_manifest)
 
 
 def sample_case(kind: str) -> unittest.TestCase:
@@ -69,6 +70,64 @@ class OfflineQaTests(unittest.TestCase):
             manifest = verify_inventory(first)
             self.assertEqual({entry["name"] for entry in manifest["files"]}, set(REQUIRED))
             self.assertTrue(all(entry["bytes"] == 9 for entry in manifest["files"]))
+
+    def test_publish_manifest_no_replace(self) -> None:
+        """Publish a complete single-link manifest and refuse overwriting it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_text("synthetic")
+            publish_manifest(root)
+            verify_manifest(root)
+            manifest = root / "manifest.json"
+            original = manifest.read_bytes()
+            self.assertEqual(manifest.stat().st_nlink, 1)
+            with self.assertRaises(FileExistsError):
+                publish_manifest(root)
+            self.assertEqual(manifest.read_bytes(), original)
+            self.assertEqual(set(p.name for p in root.iterdir()),
+                             set(REQUIRED) | {"manifest.json"})
+
+    def test_publish_manifest_interrupted_serialization(self) -> None:
+        """Do not expose a partially serialized completion marker."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_text("synthetic")
+
+            def fail_dump(value: dict, output: TextIO, **options: object) -> None:
+                """Simulate a write failure after emitting partial JSON."""
+                output.write('{"schema":')
+                raise OSError("synthetic write failure")
+
+            with patch("run_offline_qa.json.dump", side_effect=fail_dump):
+                with self.assertRaises(OSError):
+                    publish_manifest(root)
+            self.assertEqual(set(p.name for p in root.iterdir()), set(REQUIRED))
+            with self.assertRaises(ValueError):
+                verify_manifest(root)
+
+    def test_publish_manifest_link_failure(self) -> None:
+        """Fail closed when the filesystem cannot publish without replacement."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_text("synthetic")
+            with patch("run_offline_qa.os.link", side_effect=OSError("unsupported")):
+                with self.assertRaises(OSError):
+                    publish_manifest(root)
+            self.assertEqual(set(p.name for p in root.iterdir()), set(REQUIRED))
+
+    def test_publish_manifest_sync_failure(self) -> None:
+        """Never expose the completion marker if synchronizing data fails."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_text("synthetic")
+            with patch("run_offline_qa.os.fsync", side_effect=OSError("sync failure")):
+                with self.assertRaises(OSError):
+                    publish_manifest(root)
+            self.assertEqual(set(p.name for p in root.iterdir()), set(REQUIRED))
 
     def test_manifest_detects_changed_and_extra_files(self) -> None:
         """Reopen a valid set and reject content replacement or extra entries."""
