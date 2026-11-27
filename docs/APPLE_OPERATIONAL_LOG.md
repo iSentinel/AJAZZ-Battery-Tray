@@ -158,3 +158,28 @@ Linux and Intel macOS hosted jobs compile with -O2 and warnings as errors,
 retain only aggregate JSON, and fail on execution or integrity failure.
 No latency threshold, durability/fsync guarantee, physical HID, real GUI
 or tray CPU/RAM inference is made. Benchmark metrics are observational.
+
+## Seventh stage: isolated routine outcome provenance
+
+The supervisor outcome is separate from the battery presentation state.
+Both editions preserve Reply, Timeout, Cancelled, Busy and Failed without
+changing the previous UI result. Only an actual supervisor timeout emits
+IsolatedPollTimedOut, with measured duration. Busy emits
+IsolatedPollUnavailable/busy and Failed emits
+IsolatedPollUnavailable/unsuccessful, without inferred duration or cause.
+A valid reply with unknown battery, absent receiver or access error is
+not a supervisor failure. Cancellation does not emit a failure record.
+Legacy IPC bytes, worker launch arguments, timeout budgets and HID
+commands are unchanged. New encoder vocabulary has eight reasons; the
+standalone fixture covers all 80 combinations and five outcome mappings.
+Existing native worker self-tests exercise provenance without HID.
+
+Benchmark #333 run 46031570517, checkout 61ddc6b: both hosts wrote 4096
+records (4095 ordinary, one rotation) and retained exact records. Linux
+ordinary p50/p95/max 20210/22194/84538 ns; Intel macOS
+244000/346000/83028000 ns. Rotation 56966/306000 ns respectively.
+CPU delta 83732/806847 us, peak RSS 1847296/696320 bytes. The single
+rotation sample and macOS latency outlier do not establish a stable
+performance bound. Hosted logs and artifact metadata were reviewed;
+artifact bytes were not independently downloaded. Real UI latency and
+resource use remain unqualified.

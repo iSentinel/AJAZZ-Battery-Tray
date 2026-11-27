@@ -75,6 +75,17 @@ enum ApexBoundedWorker {
         case failed
     }
 
+    /// Preserve supervisor provenance separately from the existing battery UI mapping.
+    static func routineOutcome(_ result: Result) -> (ApexBattery.Status, AjazzRoutineOutcome) {
+        switch result {
+        case .reply(let status): return (status, AjazzRoutineReply)
+        case .timeout: return (.timedOut, AjazzRoutineTimeout)
+        case .cancelled: return (.accessUnknown, AjazzRoutineCancelled)
+        case .busy: return (.accessUnknown, AjazzRoutineBusy)
+        default: return (.accessUnknown, AjazzRoutineFailed)
+        }
+    }
+
     static func isWorker(_ mode: String) -> Bool {
         [readMode, sampleMode, hangMode, clockMode, clockSampleMode].contains(mode) || isTrace(mode)
     }
@@ -230,6 +241,14 @@ enum ApexBoundedWorker {
             guard let data = try? JSONEncoder().encode(ApexWorkerReply(status)),
                   decode(data) == .reply(status) else { return false }
         }
+        guard routineOutcome(.reply(.accessUnknown)).1 == AjazzRoutineReply,
+              routineOutcome(.reply(.notConnected)).1 == AjazzRoutineReply,
+              routineOutcome(.timeout).1 == AjazzRoutineTimeout,
+              routineOutcome(.cancelled).1 == AjazzRoutineCancelled,
+              routineOutcome(.busy).1 == AjazzRoutineBusy,
+              routineOutcome(.failed).1 == AjazzRoutineFailed,
+              routineOutcome(.failed).0 == .accessUnknown,
+              routineOutcome(.timeout).0 == .timedOut else { return false }
         let invalid = [
             "{\"state\":\"battery\",\"percent\":0}",
             "{\"state\":\"battery\",\"percent\":101}",

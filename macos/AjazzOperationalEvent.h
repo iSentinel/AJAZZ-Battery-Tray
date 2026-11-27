@@ -32,6 +32,7 @@ typedef enum {
     AjazzReasonCancelled,
     AjazzReasonUnsuccessful,
     AjazzReasonUnexpectedError,
+    AjazzReasonBusy,
     AjazzReasonCount
 } AjazzOperationalReason;
 
@@ -39,6 +40,35 @@ typedef struct {
     const char *name;
     const char *level;
 } AjazzOperationalEventInfo;
+
+/// Supervisor outcome, distinct from the battery state returned by a valid reply.
+typedef enum {
+    AjazzRoutineReply = 0,
+    AjazzRoutineTimeout,
+    AjazzRoutineCancelled,
+    AjazzRoutineBusy,
+    AjazzRoutineFailed
+} AjazzRoutineOutcome;
+
+/// Only supervisor failures/timeouts produce journal events; cancellation is not failure.
+static inline AjazzOperationalEvent AjazzRoutineJournalEvent(AjazzRoutineOutcome outcome) {
+    switch (outcome) {
+        case AjazzRoutineTimeout: return AjazzEventIsolatedPollTimedOut;
+        case AjazzRoutineBusy:
+        case AjazzRoutineFailed: return AjazzEventIsolatedPollUnavailable;
+        default: return AjazzEventCount;
+    }
+}
+
+/// Use closed reasons; no exception messages or device data.
+static inline AjazzOperationalReason AjazzRoutineJournalReason(AjazzRoutineOutcome outcome) {
+    switch (outcome) {
+        case AjazzRoutineTimeout: return AjazzReasonTimeout;
+        case AjazzRoutineBusy: return AjazzReasonBusy;
+        case AjazzRoutineFailed: return AjazzReasonUnsuccessful;
+        default: return AjazzReasonNone;
+    }
+}
 
 /// Convert measured monotonic elapsed time to whole milliseconds, or -1.
 static inline int64_t AjazzElapsedMilliseconds(double started, double ended) {
@@ -62,7 +92,7 @@ static inline size_t AjazzEncodeTimedOperationalEvent(
     };
     static const char *const reasons[] = {
         "none", "io_error", "access_denied", "timeout", "cancelled",
-        "unsuccessful", "unexpected_error"
+        "unsuccessful", "unexpected_error", "busy"
     };
     if (!output || !capacity) return 0;
     output[0] = '\0';

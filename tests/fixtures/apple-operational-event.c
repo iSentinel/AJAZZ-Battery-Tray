@@ -14,7 +14,7 @@ static bool check_records(void) {
     };
     const char *reasons[] = {
         "none", "io_error", "access_denied", "timeout", "cancelled",
-        "unsuccessful", "unexpected_error"
+        "unsuccessful", "unexpected_error", "busy"
     };
     if (sizeof(events) / sizeof(events[0]) != AjazzEventCount ||
         sizeof(reasons) / sizeof(reasons[0]) != AjazzReasonCount) return false;
@@ -74,12 +74,26 @@ static bool check_durations(void) {
             AjazzEventDockClockSucceeded, AjazzReasonNone, 0, 86400000) > 0;
 }
 
+static bool check_outcomes(void) {
+    const AjazzRoutineOutcome outcomes[] = {AjazzRoutineReply, AjazzRoutineTimeout,
+        AjazzRoutineCancelled, AjazzRoutineBusy, AjazzRoutineFailed};
+    const AjazzOperationalEvent events[] = {AjazzEventCount, AjazzEventIsolatedPollTimedOut,
+        AjazzEventCount, AjazzEventIsolatedPollUnavailable, AjazzEventIsolatedPollUnavailable};
+    const AjazzOperationalReason reasons[] = {AjazzReasonNone, AjazzReasonTimeout,
+        AjazzReasonNone, AjazzReasonBusy, AjazzReasonUnsuccessful};
+    for (size_t i = 0; i < sizeof(outcomes) / sizeof(outcomes[0]); ++i)
+        if (AjazzRoutineJournalEvent(outcomes[i]) != events[i] ||
+            AjazzRoutineJournalReason(outcomes[i]) != reasons[i]) return false;
+    return true;
+}
+
 int main(void) {
-    if (!check_records() || !check_refusals() || !check_durations()) {
+    if (!check_records() || !check_refusals() || !check_durations() || !check_outcomes()) {
         fputs("FAIL: Apple operational event encoding\n", stderr);
         return 1;
     }
-    puts("PASS: 70 closed event/reason records and invalid-input refusals");
+    puts("PASS: 80 closed event/reason records and invalid-input refusals");
     puts("PASS: bounded monotonic duration conversion and exact optional JSON field");
+    puts("PASS: five closed supervisor outcome classifications");
     return 0;
 }

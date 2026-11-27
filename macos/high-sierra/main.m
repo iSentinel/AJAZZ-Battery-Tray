@@ -205,9 +205,13 @@ static void StopRoutineChild(NSTask *child) {
 
 /// Keep the in-process gate until NSTask confirms child exit.
 static BatteryReading RunRoutineUnlocked(NSString *mode, NSTimeInterval timeout,
-                                         LegacyPollCancellation *token) {
+                                         LegacyPollCancellation *token, AjazzRoutineOutcome *outcome) {
     BatteryReading result = {BatteryAccessError, -1, 0};
-    if (token.isCancelled) return (BatteryReading){BatteryCancelled, -1, 0};
+    *outcome = AjazzRoutineFailed;
+    if (token.isCancelled) {
+        *outcome = AjazzRoutineCancelled;
+        return (BatteryReading){BatteryCancelled, -1, 0};
+    }
     NSString *path = [[NSBundle mainBundle] executablePath];
     if (!path.length) return result;
     NSTask *child = [[NSTask alloc] init];
@@ -229,33 +233,50 @@ static BatteryReading RunRoutineUnlocked(NSString *mode, NSTimeInterval timeout,
     for (;;) {
         if (token.isCancelled) {
             StopRoutineChild(child);
+            *outcome = AjazzRoutineCancelled;
             return (BatteryReading){BatteryCancelled, -1, 0};
         }
         uint64_t now = dispatch_time(DISPATCH_TIME_NOW, 0);
         if (now >= deadline) {
             StopRoutineChild(child);
+            *outcome = AjazzRoutineTimeout;
             return (BatteryReading){BatteryTimedOut, -1, 0};
         }
         uint64_t next = dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_MSEC);
         if (dispatch_semaphore_wait(done, MIN(next, deadline)) == 0) break;
     }
     [child waitUntilExit];
-    if (token.isCancelled) return (BatteryReading){BatteryCancelled, -1, 0};
+    if (token.isCancelled) {
+        *outcome = AjazzRoutineCancelled;
+        return (BatteryReading){BatteryCancelled, -1, 0};
+    }
     if (child.terminationReason == NSTaskTerminationReasonExit &&
         child.terminationStatus == 0) {
         NSData *data = [pipe.fileHandleForReading readDataToEndOfFile];
-        DecodeRoutineReply(data, &result);
+        if (DecodeRoutineReply(data, &result)) *outcome = AjazzRoutineReply;
     }
     return result;
 }
 
+static BatteryReading RunRoutineWithOutcome(NSString *mode, NSTimeInterval timeout,
+    LegacyPollCancellation *token, AjazzRoutineOutcome *outcome) {
+    if (token.isCancelled) {
+        *outcome = AjazzRoutineCancelled;
+        return (BatteryReading){BatteryCancelled, -1, 0};
+    }
+    NSLock *gate = RoutineGate();
+    if (![gate tryLock]) {
+        *outcome = AjazzRoutineBusy;
+        return (BatteryReading){BatteryAccessError, -1, 0};
+    }
+    @try { return RunRoutineUnlocked(mode, timeout, token, outcome); }
+    @finally { [gate unlock]; }
+}
+
 static BatteryReading RunRoutine(NSString *mode, NSTimeInterval timeout,
                                  LegacyPollCancellation *token) {
-    if (token.isCancelled) return (BatteryReading){BatteryCancelled, -1, 0};
-    NSLock *gate = RoutineGate();
-    if (![gate tryLock]) return (BatteryReading){BatteryAccessError, -1, 0};
-    @try { return RunRoutineUnlocked(mode, timeout, token); }
-    @finally { [gate unlock]; }
+    AjazzRoutineOutcome outcome;
+    return RunRoutineWithOutcome(mode, timeout, token, &outcome);
 }
 
 static int RoutineSelfTest(void) {
@@ -279,17 +300,22 @@ static int RoutineSelfTest(void) {
         if (DecodeRoutineReply([NSData dataWithBytes:invalid[i]
                 length:sizeof(invalid[i])], &reading)) return 1;
     }
+    AjazzRoutineOutcome outcome;
     [RoutineGate() lock];
-    reading = RunRoutine(@"--internal-routine-sample", 1, nil);
+    reading = RunRoutineWithOutcome(@"--internal-routine-sample", 1, nil, &outcome);
     [RoutineGate() unlock];
-    if (reading.state != BatteryAccessError) return 1;
+    if (reading.state != BatteryAccessError || outcome != AjazzRoutineBusy) return 1;
+    reading = RunRoutineWithOutcome(@"--internal-routine-sample", 8, nil, &outcome);
+    if (reading.state != BatteryUnknown || outcome != AjazzRoutineReply) return 1;
+    reading = RunRoutineWithOutcome(@"--internal-routine-hang", 1, nil, &outcome);
+    if (reading.state != BatteryTimedOut || outcome != AjazzRoutineTimeout) return 1;
     if (RunRoutine(@"--internal-routine-sample", 8, nil).state != BatteryUnknown ||
         RunRoutine(@"--internal-routine-hang", 1, nil).state != BatteryTimedOut)
         return 1;
     LegacyPollCancellation *before = [[LegacyPollCancellation alloc] init];
     before.cancelled = YES;
-    if (RunRoutine(@"--internal-routine-sample", 8, before).state != BatteryCancelled)
-        return 1;
+    if (RunRoutineWithOutcome(@"--internal-routine-sample", 8, before, &outcome).state !=
+        BatteryCancelled || outcome != AjazzRoutineCancelled) return 1;
     LegacyPollCancellation *during = [[LegacyPollCancellation alloc] init];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250 * NSEC_PER_MSEC),
                    dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
@@ -912,8 +938,9 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @autoreleasepool {
             NSTimeInterval readStart = [[NSProcessInfo processInfo] systemUptime];
+            AjazzRoutineOutcome outcome = AjazzRoutineReply;
             BatteryReading reading = token
-                ? RunRoutine(@"--internal-routine-read", 8, token) : ReadReceiver();
+                ? RunRoutineWithOutcome(@"--internal-routine-read", 8, token, &outcome) : ReadReceiver();
             int64_t readMs = AjazzElapsedMilliseconds(readStart,
                 [[NSProcessInfo processInfo] systemUptime]);
             NSDate *observedAt = [NSDate date];
@@ -926,9 +953,10 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
                     [NSApp replyToApplicationShouldTerminate:YES];
                     return;
                 }
-                if (token && reading.state == BatteryTimedOut)
-                    [owner recordJournalEvent:AjazzEventIsolatedPollTimedOut reason:AjazzReasonTimeout
-                                       durationMs:readMs];
+                AjazzOperationalEvent event = AjazzRoutineJournalEvent(outcome);
+                if (token && event != AjazzEventCount)
+                    [owner recordJournalEvent:event reason:AjazzRoutineJournalReason(outcome)
+                                       durationMs:outcome == AjazzRoutineTimeout ? readMs : -1];
                 owner.sessionVerifiedAt = SessionVerifiedAt(owner.sessionVerifiedAt,
                                                             reading, observedAt);
                 owner.latest = reading;

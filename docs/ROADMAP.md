@@ -3168,3 +3168,20 @@ configuration commands. USB `VersionNumber` is a device revision,
       all retained records and retain aggregate JSON in Linux/Intel CI.
 - [ ] Hosted benchmark results, actual app overhead, richer failure
       classification, GUI/physical acceptance. No release admission.
+
+### ENG-05 Apple isolated supervisor provenance
+
+- [x] #333 merged cadd079 after 4/4 workflows and 6/6 jobs PASS; five
+      changed blobs match tested checkout 61ddc6b. Benchmark Linux and
+      Intel macOS each completed 4096 writes, exact retained records;
+      artifacts 15213888566 and 15213843768. One rotation per host.
+      Intel macOS p95 ordinary 346 us, maximum 83028 us; actual tray
+      latency and resource use are not established.
+- [x] Preserve supervisor Reply/Timeout/Cancelled/Busy/Failed independently
+      of battery display. Add busy reason, explicit unavailable events,
+      keep cancellation and valid unknown/absent replies out of failures.
+      Extend 80 encoder combinations, five outcome mappings, and existing
+      native worker tests without changing IPC or HID policy.
+- [ ] Hosted qualification of the new outcome mapping; assess synchronous
+      journal latency mitigation separately. GUI/physical acceptance and
+      release admission remain open.
