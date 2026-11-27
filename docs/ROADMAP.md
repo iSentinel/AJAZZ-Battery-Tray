@@ -2988,3 +2988,16 @@ configuration commands. USB `VersionNumber` is a device revision,
       Three regression groups and common CLI help registration added.
 - [ ] Hosted QA and review. Native automated case catalog and actual
       human observations remain separate. Release BLOCKED.
+
+### ENG-08 offline automated QA catalog and coverage
+
+- [x] #321 merged 3888fa2 after 4/4 workflows and 5/5 jobs PASS;
+      all six changed blobs match tested checkout 14a271a.
+- [x] Export actual offline unittest identities and fixed command list
+      using the existing discovery pattern and CLI registry. Compare an
+      existing manifest-bound run at the same clean checkout against
+      exact JUnit identities, counts and ordered commands.
+- [x] Add discovery/coverage regressions, common CLI help registration
+      and CI coverage review separate from the original evidence schema.
+- [ ] Hosted QA and native automated catalog extension. Human cases and
+      release admission remain separate. Publication BLOCKED.
