@@ -1,11 +1,12 @@
 """Synthetic profile backup tests; no live profile or device data."""
 
 from pathlib import Path
+from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from backup_windows_profile import backup, collect, main, rehearse, verify
+from backup_windows_profile import backup, collect, cross_fingerprint, fingerprint, main, rehearse, verify
 
 HISTORY = 'ajazz-' + 'A' * 64 + '-history.csv'
 
@@ -86,6 +87,22 @@ class ProfileBackupTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             collect(self.source)
 
+
+    def test_windows_timestamp_semantics(self) -> None:
+        """Accept Windows ctime mismatch across APIs, not identity changes."""
+        fields = dict(st_dev=1, st_ino=2, st_size=3, st_mtime_ns=4,
+                      st_nlink=1, st_birthtime_ns=5, st_ctime_ns=5)
+        path = SimpleNamespace(**fields)
+        fd = SimpleNamespace(**{**fields, 'st_ctime_ns': 6})
+        with patch('backup_windows_profile.os.name', 'nt'):
+            self.assertEqual(cross_fingerprint(path), cross_fingerprint(fd))
+            self.assertNotEqual(fingerprint(path), fingerprint(fd))
+            for name, value in (('st_ino', 9), ('st_mtime_ns', 9),
+                                ('st_nlink', 2), ('st_birthtime_ns', 9)):
+                other = SimpleNamespace(**{**vars(fd), name: value})
+                self.assertNotEqual(cross_fingerprint(path), cross_fingerprint(other))
+        with patch('backup_windows_profile.os.name', 'posix'):
+            self.assertNotEqual(cross_fingerprint(path), cross_fingerprint(fd))
 
     def test_rehearsal_exact_bytes(self) -> None:
         """Restore a verified copy only to a fresh dedicated sibling."""
