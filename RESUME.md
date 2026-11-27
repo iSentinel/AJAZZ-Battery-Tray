@@ -1,3 +1,13 @@
+# Resume — manifest-verified coverage bytes
+
+Dependent on #343, which initially passed actual QA artifact roundtrip
+and now includes the unchanged #340 field plan for combined qualification.
+Use one bounded verified inventory for semantic source, command, case
+and count review. Check directory identities again before returning.
+Regression tests assert five reads and reject a late summary mutation.
+No atomic filesystem snapshot, authentication, physical or release
+claim; hosted qualification pending.
+
 # Resume — real QA artifact roundtrip and Apple field plan
 
 #342 merged 7605db9 after 4 workflows / 5 jobs PASS; all five changed
