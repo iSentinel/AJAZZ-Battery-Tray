@@ -44,8 +44,9 @@ static bool exact_records(int parent, bool legacy) {
 
 static bool edition_records(const char *root, int parent, bool legacy) {
     char path[128];
-    if (strlen(root) >= sizeof(path)) return false;
-    strcpy(path, root);
+    size_t length = strlen(root);
+    if (length >= sizeof(path)) return false;
+    memcpy(path, root, length + 1);
     AjazzOperationalEditionWriter *owner = AjazzEditionWriterCreate(path, legacy);
     if (!owner) return false;
     path[0] = '\0'; // The writer must not borrow this storage.
