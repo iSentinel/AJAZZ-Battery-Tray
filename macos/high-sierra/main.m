@@ -560,7 +560,6 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 @property(nonatomic, assign) BOOL polling;
 @property(nonatomic, assign) BOOL isolatedPolling;
 @property(nonatomic, assign) BOOL closing;
-@property(nonatomic, assign) uint64_t journalFailedWrites;
 @property(nonatomic, assign) AjazzDiagnosticSession *diagnosticSession;
 @property(nonatomic, strong) NSMenuItem *sessionStatusItem;
 @property(nonatomic, strong) NSMenuItem *sessionStartItem;
@@ -585,9 +584,14 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 @property(nonatomic, strong) NSString *bluetoothDiscovery;
 @end
 
-@implementation LegacyTray
+@implementation LegacyTray {
+    AjazzGuiJournal _journal;
+}
 
-- (void)dealloc { AjazzSessionDestroy(self.diagnosticSession); }
+- (void)dealloc {
+    AjazzGuiJournalStop(&_journal, time(NULL), 0);
+    AjazzSessionDestroy(self.diagnosticSession);
+}
 
 - (NSString *)word:(NSString *)english ru:(NSString *)russian uk:(NSString *)ukrainian {
     NSString *language = [[NSUserDefaults standardUserDefaults] stringForKey:@"LegacyLanguage"];
@@ -614,7 +618,9 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     self.diagnosticSession = AjazzSessionCreate();
     NSApp.applicationIconImage = AppearanceAppIcon(AppearanceChoice(@"ApplicationIconColor"));
     [self buildMenu];
-    [self recordJournalEvent:AjazzEventStarted reason:AjazzReasonNone];
+    NSURL *support = [[[NSFileManager defaultManager]
+        URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] firstObject];
+    AjazzGuiJournalStart(&_journal, support.fileSystemRepresentation, true, time(NULL));
     if (self.isolatedPolling)
         [self recordJournalEvent:AjazzEventIsolatedPollingEnabled reason:AjazzReasonNone];
     [self scheduleTimer];
@@ -628,15 +634,11 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 
 - (void)recordJournalEvent:(AjazzOperationalEvent)event reason:(AjazzOperationalReason)reason
                 durationMs:(int64_t)durationMs {
-    NSURL *support = [[[NSFileManager defaultManager]
-        URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] firstObject];
-    if (!AjazzJournalEditionTimedEvent(support.fileSystemRepresentation, true, event, reason,
-                                      time(NULL), durationMs) &&
-        self.journalFailedWrites < UINT64_MAX) self.journalFailedWrites++;
+    AjazzGuiJournalOffer(&_journal, event, reason, time(NULL), durationMs);
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification {
-    [self recordJournalEvent:AjazzEventStopped reason:AjazzReasonNone];
+    AjazzGuiJournalStop(&_journal, time(NULL), AJAZZ_GUI_JOURNAL_STOP_MS);
 }
 
 - (NSString *)appearanceLabel:(NSString *)color {
@@ -1110,12 +1112,16 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     NSString *sample = self.sessionVerifiedAt ? [utc stringFromDate:self.sessionVerifiedAt] : @"never";
     NSString *battery = current.state == BatteryValid ?
         [NSString stringWithFormat:@"%ld%%", (long)current.percent] : @"unknown";
+    AjazzGuiJournalStatus journalStatus = AjazzGuiJournalSnapshot(&_journal);
     return [NSString stringWithFormat:
         @"AJAZZ Battery Tray High Sierra Edition\nReport schema: apple-menu-v1\nVersion: %@ (%@)\nUTC: %@\n"
          @"OS: %@\nVID:PID: 3151:5007\nUsage: FFFF:0002\n"
          @"Battery state: %@; battery: %@\nMatching HID collections: %ld\n"
          @"Last verified USB UTC (session): %@\nPolling active: %@; isolated: %@\n"
          @"Operational journal failed writes (process): %llu\n"
+         @"Operational journal dropped events (process): %llu\n"
+         @"Operational journal unavailable events (process): %llu\n"
+         @"Operational journal initialized: %@; queued: %zu; in flight: %@\n"
          @"Bluetooth discovery: %@\nBluetooth manual 180F/2A19 pending: %@\n"
          @"Bluetooth last manual read: %@\n"
          @"Firmware and device serial numbers were not queried.",
@@ -1124,7 +1130,11 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
          [utc stringFromDate:[NSDate dateWithTimeIntervalSince1970:floor([[NSDate date] timeIntervalSince1970])]], [[NSProcessInfo processInfo] operatingSystemVersionString],
          state, battery, (long)current.collections, sample,
          self.polling ? @"True" : @"False", self.isolatedPolling ? @"True" : @"False",
-         (unsigned long long)self.journalFailedWrites,
+         (unsigned long long)journalStatus.writer.failed,
+         (unsigned long long)journalStatus.writer.dropped,
+         (unsigned long long)journalStatus.unavailable,
+         journalStatus.initialized ? @"True" : @"False", journalStatus.writer.queued,
+         journalStatus.writer.inFlight ? @"True" : @"False",
          self.bluetoothDiscovery ?: @"not requested", self.selectedPeripheral ? @"True" : @"False",
          self.bluetoothLastRead ?: @"not requested"];
 }

@@ -299,9 +299,12 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var displayedStatus = ApexBattery.Status.accessUnknown
     private var sessionObservation = ApexSessionObservation()
     private var lastClockSent: Bool?
-    private var journalFailedWrites: UInt64 = 0
+    private var journal = AjazzGuiJournal()
 
-    deinit { AjazzSessionDestroy(diagnosticSession) }
+    deinit {
+        _ = AjazzGuiJournalStop(&journal, time(nil), 0)
+        AjazzSessionDestroy(diagnosticSession)
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -310,25 +313,33 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.button?.title = "🔋?"
         NSApp.applicationIconImage = TrayAppearance.appIcon(TrayAppearance.choice("ApplicationIconColor"))
         buildStatusMenu()
-        recordJournalEvent(AjazzEventStarted, AjazzReasonNone)
+        startJournal()
         if isolatedPolling { recordJournalEvent(AjazzEventIsolatedPollingEnabled, AjazzReasonNone) }
         configureTimer()
         refresh()
     }
 
-    /// Record closed GUI events; journal failure never prevents normal operation.
-    private func recordJournalEvent(_ event: AjazzOperationalEvent, _ reason: AjazzOperationalReason,
-                                    durationMs: Int64 = -1) {
+    /// Launch the writer only for the GUI, never for diagnostic child modes.
+    private func startJournal() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory,
                                                 in: .userDomainMask).first
-        let ok = support?.withUnsafeFileSystemRepresentation { path in
-            AjazzJournalEditionTimedEvent(path, false, event, reason, time(nil), durationMs)
-        } ?? false
-        if !ok && journalFailedWrites < UInt64.max { journalFailedWrites += 1 }
+        if let support = support {
+            _ = support.withUnsafeFileSystemRepresentation { path in
+                AjazzGuiJournalStart(&journal, path, false, time(nil))
+            }
+        } else {
+            _ = AjazzGuiJournalStart(&journal, nil, false, time(nil))
+        }
+    }
+
+    /// Queue closed events without performing file I/O on the GUI thread.
+    private func recordJournalEvent(_ event: AjazzOperationalEvent, _ reason: AjazzOperationalReason,
+                                    durationMs: Int64 = -1) {
+        _ = AjazzGuiJournalOffer(&journal, event, reason, time(nil), durationMs)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        recordJournalEvent(AjazzEventStopped, AjazzReasonNone)
+        _ = AjazzGuiJournalStop(&journal, time(nil), AJAZZ_GUI_JOURNAL_STOP_MS)
     }
 
     private func command(_ key: String, _ action: Selector) -> NSMenuItem {
@@ -740,6 +751,7 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let sample = sessionObservation.lastVerified.map {
             ISO8601DateFormatter().string(from: $0)
         } ?? "never"
+        let journalStatus = AjazzGuiJournalSnapshot(&journal)
         return "AJAZZ Battery Tray diagnostic report\n" +
             "Report schema: apple-menu-v1\n" +
             "Version: \(version) (\(build))\n" +
@@ -749,7 +761,10 @@ final class TrayController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             "Last ordinary status: \(last.state); battery: \(battery)\n" +
             "Last verified USB UTC (session): \(sample)\n" +
             "Polling active: \(polling); isolated: \(isolatedPolling)\n" +
-            "Operational journal failed writes (process): \(journalFailedWrites)\n" +
+            "Operational journal failed writes (process): \(journalStatus.writer.failed)\n" +
+            "Operational journal dropped events (process): \(journalStatus.writer.dropped)\n" +
+            "Operational journal unavailable events (process): \(journalStatus.unavailable)\n" +
+            "Operational journal initialized: \(journalStatus.initialized); queued: \(journalStatus.writer.queued); in flight: \(journalStatus.writer.inFlight)\n" +
             (bluetoothWindow?.diagnosticSummary ?? "Bluetooth discovery: not requested\n" +
                 "Bluetooth manual 180F/2A19 pending: false\nBluetooth last manual read: not requested") + "\n" +
             "No serial numbers, device paths or Bluetooth addresses collected."

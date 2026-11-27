@@ -1,5 +1,5 @@
 /* Synthetic filesystem and background worker integration; no app or HID. */
-#include "../../macos/AjazzOperationalEditionWriter.h"
+#include "../../macos/AjazzGuiJournal.h"
 
 static const char *edition_name(bool legacy) {
     return legacy ? "AJAZZBatteryTrayHighSierra-Journal" : "AJAZZBatteryTray-Journal";
@@ -104,6 +104,41 @@ static bool remove_edition(int parent, bool legacy) {
     return unlinkat(parent, name, AT_REMOVEDIR) == 0 && ok;
 }
 
+/// A failed start remains unavailable; it cannot silently fall back to I/O.
+static bool unavailable_gui(void) {
+    AjazzGuiJournal journal = {0};
+    if (AjazzGuiJournalStart(&journal, NULL, false, 1) ||
+        AjazzGuiJournalStart(&journal, NULL, false, 2) ||
+        AjazzGuiJournalOffer(&journal, AjazzEventIsolatedPollTimedOut,
+                             AjazzReasonTimeout, 2, 1250) ||
+        !AjazzGuiJournalStop(&journal, 3, 0) ||
+        !AjazzGuiJournalStop(&journal, 4, 0)) return false;
+    AjazzGuiJournalStatus status = AjazzGuiJournalSnapshot(&journal);
+    return !status.initialized && status.unavailable == 3 &&
+        !status.writer.failed && !status.writer.dropped;
+}
+
+/// Repeated stop attempts collect at most one stop event and retain final stats.
+static bool gui_records(const char *root, int parent, bool legacy) {
+    AjazzGuiJournal journal = {0};
+    bool started = AjazzGuiJournalStart(&journal, root, legacy, 1);
+    bool duplicate = AjazzGuiJournalStart(&journal, root, legacy, 9);
+    bool offered = AjazzGuiJournalOffer(&journal, AjazzEventIsolatedPollTimedOut,
+                                        AjazzReasonTimeout, 2, 1250);
+    bool stopped = AjazzGuiJournalStop(&journal, 3, 0);
+    for (unsigned i = 0; !stopped && i < 50; ++i)
+        stopped = AjazzGuiJournalStop(&journal, 4, 100);
+    if (!stopped) return false;
+    bool refused = !AjazzGuiJournalOffer(&journal, AjazzEventStarted, AjazzReasonNone, 5, -1);
+    AjazzGuiJournalStatus status = AjazzGuiJournalSnapshot(&journal);
+    return started && !duplicate && offered && refused &&
+        AjazzGuiJournalStop(&journal, 6, 0) && !journal.owner &&
+        status.initialized && status.unavailable == 1 &&
+        status.writer.finished && status.writer.written == 3 &&
+        !status.writer.failed && !status.writer.dropped &&
+        exact_records(parent, legacy);
+}
+
 int main(void) {
     char root[] = "/tmp/ajazz-edition-writer-XXXXXX";
     if (!mkdtemp(root)) return 1;
@@ -111,7 +146,10 @@ int main(void) {
     bool ok = parent >= 0 && invalid_paths() &&
         edition_records(root, parent, false) && edition_records(root, parent, true) &&
         remove_edition(parent, false) && remove_edition(parent, true) &&
-        refused_directory(root, parent) && remove_edition(parent, false);
+        refused_directory(root, parent) && remove_edition(parent, false) &&
+        unavailable_gui() && gui_records(root, parent, false) &&
+        gui_records(root, parent, true) && remove_edition(parent, false) &&
+        remove_edition(parent, true);
     if (parent >= 0) close(parent);
     if (rmdir(root) != 0) ok = false;
     if (!ok) {
@@ -119,5 +157,6 @@ int main(void) {
         return 1;
     }
     puts("PASS: owned path, both edition journals, exact FIFO records and unsafe-directory refusal");
+    puts("PASS: GUI lifecycle adapter, single stop, unavailable counter and retained final status");
     return 0;
 }

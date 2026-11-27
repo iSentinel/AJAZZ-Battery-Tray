@@ -3227,3 +3227,19 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Qualify the adapter in hosted CI;
       then add Swift/Objective-C lifecycle and diagnostics wiring.
       Actual GUI and High Sierra runtime remain NOT_RUN; release BLOCKED.
+
+### ENG-05 Apple GUI background journal integration
+
+- [x] #337 merged 75c93b5 after 4/4 workflows and 6/6 jobs PASS; all six
+      changed blobs match checkout 2cc8908. Edition storage tests PASS
+      on Linux and Intel macOS (jobs 140635688913/140635688358).
+- [x] Route both AppKit delegates through a shared lifecycle adapter,
+      initialize only on GUI launch, enqueue on the main thread, seal
+      once on termination and observe completion for at most 100 ms
+      best effort. No synchronous fallback or premature free on timeout.
+- [x] Retain the existing failed-write field and add separate dropped,
+      unavailable and pending counters to the menu diagnostics.
+      Extend the standalone fixture for both editions and failed start.
+- [ ] Hosted CI including both native builds; measure synthetic producer
+      overhead separately, then qualify real UI, resource use, shutdown,
+      High Sierra runtime and physical acceptance. Release BLOCKED.
