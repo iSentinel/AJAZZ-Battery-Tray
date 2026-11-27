@@ -1,3 +1,13 @@
+# Resume — Windows native assertion coverage
+
+#323 merged 7e575ac; 4/4 workflows PASS, six changed blobs match
+ aeaf48e. Windows job 140354874607 in run 45953603350 reported
+1028 unique PASS assertions and zero FAIL. Added ordered observed
+reference and bounded verifier, three regression groups, CLI help and
+Windows CI check with aggregate JSON only. Hosted qualification pending.
+No application code, candidate bytes or release admission changed.
+Apple/dashboard catalog and physical acceptance remain open.
+
 # Resume — native package synthetic CLI catalog
 
 #322 merged dc2e0a1; 4/4 workflows PASS, seven changed blobs match

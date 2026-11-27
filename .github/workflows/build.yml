@@ -52,8 +52,23 @@ jobs:
       - name: Run unit tests
         shell: pwsh
         run: |
-          dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
+          $capture = Join-Path $env:RUNNER_TEMP 'ajazz-native-assertions.txt'
+          $review = Join-Path $env:RUNNER_TEMP 'ajazz-native-assertion-review.json'
+          if ((Test-Path -LiteralPath $capture) -or (Test-Path -LiteralPath $review)) {
+            throw 'Expected fresh assertion evidence paths'
+          }
+          dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj |
+            Tee-Object -FilePath $capture
           if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
+          python tools/verify_windows_assertion_catalog.py --capture $capture --output $review
+          if ($LASTEXITCODE -ne 0) { throw 'Native assertion coverage differs' }
+      - name: Retain scoped native assertion review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-native-assertion-review
+          path: ${{ runner.temp }}/ajazz-native-assertion-review.json
+          if-no-files-found: error
       - name: Verify native diagnostic session roundtrip
         shell: pwsh
         run: |

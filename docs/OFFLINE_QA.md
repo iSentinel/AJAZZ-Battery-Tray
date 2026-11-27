@@ -77,3 +77,25 @@ configured process budgets; the Windows launcher has an additional outer
 supervision allowance. This is not the full native unit-test catalog.
 Exit 0 indicates successful export, exit 2 invalid input/output. Use a
 fresh path. Physical and GUI tests remain separate.
+
+## Windows native console assertion reference
+
+The ordered reference in tests/fixtures/windows-native-assertions-v1.json
+comes from actual hosted run 45953603350, job 140354874607, checkout
+ aeaf48ef8696260d1e1fcbc35c2dd16fa2f1394c (1028 unique PASS labels,
+ zero FAIL). The intentionally empty candidate fixture label retains its
+ trailing space. This is a reviewed baseline of observed console assertions,
+ not source discovery of every branch. Review any intentional case addition,
+ removal, rename or reorder explicitly; do not regenerate merely to pass.
+
+    python tools/verify_windows_assertion_catalog.py --capture native-console.txt --output assertion-review.json
+
+Use a local UTF-8 capture of the dependency-free Windows console suite.
+The Windows CI captures stdout from the existing dotnet run, requires exit
+0 separately, then checks the ordered labels and exact summary. Only the
+aggregate review JSON is retained as an artifact (not the raw capture).
+Other output lines are ignored; malformed assertion or summary lines fail
+coverage. The reported checkout identifies the verifier's local checkout,
+not independently authenticated capture provenance. Exit 0 means matching
+reported assertions; exit 2 means invalid evidence or output. No dashboard,
+Apple, physical or release qualification is implied.

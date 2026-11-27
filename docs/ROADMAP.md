@@ -3016,3 +3016,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       No application execution, new candidate or observation claim.
 - [ ] Hosted QA; full C#/Swift/Objective-C native assertion catalog and
       actual GUI/hardware acceptance remain separate. Publication BLOCKED.
+
+### ENG-08 Windows native console assertion coverage
+
+- [x] #323 merged 7e575ac after 4/4 workflows PASS; six changed blobs
+      match tested checkout aeaf48e.
+- [x] Review Windows run 45953603350/job 140354874607: 1028 unique
+      PASS labels, zero FAIL. Record exact ordered baseline including
+      the trailing space on one empty-candidate fixture label.
+- [x] Add bounded console coverage verifier, three regression groups,
+      common CLI help and existing Windows CI integration. Require
+      successful native exit, exact labels/order and exact PASS summary.
+      Retain aggregate JSON only, no raw capture artifact.
+- [ ] Hosted qualification; Apple and dashboard assertion catalogs,
+      actual GUI/hardware and release admission remain separate.
