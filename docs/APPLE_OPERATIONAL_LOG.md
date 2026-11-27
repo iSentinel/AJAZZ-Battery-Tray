@@ -248,3 +248,31 @@ creating an active log or lease; both queued events count as failed.
 Null, relative and oversized paths are rejected. Hosted Linux and Intel
 macOS results are pending. No real GUI, user profile, HID or pinned
 release candidate changes. Production lifecycle integration is separate.
+
+## Eleventh stage: AppKit background journal integration
+
+Both editions use AjazzGuiJournal.h as main-thread lifecycle state.
+Only applicationDidFinishLaunching starts a writer; internal CLI and
+HID worker modes remain unchanged. All prior GUI operational events
+enqueue closed values with timestamps captured at offer time. No
+filesystem write or synchronous fallback occurs on the ordinary UI
+event path. The worker owns a copied support path, not an AppKit object.
+
+applicationWillTerminate seals the reserved stop once, observes
+completion for up to 100 ms using the monotonic best-effort wait, then
+joins only a completed worker. If the budget expires, pending records
+may be lost at process exit; the independent heap context is not freed
+under a running sink. Delegate deallocation makes a non-waiting repeat
+collection attempt, without a duplicate stop. Existing HID cancellation
+and AppKit termination decisions are unchanged. The 100 ms budget is
+an engineering choice, not a measured real-time or durability guarantee.
+
+The menu diagnostic retains the failed-write label (now completed
+failed sink operations only) and adds queue drops, unavailable events,
+initialization state, queued count and in-flight state. These are
+process snapshots, not a guarantee of persisted records. Failed
+initialization and offers after stop count as unavailable; no paths or
+raw exceptions are emitted. The shared C fixture exercises start,
+duplicate start, stop retry, exact FIFO records, cached final status
+and missing path for both editions. Hosted native builds and actual
+GUI/hardware performance and shutdown qualification remain separate.
