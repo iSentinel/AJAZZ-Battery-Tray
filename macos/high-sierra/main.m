@@ -588,21 +588,23 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     self.diagnosticSession = AjazzSessionCreate();
     NSApp.applicationIconImage = AppearanceAppIcon(AppearanceChoice(@"ApplicationIconColor"));
     [self buildMenu];
-    [self recordJournalLifecycle:NO];
+    [self recordJournalEvent:AjazzEventStarted reason:AjazzReasonNone];
+    if (self.isolatedPolling)
+        [self recordJournalEvent:AjazzEventIsolatedPollingEnabled reason:AjazzReasonNone];
     [self scheduleTimer];
     [self refresh:nil];
 }
 
-/// Record GUI lifecycle only; journal failure never blocks normal operation.
-- (void)recordJournalLifecycle:(BOOL)stopping {
+/// Record closed GUI events; journal failure never blocks normal operation.
+- (void)recordJournalEvent:(AjazzOperationalEvent)event reason:(AjazzOperationalReason)reason {
     NSURL *support = [[[NSFileManager defaultManager]
         URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] firstObject];
-    if (!AjazzJournalLifecycle(support.fileSystemRepresentation, true, stopping, time(NULL)) &&
+    if (!AjazzJournalEditionEvent(support.fileSystemRepresentation, true, event, reason, time(NULL)) &&
         self.journalFailedWrites < UINT64_MAX) self.journalFailedWrites++;
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification {
-    [self recordJournalLifecycle:YES];
+    [self recordJournalEvent:AjazzEventStopped reason:AjazzReasonNone];
 }
 
 - (NSString *)appearanceLabel:(NSString *)color {
@@ -895,6 +897,8 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
                    dispatch_get_main_queue(), ^{
         LegacyTray *owner = weakSelf;
         if (!owner || !owner.polling || owner.pollAttempt != attempt) return;
+        if (!owner.closing)
+            [owner recordJournalEvent:AjazzEventPollFailed reason:AjazzReasonTimeout];
         owner.latest = (BatteryReading){BatteryTimedOut, -1, 0};
         [owner display:owner.latest];
         // Keep the single-flight guard until the original IOKit call returns.
@@ -913,6 +917,8 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
                     [NSApp replyToApplicationShouldTerminate:YES];
                     return;
                 }
+                if (token && reading.state == BatteryTimedOut)
+                    [owner recordJournalEvent:AjazzEventIsolatedPollTimedOut reason:AjazzReasonTimeout];
                 owner.sessionVerifiedAt = SessionVerifiedAt(owner.sessionVerifiedAt,
                                                             reading, observedAt);
                 owner.latest = reading;
