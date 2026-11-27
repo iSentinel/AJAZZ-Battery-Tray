@@ -201,3 +201,26 @@ accounting. Next: connect a serialized nonblocking producer and one
 background writer, with bounded shutdown semantics and concurrency tests.
 Do not hold a queue lock across filesystem I/O. Current GUI writes remain
 synchronous; no latency improvement has yet been demonstrated.
+
+## Ninth stage: serialized background writer adapter
+
+AjazzOperationalWriter.h wraps the fixed queue in one pthread mutex and
+condition variable with exactly one worker. The sink runs outside the
+mutex; producers do not wait for capacity or filesystem operations,
+but can briefly contend for queue state. Seal appends the reserved stop
+and does not promise persistence. The caller owns the writer and sink
+context for their entire lifetime; after sealing, all producers must
+stop before a single lifecycle owner joins and destroys the adapter.
+Monotonic wait observes completion with a 1 ms polling interval; timeout
+does not cancel the sink, free resources, or imply a successful flush.
+A join is refused while the worker has not completed. Scheduling can
+delay an observation; this is not a hard real-time guarantee.
+
+Synthetic fixtures exercise four concurrent producers while a sink is
+deliberately blocked, drop-newest accounting, uniqueness, final stop
+ordering, failed sink accounting, wait timeout, recovery and idle wake.
+The Linux/Intel macOS CI workflow compiles the standalone adapter with
+pthread and the existing warnings-as-errors policy. Hosted results are
+pending. No production journal sink or GUI call site is connected, and
+no actual application performance, physical device or 10.13 runtime
+claim is made. The pinned beta.61 and HID policy are unchanged.
