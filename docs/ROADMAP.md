@@ -2975,3 +2975,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] ENG-07 remaining: real application compatibility and interactive
       rollback, Windows ACL/restore qualification. Do not repeat the
       same hosted scenario solely for new evidence. Publication BLOCKED.
+
+### ENG-08 existing acceptance case catalog
+
+- [x] #320 merged bfecefc; both required workflows PASS, three changed
+      blobs match tested checkout 15d982e. Full draft #99 CI 16/16 PASS.
+- [x] Historical #247 closed as superseded by #296/#310, not merged.
+- [x] Add machine-readable export of existing W01-W18, M01-M11 and
+      RG01-RG06 case definitions and six exact checklist profiles.
+      Validate 35 unique definitions and 63 profile/case instances,
+      reject missing/extra/duplicate rows, preserve existing forms.
+      Three regression groups and common CLI help registration added.
+- [ ] Hosted QA and review. Native automated case catalog and actual
+      human observations remain separate. Release BLOCKED.
