@@ -52,6 +52,7 @@ same executable. This is session-only. Do not run both simultaneously.
 Record edition, architecture, OS build, executable hash, poll interval,
 mode, start/end UTC and whether the receiver is absent. If a prerequisite
 is missing, use NOT_RUN rather than manufacturing a passing observation.
+Record baseline event counts before each launch without modifying the journal.
 
 ## Local-only observations
 
@@ -71,9 +72,12 @@ size no more than 262144 bytes and zero-byte lock. The previous
 generation is optional; if present apply the same checks as active.
 Verify ownership locally without recording usernames. Inspect ACLs
 locally if desired; POSIX permissions alone do not establish ACL safety.
-Read the journal locally; a fresh account/session should show exactly
-one ApplicationStarted and, after ordinary quit, one ApplicationStopped.
-Isolated mode should additionally show IsolatedPollingEnabled.
+Read the journal locally; compare lifecycle event counts before and after
+each session (the second session retains the first session's records).
+In a clean non-rotating journal, expect increments of exactly one
+ApplicationStarted and one ApplicationStopped after ordinary quit.
+Isolated mode should additionally add one IsolatedPollingEnabled.
+If rotation prevents reliable attribution, mark the count check INCONCLUSIVE.
 Valid unknown/absent replies must not become supervisor failures.
 Never share actual journal paths, timestamps, raw logs, usernames,
 device names or raw HID payloads publicly. Report only reviewed counts
