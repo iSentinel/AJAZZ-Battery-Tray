@@ -183,3 +183,21 @@ rotation sample and macOS latency outlier do not establish a stable
 performance bound. Hosted logs and artifact metadata were reviewed;
 artifact bytes were not independently downloaded. Real UI latency and
 resource use remain unqualified.
+
+## Eighth stage: bounded background queue state core
+
+AjazzOperationalQueue.h is a fixed-size FIFO core with no allocations,
+file I/O, threads or waiting. It admits at most 63 ordinary queued events
+plus one reserved stop record and one separately claimed in-flight event.
+Overflow drops the newest record; invalid and post-seal offers are also
+counted as drops. Seal appends one final stop record, refuses repetition,
+and does not guarantee a flush. The sole consumer claims and completes
+one record at a time; successful/failed writes and drops saturate at
+UINT64_MAX. Queued values contain only closed enums, timestamp and duration.
+All operations require caller-owned serialization; this core is NOT a
+thread-safe queue by itself. Deterministic Linux/Intel macOS fixtures
+exercise full-buffer FIFO, stop reservation, refusal, wraparound and
+accounting. Next: connect a serialized nonblocking producer and one
+background writer, with bounded shutdown semantics and concurrency tests.
+Do not hold a queue lock across filesystem I/O. Current GUI writes remain
+synchronous; no latency improvement has yet been demonstrated.

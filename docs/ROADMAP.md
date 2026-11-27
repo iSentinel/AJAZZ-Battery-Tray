@@ -3185,3 +3185,16 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted qualification of the new outcome mapping; assess synchronous
       journal latency mitigation separately. GUI/physical acceptance and
       release admission remain open.
+
+### ENG-05 Apple background journal queue core
+
+- [x] #334 merged 7e72b83 after 5/5 workflows and 7/7 jobs PASS; eight
+      changed blobs match tested checkout 27afe99. 80 encoder combinations
+      and five supervisor classifications PASS on Linux/Intel macOS
+      (jobs 140623910756/140623910210); both native worker groups PASS.
+- [x] Add fixed FIFO core, 63 ordinary queued records plus reserved stop
+      slot, single in-flight claim, drop-newest and saturating accounting.
+      Deterministic tests for ordering, sealing, refusal and wraparound.
+- [ ] Qualify queue state in CI, then implement synchronized producer and
+      one background writer; test contention and bounded termination.
+      No GUI migration or actual latency claim yet. Release BLOCKED.
