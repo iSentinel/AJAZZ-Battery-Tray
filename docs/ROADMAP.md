@@ -2940,3 +2940,17 @@ configuration commands. USB `VersionNumber` is a device revision,
       same-API before/after checks and add a synthetic timestamp regression.
 - [ ] Re-run native Windows and offline CI on the corrected head before
       using the profile backup helper on Windows. No live restore.
+
+### ENG-07 exact-original installer rollback rehearsal
+
+- [x] #318 merged ecfdf9c after 4/4 workflows and 5/5 jobs PASS;
+      all six changed blobs match tested checkout 783235c. Native
+      run 45919940986: 10/10 profile tests PASS with the Windows fix.
+- [x] Add an artifact-pinned, non-publishing hosted Windows scenario
+      beta.60 -> original f939fea beta.61 -> uninstall -> beta.60 ->
+      uninstall, four synthetic profile files and isolated backup/recovery.
+      Reuse retained 6.7.1 Setup 15109661194, expires 2026-12-03.
+      No new compiler run, app binary, retention or live profile restore.
+- [ ] Review actual hosted rollback result. Real Windows ACLs, GUI,
+      application data compatibility, physical and interactive acceptance,
+      normalized Setup retention and release admission remain open.
