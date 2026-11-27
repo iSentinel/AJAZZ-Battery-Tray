@@ -51,6 +51,22 @@ jobs:
           name: offline-python-qa
           path: artifacts/offline-qa-*/*
           if-no-files-found: error
+      - name: Verify exact offline case and command coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs=(artifacts/offline-qa-*)
+          test "${#runs[@]}" -eq 1
+          test -d "${runs[0]}"
+          python tools/export_offline_qa_catalog.py --verify-run "${runs[0]}" --output "$RUNNER_TEMP/ajazz-offline-coverage.json"
+          jq -e '.coverage == "MATCH" and .reported_status == "PASS"' "$RUNNER_TEMP/ajazz-offline-coverage.json"
+      - name: Preserve scoped coverage review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: offline-qa-coverage
+          path: ${{ runner.temp }}/ajazz-offline-coverage.json
+          if-no-files-found: error
       - name: Prepare synthetic artifact roundtrip
         shell: bash
         run: |

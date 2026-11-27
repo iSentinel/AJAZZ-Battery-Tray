@@ -44,3 +44,21 @@ JUnit to a test-report UI, native platform wrappers, stronger artifact
 atomicity/mutation validation, Windows ACL qualification and cross-CI
 provider qualification remain open. A partial/missing manifest is
 incomplete evidence, not PASS. Hashes are not signatures.
+
+## Exact offline case coverage
+
+From the same clean checkout and Python environment used for QA:
+
+    python3 tools/export_offline_qa_catalog.py --output /private/offline-catalog.json
+    python3 tools/export_offline_qa_catalog.py --verify-run /private/offline-qa-RUN --output /private/coverage.json
+
+The catalog uses the same unittest discovery pattern and CLI registry as
+QA. Discovery imports trusted local test modules but does not run test
+bodies. The verifier checks the existing manifest, commit/tree, exact
+JUnit case identities, counts and ordered command list. Exit 0 means
+catalog or coverage matched, not that the reported tests passed; exit 2
+means invalid inputs or output failure. CI additionally requires reported
+PASS. The separate coverage report does not change the schema-1 evidence
+inventory. Keep output outside the checkout and existing run directory.
+Native and physical case coverage, producer authentication and release
+admission are not established by this command.
