@@ -144,8 +144,7 @@ clean hosted Windows runner, four synthetic profile files and isolated
 recovery. No app GUI or physical HID operation is intentionally launched.
 The workflow cannot run after the pinned artifact expires unless the exact
 original is available through a separately reviewed path; no substitute.
-Hosted result pending. Actual cross-version application data interpretation,
-interactive UAC and real rollback remain unqualified.
+Hosted run [45947656299](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45947656299) passed all phases, with `unins000.exe` for beta.61 and `unins001.exe` for the reinstalled beta.60. The baseline EXE hash matched the initial installation, four synthetic profile files survived every phase and isolated recovery, and the final backup verified. Actual cross-version application data interpretation, interactive UAC and real rollback remain unqualified.
 
 ## Prepare a local Setup
 
