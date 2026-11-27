@@ -101,9 +101,11 @@ static bool operation_records(const char *root, int parent, bool legacy) {
     size_t size = 0;
     bool ok = !AjazzJournalEditionEvent(root, legacy, AjazzEventCount, AjazzReasonNone, 0);
     for (size_t i = 0; i < sizeof(events) / sizeof(events[0]); ++i) {
-        size_t n = AjazzEncodeOperationalEvent(expected + size, sizeof(expected) - size,
-            events[i], reasons[i], (time_t)i);
-        ok = ok && n && AjazzJournalEditionEvent(root, legacy, events[i], reasons[i], (time_t)i);
+        int64_t duration = (i == 1 || i == 3 || i == 4) ? 1250 : -1;
+        size_t n = AjazzEncodeTimedOperationalEvent(expected + size, sizeof(expected) - size,
+            events[i], reasons[i], (time_t)i, duration);
+        ok = ok && n && AjazzJournalEditionTimedEvent(root, legacy, events[i],
+            reasons[i], (time_t)i, duration);
         size += n;
     }
     int dir = openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);

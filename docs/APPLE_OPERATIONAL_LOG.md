@@ -122,3 +122,21 @@ new failure events. Polling policy, worker deadlines and HID writes are
 unchanged. No operation durations or real GUI observations are claimed.
 Synthetic fixtures verify five event/reason pairs through both edition
 storage paths, in addition to existing encoder and lifecycle tests.
+
+## Fifth stage: measured operation duration candidate
+
+Optional duration_ms is a whole millisecond count, 0..86400000. It is
+only admitted for isolated poll timeout and attempted clock transfer
+outcomes. Unmeasured records retain the exact existing schema-1 bytes.
+The shared converter rejects negative, reversed, nonfinite or excessive
+elapsed intervals and returns -1 (omit duration). Both editions measure
+the existing isolated read call using process systemUptime immediately
+before and after the call, including worker startup/cleanup. Universal
+also measures each attempted clock transfer separately. These are wall
+elapsed monotonic intervals, not CPU time or pure device latency. The
+High Sierra in-process watchdog is intentionally untimed because its
+callback does not prove completion of the underlying I/O. No new poll
+or clock action is scheduled. UTC timestamp remains wall-clock metadata.
+Synthetic checks cover exact optional field, invalid durations, unchanged
+untimed records and mixed storage for both editions. Actual performance
+and GUI/physical qualification remain separate.

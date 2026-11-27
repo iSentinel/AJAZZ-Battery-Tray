@@ -597,9 +597,15 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
 
 /// Record closed GUI events; journal failure never blocks normal operation.
 - (void)recordJournalEvent:(AjazzOperationalEvent)event reason:(AjazzOperationalReason)reason {
+    [self recordJournalEvent:event reason:reason durationMs:-1];
+}
+
+- (void)recordJournalEvent:(AjazzOperationalEvent)event reason:(AjazzOperationalReason)reason
+                durationMs:(int64_t)durationMs {
     NSURL *support = [[[NSFileManager defaultManager]
         URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] firstObject];
-    if (!AjazzJournalEditionEvent(support.fileSystemRepresentation, true, event, reason, time(NULL)) &&
+    if (!AjazzJournalEditionTimedEvent(support.fileSystemRepresentation, true, event, reason,
+                                      time(NULL), durationMs) &&
         self.journalFailedWrites < UINT64_MAX) self.journalFailedWrites++;
 }
 
@@ -905,8 +911,11 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
     });
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @autoreleasepool {
+            NSTimeInterval readStart = [[NSProcessInfo processInfo] systemUptime];
             BatteryReading reading = token
                 ? RunRoutine(@"--internal-routine-read", 8, token) : ReadReceiver();
+            int64_t readMs = AjazzElapsedMilliseconds(readStart,
+                [[NSProcessInfo processInfo] systemUptime]);
             NSDate *observedAt = [NSDate date];
             dispatch_async(dispatch_get_main_queue(), ^{
                 LegacyTray *owner = weakSelf;
@@ -918,7 +927,8 @@ static BOOL MenuTraceChildReaped(NSString *trace) {
                     return;
                 }
                 if (token && reading.state == BatteryTimedOut)
-                    [owner recordJournalEvent:AjazzEventIsolatedPollTimedOut reason:AjazzReasonTimeout];
+                    [owner recordJournalEvent:AjazzEventIsolatedPollTimedOut reason:AjazzReasonTimeout
+                                       durationMs:readMs];
                 owner.sessionVerifiedAt = SessionVerifiedAt(owner.sessionVerifiedAt,
                                                             reading, observedAt);
                 owner.latest = reading;

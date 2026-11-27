@@ -73,11 +73,12 @@ static inline bool AjazzJournalAppend(int directory, const char *record,
 }
 
 /// Append to a held, owner-private directory descriptor.
-static inline bool AjazzJournalWriteAt(int directory, AjazzOperationalEvent event,
-    AjazzOperationalReason reason, time_t timestamp, size_t limit) {
+static inline bool AjazzJournalWriteTimedAt(int directory, AjazzOperationalEvent event,
+    AjazzOperationalReason reason, time_t timestamp, size_t limit, int64_t durationMs) {
     if (directory < 0 || limit < 128 || limit > AJAZZ_JOURNAL_LIMIT) return false;
     char record[256];
-    size_t size = AjazzEncodeOperationalEvent(record, sizeof(record), event, reason, timestamp);
+    size_t size = AjazzEncodeTimedOperationalEvent(record, sizeof(record), event, reason,
+                                                   timestamp, durationMs);
     if (!size || size > limit) return false;
     struct stat info;
     if (fstat(directory, &info) != 0 || !S_ISDIR(info.st_mode) ||
@@ -88,6 +89,12 @@ static inline bool AjazzJournalWriteAt(int directory, AjazzOperationalEvent even
         AjazzJournalAppend(directory, record, size, limit);
     if (lease >= 0) close(lease);
     return ok;
+}
+
+/// Preserve untimed storage entry point.
+static inline bool AjazzJournalWriteAt(int directory, AjazzOperationalEvent event,
+    AjazzOperationalReason reason, time_t timestamp, size_t limit) {
+    return AjazzJournalWriteTimedAt(directory, event, reason, timestamp, limit, -1);
 }
 
 /// Append only to an existing private directory; no final symlink traversal.
@@ -103,8 +110,9 @@ static inline bool AjazzJournalWrite(const char *path, AjazzOperationalEvent eve
 
 /// Use a fixed edition-specific child of existing user Application Support.
 /// Refuse unsafe existing permissions; never chmod or replace a directory.
-static inline bool AjazzJournalEditionEvent(const char *support, bool legacy,
-    AjazzOperationalEvent event, AjazzOperationalReason reason, time_t timestamp) {
+static inline bool AjazzJournalEditionTimedEvent(const char *support, bool legacy,
+    AjazzOperationalEvent event, AjazzOperationalReason reason, time_t timestamp,
+    int64_t durationMs) {
     if (!support || (unsigned)event >= AjazzEventCount ||
         (unsigned)reason >= AjazzReasonCount) return false;
     int parent = open(support, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
@@ -119,10 +127,17 @@ static inline bool AjazzJournalEditionEvent(const char *support, bool legacy,
         return false;
     }
     int dir = openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    bool ok = AjazzJournalWriteAt(dir, event, reason, timestamp, AJAZZ_JOURNAL_LIMIT);
+    bool ok = AjazzJournalWriteTimedAt(dir, event, reason, timestamp,
+                                       AJAZZ_JOURNAL_LIMIT, durationMs);
     if (dir >= 0) close(dir);
     close(parent);
     return ok;
+}
+
+/// Preserve untimed edition events.
+static inline bool AjazzJournalEditionEvent(const char *support, bool legacy,
+    AjazzOperationalEvent event, AjazzOperationalReason reason, time_t timestamp) {
+    return AjazzJournalEditionTimedEvent(support, legacy, event, reason, timestamp, -1);
 }
 
 /// Retain the lifecycle wrapper for callers and regression fixtures.
