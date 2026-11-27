@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - 'macos/AjazzOperationalEvent.h'
+      - 'macos/AjazzOperationalJournal.h'
+      - 'tests/fixtures/apple-operational-journal.c'
       - 'tests/fixtures/apple-operational-event.c'
       - '.github/workflows/test-apple-operational-event.yml'
   push:
     branches: [main]
     paths:
       - 'macos/AjazzOperationalEvent.h'
+      - 'macos/AjazzOperationalJournal.h'
+      - 'tests/fixtures/apple-operational-journal.c'
       - 'tests/fixtures/apple-operational-event.c'
       - '.github/workflows/test-apple-operational-event.yml'
 
@@ -37,3 +41,5 @@ jobs:
           "${compiler[@]}" tests/fixtures/apple-operational-event.c -o "$RUNNER_TEMP/ajazz-event-test"
           TZ=UTC "$RUNNER_TEMP/ajazz-event-test"
           TZ=Pacific/Honolulu "$RUNNER_TEMP/ajazz-event-test"
+          "${compiler[@]}" tests/fixtures/apple-operational-journal.c -o "$RUNNER_TEMP/ajazz-journal-test"
+          "$RUNNER_TEMP/ajazz-journal-test"
