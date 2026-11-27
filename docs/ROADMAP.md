@@ -3283,3 +3283,18 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       This is an observed metadata consistency check, not an atomic
       snapshot, authentication or defense against all same-user races.
       Release BLOCKED.
+
+### ENG-16 atomic no-replace manifest publication
+
+- [x] #341 merged fc70039 after 4/4 workflows and 5/5 jobs PASS; all
+      five changed blobs match checkout 9bcd26d. Offline QA job
+      140649553686, synthetic roundtrip 140649726721 PASS; Windows,
+      Universal and optional HA PASS.
+- [x] Publish complete manifest via same-directory private temporary
+      file, flush/fsync, atomic no-replace hard link, unlink temporary
+      name and existing full inventory verification. No fallback that
+      replaces existing evidence; four new regression tests.
+- [ ] Hosted qualification; native Windows filesystem/ACL checks and
+      full multi-file publication remain separate. Crash between link
+      and unlink may leave a rejected incomplete inventory; no crash
+      durability claim. Actual GUI and release remain blocked.
