@@ -1,3 +1,13 @@
+# Resume — measured Apple operation duration
+
+#331 merged 62f2750; 5 workflows / 7 jobs PASS, seven changed blobs
+match 9ca9655. Added bounded optional duration_ms for isolated timeout
+and Universal attempted clock outcome using monotonic systemUptime;
+untimed records unchanged. High Sierra in-process watchdog stays
+untimed. Converter/encoder/mixed storage fixtures added. CI pending.
+Next: scoped journal overhead benchmark; real GUI/hardware not run.
+Retained beta.61 and HID policy unchanged; release BLOCKED.
+
 # Resume — Apple scoped operation result journal
 
 #330 merged bcbb1bc; 5 workflows / 7 jobs PASS, nine changed blobs
