@@ -3243,3 +3243,15 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Hosted CI including both native builds; measure synthetic producer
       overhead separately, then qualify real UI, resource use, shutdown,
       High Sierra runtime and physical acceptance. Release BLOCKED.
+
+### ENG-05 paced Apple background producer benchmark
+
+- [x] Add a synthetic 4096-offer workload through the actual GUI journal
+      adapter, with 32-event batches drained outside the timed offer path.
+- [x] Require 4098 completed writes (including start/stop), zero lost
+      events and exact retained records with ordered synthetic timestamps.
+      Record offer p50/p95/max, elapsed time, process CPU/RSS and the
+      first shutdown observation separately. Retain aggregate JSON only.
+- [ ] Qualify Linux and Intel macOS CI after GUI integration; compare
+      the scoped measurements with the earlier synchronous benchmark.
+      No hard performance threshold or actual GUI claim. Release BLOCKED.
