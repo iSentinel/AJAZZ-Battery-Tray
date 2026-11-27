@@ -3101,3 +3101,14 @@ configuration commands. USB `VersionNumber` is a device revision,
 - [ ] Combined CI and review; app call sites, operation durations, actual
       High Sierra/arm64, ACLs, and adversarial filesystem/atomicity limits
       remain separate. No live journal writes or release admission.
+
+- [x] #329 initial Linux encoder/storage PASS (140467678485); Intel
+      macOS encoder PASS under both TZs, storage compile FAIL because
+      strict POSIX mode hides Darwin O_NOFOLLOW/flock/mkdtemp declarations
+      (140467678902). Windows, Universal app build and offline QA PASS.
+      Add Darwin-only feature macro, preserve Werror and deployment 10.13.
+- [x] Inspect both actual app delegate lifecycle hooks and existing
+      Universal history directory. Document separate private journal
+      directory, no chmod of existing profile, start/actual termination
+      hooks, and exclusion of CLI/worker execution.
+- [ ] Repeat exact combined CI; lifecycle call sites not implemented.
