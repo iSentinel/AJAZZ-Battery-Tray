@@ -1,3 +1,14 @@
+# Resume — background edition journal sink candidate
+
+#336 merged 5b72631 after 4 workflows / 6 jobs PASS; all six changed
+blobs match tested checkout 43ae56d. Linux/Intel macOS writer tests PASS
+(jobs 140634266952/140634267471); offline, Windows and Universal PASS.
+A separate dependent branch connects the existing secure edition storage to the
+single background writer, with owned bounded path and explicit lifetime.
+Synthetic tests cover both edition files, exact timed/untimed FIFO bytes,
+invalid path arguments, early destruction refusal and unsafe directory
+accounting. Hosted qualification required before merging. GUI, real profile, runtime latency and release remain untouched.
+
 # Resume — Apple background journal writer candidate
 
 #335 merged 39e3502 after 4 workflows / 6 jobs PASS; all six changed
