@@ -120,3 +120,19 @@ matching reported groups, exit 2 invalid evidence or output. Later lease,
 benchmark and watchdog workflow steps are separate. Native runner group
 coverage does not establish actual High Sierra OS, arm64 or physical device
 acceptance. Review intentional changes to the observed reference explicitly.
+
+## Windows Dashboard smoke group reference
+
+The reference tests/fixtures/windows-dashboard-groups-v1.json contains
+24 ordered PASS labels from native run 45956565055/job 140364303218:
+three common groups and seven groups for each of EN/RU/UK. Nine scaling
+groups explicitly describe synthetic font/window scale, not real DPI.
+
+    python tools/verify_dashboard_group_catalog.py --capture dashboard.txt --output dashboard-review.json
+
+CI requires the existing smoke process exit 0 separately and compares
+all emitted group labels in order. Only aggregate JSON is retained.
+No individual assertion count, actual monitor DPI, real keyboard/desktop
+acceptance or physical HID qualification is inferred. Exit 0 means
+matching reported group coverage, exit 2 invalid evidence or output.
+Review any intentional catalog changes explicitly.
