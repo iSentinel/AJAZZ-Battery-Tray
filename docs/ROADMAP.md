@@ -3001,3 +3001,18 @@ configuration commands. USB `VersionNumber` is a device revision,
       and CI coverage review separate from the original evidence schema.
 - [ ] Hosted QA and native automated catalog extension. Human cases and
       release admission remain separate. Publication BLOCKED.
+
+### ENG-08 native package CLI catalog
+
+- [x] #322 merged dc2e0a1 after 4/4 workflows PASS; all seven changed
+      blobs match tested checkout 0f60327. Offline coverage run 45953248309
+      job 140353738902 passed exact coverage and reported PASS; review
+      artifact 15177437809, REST ZIP digest
+      09e64aa5c3b6f763f9376217cfaede32dd4b6348e83cb85ce4c5db5da0eb5351.
+      Metadata and logs reviewed; derived ZIP not independently downloaded.
+- [x] Add catalog export of the existing native package execution registry:
+      stable edition/mode IDs, expected exit, configured timeout and exact
+      package/corpus/source pins. Two regression groups and CLI help gate.
+      No application execution, new candidate or observation claim.
+- [ ] Hosted QA; full C#/Swift/Objective-C native assertion catalog and
+      actual GUI/hardware acceptance remain separate. Publication BLOCKED.

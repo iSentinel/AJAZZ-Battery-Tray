@@ -62,3 +62,18 @@ PASS. The separate coverage report does not change the schema-1 evidence
 inventory. Keep output outside the checkout and existing run directory.
 Native and physical case coverage, producer authentication and release
 admission are not established by this command.
+
+## Native package synthetic CLI catalog
+
+    python3 tools/export_native_package_catalog.py --output /private/native-package-catalog.json
+
+The catalog derives edition-qualified case IDs, expected exit codes,
+configured deadlines, source, corpus and package digests from the existing
+native package execution registry. The same registry is consumed by the
+retained native observation verifier. Twelve cases cover Windows (five),
+Universal (three) and High Sierra (four); watchdog exit 124 is intentional.
+No execution or results are produced by the exporter. The deadlines are
+configured process budgets; the Windows launcher has an additional outer
+supervision allowance. This is not the full native unit-test catalog.
+Exit 0 indicates successful export, exit 2 invalid input/output. Use a
+fresh path. Physical and GUI tests remain separate.
