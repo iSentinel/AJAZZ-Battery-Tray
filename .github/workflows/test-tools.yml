@@ -204,3 +204,32 @@ jobs:
           name: offline-qa-downloaded-coverage
           path: ${{ runner.temp }}/ajazz-downloaded-coverage.json
           if-no-files-found: error
+
+  windows-acl-observation:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
+      - name: Parse Windows ACL fixture before execution
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $path = (Resolve-Path './tests/fixtures/windows-qa-acl-observation.ps1').Path
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'ACL fixture syntax invalid' }
+          Write-Output 'PASS: Windows ACL fixture syntax'
+      - name: Observe synthetic QA evidence DACLs
+        shell: pwsh
+        run: |
+          ./tests/fixtures/windows-qa-acl-observation.ps1 -Output "$env:RUNNER_TEMP/ajazz-qa-acl-observation.json"
+      - name: Retain aggregate Windows ACL observation
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-qa-acl-observation
+          path: ${{ runner.temp }}/ajazz-qa-acl-observation.json
+          if-no-files-found: error
