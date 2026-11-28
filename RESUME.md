@@ -1,3 +1,12 @@
+# Resume — status consistency final qualification
+
+#344 merged 9498fbd after 4 workflows / 5 jobs PASS; all six changed
+blobs match checkout 1ed7680. Actual artifact roundtrip PASS job
+140825516207. Initial #345 3 workflows / 4 jobs PASS on 158b2e5;
+actual roundtrip job 140825694845. Retarget for integrated-base CI.
+Next: private evidence root handling and native Windows ACL review.
+No actual GUI/hardware, atomic snapshot, authentication or release claim.
+
 # Resume — QA reported status consistency
 
 Dependent on #344 (initial 4 workflows / 5 jobs PASS, final integrated
