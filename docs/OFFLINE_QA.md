@@ -519,3 +519,14 @@ rejected. Synthetic fixtures now use the actual native timeout syntax.
 13 GET-ID, 18 HID comparator and 9 CLI analyzer tests PASS;
 source audit PASS. No physical timeout or provenance attestation.
 Hosted qualification pending.
+
+## Python CLI help coverage (candidate)
+
+The 91 root non-test Python entrypoints match the explicit CLI registry.
+The runner checks both --help and -h (182 help invocations) with stdin
+closed and a ten-second per-command limit, alongside source audit and
+unittest. The coverage catalog requires both ordered command identities.
+A source-only AST regression detects missing or duplicate registry names.
+Six targeted catalog tests and source audit PASS. Successful help exit
+is not proof of safe execution, documented operational exit meanings,
+all input bounds, or native CLI behavior. Hosted qualification pending.

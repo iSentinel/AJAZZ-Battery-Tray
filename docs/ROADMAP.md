@@ -3626,3 +3626,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       engineering adoption audit. Do not close all ENG-14 gaps.
 - [ ] Hosted qualification after #363. Next: inventory existing
       command-specific CLI contracts and remaining acceptance gaps.
+
+### ENG-14 CLI help and source registry coverage
+
+- [x] #363 merged ef211330 after 5/5 checks; all five changed blobs
+      match. #364 retargeted and updated to c9fd9cac; 40 targeted tests PASS.
+- [x] Inventory 91 root Python entrypoints; source and QA registry
+      agree exactly, all use argparse.
+- [x] Run both help aliases in offline QA, close subprocess stdin,
+      update exact coverage catalog and assert independent source discovery.
+- [x] Six targeted catalog tests and source audit PASS.
+- [ ] Hosted qualification after #364; review command-specific exit
+      contracts, evidence bounds, and native CLI separately.
