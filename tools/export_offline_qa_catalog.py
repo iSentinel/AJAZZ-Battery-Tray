@@ -9,8 +9,9 @@ import sys
 import unittest
 import xml.etree.ElementTree as ET
 
-from run_offline_qa import CLI, ROOT, junit_counts, read_evidence, source_context
-from run_offline_qa import verify_manifest, write_json
+from run_offline_qa import CLI, ROOT, check_directory, evidence_snapshot
+from run_offline_qa import junit_counts_bytes, read_verified_inventory
+from run_offline_qa import source_context, write_json
 
 
 def case_ids(suite: unittest.TestSuite) -> list[str]:
@@ -55,18 +56,22 @@ def coverage(expected: dict, summary: dict, xml: bytes) -> None:
 
 def verify_run(directory: Path, expected: dict) -> dict:
     """Bind coverage to the current clean source and verified local inventory."""
-    verify_manifest(directory)
-    source = json.loads(read_evidence(directory / 'source-toolchain.json'))
-    summary = json.loads(read_evidence(directory / 'summary.json'))
+    initial = evidence_snapshot(directory)
+    verified = read_verified_inventory(directory)
+    source = json.loads(verified['source-toolchain.json'])
+    summary = json.loads(verified['summary.json'])
+    xml = verified['python-results.xml']
     current = source_context()
     if (current['dirty'] or source['dirty'] is not False
             or any(source[key] != current[key] or summary[key] != current[key]
                    for key in ('commit', 'tree'))):
         raise ValueError('source identity differs')
-    coverage(expected, summary, read_evidence(directory / 'python-results.xml'))
-    if summary['tests'] != junit_counts(directory / 'python-results.xml'):
+    coverage(expected, summary, xml)
+    if summary['tests'] != junit_counts_bytes(xml):
         raise ValueError('test counts differ')
-    verify_manifest(directory)
+    check_directory(directory)
+    if evidence_snapshot(directory) != initial:
+        raise ValueError('evidence changed during coverage review')
     return {'schema': 'offline-qa-coverage-v1', 'commit': current['commit'],
             'tree': current['tree'], 'test_count': len(expected['unittest_ids']),
             'command_count': len(expected['commands']), 'coverage': 'MATCH',

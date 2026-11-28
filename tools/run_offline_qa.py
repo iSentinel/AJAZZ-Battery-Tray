@@ -200,9 +200,9 @@ def read_evidence(path: Path) -> bytes:
     return raw
 
 
-def junit_counts(path: Path) -> dict:
-    """Verify required test evidence rather than trusting only process exit."""
-    root = ET.fromstring(read_evidence(path))
+def junit_counts_bytes(raw: bytes) -> dict:
+    """Validate counts and identities from an already captured JUnit document."""
+    root = ET.fromstring(raw)
     if root.tag != "testsuite":
         raise ValueError("Unexpected JUnit suite")
     cases = root.findall("testcase")
@@ -220,6 +220,11 @@ def junit_counts(path: Path) -> dict:
                                 for child in case):
             raise ValueError("Unexpected JUnit case result")
     return counts
+
+
+def junit_counts(path: Path) -> dict:
+    """Read bounded JUnit evidence and validate its test counts."""
+    return junit_counts_bytes(read_evidence(path))
 
 
 def verify_inventory(directory: Path) -> dict:
@@ -264,8 +269,8 @@ def evidence_snapshot(directory: Path) -> dict:
     return identities
 
 
-def verify_manifest(directory: Path) -> None:
-    """Check exact required inventory, metadata and current SHA-256 digests."""
+def read_verified_inventory(directory: Path) -> dict[str, bytes]:
+    """Return the bounded bytes that passed exact manifest and identity checks."""
     check_directory(directory)
     initial = evidence_snapshot(directory)
     manifest = json.loads(read_evidence(directory / "manifest.json"))
@@ -274,24 +279,30 @@ def verify_manifest(directory: Path) -> None:
             or not isinstance(manifest["files"], list)
             or len(manifest["files"]) != len(REQUIRED)):
         raise ValueError("Invalid manifest schema")
-    seen = set()
+    verified = {}
     for entry in manifest["files"]:
         if (not isinstance(entry, dict) or set(entry) != {"name", "bytes", "sha256"}
                 or not isinstance(entry["name"], str) or entry["name"] not in REQUIRED
-                or entry["name"] in seen or type(entry["bytes"]) is not int
+                or entry["name"] in verified or type(entry["bytes"]) is not int
                 or not 0 <= entry["bytes"] <= MAX_EVIDENCE
                 or not isinstance(entry["sha256"], str)
                 or not re.fullmatch(r"[0-9a-f]{64}", entry["sha256"])):
             raise ValueError("Invalid manifest entry")
-        seen.add(entry["name"])
         raw = read_evidence(directory / entry["name"])
         if len(raw) != entry["bytes"] or hashlib.sha256(raw).hexdigest() != entry["sha256"]:
             raise ValueError("Evidence digest or size mismatch")
-    if seen != set(REQUIRED):
+        verified[entry["name"]] = raw
+    if set(verified) != set(REQUIRED):
         raise ValueError("Incomplete manifest")
     check_directory(directory)
     if evidence_snapshot(directory) != initial:
         raise ValueError("Evidence inventory changed during verification")
+    return verified
+
+
+def verify_manifest(directory: Path) -> None:
+    """Validate the exact inventory without retaining its bytes for callers."""
+    read_verified_inventory(directory)
 
 
 def run_qa(directory: Path) -> int:

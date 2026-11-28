@@ -200,3 +200,25 @@ independently downloaded in the review. Parent #342 merged 7605db9
 with all five changed blobs matching 1234fc3. Repeat combined
 qualification is required. The unchanged #340 field plan is carried
 into the same review to avoid another stale-base merge.
+
+## Coverage analysis of verified bytes
+
+Semantic coverage consumes the four bounded documents returned from
+manifest verification rather than reopening individual evidence paths.
+JUnit counts and identities are derived from the same captured XML.
+Directory inventory and observed identities are rechecked after semantic
+analysis. This reduces read/verify gaps and binds results to one verified
+set of bytes, not an atomic filesystem snapshot or authentication.
+The additional retained memory is bounded by four times MAX_EVIDENCE.
+The new synthetic regression verifies five reads (manifest plus four
+documents) and detects a late summary change. Parent #343 and hosted
+qualification required.
+
+The combined real artifact roundtrip #343 merged df678e1 after 3/3
+workflows and 4/4 jobs PASS; all five changed blobs match 155c5cb.
+Actual downloaded evidence verification passed job 140735357530;
+artifact 15230957804 and aggregate 15231207590 (metadata/logs reviewed).
+Initial verified-byte #344 passed all five jobs on 9ec3305 including
+actual transport job 140735588411. Final integrated-base qualification
+is required. Field plan #340 is included exactly and the duplicate
+review is closed; all field cases remain NOT_RUN.
