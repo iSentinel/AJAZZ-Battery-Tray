@@ -256,3 +256,9 @@ not a race-free directory descriptor traversal or an ACL review.
 Ancestor paths and effective Windows DACLs must be trusted separately.
 An interrupted or refused creation can leave a new incomplete directory;
 do not treat it as completed evidence. Hosted qualification pending.
+
+Status consistency #345 merged 664d097 after 3 workflows / 4 jobs
+PASS, all five changed blobs matching 7ac3bb5. Initial root validation
+#346 passed 4 workflows / 5 jobs on 53eefa1, including 21 targeted
+tests on Windows and HA and real roundtrip job 140829455636.
+Final integrated-base qualification pending.
