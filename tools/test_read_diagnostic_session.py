@@ -3,14 +3,17 @@
 from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
 import json
+import os
 from pathlib import Path
 import stat
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 from compare_diagnostic_timeline import main, timeline
-from read_diagnostic_session import load_session, MAX_REPORT
+from read_diagnostic_session import load_session, MAX_ARCHIVE, MAX_REPORT, read_archive, unique_object
+from run_offline_qa import MAX_EVIDENCE, read_evidence
 from test_compare_diagnostic_timeline import field_report
 
 
@@ -150,6 +153,85 @@ class SessionImportTests(unittest.TestCase):
                 archive.writestr('manifest.json', json.dumps(manifest))
             with self.assertRaises(ValueError):
                 load_session(path)
+
+    def test_archive_identity_and_separate_budget(self) -> None:
+        """Preserve the archive limit without widening the QA evidence ceiling."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / 'test.zip'
+            write_zip(path, *fixture())
+            self.assertEqual(len(load_session(path)), 2)
+            alias = root / 'alias.zip'
+            os.link(path, alias)
+            for linked in (path, alias):
+                with self.assertRaises(ValueError):
+                    load_session(linked)
+            alias.unlink()
+            with self.assertRaises(ValueError):
+                read_archive(root)
+            path.write_bytes(b'x' * MAX_ARCHIVE)
+            self.assertEqual(len(read_archive(path)), MAX_ARCHIVE)
+            with self.assertRaises(ValueError):
+                read_evidence(path, MAX_ARCHIVE)
+            with self.assertRaises(ValueError):
+                read_evidence(path, MAX_EVIDENCE)
+            with path.open('ab') as stream:
+                stream.write(b'x')
+            with self.assertRaises(ValueError):
+                read_archive(path)
+            try:
+                alias.symlink_to(path)
+            except (OSError, NotImplementedError):
+                return
+            with self.assertRaises(ValueError):
+                read_archive(alias)
+
+    def test_archive_path_replaced_after_read(self) -> None:
+        """Reject a same-size replacement between read and final path check."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / 'test.zip'
+            path.write_bytes(b'first')
+            replacement = root / 'replacement.zip'
+            replacement.write_bytes(b'other')
+            original = Path.lstat
+            calls = 0
+
+            def observed(target: Path) -> os.stat_result:
+                """Replace the file only at its final identity check."""
+                nonlocal calls
+                if target == path:
+                    calls += 1
+                    if calls == 2:
+                        path.rename(root / 'previous.zip')
+                        replacement.rename(path)
+                return original(target)
+
+            with patch.object(Path, 'lstat', observed), self.assertRaisesRegex(
+                    ValueError, 'Evidence changed during read'):
+                read_archive(path)
+            self.assertEqual(calls, 2)
+
+    def test_legacy_duplicate_hook_contract(self) -> None:
+        """Retain the existing public hook for other evidence CLI consumers."""
+        self.assertEqual(json.loads('{"key":1}', object_pairs_hook=unique_object), {'key': 1})
+        with self.assertRaisesRegex(ValueError, 'duplicate manifest key'):
+            json.loads('{"key":1,"key":2}', object_pairs_hook=unique_object)
+
+    def test_manifest_strict_json(self) -> None:
+        """Reject deep nesting, decoded duplicate keys and nonstandard constants."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'test.zip'
+            texts, manifest = fixture()
+            valid = json.dumps(manifest)
+            invalid = ((valid[:-1] + ', "schem\\u0061":"diagnostic-session-v1"}', 'Duplicate'),
+                       (valid[:-1] + ', "extra":' + '[' * 80 + '0' + ']' * 80 + '}', 'nesting'),
+                       (valid.replace('"OWNER_ANNOTATED"', 'NaN'), 'Nonstandard'),
+                       (valid + ' ' * 65536, 'invalid archive member'))
+            for raw, reason in invalid:
+                write_zip(path, texts, raw)
+                with self.assertRaisesRegex(ValueError, reason):
+                    load_session(path)
 
     def test_invalid_annotation_time_and_corrupt_zip(self) -> None:
         """Fail without partial JSON or echoing untrusted filenames."""

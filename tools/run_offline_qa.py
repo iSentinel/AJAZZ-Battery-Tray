@@ -190,9 +190,16 @@ def regular_evidence(info: os.stat_result) -> bool:
 
 
 def read_evidence(path: Path, max_bytes: int = MAX_EVIDENCE) -> bytes:
-    """Read bounded regular evidence; detect identity or metadata changes."""
+    """Read evidence under the unchanged QA file-size ceiling."""
     if not 0 < max_bytes <= MAX_EVIDENCE:
         raise ValueError("Invalid evidence size limit")
+    return read_bounded_file(path, max_bytes)
+
+
+def read_bounded_file(path: Path, max_bytes: int) -> bytes:
+    """Read a regular single-link file with an explicit caller-specific budget."""
+    if type(max_bytes) is not int or max_bytes <= 0:
+        raise ValueError("Invalid file size limit")
     try:
         before = path.lstat()
     except FileNotFoundError as error:
