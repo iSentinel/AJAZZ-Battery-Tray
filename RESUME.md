@@ -1,3 +1,15 @@
+# Resume — Windows HID bounded report input
+
+#355 merged c808c2d5 after 5/5 hosted checks on f599f434;
+all five changed blobs match. #356 retargeted to integration and
+merged base into 13a1e0ee; targeted 33 tests PASS, final CI pending.
+Replace the Windows F7/05 log comparator's stat/read sequence with
+the existing bounded identity-checked reader, retaining the 1 MiB
+limit, UTF-8 BOM and CLI exit contract. One regression method covers
+exact cap, directory and link refusal. 12 targeted tests and source
+audit PASS. No device, runtime, publication or release change.
+Next: review contradictory/repeated terminal markers separately.
+
 # Resume — AULA comparison context candidate
 
 #354 merged 11557568 after five hosted checks PASS on fcc09dc0;

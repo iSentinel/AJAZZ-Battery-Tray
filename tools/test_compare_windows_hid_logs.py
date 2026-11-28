@@ -1,5 +1,6 @@
 """Synthetic checks for the safe Windows F7/05 text log comparator."""
 
+import os
 import tempfile
 from pathlib import Path
 import unittest
@@ -126,6 +127,30 @@ class WindowsHidLogTests(unittest.TestCase):
             path.write_text("Z" * 1048577)
             with self.assertRaises(ValueError):
                 read_capture(path)
+
+
+    def test_bounded_local_file_identity(self) -> None:
+        """Accept exact-cap UTF-8 BOM logs but refuse linked/nonregular files."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "capture.txt"
+            raw = report("PASS: verified battery 83%", end=0).encode("utf-8-sig")
+            path.write_bytes(raw + b"\n" * (1048576 - len(raw)))
+            self.assertEqual(read_capture(path).battery, 83)
+            with self.assertRaises(ValueError):
+                read_capture(root)
+            alias = root / "alias.txt"
+            os.link(path, alias)
+            for linked in (path, alias):
+                with self.assertRaises(ValueError):
+                    read_capture(linked)
+            alias.unlink()
+            try:
+                alias.symlink_to(path)
+            except OSError:
+                return  # Windows runner may not grant symlink creation.
+            with self.assertRaises(ValueError):
+                read_capture(alias)
 
 
 if __name__ == "__main__":

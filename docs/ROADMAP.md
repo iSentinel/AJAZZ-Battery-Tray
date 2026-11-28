@@ -3527,3 +3527,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Targeted 33 tests and source audit PASS.
 - [ ] Final hosted qualification of #355 and dependent context candidate.
       Real AULA hardware NOT_RUN; no release admission.
+
+### ENG-14 Windows HID comparator bounded input
+
+- [x] #355 merged c808c2d5 after 5/5 checks on f599f434; all five
+      changed blobs match. #356 retargeted and updated to 13a1e0ee;
+      33 targeted tests PASS.
+- [x] Replace stat/read with bounded regular single-link evidence
+      reader; preserve 1 MiB cap, UTF-8 BOM and exit codes.
+- [x] Add exact-cap, directory and link regression; 12 targeted
+      tests and source audit PASS.
+- [ ] Hosted qualification after #356; review repeated/contradictory
+      log markers separately. Hardware and release remain separate.

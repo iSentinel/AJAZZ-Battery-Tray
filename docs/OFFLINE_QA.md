@@ -438,3 +438,12 @@ Require the 24-hour cache lifetime in awake and recovered checkpoints as
 well as sleep; an unsupported policy makes comparison NOT OBSERVED,
 not a full PASS. Two synthetic test methods, 33 targeted tests and
 source audit PASS. No runtime change or device acceptance claim.
+
+## Windows HID comparator bounded input (candidate)
+
+The F7/05 comparator now reuses the identity-checked bounded reader
+instead of checking size before an independent unbounded text read.
+The 1 MiB limit and UTF-8 BOM support remain. One synthetic test
+covers exact cap, directory and hardlink/symlink refusal where
+supported. 12 targeted tests and source audit PASS. This is local
+input hardening, not proof of HID observations. Hosted CI pending.
