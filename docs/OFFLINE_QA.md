@@ -235,3 +235,9 @@ An honestly reported complete FAIL may still match coverage; the CI
 gate continues to require reported PASS separately. This detects
 contradictory content, not fabricated evidence or producer identity.
 Hosted qualification pending.
+
+Verified-byte coverage #344 merged 9498fbd after 4 workflows / 5 jobs
+PASS; all six changed blobs match 1ed7680. Real artifact roundtrip
+job 140825516207 passed. Initial status consistency #345 passed
+3 workflows / 4 jobs on 158b2e5, including job 140825694845.
+Final integrated-base qualification required.
