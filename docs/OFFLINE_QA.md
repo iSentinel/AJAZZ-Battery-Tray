@@ -262,3 +262,21 @@ PASS, all five changed blobs matching 7ac3bb5. Initial root validation
 #346 passed 4 workflows / 5 jobs on 53eefa1, including 21 targeted
 tests on Windows and HA and real roundtrip job 140829455636.
 Final integrated-base qualification pending.
+
+## Native Windows DACL observation (candidate)
+
+A separate Windows CI job runs the actual QA directory creator and
+manifest publisher with synthetic bytes under a fresh temporary root.
+It observes DACLs for the root, run and five evidence files. The
+aggregate report records runner-owner equality, protection,
+canonicality, rule counts, inherited counts and allow ACEs containing
+selected read/write bits for Everyone, Authenticated Users, Users and
+Guests. It never exports SIDs, account names, paths or raw ACLs.
+A separate disposable directory receives an explicit Everyone
+ReadAndExecute ACE as a positive detection control. Only synthetic
+permissions are modified; the unique temporary tree is removed on exit.
+A complete observation does not imply that the observed ACL is private:
+ACE counts are not an effective-access calculation and do not resolve
+group memberships, deny rules, privileges or inheritance applicability.
+Real user profile ACLs and enforcement remain unqualified. Hosted
+qualification and parent #346 integration required.
