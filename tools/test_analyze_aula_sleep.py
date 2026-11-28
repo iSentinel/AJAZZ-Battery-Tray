@@ -1,5 +1,6 @@
 """Offline synthetic tests for three AULA L99 clipboard snapshots."""
 
+import os
 import tempfile
 from pathlib import Path
 import unittest
@@ -258,6 +259,30 @@ class AulaOfflineSummaryTests(unittest.TestCase):
             path.write_text("X" * 65537, encoding="utf-8")
             with self.assertRaises(ValueError):
                 read_file(path)
+
+
+    def test_local_file_identity_and_exact_cap(self) -> None:
+        """Refuse linked and nonregular inputs and preserve the exact size cap."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / "awake.txt"
+            raw = summary().encode("utf-8")
+            path.write_bytes(raw + b"\n" * (65536 - len(raw)))
+            self.assertEqual(read_file(path).percent, 81)
+            with self.assertRaises(ValueError):
+                read_file(root)
+            alias = root / "alias.txt"
+            os.link(path, alias)
+            for linked in (path, alias):
+                with self.assertRaises(ValueError):
+                    read_file(linked)
+            alias.unlink()
+            try:
+                alias.symlink_to(path)
+            except OSError:
+                return  # Windows runner may not grant symlink creation.
+            with self.assertRaises(ValueError):
+                read_file(alias)
 
 
 if __name__ == "__main__":

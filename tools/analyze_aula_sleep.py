@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 import re
 
+from run_offline_qa import read_evidence
+
 CACHE_FIELDS = re.compile(
     r"^Last successful battery: (?P<level>unavailable|\d+); "
     r"UTC: (?P<time>[^;]+); "
@@ -272,9 +274,7 @@ def analyze_pair(sleep: Summary, recovered: Summary
 
 def read_file(path: Path) -> Summary:
     """Read a bounded, local-only clipboard export as UTF-8."""
-    if path.stat().st_size > 65536:
-        raise ValueError("summary exceeds 64 KiB limit")
-    return parse_summary(path.read_text(encoding="utf-8-sig"))
+    return parse_summary(read_evidence(path, 65536).decode("utf-8-sig"))
 
 
 def main() -> int:
