@@ -3383,3 +3383,13 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Verify a fresh sibling run independently after both interruptions.
 - [ ] Hosted qualification after #346. Power-loss durability, effective
       Windows ACL and release admission remain open.
+
+### ENG-16 private root integration and recovery qualification
+
+- [x] #346 merged e3c1ee7 after 4 workflows / 5 jobs PASS; all five
+      changed blobs match a2534f1. Windows and HA 21 targeted tests;
+      Universal macOS and real artifact roundtrip PASS.
+- [x] Initial #348 3 workflows / 4 jobs PASS on 07c107e; Windows
+      22 targeted tests and actual artifact roundtrip 140831620517.
+- [ ] Final integrated-base CI; ACL v2 remains independent.
+      Power-loss durability and release admission remain open.
