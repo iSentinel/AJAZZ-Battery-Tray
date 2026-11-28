@@ -3443,3 +3443,13 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       controlled validation errors. Retain byte bound and identities.
 - [x] Add structural negative fixtures and a valid control.
 - [ ] Hosted qualification after #350; release remains BLOCKED.
+
+### ENG-14 strict JSON integration and JUnit qualification
+
+- [x] #350 merged 688a4e5 after 4 workflows / 6 jobs PASS on
+      61e972a; all eight changed blobs match. Windows/HA 25 tests;
+      actual artifact roundtrip 140860717544.
+- [x] Initial #351 4 workflows / 6 jobs PASS on 87743cc;
+      Windows/HA 26 tests; real roundtrip 140860916064.
+- [ ] Final integrated-base CI; review XML parser trust boundaries
+      and remaining CLI inputs. Release BLOCKED.
