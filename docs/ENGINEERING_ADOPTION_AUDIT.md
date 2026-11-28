@@ -208,3 +208,18 @@ Hosted CI required; no runtime/NuGet/Inno/Apple lock qualification yet.
 verified on reopen (121 tests, 14 steps, Python 3.12.16, tree f426ee6).
 SDK candidate 107ba36 matches local 778a309 tree ea2a16f; offline
 QA 122 tests PASS. Native qualification remains pending.
+
+## ENG-16 scoped integrated qualification — 2026-11-28
+
+#349 merged 6bedf53 after all five jobs passed on 6670a40; five
+changed blobs match. Windows ACL v3 job 140833872747 verified the
+fresh-root/run DACL contract on hosted Windows with Python 3.13.17;
+the existing root retained its explicit Everyone read ACE. Actual
+artifact roundtrip job 140833961443 passed. #347 closed as superseded.
+Together with #348 process-interruption recovery and earlier
+manifest/no-replace/verified-byte/coverage/status/root changes, the
+ten scoped ENG-16 increments are integrated. This does not close
+effective-access/ancestor-trust/power-loss/authenticity gaps or
+release admission. Next ENG-14/16 candidate rejects ambiguous JSON
+in manifest and semantic coverage, with matching-hash regression
+fixtures; qualification pending.
