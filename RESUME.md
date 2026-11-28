@@ -1,3 +1,15 @@
+# Resume — Windows HID terminal marker validation
+
+#356 merged 18508ff1 after 5/5 hosted checks on 13a1e0ee;
+all five changed blobs match. #357 retargeted to integration and
+updated to 9c31089f; 12 targeted tests PASS, final CI pending.
+Reject duplicate and malformed singleton outcome markers, conflicting
+worker results and misplaced parent terminal markers. Preserve repeated
+native I/O operations and inconclusive-before-timeout race. Two new
+synthetic test methods; 14 targeted tests and source audit PASS.
+No hardware, runtime or release change. Next: review chronological
+verification of enumeration/open/SET/GET and result markers.
+
 # Resume — Windows HID bounded report input
 
 #355 merged c808c2d5 after 5/5 hosted checks on f599f434;
