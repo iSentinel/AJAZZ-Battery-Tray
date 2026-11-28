@@ -1,3 +1,13 @@
+# Resume — restricted JUnit XML parser candidate
+
+Dependent on #351, initially 4 workflows / 6 jobs PASS; final CI
+pending. Share a bounded UTF-8 parser between JUnit counts and case
+coverage. Reject DTD/entity declarations, comments, CDATA and NUL
+before parsing; preserve normal escaped text. One synthetic regression
+method, hosted qualification pending. Not a general XML importer.
+After qualification, move to remaining CLI input audit rather than
+extending the scoped JUnit format indefinitely. Release BLOCKED.
+
 # Resume — strict JUnit final qualification
 
 #350 merged 688a4e5 after 4 workflows / 6 jobs PASS on 61e972a;
