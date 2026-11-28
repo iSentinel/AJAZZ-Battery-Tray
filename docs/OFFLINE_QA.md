@@ -286,3 +286,16 @@ Python 3.12.16 was unavailable for Windows Server 2025. The ACL fixture
 was NOT_RUN. The Windows build job 140830522562 successfully provisioned
 CPython 3.13.17; the ACL job now uses that exact Windows version. Linux
 QA remains on 3.12.16. Repeat hosted qualification required.
+
+Corrected #347 initial CI passed 3 workflows / 5 jobs on e3771ee.
+ACL job 140831370156 observed seven canonical DACLs with three
+rules each and no selected broad allow/read/write ACEs. Root and run
+were protected; the five files inherited three rules. Owner equality
+was false on all seven. The explicit Everyone read control was detected.
+The v2 observation adds a disposable pre-existing root with inheritable
+Everyone read access, records the root before and after producer
+execution, and observes the resulting run and five files. The root
+must retain the intentional broad explicit ACE; child protection and
+selected broad counts are observations rather than assumed outcomes.
+Owner classification is limited to RUNNER, ADMINISTRATORS, SYSTEM or
+OTHER, never raw identities. Repeat hosted qualification pending.
