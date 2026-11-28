@@ -213,3 +213,12 @@ The additional retained memory is bounded by four times MAX_EVIDENCE.
 The new synthetic regression verifies five reads (manifest plus four
 documents) and detects a late summary change. Parent #343 and hosted
 qualification required.
+
+The combined real artifact roundtrip #343 merged df678e1 after 3/3
+workflows and 4/4 jobs PASS; all five changed blobs match 155c5cb.
+Actual downloaded evidence verification passed job 140735357530;
+artifact 15230957804 and aggregate 15231207590 (metadata/logs reviewed).
+Initial verified-byte #344 passed all five jobs on 9ec3305 including
+actual transport job 140735588411. Final integrated-base qualification
+is required. Field plan #340 is included exactly and the duplicate
+review is closed; all field cases remain NOT_RUN.
