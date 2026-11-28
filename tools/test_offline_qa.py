@@ -329,6 +329,18 @@ class OfflineQaTests(unittest.TestCase):
             with self.subTest(raw=raw[:40]), self.assertRaises(ValueError):
                 parse_evidence_json(raw)
 
+    def test_json_depth_boundary_and_escaped_delimiters(self) -> None:
+        """Require the same depth limit across native interpreter versions."""
+        valid = b'{"outer":' + b'[' * 63 + b'0' + b']' * 63 + b'}'
+        invalid = b'{"outer":' + b'[' * 64 + b'0' + b']' * 64 + b'}'
+        self.assertIn("outer", parse_evidence_json(valid))
+        with self.assertRaisesRegex(ValueError, "nesting exceeds limit"):
+            parse_evidence_json(invalid)
+        value = {'text': '\\"' + '[{' * 100 + ']}', 'nested': {'x': 1}}
+        self.assertEqual(parse_evidence_json(json.dumps(value).encode()), value)
+        with self.assertRaises(ValueError):
+            parse_evidence_json(b'{"value":\xff}')
+
     def test_manifest_duplicate_json_key(self) -> None:
         """Reject duplicate schema names even if the last one is valid."""
         with tempfile.TemporaryDirectory() as tmp:
