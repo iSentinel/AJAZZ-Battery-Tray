@@ -3638,3 +3638,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Six targeted catalog tests and source audit PASS.
 - [ ] Hosted qualification after #364; review command-specific exit
       contracts, evidence bounds, and native CLI separately.
+
+### ENG-14 diagnostic CLI process exit contracts
+
+- [x] #364 merged 31356d4a after 5/5 checks; all nine changed
+      blobs match. #365 retargeted and updated to 97be3c6e;
+      six targeted catalog tests PASS.
+- [x] Test six diagnostic CLI entrypoints as bounded subprocesses
+      on synthetic local input; preserve command-specific exit meanings.
+- [x] Fix APEX filename and ready-clear exception path disclosure;
+      five new process tests, 27 existing comparison tests and audit PASS.
+- [ ] Hosted qualification after #365; review APEX and ready-clear
+      bounded input consistency and remaining CLI contracts.

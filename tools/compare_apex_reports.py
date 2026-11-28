@@ -98,7 +98,6 @@ def inspect(path: Path) -> None:
     attempts = Counter()
     received = Counter()
     valid = 0
-    print(f"\n=== {path.name} ===")
     for receiver, delay, length, data in read_attempts(read_report(path)):
         key = (receiver, delay, length)
         if data is None:
@@ -126,6 +125,7 @@ def main() -> int:
     args = parser.parse_args()
     failed = False
     for index, path in enumerate(args.reports, 1):
+        print(f"\n=== Report #{index} ===")
         try:
             inspect(path)
         except (OSError, ValueError) as error:
