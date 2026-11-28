@@ -378,3 +378,15 @@ on bbe1233; five changed blobs match. Windows/HA 26 targeted tests,
 actual roundtrip 140862126784. Initial restricted XML #352 passed
 all six jobs on d2a5792, Windows/HA 27 targeted tests and actual
 roundtrip 140862340153. Final integrated-base qualification pending.
+
+## AULA sleep report input contract (candidate)
+
+The AULA offline analyzer now uses the existing bounded regular-file
+reader with a smaller explicit 64 KiB limit. It checks descriptor/path
+identity and observed metadata, refuses nonregular, linked and reparse
+entries, and bounds the actual read. UTF-8 BOM support and CLI exit
+codes are retained. Existing hardlinked reports must be copied to a
+fresh regular file for this stricter local input contract. The new
+fixture covers the exact cap, directory, hardlink and symlink refusal
+(where symlink creation is available). No hardware or complete
+filesystem race-resistance claim. Hosted qualification pending.
