@@ -79,6 +79,17 @@ def extended_presence(presence: re.Match, stamp: str, level: str,
     return present, known
 
 
+def reject_extended_duplicates(lines: list[str]) -> None:
+    """Reject repeated AULA fields before the next extended-report section."""
+    prefixes = ("Auto monitoring:", "Receiver present:", "Battery:",
+                "Last successful battery:")
+    for line in lines:
+        if line.startswith("[") and line.endswith("]"):
+            break
+        if line.startswith(prefixes):
+            raise ValueError("Duplicate extended AULA field")
+
+
 def extended_summary(data: str) -> str:
     """Project only allowlisted AULA fields from one extended report."""
     lines = data.splitlines()
@@ -103,6 +114,7 @@ def extended_summary(data: str) -> str:
     level = re.fullmatch(r"Battery: (unavailable|\d+); status: .+", block[2])
     if not auto or not presence or not level or not CACHE_FIELDS.fullmatch(block[3]):
         raise ValueError("malformed extended AULA fields")
+    reject_extended_duplicates(lines[end + 5:])
     present, known = extended_presence(presence, auto[2], level[1], block[3])
     return "\n".join([
         "AULA L99 2.4 GHz experimental battery check",
@@ -116,6 +128,28 @@ def extended_summary(data: str) -> str:
     ])
 
 
+def clipboard_fields(lines: list[str]) -> tuple[dict[str, str], re.Match]:
+    """Read each required clipboard field and cache row exactly once."""
+    required = ("Version", "Automatic monitoring enabled", "Receiver present",
+                "Presence known", "Battery percentage", "Last read UTC")
+    fields = {}
+    cache_rows = []
+    for line in lines[1:]:
+        if line.startswith("Last successful battery:"):
+            cache_rows.append(line)
+            continue
+        name, separator, value = line.partition(": ")
+        if separator and name in required:
+            if name in fields:
+                raise ValueError("Duplicate AULA summary field")
+            fields[name] = value
+    if len(cache_rows) != 1 or not (cache := CACHE_FIELDS.fullmatch(cache_rows[0])):
+        raise ValueError("Expected one valid AULA cache/status row")
+    if any(name not in fields for name in required):
+        raise ValueError("required AULA summary field is missing")
+    return fields, cache
+
+
 def parse_summary(data: str) -> Summary:
     """Parse only known exported fields, never paths or serial numbers."""
     if "[AULA L99 last measurement]" in data.splitlines():
@@ -123,16 +157,7 @@ def parse_summary(data: str) -> Summary:
     lines = data.strip().splitlines()
     if not lines or lines[0] != "AULA L99 2.4 GHz experimental battery check":
         raise ValueError("not an AULA L99 clipboard summary")
-    fields = dict(line.split(": ", 1) for line in lines[1:]
-                  if ": " in line and not line.startswith("Last successful"))
-    cache = next((CACHE_FIELDS.fullmatch(line) for line in lines
-                  if line.startswith("Last successful battery: ")), None)
-    if cache is None:
-        raise ValueError("AULA cache/status fields are missing")
-    required = ("Version", "Automatic monitoring enabled", "Receiver present",
-                "Presence known", "Battery percentage", "Last read UTC")
-    if any(name not in fields for name in required):
-        raise ValueError("required AULA summary field is missing")
+    fields, cache = clipboard_fields(lines)
     return Summary(
         version=fields["Version"],
         automatic=parse_bool(fields["Automatic monitoring enabled"]),
