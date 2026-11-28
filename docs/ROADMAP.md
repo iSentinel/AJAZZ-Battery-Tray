@@ -3576,3 +3576,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       analyzer 7/7 PASS, source audit PASS.
 - [ ] Hosted qualification after #359. Review related CLI analyzer
       local input reader and framing consistency. Hardware and release separate.
+
+### ENG-14 Windows CLI shared evidence framing
+
+- [x] #359 merged 5c53552f after 5/5 checks; all five changed
+      blobs match. #360 retargeted and updated to 32fad3d2;
+      24 targeted tests PASS.
+- [x] Reuse the bounded identity-checked reader and native UTC
+      BEGIN parser in ordinary and experimental CLI analysis.
+- [x] Regression methods cover both modes and file identity/size;
+      34 targeted tests and source audit PASS.
+- [ ] Hosted qualification after #360. Review standalone GET-ID
+      reader and marker consistency. Hardware and release separate.

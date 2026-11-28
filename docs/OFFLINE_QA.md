@@ -476,3 +476,14 @@ malformed transfer results. Signed Win32 errors remain representable.
 The separate one-second synthetic watchdog is not an ordinary capture.
 17 comparator tests, 7 related CLI analyzer tests and source audit PASS.
 No cross-capture identity or physical timestamp attestation. Hosted CI pending.
+
+## Windows CLI shared evidence framing (candidate)
+
+Both ordinary and experimental summary modes now share the native UTC
+BEGIN parser. The CLI analyzer uses the bounded identity-checked reader
+with the existing 1 MiB limit and UTF-8 BOM compatibility; redundant
+ordinary enumeration validation is removed. JSON schema and explicit
+lack of independent verification remain unchanged. The normalized JSON
+timestamp retains Python microsecond precision, not native 100 ns precision.
+9 CLI, 17 comparator and 8 GET-ID tests PASS; source audit PASS.
+No hardware observations. Hosted qualification pending.
