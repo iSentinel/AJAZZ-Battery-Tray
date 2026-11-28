@@ -2,6 +2,7 @@
 
 from collections.abc import Iterator
 import json
+import stat
 from types import SimpleNamespace
 from typing import TextIO
 from pathlib import Path
@@ -12,7 +13,8 @@ from unittest.mock import patch
 from qa_unittest import execute
 from run_offline_qa import (REQUIRED, create_run, junit_counts, read_evidence,
                             verify_inventory, verify_manifest, write_json,
-                            file_identity, check_directory, publish_manifest)
+                            file_identity, check_directory, publish_manifest,
+                            private_directory)
 
 
 def sample_case(kind: str) -> unittest.TestCase:
@@ -70,6 +72,44 @@ class OfflineQaTests(unittest.TestCase):
             manifest = verify_inventory(first)
             self.assertEqual({entry["name"] for entry in manifest["files"]}, set(REQUIRED))
             self.assertTrue(all(entry["bytes"] == 9 for entry in manifest["files"]))
+
+    def test_private_directory_refuses_reparse_and_non_directory(self) -> None:
+        """Refuse a reparse directory or a non-directory before creation."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            file = root / "ordinary-file"
+            file.write_text("synthetic")
+            with self.assertRaises(ValueError):
+                create_run(file)
+            info = SimpleNamespace(st_mode=stat.S_IFDIR | 0o700,
+                                   st_ino=1, st_file_attributes=0x400)
+            with patch("run_offline_qa.stat.FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+                with patch.object(Path, "lstat", return_value=info):
+                    with self.assertRaises(ValueError):
+                        create_run(root)
+
+    def test_private_directory_refuses_public_posix_root(self) -> None:
+        """Reject group/other permission bits without changing existing mode."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            info = SimpleNamespace(st_mode=stat.S_IFDIR | 0o755, st_ino=1,
+                                   st_uid=100, st_file_attributes=0)
+            with patch("run_offline_qa.os.name", "posix"):
+                with patch("run_offline_qa.os.geteuid", return_value=100, create=True):
+                    with patch.object(Path, "lstat", return_value=info):
+                        with self.assertRaisesRegex(ValueError, "owner-private"):
+                            private_directory(root)
+
+    def test_create_run_refuses_root_identity_change(self) -> None:
+        """Detect parent replacement observed across fresh directory creation."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            before = SimpleNamespace(st_dev=1, st_ino=2)
+            after = SimpleNamespace(st_dev=1, st_ino=3)
+            with patch("run_offline_qa.private_directory",
+                       side_effect=[before, after]):
+                with self.assertRaisesRegex(ValueError, "root changed"):
+                    create_run(root)
 
     def test_publish_manifest_no_replace(self) -> None:
         """Publish a complete single-link manifest and refuse overwriting it."""

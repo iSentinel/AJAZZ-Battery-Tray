@@ -1,3 +1,22 @@
+# Resume — private root final qualification
+
+#345 merged 664d097 after 3 workflows / 4 jobs PASS; all five changed
+blobs match 7ac3bb5. Initial #346 passed 4 workflows / 5 jobs on
+53eefa1; 21 targeted tests on Windows and HA, real artifact roundtrip
+140829455636. Retarget for final integrated-base CI. Next: native
+Windows ACL observation using temporary synthetic directories, without
+altering production permissions or claiming effective access isolation.
+
+# Resume — evidence root validation candidate
+
+Dependent on #345, initially qualified on 158b2e5; integrated-base
+CI pending. Validate final root and fresh run via lstat, reject final
+reparse entries, non-directories and non-private POSIX modes; compare
+root device/inode before and after creating a unique child. Three
+new synthetic regression cases. No chmod of existing directories.
+Ancestor trust, Windows ACLs and fully race-free creation remain open.
+Release BLOCKED.
+
 # Resume — status consistency final qualification
 
 #344 merged 9498fbd after 4 workflows / 5 jobs PASS; all six changed
