@@ -8,13 +8,14 @@ import unittest
 from compare_get_ids import MODE, END, LIMIT, OUTCOME, main, parse, summarize
 
 
-def fixture(missing: bool = False, changed: bool = False) -> str:
+def fixture(missing: bool = False, changed: bool = False,
+            lengths: tuple[int, ...] = (65, 67)) -> str:
     """Build the documented 65/67-byte comparison matrix."""
     lines = ["BEGIN: UTC=2026-11-24T00:00:00Z timeout=40s", MODE,
              "STEP: found 1 matching MI_02 paths",
              "STEP: experimental receiver #1"]
     for delay in (30, 100, 250):
-        for length in (65, 67):
+        for length in lengths:
             for report in ("05", "00"):
                 lines.append(f"PAIR: delay={delay}ms length={length} request={report}")
                 if missing and (delay, length, report) == (30, 65, "00"):
@@ -113,3 +114,32 @@ class GetIdTests(unittest.TestCase):
                 except OSError:
                     return
                 self.assertEqual(main(["--log", str(alias)]), 1)
+
+
+    def test_native_matrix_order(self) -> None:
+        """Respect descriptor-first order and reject reordered complete matrices."""
+        for lengths in ((65, 67), (67, 65), (128, 65, 67)):
+            self.assertEqual(len(parse(fixture(lengths=lengths))), 6 * len(lengths))
+        for lengths in ((65, 128, 67), (128, 67, 65)):
+            with self.subTest(lengths=lengths), self.assertRaises(ValueError):
+                parse(fixture(lengths=lengths))
+        lines = fixture().splitlines()
+        lines[4:8] = lines[6:8] + lines[4:6]
+        with self.assertRaises(ValueError):
+            parse("\n".join(lines))
+
+    def test_probe_scope_and_ascii_fields(self) -> None:
+        """Reject probes outside receiver scope or with nonnative numeric syntax."""
+        valid = fixture()
+        receiver = "STEP: experimental receiver #1"
+        lines = valid.splitlines()
+        lines.remove(receiver)
+        lines.insert(6, receiver)
+        with self.assertRaises(ValueError):
+            parse("\n".join(lines))
+        for text in (valid.replace("length=65", "length=６５", 1),
+                     valid.replace("length=65", "length=00065", 1),
+                     valid.replace("candidate=unavailable", "candidate=８３", 1),
+                     valid.replace("candidate=unavailable", "candidate=0083", 1)):
+            with self.subTest(text=text[:240]), self.assertRaises(ValueError):
+                parse(text)

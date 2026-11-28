@@ -3600,3 +3600,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       19 targeted tests and source audit PASS.
 - [ ] Hosted qualification after #361. Review experimental probe
       ordering and numeric field syntax; hardware and release separate.
+
+### ENG-14 GET-ID native matrix ordering
+
+- [x] #361 merged ff184f75 after 5/5 checks; all six changed
+      blobs match. #362 retargeted and updated to aaf8d0ea;
+      19 targeted tests PASS.
+- [x] Validate completed experimental probe ordering and receiver
+      scope against the native descriptor-first matrix, and bound
+      numeric syntax to ASCII fields.
+- [x] Two regression methods; 21 targeted tests and source audit PASS.
+- [ ] Hosted qualification after #362. Review remaining experimental
+      timeout/report consistency and consolidate ENG-14 status.

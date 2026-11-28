@@ -498,3 +498,13 @@ Invalid-file diagnostics no longer echo local paths. Existing report
 and exit semantics retained for valid inputs. 10 GET-ID tests and
 9 related CLI tests PASS, source audit PASS. Hosted qualification pending.
 No physical device identity or telemetry attestation.
+
+## GET-ID native matrix ordering (candidate)
+
+Completed GET-ID matrices must follow the descriptor-first ordering
+in ApexProtocolMatrix, including alternate descriptor lengths and
+paired report IDs. Probes must follow the single receiver marker;
+length and candidate syntax use bounded ASCII digits. Missing probes
+or replies remain inconclusive rather than verified telemetry.
+12 GET-ID and 9 CLI analyzer tests PASS, source audit PASS.
+Hosted qualification pending. No hardware observations or protocol change.
