@@ -1,3 +1,14 @@
+# Resume — verified-byte coverage final qualification
+
+#343 merged df678e1 after 3 workflows / 4 jobs PASS; all five changed
+blobs match checkout 155c5cb. Actual QA artifact roundtrip passed job
+140735357530 (artifact 15230957804; downloaded coverage 15231207590,
+metadata/logs reviewed). The exact #340 field plan matches d51a419;
+#340 closed as superseded, branch retained. #344 initial 4 workflows /
+5 jobs PASS on 9ec3305, including actual artifact roundtrip job
+140735588411. Retargeted for final integrated-base CI. No actual GUI,
+hardware, atomic filesystem snapshot or release admission claim.
+
 # Resume — manifest-verified coverage bytes
 
 Dependent on #343, which initially passed actual QA artifact roundtrip
