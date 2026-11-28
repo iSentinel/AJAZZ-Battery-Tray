@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
+from run_offline_qa import read_evidence
+
 COUNT = re.compile(r"^STEP: found (\d+) matching MI_02 paths$")
 RESULT = re.compile(
     r"^STEP: (SET F7|GET 05) (OK|FAILED) Win32=(\d+) elapsed=(\d+)ms$"
@@ -106,9 +108,7 @@ def classify(value: Capture) -> tuple[str, str]:
 
 def read_capture(path: Path) -> Capture:
     """Read one bounded local text report, never querying attached HID."""
-    if path.stat().st_size > 1048576:
-        raise ValueError("report exceeds one MiB")
-    return parse_log(path.read_text(encoding="utf-8-sig"))
+    return parse_log(read_evidence(path, 1048576).decode("utf-8-sig"))
 
 
 def compare(items: list[tuple[str, Capture]]) -> tuple[str, list[str]]:
