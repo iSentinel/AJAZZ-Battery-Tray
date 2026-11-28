@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -118,6 +119,35 @@ class AppleReportTests(unittest.TestCase):
             path.write_bytes(b'x' * (MAX_SIZE + 1))
             with self.assertRaises(ValueError):
                 read_report(path)
+
+
+    def test_local_reader_identity(self) -> None:
+        """Preserve the exact byte cap and reject linked or nonregular input."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / 'report.txt'
+            for legacy in (False, True):
+                text = report(legacy)
+                raw = text.encode('utf-8-sig')
+                path.write_bytes(raw + b'\n' * (MAX_SIZE - len(raw)))
+                self.assertEqual(parse(read_report(path)), parse(text))
+            with self.assertRaises(ValueError):
+                read_report(root)
+            alias = root / 'alias.txt'
+            os.link(path, alias)
+            for linked in (path, alias):
+                with self.assertRaises(ValueError):
+                    read_report(linked)
+            alias.unlink()
+            path.write_bytes(b'\xff')
+            with self.assertRaises(UnicodeError):
+                read_report(path)
+            try:
+                alias.symlink_to(path)
+            except (OSError, NotImplementedError):
+                return
+            with self.assertRaises(ValueError):
+                read_report(alias)
 
 
 if __name__ == '__main__':

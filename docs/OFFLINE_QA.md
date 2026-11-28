@@ -557,3 +557,12 @@ regressions exercise exact cap and link refusal, alongside the existing
 process exit contracts. 12 APEX, 17 ready-clear, 5 process tests and
 source audit PASS. No device I/O, independent hardware attestation or
 release admission. #366 remains open; candidate integration pending.
+
+## Apple diagnostics shared evidence reader (candidate)
+
+The standalone Apple menu analyzer uses the shared bounded identity-checked
+reader with its existing 64 KiB byte cap and UTF-8 BOM handling. A regression
+checks exact cap for both menu editions, directory/link rejection and invalid
+UTF-8. 9 Apple, 13 normalization and 11 timeline tests PASS; source audit PASS.
+No native runtime or protocol change. Hosted qualification pending; #366 and
+#367 remain open despite successful hosted checks.

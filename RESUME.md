@@ -1,3 +1,14 @@
+# Resume — Apple diagnostics evidence reader
+
+#366 remains open at dd958a8c, #367 at 92b799a7; both 5/5 hosted
+checks PASS. Prior integration block remains unresolved; no merge claimed.
+Apple standalone reader now reuses identity-checked read_evidence,
+retains 64 KiB byte cap, UTF-8 BOM and both native menu editions.
+One new regression covers exact cap, linked/nonregular input and invalid
+UTF-8. 9 Apple, 13 normalization and 11 timeline tests PASS; audit PASS.
+Next: review diagnostic session ZIP reader, preserving its separate 9 MiB
+archive, 8 MiB aggregate and 64 KiB manifest budgets. No device or release action.
+
 # Resume — shared APEX and ready-clear evidence reader
 
 #366 remains open at dd958a8c with 5/5 hosted checks PASS;
