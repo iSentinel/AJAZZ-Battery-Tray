@@ -390,3 +390,9 @@ fresh regular file for this stricter local input contract. The new
 fixture covers the exact cap, directory, hardlink and symlink refusal
 (where symlink creation is available). No hardware or complete
 filesystem race-resistance claim. Hosted qualification pending.
+
+Restricted XML #352 merged 73e8b55 after all six jobs passed
+on 7c1a853; six changed blobs match. Actual artifact roundtrip
+140864178226. Initial AULA bounded read #353 passed all six
+jobs on 3b13842; actual roundtrip 140864457101. Final integrated
+qualification pending.
