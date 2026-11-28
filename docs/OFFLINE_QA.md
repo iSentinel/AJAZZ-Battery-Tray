@@ -222,3 +222,16 @@ Initial verified-byte #344 passed all five jobs on 9ec3305 including
 actual transport job 140735588411. Final integrated-base qualification
 is required. Field plan #340 is included exactly and the duplicate
 review is closed; all field cases remain NOT_RUN.
+
+## Reported status consistency (candidate)
+
+Coverage matching now requires valid command status/exit-code pairs:
+PASS with integer zero, FAIL with integer nonzero, ERROR/TIMEOUT with
+null. Boolean exit codes are invalid. JUnit counts must be exact
+integers matching the captured XML. A reported PASS requires nonempty
+successful tests, no failures/errors/skips, all commands passing and
+a passing zero-debt audit with empty findings/new/resolved lists.
+An honestly reported complete FAIL may still match coverage; the CI
+gate continues to require reported PASS separately. This detects
+contradictory content, not fabricated evidence or producer identity.
+Hosted qualification pending.
