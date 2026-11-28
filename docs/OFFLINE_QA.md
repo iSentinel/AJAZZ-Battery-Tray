@@ -299,3 +299,12 @@ must retain the intentional broad explicit ACE; child protection and
 selected broad counts are observations rather than assumed outcomes.
 Owner classification is limited to RUNNER, ADMINISTRATORS, SYSTEM or
 OTHER, never raw identities. Repeat hosted qualification pending.
+
+ACL v2 initial run 46097530327 / job 140832237669 on 3aff12a failed
+before fixture execution with a PowerShell parser error: a text edit
+accidentally expanded a replacement token inside the regex and duplicated
+the report block. The source was corrected and a separate native parser
+preflight added. ACL v1 evidence remains valid; v2 is NOT_RUN until the
+corrected head passes. Existing-root policy must be based on actual
+observations rather than the expected result. #346 merged e3c1ee7 after
+all five jobs passed on a2534f1. Independent interruption #348 retargeted.
