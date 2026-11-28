@@ -3564,3 +3564,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       15 targeted tests and source audit PASS.
 - [ ] Hosted qualification after #358. Review numeric/timestamp
       evidence boundaries separately. Hardware and release separate.
+
+### ENG-14 Windows HID numeric and UTC framing
+
+- [x] #358 merged 5d17c4fa after 5/5 checks; all five changed
+      blobs match. #359 retargeted and updated to de087f0f;
+      15 targeted tests PASS.
+- [x] Validate ordinary diagnostic UTC timestamps, native numeric
+      fields and 3..90s deadline; reject malformed transfer results.
+- [x] Two regression methods; comparator 17/17 and related CLI
+      analyzer 7/7 PASS, source audit PASS.
+- [ ] Hosted qualification after #359. Review related CLI analyzer
+      local input reader and framing consistency. Hardware and release separate.
