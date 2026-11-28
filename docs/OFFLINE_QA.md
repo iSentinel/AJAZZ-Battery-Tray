@@ -341,3 +341,16 @@ before decoding. Quoted and escaped delimiters do not count;
 unmatched closing delimiters are rejected. The JSON decoder still
 validates grammar. Boundary, escape and invalid UTF-8 regressions
 were added; repeated hosted qualification is required.
+
+## JUnit structure validation (candidate)
+
+The scoped offline producer emits one testsuite with direct testcase
+children. The reader rejects unexpected suite children and nested
+result elements rather than silently ignoring them. Required counters
+must exactly match canonical decimal counts; missing or noncanonical
+values are rejected. Malformed XML becomes a controlled ValueError,
+and the byte cap also applies to the captured-byte entrypoint.
+The regression includes hidden nested suites, unknown elements,
+missing counts, leading zero/plus sign, malformed XML and nested
+failure content. This is not a general third-party JUnit importer.
+Hosted qualification pending.
