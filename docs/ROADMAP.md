@@ -3374,3 +3374,12 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       HA 21 targeted tests; real roundtrip 140829455636.
 - [ ] Integrated-base CI and scoped Windows ACL observation;
       recovery and release admission remain separate.
+
+### ENG-16 process interruption and fresh-run recovery
+
+- [x] Add a bounded child-process fixture using the actual manifest
+      publisher. Exit before or after final link, verify temporary
+      file/link count, reject incomplete inventory without mutation.
+- [x] Verify a fresh sibling run independently after both interruptions.
+- [ ] Hosted qualification after #346. Power-loss durability, effective
+      Windows ACL and release admission remain open.
