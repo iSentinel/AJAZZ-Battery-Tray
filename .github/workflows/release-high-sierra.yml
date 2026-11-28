@@ -1,9 +1,7 @@
 name: Publish High Sierra Intel prerelease
 
 on:
-  push:
-    tags:
-      - 'v*-highsierra.*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,9 +10,14 @@ jobs:
   release-high-sierra:
     runs-on: macos-15-intel
     permissions:
-      contents: write
+      contents: read
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - name: Require qualified candidate admission
+        run: |
+          echo 'BLOCKED: legacy release admission not yet qualified (ENG-10).'
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate tag and build independent legacy edition
         shell: bash
         run: |

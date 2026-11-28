@@ -16,9 +16,12 @@ internal sealed class ReceiverMonitor : IDisposable
         internal BatteryHistory History { get; }
         internal AlertPolicy Alerts { get; } = new();
         internal ConnectionAlertPolicy Connection { get; } = new();
+        internal UnverifiedObservationStreak UnverifiedStreak { get; } = new();
+        internal ApexVerifiedDisplayCache VerifiedDisplay { get; } = new();
         internal AjazzHidReader.Reading Reading { get; set; }
         internal bool Present { get; set; } = true;
         internal DateTimeOffset? MeasuredAt { get; set; }
+        internal DateTimeOffset? LastVerifiedAt { get; set; }
         internal bool ScheduledSkip { get; set; }
         internal BatteryHistoryForm? Window { get; set; }
 
@@ -48,20 +51,31 @@ internal sealed class ReceiverMonitor : IDisposable
         _states.TryGetValue(PrimaryKey, out State? state) ? state : null;
     internal State? SummaryState { get; private set; }
 
-    internal State? VisiblePrimary(bool multiple, IReadOnlySet<string> hidden)
+    internal State? VisiblePrimary(bool multiple, IReadOnlySet<string> hidden, DateTimeOffset now)
     {
         string? preferred = multiple ? PrimaryKey : SummaryState?.Key;
-        if (preferred is not null && _states.TryGetValue(preferred, out var primary) &&
-            primary.Present && !hidden.Contains(preferred))
-            return primary;
-        State? first = null;
+        State? best = null;
+        int bestRank = -1;
         foreach (var state in _states.Values)
         {
-            if (!state.Present || hidden.Contains(state.Key)) continue;
-            if (first is null || StringComparer.Ordinal.Compare(state.Key, first.Key) < 0)
-                first = state;
+            bool excluded = hidden.Contains(state.Key);
+            int rank = multiple || !state.Present || excluded
+                ? 0 : PresentationRank(state, now);
+            if (ApexDisplayPolicy.PreferCandidate(state.Key, rank, state.Present,
+                excluded, best?.Key, bestRank, preferred))
+            {
+                best = state;
+                bestRank = rank;
+            }
         }
-        return first;
+        return best;
+    }
+
+    private static int PresentationRank(State state, DateTimeOffset now)
+    {
+        var display = Presentation(state, now);
+        return display.Status == DeviceDashboardStatus.Cached
+            ? 1 : ApexDisplayPolicy.SelectionRank(display) * 2;
     }
 
     internal void Apply(AjazzHidReader.Batch batch, AppSettings settings,
@@ -69,8 +83,7 @@ internal sealed class ReceiverMonitor : IDisposable
     {
         if (!batch.Summary.PresenceKnown)
         {
-            foreach (State state in _states.Values.Where(s => s.Present))
-                state.Reading = UnknownReading;
+            ApplyUnknown(batch.Summary.Issue, settings.RecordBatteryHistory, now);
             return;
         }
 
@@ -87,8 +100,22 @@ internal sealed class ReceiverMonitor : IDisposable
                 state.ScheduledSkip = !item.Sampled;
                 if (!item.Sampled) continue;
                 state.Reading = item.Reading;
-                state.MeasuredAt = item.MeasuredAt ?? now;
-                Record(state, settings, notifier, bluetoothEnabled, state.MeasuredAt.Value);
+                state.MeasuredAt = item.MeasuredAt;
+                // A missing or future timestamp must never acquire a synthetic age.
+                if (state.MeasuredAt is not { } measured || measured > now)
+                {
+                    state.Reading = item.Reading with { Percent = null, UnverifiedPercent = null };
+                    state.MeasuredAt = null;
+                    state.UnverifiedStreak.Reset();
+                    state.VerifiedDisplay.Reset();
+                    state.Connection.ObserveUnknown();
+                    continue;
+                }
+                state.UnverifiedStreak.Observe(item.Reading.UnverifiedPercent, state.MeasuredAt.Value);
+                state.VerifiedDisplay.Observe(item.Reading.PresenceKnown, item.Reading.ReceiverPresent,
+                    item.Reading.Percent, state.MeasuredAt.Value);
+                if (item.Reading.Percent.HasValue) state.LastVerifiedAt = state.MeasuredAt;
+                Record(state, settings, notifier, bluetoothEnabled, measured, now);
             }
 
             foreach (string missingKey in seen.Missing(_states.Keys))
@@ -98,24 +125,46 @@ internal sealed class ReceiverMonitor : IDisposable
                 missing.Reading = AbsentReading;
                 missing.ScheduledSkip = false;
                 missing.MeasuredAt = null;
+                missing.UnverifiedStreak.Reset();
+                missing.VerifiedDisplay.Reset();
                 Record(missing, settings, notifier,
-                    bluetoothEnabled && batch.Receivers.Count == 0, now);
+                    bluetoothEnabled && batch.Receivers.Count == 0, now, now);
             }
 
             PrimaryKey = ReceiverIdentity.SelectPrimary(PrimaryKey, seen.Keys);
             SummaryState = null;
+            int bestRank = -1;
             foreach (var item in batch.Receivers)
             {
                 var state = _states[item.Key];
-                SummaryState ??= state;
-                if (!state.Reading.Percent.HasValue) continue;
+                int rank = ApexDisplayPolicy.SelectionRank(Dashboard(state, now));
+                if (rank <= bestRank) continue;
                 SummaryState = state;
-                break;
+                bestRank = rank;
+                if (rank == 2) break;
             }
         }
         finally
         {
             seen.End();
+        }
+    }
+
+    private void ApplyUnknown(UsbReadIssue issue, bool historyEnabled, DateTimeOffset now)
+    {
+        foreach (State state in _states.Values)
+        {
+            // A missing/unknown/missing sequence is not two consecutive absences.
+            state.Connection.ObserveUnknown();
+            state.UnverifiedStreak.Reset();
+            state.VerifiedDisplay.Reset();
+            if (!state.Present) continue;
+            state.Reading = issue is UsbReadIssue.Busy or UsbReadIssue.Timeout
+                ? UnknownReading with { Issue = issue } : UnknownReading;
+            state.ScheduledSkip = false;
+            state.MeasuredAt = null;
+            // Preserve LastVerifiedAt, but never append a stale percentage.
+            if (historyEnabled) state.History.Record(now, null, receiverPresent: true);
         }
     }
 
@@ -148,17 +197,19 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private static void Record(State state, AppSettings settings, NotifyIcon notifier,
-        bool bluetoothEnabled, DateTimeOffset now)
+        bool bluetoothEnabled, DateTimeOffset measured, DateTimeOffset now)
     {
         int? percent = state.Reading.Percent;
         if (settings.RecordBatteryHistory)
-            state.History.Record(now, percent, state.Present);
-        if (state.Connection.Evaluate(percent.HasValue, state.Present) &&
+            state.History.Record(measured, percent, state.Present);
+        int? fresh = ApexDisplayPolicy.AlertPercent(state.Reading.PresenceKnown,
+            state.Present, state.ScheduledSkip, percent, state.MeasuredAt, now);
+        if (state.Connection.Evaluate(fresh.HasValue, state.Present) &&
             settings.EffectiveDisconnectAlert(state.Key) && !bluetoothEnabled)
             notifier.ShowBalloonTip(4000, state.DisplayLabel,
                 UiText.Get("The 2.4 GHz receiver is no longer detected."),
                 ToolTipIcon.Warning);
-        if (percent is not int level) return;
+        if (fresh is not int level) return;
         int mask = settings.EffectiveAlertMask(state.Key);
         int? threshold = state.Alerts.Evaluate(level,
             (mask & 1) != 0, (mask & 2) != 0, (mask & 4) != 0);
@@ -168,20 +219,39 @@ internal sealed class ReceiverMonitor : IDisposable
                     level, "2.4 GHz", threshold), ToolTipIcon.Warning);
     }
 
-    internal static string Status(State state)
-        => !state.Present ? UiText.Get("unavailable") :
-            state.Reading.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
+    internal static DeviceDashboardState Dashboard(State state, DateTimeOffset now)
+        => ApexDisplayPolicy.Dashboard(state.DisplayLabel, state.Reading.PresenceKnown,
+            state.Present, state.ScheduledSkip, state.Reading.Percent, state.MeasuredAt, now);
+
+    internal static DeviceDashboardState Presentation(State state, DateTimeOffset now)
+        => state.VerifiedDisplay.Present(Dashboard(state, now), now, state.ScheduledSkip);
+
+    internal static int? Unverified(State state, DateTimeOffset now, bool showUnverified)
+        => ApexDisplayPolicy.UnverifiedForDisplay(showUnverified, state.Reading.PresenceKnown, state.Present,
+            state.ScheduledSkip, state.Reading.UnverifiedPercent, state.MeasuredAt, now);
+
+    private static string Status(State state, DateTimeOffset now, bool showUnverified)
+    {
+        var display = Presentation(state, now);
+        if (display.Percent is int level)
+            return display.Status is DeviceDashboardStatus.Scheduled or DeviceDashboardStatus.Cached
+                ? display.MenuStatus() : $"{level}%";
+        if (Unverified(state, now, showUnverified) is int raw) return UsbTrayStatus.UnverifiedField(raw);
+        return UsbTrayStatus.WithLastVerified(
+            UsbTrayStatus.Reason(state.Reading.PresenceKnown, state.Present, state.Reading.Issue),
+            state.LastVerifiedAt);
+    }
 
     internal void PopulateMenu(ToolStripMenuItem menu, Action<State> edit,
         Func<string, bool> visible, Action<string> toggle,
-        Action<State> editColor, Action<State> editAlerts, Action<State> editInterval)
+        Action<State> editColor, Action<State> editAlerts, Action<State> editInterval, bool showUnverified)
     {
         foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray())
             old.Dispose();
         menu.DropDownItems.Clear();
         foreach (State state in _states.Values)
         {
-            ToolStripMenuItem item = new($"{state.DisplayLabel}: {Status(state)}");
+            ToolStripMenuItem item = new($"{state.DisplayLabel}: {Status(state, DateTimeOffset.UtcNow, showUnverified)}");
             item.DropDownItems.Add(UiText.Get("Battery history..."), null,
                 (_, _) => ShowHistory(state));
             item.DropDownItems.Add(UiText.Get("Edit local name..."), null, (_, _) => edit(state));
@@ -224,7 +294,8 @@ internal sealed class ReceiverMonitor : IDisposable
         bool aulaIsPrimary, ContextMenuStrip menu, Action refresh, string aulaName,
         string? visiblePrimaryKey, IReadOnlySet<string> hidden,
         Func<string, string> color,
-        IReadOnlyList<(string Key, string Name, int? Percent)> bluetooth)
+        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> bluetooth, bool showUnverified, bool mouseStyle = false,
+        IReadOnlyList<(string Key, string Name, int? Percent, bool Stale, string Source)>? linked = null)
     {
         if (!enabled)
         {
@@ -240,8 +311,13 @@ internal sealed class ReceiverMonitor : IDisposable
             {
                 if (!pair.Value.Present || pair.Key == visiblePrimaryKey || hidden.Contains(pair.Key)) continue;
                 wanted.Add(pair.Key);
-                SetIcon(pair.Key, pair.Value.DisplayLabel, pair.Value.Reading.Percent, menu, refresh,
-                    color: color(pair.Key));
+                var now = DateTimeOffset.UtcNow;
+                var display = Presentation(pair.Value, now);
+                int? raw = display.Percent.HasValue ? null : Unverified(pair.Value, now, showUnverified);
+                SetIcon(pair.Key, pair.Value.DisplayLabel, display.Percent ?? raw, menu, refresh,
+                    stale: display.Status == DeviceDashboardStatus.Cached,
+                    color: color(pair.Key), status: display.Status == DeviceDashboardStatus.Fresh ? null : Status(pair.Value, now, showUnverified),
+                    mouseStyle: mouseStyle, unverified: raw.HasValue);
             }
             if (showAula && !aulaIsPrimary)
             {
@@ -252,7 +328,17 @@ internal sealed class ReceiverMonitor : IDisposable
             foreach (var item in bluetooth)
             {
                 wanted.Add(item.Key);
-                SetIcon(item.Key, item.Name, item.Percent, menu, refresh);
+                SetIcon(item.Key, item.Name, item.Percent, menu, refresh, stale: item.Stale, color: color(item.Key), mouseStyle: mouseStyle);
+            }
+
+            if (linked is not null)
+            {
+                foreach (var item in linked)
+                {
+                    wanted.Add(item.Key);
+                    SetIcon(item.Key, item.Name + " (" + item.Source + ")", item.Percent,
+                        menu, refresh, stale: item.Stale, color: color(item.Key), mouseStyle: mouseStyle);
+                }
             }
 
             foreach (string key in wanted.Missing(_icons.Keys))
@@ -268,14 +354,14 @@ internal sealed class ReceiverMonitor : IDisposable
     }
 
     private void SetIcon(string key, string name, int? level, ContextMenuStrip menu,
-        Action refresh, bool stale = false, string? color = null)
+        Action refresh, bool stale = false, string? color = null, string? status = null, bool mouseStyle = false, bool unverified = false)
     {
         if (!_icons.TryGetValue(key, out ExtraIcon? icon))
         {
             icon = new ExtraIcon(refresh);
             _icons.Add(key, icon);
         }
-        icon.Update(name, level, menu, stale, color);
+        icon.Update(name, level, menu, stale, color, status, mouseStyle, unverified);
     }
 
     public void Dispose()
@@ -294,17 +380,18 @@ internal sealed class ReceiverMonitor : IDisposable
 
         internal ExtraIcon(Action refresh) => _tray.DoubleClick += (_, _) => refresh();
 
-        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color)
+        internal void Update(string name, int? level, ContextMenuStrip menu, bool stale, string? color, string? status, bool mouseStyle, bool unverified)
         {
             if (!ReferenceEquals(_tray.ContextMenuStrip, menu)) _tray.ContextMenuStrip = menu;
-            string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} — {name}";
+            string label = $"{(level.HasValue ? $"{level}%" : UiText.Get("unavailable"))} · {UiText.Get("Tray color " + TrayColorRules.Normalize(color))} — {name}";
+            if (status is not null) label = $"2.4 GHz · {status} — {name}";
             if (stale) label = UiText.Get("cached") + ": " + label;
             label = label[..Math.Min(63, label.Length)];
             if (_tray.Text != label) _tray.Text = label;
-            var key = TrayIconRenderKey.Create(level, level.HasValue, stale, color: color);
+            var key = TrayIconRenderKey.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle, unverified: unverified);
             if (_icon is null || _renderKey != key)
             {
-                Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color);
+                Icon next = TrayIconFactory.Create(level, level.HasValue, stale, color: color, mouseStyle: mouseStyle, unverified: unverified);
                 try { _tray.Icon = next; }
                 catch { next.Dispose(); throw; }
                 _icon?.Dispose();

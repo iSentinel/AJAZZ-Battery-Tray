@@ -1,0 +1,149 @@
+name: Observe native proposed package extraction
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-native-package-extraction.yml'
+      - 'tools/observe_native_package_extraction.py'
+      - 'tools/observe_native_package_selftests.py'
+      - 'tools/test_observe_native_package_selftests.py'
+      - 'tools/test_observe_native_package_extraction.py'
+      - 'tools/build_consolidated_portable_notices.py'
+      - 'tools/build_consolidated_apple_notices.py'
+      - 'tools/review_normalized_package_set.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  windows-package-extraction:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
+      - name: Retrieve exact original Windows artifact
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          @'
+          import subprocess
+          import sys
+          with open(sys.argv[1], "xb") as output:
+              subprocess.run(["gh", "api",
+                              "repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15110510075/zip"],
+                             stdout=output, check=True, timeout=120)
+          '@ | python - (Join-Path $env:RUNNER_TEMP 'original-windows.zip')
+          if ($LASTEXITCODE -ne 0) { throw 'Original artifact retrieval failed' }
+      - name: Stage exact reviewed notices
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          New-Item -ItemType Directory -Path $root | Out-Null
+          $packs = [ordered]@{
+            host = 'microsoft.netcore.app.host.win-x64/11.0.0'
+            core = 'microsoft.netcore.app.runtime.win-x64/11.0.0'
+            desktop = 'microsoft.windowsdesktop.app.runtime.win-x64/11.0.0'
+            sdk = 'microsoft.windows.sdk.net.ref/10.0.19041.87'
+          }
+          foreach ($entry in $packs.GetEnumerator()) {
+            $parts = $entry.Value.Split('/')
+            $url = "https://api.nuget.org/v3-flatcontainer/$($entry.Value)/$($parts[0]).$($parts[1]).nupkg"
+            $path = Join-Path $root "$($entry.Key).nupkg"
+            curl.exe --fail --silent --show-error --location --max-redirs 3 --proto '=https' --proto-redir '=https' --tlsv1.2 --max-time 120 --max-filesize 268435456 --output $path $url
+            if ($LASTEXITCODE -ne 0) { throw 'Pinned pack download failed' }
+          }
+          python tools/stage_windows_notices.py --host (Join-Path $root 'host.nupkg') --core (Join-Path $root 'core.nupkg') --desktop (Join-Path $root 'desktop.nupkg') --sdk (Join-Path $root 'sdk.nupkg') --output (Join-Path $root 'staged')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice staging failed' }
+          python tools/verify_windows_notice_transport.py --tree (Join-Path $root 'staged') --output (Join-Path $root 'staged-evidence.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice identity failed' }
+      - name: Reproduce and extract exact Windows proposal without launch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $notices = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe/staged'
+          python tools/observe_native_package_extraction.py --edition windows --original (Join-Path $env:RUNNER_TEMP 'original-windows.zip') --license LICENSE --notices $notices --root (Join-Path $env:RUNNER_TEMP 'windows-package') --output (Join-Path $env:RUNNER_TEMP 'windows-extraction.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Native package extraction failed' }
+      - name: Run exact extracted Windows synthetic CLI self-tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python tools/observe_native_package_selftests.py --edition windows --original (Join-Path $env:RUNNER_TEMP 'original-windows.zip') --license LICENSE --corpus tests/fixtures/apex-f7-v1.csv --root (Join-Path $env:RUNNER_TEMP 'windows-package') --output (Join-Path $env:RUNNER_TEMP 'windows-selftests.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Native synthetic self-tests failed' }
+      - name: Retain Windows observation only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-package-extraction-observation
+          path: ${{ runner.temp }}/windows-extraction.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Retain Windows self-test observation only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-package-selftest-observation
+          path: ${{ runner.temp }}/windows-selftests.json
+          if-no-files-found: error
+          retention-days: 7
+
+  apple-package-extraction:
+    runs-on: macos-15-intel
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Retrieve original Apple artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15108849028/zip > "$RUNNER_TEMP/original-universal.zip"
+          gh api repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15109082825/zip > "$RUNNER_TEMP/original-high-sierra.zip"
+      - name: Reproduce and extract both exact Apple proposals without launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for edition in universal high-sierra; do
+            python3 tools/observe_native_package_extraction.py --edition "$edition" --original "$RUNNER_TEMP/original-$edition.zip" --license LICENSE --root "$RUNNER_TEMP/$edition-package" --output "$RUNNER_TEMP/$edition-extraction.json"
+          done
+      - name: Run exact extracted Apple synthetic CLI self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for edition in universal high-sierra; do
+            python3 tools/observe_native_package_selftests.py --edition "$edition" --original "$RUNNER_TEMP/original-$edition.zip" --license LICENSE --corpus tests/fixtures/apex-f7-v1.csv --root "$RUNNER_TEMP/$edition-package" --output "$RUNNER_TEMP/$edition-selftests.json"
+          done
+      - name: Retain Apple observations only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: apple-package-extraction-observation
+          path: |
+            ${{ runner.temp }}/universal-extraction.json
+            ${{ runner.temp }}/high-sierra-extraction.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Retain Apple self-test observations only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: apple-package-selftest-observation
+          path: |
+            ${{ runner.temp }}/universal-selftests.json
+            ${{ runner.temp }}/high-sierra-selftests.json
+          if-no-files-found: error
+          retention-days: 7

@@ -118,3 +118,40 @@ and with matching device/monitoring settings. Three comparable five-minute
 runs per version are recommended. Keep the AULA acceptance sequence
 separate from idle measurement runs. No runtime improvement is claimed
 until actual measurements exist.
+
+## Extended-report partial evidence (2026-11-25)
+
+The offline analyzer also accepts one extended diagnostic report per file
+(including a full comparison report containing the extended section).
+It extracts only the allowlisted AULA summary fields; no vendor buffers
+are printed, interpreted, or transmitted. The existing 64 KiB input bound
+and three-checkpoint acceptance rules remain in force.
+
+When only cached and recovered snapshots are available:
+
+    python tools/analyze_aula_sleep.py --asleep asleep.txt --recovered recovered.txt
+
+Both observed checks can pass, but the summary remains NOT OBSERVED
+(exit 2) because there is no independent awake report. A failed observed
+check returns 1. Full acceptance requires all three reports and the
+remaining hardware cases still need separate evidence.
+
+Owner beta.60 reports on 2026-11-25 show a confirmed receiver with no
+fresh reply at 05:39:15 UTC, 66 cached from 05:27:32 UTC and 22 misses.
+At 05:43:18 UTC, fresh 66, matching new last-good timestamp, cache off,
+zero misses. Reconstructed allowlisted excerpts pass the two observed
+state checks. No independent awake snapshot or receiver identity proof.
+A04/A06 observed behavior only; A01-A14 remains open.
+
+## Age consistency after a delayed poll
+
+The candidate now projects a retained successful reply through the same
+five-minute freshness ceiling as the local snapshot API. If no new
+poll completes (including after suspension), a confirmed-present
+receiver's last-good sample becomes cached after five minutes and
+expires at 24 hours, even when the last reply itself was successful.
+The tray and dashboard share this projection. A clock rollback hides
+the value rather than treating a future timestamp as fresh. No extra
+HID queries are issued, and age transitions do not record a sample
+or trigger a notification. The next valid response restores freshness.
+Check this on a real Windows sleep/resume cycle; CI is not that test.

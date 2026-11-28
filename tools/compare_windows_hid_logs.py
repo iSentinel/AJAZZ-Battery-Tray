@@ -3,15 +3,22 @@
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 import re
 
-COUNT = re.compile(r"^STEP: found (\d+) matching MI_02 paths$")
-RESULT = re.compile(
-    r"^STEP: (SET F7|GET 05) (OK|FAILED) Win32=(\d+) elapsed=(\d+)ms$"
+from run_offline_qa import read_evidence
+
+BEGIN = re.compile(
+    r"BEGIN: UTC=([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+    r"(?:\.[0-9]{1,7})?(?:Z|\+00:00)) timeout=([0-9]{1,2})s"
 )
-PASS = re.compile(r"^PASS: verified battery (\d+)%$")
-END = re.compile(r"^END: worker exited (\d+)$")
+COUNT = re.compile(r"^STEP: found ([0-9]{1,10}) matching MI_02 paths$")
+RESULT = re.compile(
+    r"^STEP: (SET F7|GET 05) (OK|FAILED) Win32=(-?[0-9]{1,10}) elapsed=([0-9]{1,19})ms$"
+)
+PASS = re.compile(r"^PASS: verified battery ([0-9]{1,3})%$")
+END = re.compile(r"^END: worker exited ([0-9]{1,10})$")
 
 
 @dataclass(frozen=True)
@@ -31,11 +38,113 @@ class Capture:
     inconclusive: bool
 
 
+def parse_begin(line: str) -> tuple[datetime, int]:
+    """Parse the native UTC start marker and bounded diagnostic deadline."""
+    match = BEGIN.fullmatch(line)
+    if not match or not 3 <= int(match[2]) <= 90:
+        raise ValueError("invalid diagnostic start or deadline")
+    return datetime.fromisoformat(match[1].replace("Z", "+00:00")), int(match[2])
+
+
+def validate_timeout(line: str, deadline: int) -> None:
+    """Require the supervisor timeout marker to match its declared deadline."""
+    expected = f"TIMEOUT: HID worker exceeded {deadline}s; no level claimed"
+    if line != expected:
+        raise ValueError("invalid diagnostic timeout marker")
+
+
+def validate_numeric_fields(lines: list[str]) -> None:
+    """Check native UTC framing and integral transport field bounds."""
+    _, deadline = parse_begin(next((line for line in lines if line.strip()), ""))
+    for line in lines:
+        if line.startswith("TIMEOUT:"):
+            validate_timeout(line, deadline)
+        if count := COUNT.fullmatch(line):
+            if int(count[1]) > 2**31 - 1:
+                raise ValueError("receiver count exceeds native integer range")
+        if result := RESULT.fullmatch(line):
+            if not -(2**31) <= int(result[3]) <= 2**31 - 1:
+                raise ValueError("Win32 result exceeds native integer range")
+            if int(result[4]) > 2**63 - 1:
+                raise ValueError("elapsed time exceeds native integer range")
+        elif line.startswith(("STEP: SET F7 ", "STEP: GET 05 ")):
+            if not re.fullmatch(r"STEP: (SET F7|GET 05) begin length=[0-9]{1,10}", line):
+                raise ValueError("malformed HID transfer marker")
+
+
+def validate_markers(lines: list[str]) -> None:
+    """Require unambiguous parent and worker outcome markers."""
+    singletons = ("BEGIN:", "STEP: found ", "PASS:", "INCONCLUSIVE:",
+                  "FAIL:", "END:", "TIMEOUT:")
+    counts = {prefix: 0 for prefix in singletons}
+    nonempty = [line for line in lines if line.strip()]
+    if not nonempty or not nonempty[0].startswith("BEGIN: UTC="):
+        raise ValueError("missing initial BEGIN marker")
+    for line in nonempty:
+        for prefix in singletons:
+            if line.startswith(prefix):
+                counts[prefix] += 1
+                if counts[prefix] > 1:
+                    raise ValueError("duplicate HID diagnostic marker")
+        for prefix, pattern in (("STEP: found ", COUNT), ("PASS:", PASS),
+                                ("END:", END)):
+            if line.startswith(prefix) and not pattern.fullmatch(line):
+                raise ValueError("malformed HID diagnostic marker")
+    if counts["END:"] + counts["TIMEOUT:"] != 1 or not nonempty[-1].startswith(
+            ("END:", "TIMEOUT:")):
+        raise ValueError("missing or misplaced terminal marker")
+    if counts["PASS:"] + counts["INCONCLUSIVE:"] + counts["FAIL:"] > 1:
+        raise ValueError("conflicting worker outcome markers")
+    if counts["FAIL:"] and nonempty[-1] != "END: worker exited 1":
+        raise ValueError("worker failure contradicts terminal marker")
+    if counts["INCONCLUSIVE:"] and nonempty[-1].startswith("END:") and (
+            nonempty[-1] != "END: worker exited 2"):
+        raise ValueError("inconclusive outcome contradicts worker exit")
+
+
+def validate_verified_order(lines: list[str]) -> None:
+    """Require an ordered, same-open F7/05 chain before verified output."""
+    enumerated = opened = pending_set = complete = outcome = False
+    for line in lines:
+        match = RESULT.fullmatch(line)
+        is_open = line in ("STEP: HID open succeeded", "STEP: HID open failed")
+        if outcome and line.startswith("STEP:"):
+            raise ValueError("HID operation follows verified outcome")
+        if count := COUNT.fullmatch(line):
+            enumerated = int(count[1]) > 0
+        elif is_open:
+            if not enumerated:
+                raise ValueError("HID open precedes positive enumeration")
+            opened = line == "STEP: HID open succeeded"
+            pending_set = False
+        elif match:
+            if not opened:
+                raise ValueError("HID transfer lacks successful open")
+            operation, status, error, _ = match.groups()
+            if status == "OK" and int(error) != 0:
+                raise ValueError("successful HID transfer has Win32 error")
+            if operation == "SET F7":
+                pending_set = status == "OK"
+            else:
+                if not pending_set:
+                    raise ValueError("GET 05 lacks preceding successful SET F7")
+                complete |= status == "OK"
+                pending_set = False
+        elif PASS.fullmatch(line):
+            if not complete:
+                raise ValueError("verified result precedes complete HID chain")
+            outcome = True
+
+
 def parse_log(data: str) -> Capture:
     """Parse only stage markers from beta.57+ redacted CLI output."""
     lines = data.splitlines()
-    if sum(line.startswith("BEGIN: UTC=") for line in lines) != 1:
-        raise ValueError("missing or duplicate BEGIN marker")
+    if any(line.startswith("MODE: experimental GET") for line in lines):
+        raise ValueError("Use compare_get_ids.py for an experimental GET-ID log")
+    validate_markers(lines)
+    validate_numeric_fields(lines)
+    if any(PASS.fullmatch(line) for line in lines):
+        validate_verified_order(lines)
     values = {"open_ok": 0, "open_failed": 0, "set_ok": 0,
               "set_failed": 0, "get_ok": 0, "get_failed": 0}
     candidates, level, ended = None, None, None
@@ -104,9 +213,7 @@ def classify(value: Capture) -> tuple[str, str]:
 
 def read_capture(path: Path) -> Capture:
     """Read one bounded local text report, never querying attached HID."""
-    if path.stat().st_size > 1048576:
-        raise ValueError("report exceeds one MiB")
-    return parse_log(path.read_text(encoding="utf-8-sig"))
+    return parse_log(read_evidence(path, 1048576).decode("utf-8-sig"))
 
 
 def compare(items: list[tuple[str, Capture]]) -> tuple[str, list[str]]:

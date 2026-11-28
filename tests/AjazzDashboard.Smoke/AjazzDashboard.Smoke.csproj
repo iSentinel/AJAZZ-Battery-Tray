@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardForm.cs" Link="DeviceDashboardForm.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardText.cs" Link="DeviceDashboardText.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DeviceDashboardState.cs" Link="DeviceDashboardState.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/BatteryDisplayState.cs" Link="BatteryDisplayState.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/UiText.cs" Link="UiText.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/ApplicationIconAssets.cs" Link="ApplicationIconAssets.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/TrayIconFactory.cs" Link="TrayIconFactory.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/TrayColorRules.cs" Link="TrayColorRules.cs" />
+    <Compile Include="../../src/AjazzBatteryTray/DeviceAliasRules.cs" Link="DeviceAliasRules.cs" />
+    <EmbeddedResource Include="../../src/AjazzBatteryTray/Assets/AppIcon*.ico" LogicalName="AjazzBatteryTray.Assets.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

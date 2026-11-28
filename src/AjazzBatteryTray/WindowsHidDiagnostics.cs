@@ -10,13 +10,28 @@ internal static class WindowsHidDiagnostics
 
     internal static int Run(string[] args)
     {
+        if (args.Length == 1 && RoutinePollWorker.IsWorker(args[0]))
+            return RoutinePollWorker.RunWorker(args[0]);
+        if (args.Length == 1 && args[0] == "--self-test-routine-poll-worker")
+            return RoutinePollWorker.SelfTest();
+        if (args.Length == 1 && FullHidCapture.IsWorker(args[0]))
+            return FullHidCapture.RunWorker(args[0]);
+        if (args.Length == 1 && args[0] == "--self-test-full-hid-watchdog")
+            return FullHidCapture.SelfTest();
+        if (args.Length == 1 && args[0] == "--self-test-full-hid-parent-exit")
+            return FullHidCapture.SelfTestParentExit();
+        if (args.Length == 1 && args[0] == "--self-test-full-hid-start-gate")
+            return FullHidCapture.SelfTestStartGate();
         if (args.Length == 2 && args[0] == "--hid-diag-worker")
             return Capture(args[1], false);
+        if (args.Length == 2 && args[0] == "--hid-compare-worker")
+            return CompareWorker(args[1]);
         if (args.Length == 2 && args[0] == "--hid-test-worker")
             return Capture(args[1], true);
         if (args.Length == 1 && args[0] is "-h" or "--help")
         {
             Console.WriteLine("Usage: AJAZZBatteryTray.exe --hid-diagnose --output PATH [--timeout 3..90]");
+            Console.WriteLine("--hid-compare-get-ids --output PATH [--timeout 3..90] (diagnostic only)");
             Console.WriteLine("Exit: 0 verified, 2 inconclusive, 124 timeout, 1 error.");
             return 0;
         }
@@ -26,7 +41,7 @@ internal static class WindowsHidDiagnostics
     private static int ParseAndRun(string[] args)
     {
         if (args.Length == 0 || args[0] is not
-            ("--hid-diagnose" or "--self-test-hid-watchdog")) return 1;
+            ("--hid-diagnose" or "--hid-compare-get-ids" or "--self-test-hid-watchdog")) return 1;
         string? output = null;
         int timeout = args[0] == "--self-test-hid-watchdog" ? 1 : DefaultTimeout;
         for (int i = 1; i < args.Length; i++)
@@ -34,16 +49,50 @@ internal static class WindowsHidDiagnostics
             if (args[i] == "--output" && ++i < args.Length && output is null)
                 output = args[i];
             else if (args[i] == "--timeout" && ++i < args.Length &&
-                     args[0] == "--hid-diagnose" &&
+                     args[0] is ("--hid-diagnose" or "--hid-compare-get-ids") &&
                      int.TryParse(args[i], out int seconds) &&
                      seconds is >= 3 and <= 90)
                 timeout = seconds;
             else return 1;
         }
         if (string.IsNullOrWhiteSpace(output)) return 1;
-        string worker = args[0] == "--hid-diagnose" ?
-            "--hid-diag-worker" : "--hid-test-worker";
+        string worker = args[0] switch
+        {
+            "--hid-diagnose" => "--hid-diag-worker",
+            "--hid-compare-get-ids" => "--hid-compare-worker",
+            _ => "--hid-test-worker"
+        };
+        if (args[0] == "--hid-compare-get-ids")
+        {
+            // Reserve the tray singleton for the duration of the experiment.
+            // The user must close the tray and official utility first.
+            using Mutex exclusive = new(true, Program.TrayMutexName, out bool first);
+            if (!first)
+            {
+                try
+                {
+                    using StreamWriter log = OpenNewLog(output);
+                    log.WriteLine("FAIL: close AJAZZ Battery Tray before GET ID comparison");
+                }
+                catch (Exception) { /* Never overwrite an existing report. */ }
+                return 1;
+            }
+            return SpawnBounded(output, worker, timeout);
+        }
         return SpawnBounded(output, worker, timeout);
+    }
+
+    private static int CompareWorker(string path)
+    {
+        try
+        {
+            // Keep the singleton alive even if the supervising parent exits.
+            using Mutex exclusive = Mutex.OpenExisting(Program.TrayMutexName);
+            using var watchdog = new System.Threading.Timer(_ => Environment.Exit(124),
+                null, TimeSpan.FromSeconds(92), Timeout.InfiniteTimeSpan);
+            return Capture(path, false, true);
+        }
+        catch (Exception) { return 1; }
     }
 
     private static StreamWriter OpenNewLog(string path)
@@ -100,7 +149,7 @@ internal static class WindowsHidDiagnostics
         }
     }
 
-    private static int Capture(string path, bool selfTest)
+    private static int Capture(string path, bool selfTest, bool compareGetIds = false)
     {
         try
         {
@@ -113,10 +162,18 @@ internal static class WindowsHidDiagnostics
                 Thread.Sleep(6000);
                 return 0;
             }
+            if (compareGetIds)
+                writer.WriteLine("MODE: experimental GET 05 versus GET 00; no battery claimed");
             AjazzHidReader.Batch batch = new AjazzHidReader().ReadAll(
-                captureProtocol: true, progress: writer.WriteLine, redactRaw: true);
+                captureProtocol: true, progress: writer.WriteLine, redactRaw: true,
+                compareGetIds: compareGetIds);
             foreach (string line in batch.Summary.Attempts ?? Array.Empty<string>())
                 writer.WriteLine(line);
+            if (compareGetIds)
+            {
+                writer.WriteLine("INCONCLUSIVE: experimental GET ID comparison; no battery claimed");
+                return 2;
+            }
             int? battery = batch.Summary.Percent;
             writer.WriteLine(battery.HasValue
                 ? $"PASS: verified battery {battery}%"

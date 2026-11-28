@@ -9,7 +9,11 @@ public sealed class TrayAppContext : ApplicationContext
 {
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _timer;
+    private readonly System.Windows.Forms.Timer _bleTimer;
+    private bool _bleRestoreBusy;
+    private long _nextBleDiscoveryTick;
     private System.Windows.Forms.Timer? _aulaTimer;
+    private readonly CancellationTokenSource _captureClosing = new();
     private readonly DevicePollSchedule _usbSchedule = new();
     private LocalSnapshotStore? _localSnapshot;
     private LocalApiForm? _localApiWindow;
@@ -21,6 +25,7 @@ public sealed class TrayAppContext : ApplicationContext
     private bool _automaticUpdateBusy;
     private bool _forcePoll;
     private readonly AjazzHidReader _reader = new();
+    private readonly bool _isolatedPolling;
     private readonly AulaL99Reader _aulaReader = new();
     private readonly AlertPolicy _aulaAlerts = new();
     private readonly BatteryHistory _aulaHistory = new("aula-l99-history.csv");
@@ -40,22 +45,29 @@ public sealed class TrayAppContext : ApplicationContext
     private DeviceDashboardForm? _dashboard;
     private BluetoothBatteryForm? _bluetoothWindow;
     private sealed record BleSlot(BluetoothCandidate Candidate, int Number, AlertPolicy Alerts);
-    private readonly BluetoothMultiSession _ble = new();
+    private readonly BluetoothMultiSession _ble = new(independent: true);
     private readonly Dictionary<string, BleSlot> _bleSlots = new(StringComparer.Ordinal);
     private int _bleSequence;
     private ToolStripMenuItem _bleDevicesMenu = new();
-    private static string BleKey(BluetoothCandidate candidate) => candidate.DeviceId.ToUpperInvariant();
+    private static string BleKey(BluetoothCandidate candidate) => BleConsent.Key(candidate.DeviceId);
     private bool BleEnabled => _bleSlots.Count > 0;
     private string? PrimaryBleKey
     {
         get
         {
+            var now = DateTimeOffset.UtcNow;
             string? key = null;
+            int rank = -1;
             int lowest = int.MaxValue;
             foreach (var pair in _bleSlots)
             {
-                if (key is not null && pair.Value.Number >= lowest) continue;
+                if (_settings.BleUsbLinks.ContainsKey(pair.Key)) continue;
+                int candidateRank = _ble.VisiblePercent(pair.Key, true, false, now).HasValue ? 2 :
+                    _ble.CachedPercent(pair.Key, now).HasValue ? 1 : 0;
+                if (key is not null && (candidateRank < rank ||
+                    candidateRank == rank && pair.Value.Number >= lowest)) continue;
                 key = pair.Key;
+                rank = candidateRank;
                 lowest = pair.Value.Number;
             }
             return key;
@@ -66,10 +78,13 @@ public sealed class TrayAppContext : ApplicationContext
         => $"{slot.Candidate.DisplayName} (BLE #{slot.Number})";
     private AjazzHidReader.Reading? _latestUsbReading;
     private DateTimeOffset? _latestUsbReadAt;
+    private readonly UsbDiagnosticHistory _usbDiagnosticHistory = new();
     private bool _diagnosticsBusy;
+    private readonly DiagnosticSession _diagnosticSession = new();
     private ToolStripMenuItem _bluetoothStatus = new();
     private ToolStripMenuItem _disableBluetooth = new();
     private ToolStripMenuItem _refreshBluetooth = new();
+    private string? _primaryLinkedUsbKey;
     private string _lastSource = "";
     private string _lastDevice = "AJAZZ APEX";
     private readonly DockClockSchedule _clockSchedule = new();
@@ -83,17 +98,21 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem _startupItem = new();
     private Icon? _icon;
     private TrayIconRenderKey? _iconRenderKey;
+    private Icon? _applicationIcon;
     private int? _lastPercent;
     private bool _lastConnected;
     private bool _lastStale;
     private bool _busy;
     private bool _closing;
 
-    public TrayAppContext()
+    public TrayAppContext(bool isolatedPolling = false)
     {
+        _isolatedPolling = isolatedPolling;
+        if (isolatedPolling) FileLog.Write(LogEvent.IsolatedPollingEnabled);
         _aulaPoll.Configure(_settings.MonitorAulaL99);
         UiText.SetLanguage(_settings.Language);
         _tray = new NotifyIcon { Text = "AJAZZ APEX: " + UiText.Get("Connecting...") };
+        _applicationIcon = ApplicationIconAssets.Load(_settings.ApplicationIconColor);
         UpdateIcon(null, false);
         _tray.ContextMenuStrip = BuildMenu();
         _tray.Visible = true;
@@ -102,6 +121,9 @@ public sealed class TrayAppContext : ApplicationContext
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
         _timer.Tick += OnPollTimer;
         _timer.Start();
+        _bleTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+        _bleTimer.Tick += OnBleTimer;
+        _bleTimer.Start();
         ArmAulaTimer(1000);
         ApplyUpdatePreferences();
     }
@@ -119,11 +141,11 @@ public sealed class TrayAppContext : ApplicationContext
         _devicesMenu.DropDownOpening += (_, _) => _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
             ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
             state => EditDeviceAlerts(state.Key, state.DisplayLabel),
-            state => EditDeviceInterval(state.Key, state.DisplayLabel));
+            state => EditDeviceInterval(state.Key, state.DisplayLabel), _settings.ShowUnverifiedUsbCharge);
         _receivers.PopulateMenu(_devicesMenu, EditReceiverName, IsTrayVisible,
             ToggleTrayVisibility, state => EditTrayColor(state.Key, state.DisplayLabel),
             state => EditDeviceAlerts(state.Key, state.DisplayLabel),
-            state => EditDeviceInterval(state.Key, state.DisplayLabel));
+            state => EditDeviceInterval(state.Key, state.DisplayLabel), _settings.ShowUnverifiedUsbCharge);
         menu.Items.Add(_devicesMenu);
         menu.Items.Add(UiText.Get("Legacy battery history..."), null,
             (_, _) => ShowHistory());
@@ -209,15 +231,16 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     private string DeviceColor(string key)
-        => TrayColorRules.Normalize(_settings.DeviceTrayColors.GetValueOrDefault(key));
+        => TrayColorRules.EffectiveColor(_settings.DeviceTrayColors.GetValueOrDefault(key), _settings.DefaultTrayColor);
 
     private void EditTrayColor(string key, string name)
     {
         if (_closing || !DeviceAliasRules.ValidKey(key)) return;
         string? original = _settings.DeviceTrayColors.GetValueOrDefault(key);
-        using var dialog = new TrayColorForm(name, DeviceColor(key));
+        using var dialog = new TrayColorForm(name, original, _settings.DefaultTrayColor,
+            key != DeviceAliasRules.AulaSlot && _settings.MouseTrayIcon);
         if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
-        if (dialog.Choice == TrayColorRules.Default) _settings.DeviceTrayColors.Remove(key);
+        if (dialog.Choice == "inherit") _settings.DeviceTrayColors.Remove(key);
         else _settings.DeviceTrayColors[key] = dialog.Choice;
         if (!_settings.Save())
         {
@@ -283,31 +306,33 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_closing) return;
         if (_dashboard is null || _dashboard.IsDisposed)
+        {
             _dashboard = new DeviceDashboardForm(PollSoon,
-                () => _ = ShowExtendedDiagnosticsAsync(),
+                () => _ = ShowProtocolDiagnosticsAsync(),
                 () => _ = ShowHostMetricsAsync());
+            _dashboard.Icon = _applicationIcon;
+        }
         RefreshDashboard();
         _dashboard.Show();
         _dashboard.BringToFront();
     }
 
-    private void RefreshDashboard()
+    private void RefreshDashboard(bool publishSnapshot = true)
     {
-        PublishLocalSnapshot();
+        if (publishSnapshot) PublishLocalSnapshot();
         if (_dashboard is not { IsDisposed: false }) return;
         List<DeviceDashboardForm.Entry> entries = new();
         foreach (var receiver in _receivers.Devices)
         {
-            var reading = receiver.Reading;
-            var item = DeviceDashboardState.FromPoll(receiver.DisplayLabel, "2.4 GHz",
-                true, reading.PresenceKnown, receiver.Present, reading.Percent,
-                receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
+            var now = DateTimeOffset.UtcNow;
+            var item = ReceiverMonitor.Presentation(receiver, now);
             entries.Add(new(item, () => ReceiverMonitor.ShowHistory(receiver), receiver.Key,
                 () => EditReceiverName(receiver), IsTrayVisible(receiver.Key),
                 () => ToggleTrayVisibility(receiver.Key),
                 () => EditTrayColor(receiver.Key, receiver.DisplayLabel),
                 () => EditDeviceAlerts(receiver.Key, receiver.DisplayLabel),
-                () => EditDeviceInterval(receiver.Key, receiver.DisplayLabel)));
+                () => EditDeviceInterval(receiver.Key, receiver.DisplayLabel),
+                UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now, _settings.ShowUnverifiedUsbCharge)));
         }
         if (entries.Count == 0)
         {
@@ -324,7 +349,7 @@ public sealed class TrayAppContext : ApplicationContext
             () => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName)));
         foreach (var pair in _bleSlots.OrderBy(x => x.Value.Number))
             entries.Add(new(BluetoothDashboardState(pair.Key, pair.Value), Key: $"BLE:{pair.Value.Number}"));
-        _dashboard.SetEntries(entries);
+        _dashboard.SetEntries(entries, skipUnchanged: !publishSnapshot);
     }
 
     private void PublishLocalSnapshot()
@@ -345,10 +370,7 @@ public sealed class TrayAppContext : ApplicationContext
         foreach (var receiver in _receivers.Devices)
         {
             int slot = slots.Apex(receiver.Key);
-            var reading = receiver.Reading;
-            var state = DeviceDashboardState.FromPoll("", "", true,
-                reading.PresenceKnown, receiver.Present, reading.Percent,
-                receiver.MeasuredAt, scheduled: receiver.ScheduledSkip);
+            var state = ReceiverMonitor.Dashboard(receiver, DateTimeOffset.UtcNow);
             inputs.Add(new(LocalBatterySource.ApexReceiver, slot, state));
         }
         var aula = !_settings.MonitorAulaL99
@@ -429,14 +451,11 @@ public sealed class TrayAppContext : ApplicationContext
     {
         string name = BleDisplayLabel(slot);
         const string transport = "Bluetooth";
-        if (_latestUsbReading is not { PresenceKnown: true })
-            return new(name, transport, DeviceDashboardStatus.PresenceUnknown, null, null);
-        if (_latestUsbReading.ReceiverPresent)
-            return new(name, transport, DeviceDashboardStatus.Standby, null, null);
-        int? percent = _ble.VisiblePercent(key, true, false, DateTimeOffset.UtcNow);
-        return new(name, transport, percent.HasValue
-            ? DeviceDashboardStatus.Fresh : DeviceDashboardStatus.NoReply,
-            percent, percent.HasValue ? _ble.LastSuccess(key) : null);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        int? fresh = _ble.VisiblePercent(key, true, false, now);
+        int? cached = _ble.CachedPercent(key, now);
+        return DeviceDashboardState.FromPoll(name, transport, _ble.LastAttempt(key).HasValue,
+            true, true, fresh, _ble.LastSuccess(key), cached, _ble.LastSuccess(key));
     }
 
     private ToolStripMenuItem BuildBluetoothMenu()
@@ -447,7 +466,7 @@ public sealed class TrayAppContext : ApplicationContext
         _bluetoothStatus = new ToolStripMenuItem { Enabled = false };
         menu.DropDownItems.Add(_bluetoothStatus);
         _disableBluetooth = new ToolStripMenuItem(
-            UiText.Get("Disable Bluetooth tray fallback"))
+            UiText.Get("Disable Bluetooth monitors"))
         {
             Enabled = BleEnabled
         };
@@ -512,8 +531,6 @@ public sealed class TrayAppContext : ApplicationContext
             (_, _) => EditDeviceInterval(DeviceAliasRules.AulaSlot, AulaName));
         menu.DropDownItems.Add(UiText.Get("AULA battery history..."), null,
             (_, _) => ShowAulaHistory());
-        menu.DropDownItems.Add(UiText.Get("Copy AULA diagnostic summary"), null,
-            (_, _) => CopyAulaSummary());
         menu.DropDownItems.Add(UiText.Get("System telemetry preview..."), null,
             (_, _) => _ = ShowHostMetricsAsync());
         UpdateAulaStatus();
@@ -558,29 +575,7 @@ public sealed class TrayAppContext : ApplicationContext
            $"UTC: {_aulaBattery.LastGoodAt?.ToString("O") ?? "never"}; " +
            $"Consecutive no-reply polls: {_aulaBattery.ConsecutiveFailures}; " +
            $"Cache lifetime hours: {AulaBatteryState.CacheLifetime.TotalHours}; " +
-           $"Display cache active: {_aulaLatest?.Percent is null && AulaDisplayPercent().HasValue}";
-
-    private void CopyAulaSummary()
-    {
-        AulaL99Reading? state = _aulaLatest;
-        string text = "AULA L99 2.4 GHz experimental battery check\n" +
-            $"Version: {Application.ProductVersion}\n" +
-            $"Automatic monitoring enabled: {_settings.MonitorAulaL99}\n" +
-            $"Receiver present: {state?.ReceiverPresent.ToString() ?? "not checked"}\n" +
-            $"Presence known: {state?.PresenceKnown.ToString() ?? "not checked"}\n" +
-            $"Battery percentage: {state?.Percent?.ToString() ?? "unavailable"}\n" +
-            $"Status: {state?.Details ?? "not checked"}\n" +
-            $"Last read UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
-            AulaCacheReport() + "\n" +
-            "Model identity unverified (dongle IDs shared with S75 Pro).\n" +
-            "No serial numbers or HID interface paths are included.";
-        try { Clipboard.SetText(text); }
-        catch (Exception error)
-        {
-            FileLog.Write("WARN", "AULA clipboard unavailable: " +
-                error.GetType().Name);
-        }
-    }
+           $"Display cache active: {AulaDashboardState().Status == DeviceDashboardStatus.Cached}";
 
     private void ShowAulaHistory()
     {
@@ -593,31 +588,12 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void UpdateAulaStatus()
     {
-        if (_aulaPoll.IsBusy)
-            _aulaStatus.Text = UiText.Get("AULA L99: checking battery...");
-        else if (_aulaLatest is null)
-            _aulaStatus.Text = UiText.Get("AULA L99: not checked");
-        else if (!_aulaLatest.PresenceKnown)
-            _aulaStatus.Text = UiText.Get("AULA L99: HID status unknown");
-        else if (!_aulaLatest.ReceiverPresent)
-            _aulaStatus.Text = UiText.Get("AULA L99: dongle not found");
-        else if (_aulaLatest.Percent is int level)
-            _aulaStatus.Text = UiText.Format(
-                "AULA L99: last {0}% at {1} (unverified)", level,
-                _aulaLastReadAt?.ToLocalTime().ToString("HH:mm:ss") ?? "—");
-        else if (AulaDisplayPercent() is int cached)
-            _aulaStatus.Text = UiText.Format(
-                "AULA L99: cached {0}% at {1}; no fresh reply", cached,
-                _aulaBattery.LastGoodAt?.ToLocalTime().ToString("g") ?? "—");
-        else
-            _aulaStatus.Text = UiText.Get("AULA L99: no valid battery reply");
-        if (_settings.DeviceAliases.TryGetValue(DeviceAliasRules.AulaSlot, out string? alias))
-            _aulaStatus.Text = alias + " — " + _aulaStatus.Text;
+        var state = AulaDashboardState();
+        string value = _aulaPoll.IsBusy
+            ? UiText.Get("AULA L99: checking battery...")
+            : $"{state.Name} · {state.Transport}: {state.MenuStatus(_aulaBattery.LastGoodAt)}";
+        if (_aulaStatus.Text != value) _aulaStatus.Text = value;
     }
-
-    private int? AulaDisplayPercent()
-        => _aulaBattery.DisplayPercent(_aulaLatest?.ReceiverPresent == true,
-            _aulaLatest?.PresenceKnown == true, _aulaLatest?.Percent, DateTimeOffset.UtcNow);
 
     private void ArmAulaTimer(int milliseconds)
     {
@@ -656,39 +632,49 @@ public sealed class TrayAppContext : ApplicationContext
         UpdateAulaStatus();
         try
         {
-            AulaL99Reading result = await Task.Run(_aulaReader.ReadAsync);
+            var (result, completedAt) = await Task.Run(async () =>
+            {
+                var reading = await _aulaReader.ReadAsync().ConfigureAwait(false);
+                return (reading, DateTimeOffset.UtcNow);
+            });
             if (_closing || !_aulaPoll.MayApply(ticket)) return;
             if (_aulaContinuity.MustReset(result.PresenceKnown,
                 result.ReceiverPresent, result.LocalKey))
                 _aulaBattery.Reset();
             _aulaLatest = result;
-            _aulaLastReadAt = DateTimeOffset.UtcNow;
+            _aulaLastReadAt = completedAt;
             _aulaBattery.Observe(result.ReceiverPresent, result.PresenceKnown,
-                result.Percent, _aulaLastReadAt.Value);
+                result.Percent, completedAt);
             if (_settings.RecordBatteryHistory)
-                _aulaHistory.Record(DateTimeOffset.UtcNow, result.Percent,
+                _aulaHistory.Record(completedAt, result.Percent,
                     result.ReceiverPresent || !result.PresenceKnown);
             if (_settings.MonitorAulaL99)
             {
+                if (!result.PresenceKnown) _aulaConnection.ObserveUnknown();
                 if (result.PresenceKnown && _aulaConnection.Evaluate(
                         result.Percent.HasValue, result.ReceiverPresent) &&
                     _settings.EffectiveDisconnectAlert(DeviceAliasRules.AulaSlot))
                     _tray.ShowBalloonTip(4000, AulaName,
                         UiText.Get("The 2.4 GHz receiver is no longer detected."),
                         ToolTipIcon.Warning);
-                if (result.Percent is int percent) NotifyAulaBattery(percent);
+                if (result.PresenceKnown && result.ReceiverPresent &&
+                    result.Percent is int percent &&
+                    _aulaBattery.IsFreshSample(percent, completedAt, DateTimeOffset.UtcNow))
+                    NotifyAulaBattery(percent);
             }
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "AULA monitoring failed: " +
-                error.GetType().Name);
+            FileLog.Write(LogEvent.AulaMonitoringFailed, error);
             if (!_closing && _aulaPoll.MayApply(ticket))
             {
                 // Uncertain enumeration hides the cache; it does not prove
                 // the receiver changed or was physically disconnected.
                 _aulaLatest = new(false, null, "Unexpected read error", PresenceKnown: false);
                 _aulaLastReadAt = DateTimeOffset.UtcNow;
+                _aulaConnection.ObserveUnknown();
+                if (_settings.RecordBatteryHistory)
+                    _aulaHistory.Record(_aulaLastReadAt.Value, null, receiverPresent: true);
             }
         }
         finally
@@ -719,6 +705,11 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem BuildSettingsMenu()
     {
         ToolStripMenuItem menu = new(UiText.Get("Settings"));
+        menu.DropDownItems.Add(BuildAppearanceMenu(true));
+        menu.DropDownItems.Add(UiText.Get("Save selected icon..."), null, (_, _) => ExportApplicationIcon());
+        menu.DropDownItems.Add(BuildAppearanceMenu(false));
+        menu.DropDownItems.Add(BuildMouseStyleMenu());
+        menu.DropDownItems.Add(BuildUnverifiedUsbDisplayToggle());
         menu.DropDownItems.Add(BuildNotificationsMenu());
         menu.DropDownItems.Add(BuildIntervalMenu());
         menu.DropDownItems.Add(BuildClockSyncToggle());
@@ -757,6 +748,112 @@ public sealed class TrayAppContext : ApplicationContext
         menu.DropDownItems.Add(new ToolStripSeparator());
         menu.DropDownItems.Add(BuildLanguageMenu());
         return menu;
+    }
+
+    private void ExportApplicationIcon()
+    {
+        if (_closing) return;
+        using var dialog = new SaveFileDialog
+        {
+            Title = UiText.Get("Save selected icon..."),
+            Filter = "Icon (*.ico)|*.ico",
+            DefaultExt = "ico",
+            AddExtension = true,
+            FileName = $"AJAZZ-{_settings.ApplicationIconColor}.ico",
+            OverwritePrompt = true
+        };
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
+        try { ApplicationIconAssets.Export(_settings.ApplicationIconColor, dialog.FileName); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(UiText.Get("Cannot save icon. Choose a new writable file."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private ToolStripMenuItem BuildAppearanceMenu(bool appIcon)
+    {
+        var menu = new ToolStripMenuItem(UiText.Get(appIcon ? "Application icon" : "Default tray color"));
+        var choices = appIcon ? TrayColorRules.AppIcons : TrayColorRules.Choices;
+        foreach (string choice in choices)
+        {
+            var item = new ToolStripMenuItem(UiText.Get("Tray color " + choice));
+            using Icon preview = appIcon ? ApplicationIconAssets.Load(choice) :
+                TrayIconFactory.Create(83, true, color: choice, mouseStyle: true);
+            Image swatch = preview.ToBitmap();
+            item.Image = swatch;
+            item.Disposed += (_, _) => swatch.Dispose();
+            item.Checked = choice == (appIcon ? _settings.ApplicationIconColor : _settings.DefaultTrayColor);
+            item.Click += (_, _) =>
+            {
+                if (_closing) return;
+                string previous = appIcon ? _settings.ApplicationIconColor : _settings.DefaultTrayColor;
+                if (appIcon) _settings.ApplicationIconColor = choice;
+                else _settings.DefaultTrayColor = choice;
+                if (!_settings.Save())
+                {
+                    if (appIcon) _settings.ApplicationIconColor = previous;
+                    else _settings.DefaultTrayColor = previous;
+                    MessageBox.Show(UiText.Get("Unable to save device preference."));
+                    return;
+                }
+                foreach (ToolStripMenuItem option in menu.DropDownItems)
+                    option.Checked = ReferenceEquals(option, item);
+                if (appIcon)
+                {
+                    Icon next = ApplicationIconAssets.Load(choice);
+                    if (_dashboard is { IsDisposed: false }) _dashboard.Icon = next;
+                    _applicationIcon?.Dispose();
+                    _applicationIcon = next;
+                }
+                RefreshDeviceDisplay();
+            };
+            menu.DropDownItems.Add(item);
+        }
+        return menu;
+    }
+
+    private ToolStripMenuItem BuildMouseStyleMenu()
+    {
+        var item = new ToolStripMenuItem(UiText.Get("Mouse-shaped tray icon"))
+            { Checked = _settings.MouseTrayIcon };
+        item.Click += (_, _) =>
+        {
+            bool previous = _settings.MouseTrayIcon;
+            _settings.MouseTrayIcon = !previous;
+            if (!_settings.Save())
+            {
+                _settings.MouseTrayIcon = previous;
+                MessageBox.Show(UiText.Get("Unable to save device preference."));
+            }
+            item.Checked = _settings.MouseTrayIcon;
+            RefreshDeviceDisplay();
+        };
+        return item;
+    }
+
+    private ToolStripMenuItem BuildUnverifiedUsbDisplayToggle()
+    {
+        var item = new ToolStripMenuItem(UiText.Get("Show unverified USB charge (experimental)"))
+            { Checked = _settings.ShowUnverifiedUsbCharge };
+        item.Click += (_, _) =>
+        {
+            if (_closing) return;
+            bool previous = _settings.ShowUnverifiedUsbCharge;
+            if (!previous && MessageBox.Show(UiText.Get(
+                    "Unverified USB values may be stale or inaccurate. Show them with a question mark?"),
+                    UiText.Get("Settings"), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+            _settings.ShowUnverifiedUsbCharge = !previous;
+            if (!_settings.Save())
+            {
+                _settings.ShowUnverifiedUsbCharge = previous;
+                MessageBox.Show(UiText.Get("Unable to save device preference."));
+            }
+            item.Checked = _settings.ShowUnverifiedUsbCharge;
+            RefreshDeviceDisplay(publishSnapshot: false);
+        };
+        return item;
     }
 
     private ToolStripMenuItem BuildUpdateSettingsMenu()
@@ -960,7 +1057,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "PnP name preview failed: " + error.GetType().Name);
+            FileLog.Write(LogEvent.PnpPreviewFailed, error);
             if (!_closing)
                 MessageBox.Show(UiText.Get("Unable to read Windows device names."),
                     UiText.Get("Windows device names preview..."),
@@ -1056,21 +1153,91 @@ public sealed class TrayAppContext : ApplicationContext
     private ToolStripMenuItem BuildDiagnosticsMenu()
     {
         ToolStripMenuItem menu = new(UiText.Get("Diagnostics"));
-        menu.DropDownItems.Add(UiText.Get("Extended device diagnostics..."), null,
-            (_, _) => _ = ShowExtendedDiagnosticsAsync());
-        menu.DropDownItems.Add(UiText.Get("Full APEX comparison report..."), null,
+        menu.DropDownItems.Add(UiText.Get("Collect full diagnostics..."), null,
             (_, _) => _ = ShowProtocolDiagnosticsAsync());
-        menu.DropDownItems.Add(UiText.Get("Device diagnostics..."), null,
-            (_, _) => ShowDiagnostics());
-        menu.DropDownItems.Add(UiText.Get("Copy diagnostic report"), null,
-            (_, _) => CopyDeviceReport());
-        menu.DropDownItems.Add(UiText.Get("Copy Bluetooth monitor status"), null,
-            (_, _) => CopyBluetoothStatus());
-        menu.DropDownItems.Add(UiText.Get("Copy local battery snapshot"), null, (_, _) => CopyLocalSnapshot());
+        menu.DropDownItems.Add(BuildDiagnosticSessionMenu());
+        menu.DropDownItems.Add(new ToolStripSeparator());
         menu.DropDownItems.Add(UiText.Get("Local battery API..."), null, (_, _) => ShowLocalApi());
-        menu.DropDownItems.Add(UiText.Get("Open log folder"), null,
-            (_, _) => OpenLogFolder());
+        menu.DropDownItems.Add(UiText.Get("Copy local battery snapshot"), null, (_, _) => CopyLocalSnapshot());
+        menu.DropDownItems.Add(UiText.Get("Open log folder"), null, (_, _) => OpenLogFolder());
         return menu;
+    }
+
+    private ToolStripMenuItem BuildDiagnosticSessionMenu()
+    {
+        var menu = new ToolStripMenuItem(UiText.Get("Diagnostic session"));
+        menu.DropDownItems.Add(new ToolStripMenuItem(UiText.Get("Start diagnostic session")));
+        menu.DropDownOpening += (_, _) =>
+        {
+            foreach (ToolStripItem old in menu.DropDownItems.Cast<ToolStripItem>().ToArray()) old.Dispose();
+            menu.DropDownItems.Clear();
+            menu.DropDownItems.Add(new ToolStripMenuItem(UiText.Format("Snapshots: {0}/{1}",
+                _diagnosticSession.Count, DiagnosticSession.MaximumReports)) { Enabled = false });
+            var start = new ToolStripMenuItem(UiText.Get("Start diagnostic session")) { Enabled = !_diagnosticSession.Active };
+            start.Click += (_, _) => _diagnosticSession.Start();
+            menu.DropDownItems.Add(start);
+            foreach (var (marker, label) in new[] {
+                (DiagnosticMarker.Baseline, "Capture baseline"),
+                (DiagnosticMarker.UsbSelected, "Mark 2.4 GHz selected"),
+                (DiagnosticMarker.BluetoothSelected, "Mark Bluetooth selected"),
+                (DiagnosticMarker.Sleep, "Mark sleep"),
+                (DiagnosticMarker.Wake, "Mark wake"),
+                (DiagnosticMarker.Other, "Capture another snapshot")
+            })
+            {
+                var item = new ToolStripMenuItem(UiText.Get(label)) {
+                    Enabled = _diagnosticSession.Active && _diagnosticSession.Count < DiagnosticSession.MaximumReports
+                };
+                item.Click += (_, _) => AddSessionSnapshot(marker,
+                    BuildExtendedReport("HID inventory not requested (session snapshot)."));
+                menu.DropDownItems.Add(item);
+            }
+            var export = new ToolStripMenuItem(UiText.Get("Save diagnostic session...")) { Enabled = _diagnosticSession.Count >= 2 };
+            export.Click += (_, _) => SaveDiagnosticSession();
+            menu.DropDownItems.Add(export);
+            var discard = new ToolStripMenuItem(UiText.Get("Discard diagnostic session")) { Enabled = _diagnosticSession.Active };
+            discard.Click += (_, _) =>
+            {
+                if (MessageBox.Show(UiText.Get("Discard all session snapshots?"), UiText.Get("Diagnostics"),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes) _diagnosticSession.Clear();
+            };
+            menu.DropDownItems.Add(discard);
+        };
+        return menu;
+    }
+
+    private void AddSessionSnapshot(DiagnosticMarker marker, string report)
+    {
+        if (_closing) return;
+        bool added = _diagnosticSession.Add(marker, report, DateTimeOffset.UtcNow);
+        MessageBox.Show(added ? UiText.Format("Snapshot added ({0}).", _diagnosticSession.Count) :
+            UiText.Get("Snapshot not added: session inactive, full or clock changed."),
+            UiText.Get("Diagnostics"), MessageBoxButtons.OK,
+            added ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+    }
+
+    private void SaveDiagnosticSession()
+    {
+        if (_closing || _diagnosticSession.Count < 2) return;
+        if (MessageBox.Show(UiText.Get("Session may contain raw vendor buffers. Save locally and review before sharing?"),
+            UiText.Get("Diagnostics"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+        using SaveFileDialog dialog = new()
+        {
+            FileName = $"ajazz-diagnostic-session-{DateTime.Now:yyyyMMdd-HHmmss}.zip",
+            Filter = "ZIP (*.zip)|*.zip", DefaultExt = "zip", AddExtension = true, OverwritePrompt = true
+        };
+        if (dialog.ShowDialog() != DialogResult.OK || _closing) return;
+        try
+        {
+            // Refuse an existing target; a failed save keeps the session in memory.
+            using var stream = new FileStream(dialog.FileName, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            _diagnosticSession.Export(stream);
+        }
+        catch (Exception)
+        {
+            MessageBox.Show(UiText.Get("Unable to save diagnostic report."), UiText.Get("Diagnostics"),
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private ToolStripMenuItem BuildBatteryThresholdMenu()
@@ -1163,7 +1330,9 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_bluetoothWindow is null || _bluetoothWindow.IsDisposed)
         {
-            _bluetoothWindow = new BluetoothBatteryForm(EnableBluetooth, DisableBluetooth, candidate => _bleSlots.ContainsKey(BleKey(candidate)));
+            _bluetoothWindow = new BluetoothBatteryForm(EnableBluetooth, DisableBluetooth,
+                candidate => _settings.ConsentedBleEndpoints.Contains(BleKey(candidate)),
+                () => _ = ShowProtocolDiagnosticsAsync());
             _bluetoothWindow.FormClosing += (_, e) =>
             {
                 if (!_closing)
@@ -1177,26 +1346,42 @@ public sealed class TrayAppContext : ApplicationContext
         _bluetoothWindow.BringToFront();
     }
 
-    private void EnableBluetooth(BluetoothCandidate candidate, BluetoothBatteryResult result, DateTimeOffset readAt)
+    private bool EnableBluetooth(BluetoothCandidate candidate, BluetoothBatteryResult result, DateTimeOffset readAt)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
         if (_closing || !candidate.IsLowEnergy || string.IsNullOrWhiteSpace(candidate.DeviceId) ||
-            now < readAt || now - readAt > TimeSpan.FromMinutes(1)) return;
+            !result.IsFreshGatt || now < readAt || now - readAt > TimeSpan.FromMinutes(1)) return false;
         string key = BleKey(candidate);
-        if (_bleSlots.ContainsKey(key)) return;
-        _ble.ObserveUsbPresence(_latestUsbReading?.PresenceKnown == true, _latestUsbReading?.ReceiverPresent == true);
-        if (!_ble.Enable(key, result, readAt)) return;
+        if (_settings.ConsentedBleEndpoints.Contains(key)) return false;
+        if (_settings.ConsentedBleEndpoints.Count >= BleConsent.MaximumDevices) return false;
+        _settings.ConsentedBleEndpoints.Add(key);
+        if (!_settings.Save())
+        {
+            _settings.ConsentedBleEndpoints.Remove(key);
+            return false;
+        }
+        if (!_ble.Enable(key, result, readAt)) return false;
         _bleSlots[key] = new BleSlot(candidate, ++_bleSequence, new AlertPolicy());
         RefreshDeviceDisplay();
-        PollSoon();
+        return true;
     }
 
     private void DisableBluetooth(BluetoothCandidate candidate) => DisableBluetoothKey(BleKey(candidate));
+
+    private void SaveBleOptOut()
+    {
+        if (!_settings.Save())
+            MessageBox.Show(UiText.Get("Bluetooth monitoring stopped; settings could not be saved. It may resume after restart."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
 
     private void DisableBluetoothKey(string key)
     {
         _ble.Disable(key);
         _bleSlots.Remove(key);
+        _settings.ConsentedBleEndpoints.Remove(key);
+        _settings.BleUsbLinks.Remove(key);
+        SaveBleOptOut();
         _bluetoothWindow?.DisableAutomatic();
         RefreshDeviceDisplay();
     }
@@ -1205,8 +1390,101 @@ public sealed class TrayAppContext : ApplicationContext
     {
         _ble.DisableAll();
         _bleSlots.Clear();
+        _settings.ConsentedBleEndpoints.Clear();
+        _settings.BleUsbLinks.Clear();
+        SaveBleOptOut();
         _bluetoothWindow?.DisableAutomatic();
         RefreshDeviceDisplay();
+    }
+
+    private void OnBleTimer(object? sender, EventArgs args)
+    {
+        if (_closing) return;
+        if (_settings.ConsentedBleEndpoints.Count > _bleSlots.Count &&
+            !_bleRestoreBusy && Environment.TickCount64 >= _nextBleDiscoveryTick)
+            _ = RestoreBleConsentAsync();
+        StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
+        if (BleEnabled) RefreshDeviceDisplay();
+        // The USB timer pauses during I/O. Age the UI even with BLE disabled,
+        // without publishing a new API generation or replaying a measurement.
+        else if (_latestUsbReading is not null || _aulaLatest is not null)
+            RefreshDeviceDisplay(publishSnapshot: false);
+        if (_aulaLatest is not null) UpdateAulaStatus();
+    }
+
+    private async Task RestoreBleConsentAsync()
+    {
+        _bleRestoreBusy = true;
+        _nextBleDiscoveryTick = Environment.TickCount64 + 120000;
+        try
+        {
+            var candidates = await BluetoothBatteryReader.FindPairedLeAsync();
+            if (_closing) return;
+            foreach (var candidate in candidates)
+            {
+                if (!candidate.IsLowEnergy || string.IsNullOrWhiteSpace(candidate.DeviceId)) continue;
+                string key = BleKey(candidate);
+                if (!_settings.ConsentedBleEndpoints.Contains(key) || !_ble.Restore(key)) continue;
+                _bleSlots[key] = new BleSlot(candidate with { WindowsPercent = null },
+                    ++_bleSequence, new AlertPolicy());
+            }
+            _bluetoothWindow?.RefreshConsent();
+            RefreshDeviceDisplay();
+            StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
+        }
+        catch (Exception error) { FileLog.Write(LogEvent.BlePairedLookupFailed, error); }
+        finally { _bleRestoreBusy = false; }
+    }
+
+    private void ChangeTransportLink(string ble, string? usb)
+    {
+        if (_closing || !_settings.ConsentedBleEndpoints.Contains(ble)) return;
+        var links = _settings.BleUsbLinks;
+        string? previous = links.GetValueOrDefault(ble);
+        if (usb is not null)
+        {
+            if (!_bleSlots.TryGetValue(ble, out var slot) ||
+                !TransportLinks.CanLink(links, _settings.ConsentedBleEndpoints, ble, usb) ||
+                !_receivers.Devices.Any(x => x.Key == usb && x.Present && x.Reading.PresenceKnown))
+                return;
+            if (MessageBox.Show(UiText.Format(
+                "Link {0} to this USB receiver only if both belong to the same physical mouse. Continue?",
+                BleDisplayLabel(slot)), UiText.Get("Bluetooth"), MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes) return;
+            if (_closing || !_bleSlots.ContainsKey(ble) ||
+                !TransportLinks.CanLink(links, _settings.ConsentedBleEndpoints, ble, usb) ||
+                !_receivers.Devices.Any(x => x.Key == usb && x.Present && x.Reading.PresenceKnown))
+                return;
+            links[ble] = usb;
+        }
+        else links.Remove(ble);
+        if (!_settings.Save())
+        {
+            if (previous is null) links.Remove(ble);
+            else links[ble] = previous;
+            MessageBox.Show(UiText.Get("Unable to save device preference."),
+                UiText.Get("Settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        RefreshDeviceDisplay();
+    }
+
+    private void AddTransportLinkMenu(ToolStripMenuItem item, string ble)
+    {
+        if (_settings.BleUsbLinks.ContainsKey(ble))
+        {
+            item.DropDownItems.Add(UiText.Get("Unlink USB receiver"), null,
+                (_, _) => ChangeTransportLink(ble, null));
+            return;
+        }
+        var link = new ToolStripMenuItem(UiText.Get("Link to USB receiver..."));
+        foreach (var receiver in _receivers.Devices.Where(x => x.Present && x.Reading.PresenceKnown))
+        {
+            string usb = receiver.Key;
+            if (!TransportLinks.CanLink(_settings.BleUsbLinks, _settings.ConsentedBleEndpoints, ble, usb)) continue;
+            link.DropDownItems.Add(receiver.DisplayLabel, null, (_, _) => ChangeTransportLink(ble, usb));
+        }
+        link.Enabled = link.DropDownItems.Count > 0;
+        item.DropDownItems.Add(link);
     }
 
     private void PopulateBleMenu()
@@ -1217,16 +1495,27 @@ public sealed class TrayAppContext : ApplicationContext
         {
             string key = pair.Key;
             var state = BluetoothDashboardState(key, pair.Value);
-            string value = state.Percent is int level ? $"{level}%" : UiText.Get("unavailable");
+            string value = state.MenuStatus(_ble.LastSuccess(key));
             var item = new ToolStripMenuItem($"{BleDisplayLabel(pair.Value)}: {value}");
             var read = new ToolStripMenuItem(UiText.Get("Refresh Bluetooth battery now"))
             {
-                Enabled = !_ble.IsBusy && _latestUsbReading is { PresenceKnown: true, ReceiverPresent: false }
+                Enabled = !_closing && !_ble.IsBusy
             };
             read.Click += (_, _) => StartBluetoothPoll(false, force: true, key: key);
             item.DropDownItems.Add(read);
             item.DropDownItems.Add(UiText.Get("Disable selected BLE monitor"), null,
                 (_, _) => DisableBluetoothKey(key));
+            AddTransportLinkMenu(item, key);
+            _bleDevicesMenu.DropDownItems.Add(item);
+        }
+        int pending = 0;
+        foreach (string key in _settings.ConsentedBleEndpoints.OrderBy(x => x, StringComparer.Ordinal))
+        {
+            if (_bleSlots.ContainsKey(key)) continue;
+            var item = new ToolStripMenuItem(UiText.Format("Saved BLE device #{0} (not found)", ++pending));
+            item.DropDownItems.Add(UiText.Get("Disable selected BLE monitor"), null,
+                (_, _) => DisableBluetoothKey(key));
+            if (_settings.BleUsbLinks.ContainsKey(key)) AddTransportLinkMenu(item, key);
             _bleDevicesMenu.DropDownItems.Add(item);
         }
         if (_bleDevicesMenu.DropDownItems.Count == 0)
@@ -1235,16 +1524,13 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void UpdateBluetoothStatus()
     {
-        bool known = _latestUsbReading?.PresenceKnown == true;
-        bool present = _latestUsbReading?.ReceiverPresent == true;
-        if (!BleEnabled) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: off");
-        else if (!known) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: paused (receiver status unknown)");
-        else if (present) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: standby (USB primary)");
+        if (_settings.ConsentedBleEndpoints.Count == 0) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: off");
+        else if (!BleEnabled) _bluetoothStatus.Text = UiText.Get("Waiting for saved Bluetooth devices");
         else if (_ble.IsBusy) _bluetoothStatus.Text = UiText.Get("Bluetooth fallback: checking battery...");
         else _bluetoothStatus.Text = UiText.Format("Bluetooth monitors: {0}", _bleSlots.Count);
-        _disableBluetooth.Enabled = BleEnabled;
-        _bleDevicesMenu.Enabled = BleEnabled;
-        _refreshBluetooth.Enabled = !_closing && !_ble.IsBusy && BleEnabled && known && !present;
+        _disableBluetooth.Enabled = _settings.ConsentedBleEndpoints.Count > 0;
+        _bleDevicesMenu.Enabled = _settings.ConsentedBleEndpoints.Count > 0;
+        _refreshBluetooth.Enabled = !_closing && !_ble.IsBusy && BleEnabled;
     }
 
     private string BleDiagnosticSummary()
@@ -1254,23 +1540,9 @@ public sealed class TrayAppContext : ApplicationContext
         bool present = _latestUsbReading?.ReceiverPresent == true;
         return string.Join("\n", _bleSlots.OrderBy(x => x.Value.Number).Select(x =>
             $"{BleLabel(x.Value)}: battery={_ble.VisiblePercent(x.Key, known, present, now)?.ToString() ?? "unavailable"}; " +
+            $"cached display={(_ble.VisiblePercent(x.Key, known, present, now) is null ? _ble.CachedPercent(x.Key, now) : null)?.ToString() ?? "unavailable"}; " +
             $"failures={_ble.Failures(x.Key)}; last attempt UTC={_ble.LastAttempt(x.Key)?.ToString("O") ?? "never"}; " +
             $"last success UTC={_ble.LastSuccess(x.Key)?.ToString("O") ?? "never"}"));
-    }
-
-    private void CopyBluetoothStatus()
-    {
-        string usb = _latestUsbReading is not { PresenceKnown: true } ? "unknown" :
-            _latestUsbReading.ReceiverPresent ? "present" : "absent";
-        string report = "AJAZZ Bluetooth monitor status\n" +
-            $"App version: {Application.ProductVersion}\nUSB receiver: {usb}\n" +
-            $"Opted-in devices: {_bleSlots.Count}\nGATT request pending: {_ble.IsBusy}\n" +
-            BleDiagnosticSummary() + "\nNo Bluetooth addresses, serial numbers or device IDs are included.";
-        try { Clipboard.SetText(report); }
-        catch (Exception error)
-        {
-            FileLog.Write("WARN", "Bluetooth status clipboard unavailable: " + error.GetType().Name);
-        }
     }
 
     // Explicit capture uses the same AJAZZ I/O exclusion as ordinary polling.
@@ -1283,43 +1555,46 @@ public sealed class TrayAppContext : ApplicationContext
                 "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
-        if (MessageBox.Show(UiText.Get("Capture full vendor battery buffers locally? Close the official utility first. Review raw data before sharing."),
-                "AJAZZ Battery Tray", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
-            != DialogResult.Yes || _closing || _busy || _diagnosticsBusy) return;
+        DialogResult consent = MessageBox.Show(UiText.Get("Collect full diagnostics? Yes includes raw vendor buffers; close the official utility first. No collects existing monitoring data only. Review before sharing."),
+            "AJAZZ Battery Tray", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+        if (consent == DialogResult.Cancel || _closing || _busy || _diagnosticsBusy) return;
+        if (consent == DialogResult.No)
+        {
+            ShowDiagnosticReview(BuildExtendedReport("HID inventory not requested (summary only)."));
+            return;
+        }
 
         _busy = true;
         _diagnosticsBusy = true;
         _timer.Stop();
+        string report;
+        _statusItem.Text = UiText.Format("Capturing HID report (up to {0} s)…", FullHidCapture.TimeoutSeconds);
         try
         {
-            var capture = await Task.Run(() =>
-            {
-                string inventory = ExtendedDeviceDiagnostics.ReadInventory();
-                var batch = _reader.ReadAll(captureProtocol: true);
-                return (Inventory: inventory, Batch: batch);
-            });
+            var capture = await FullHidCapture.ReadAsync(_captureClosing.Token);
             if (_closing) return;
-            var batch = capture.Batch;
-            string report = "AJAZZ APEX full comparison report (one capture)\n" +
+            report = "AJAZZ APEX full comparison report (one capture)\n" +
                 $"Version: {Application.ProductVersion}\nUTC: {DateTimeOffset.UtcNow:O}\n" +
                 "Model labels are provisional. USB feature buffers are not USB wire captures.\n" +
                 "Only the existing F7/05 query; no RTC or configuration writes.\n" +
                 "Raw vendor bytes may contain undocumented data. Review before sharing.\n" +
                 "Official application traffic is NOT acquired by this report.\n" +
                 "All existing valid length/delay combinations attempted, including after success.\n" +
-                $"Fresh enumeration known={batch.Summary.PresenceKnown}; receiver count={batch.Receivers.Count}; first valid battery={batch.Summary.Percent?.ToString() ?? "unavailable"}\n\n" +
+                capture.Summary + "\n\n" +
                 BuildExtendedReport(capture.Inventory) +
                 "\n\n[Fresh APEX protocol matrix — full vendor buffers]\n" +
-                (batch.Summary.Attempts is { } trace ? string.Join("\n", trace) : "No trace");
-            using DiagnosticReportForm review = new(report);
-            review.ShowDialog();
+                capture.Matrix;
+        }
+        catch (TimeoutException)
+        {
+            report = BuildExtendedReport("HID capture timed out; inventory unavailable.") +
+                "\n[Fresh APEX protocol matrix] NOT_RUN: worker timed out.";
         }
         catch (Exception error)
         {
-            if (!_closing)
-                MessageBox.Show(UiText.Get("Unable to collect diagnostic report.") +
-                    " (" + error.GetType().Name + ")", "AJAZZ Battery Tray",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            if (_closing) return;
+            report = BuildExtendedReport("HID worker unavailable: " + error.GetType().Name) +
+                "\n[Fresh APEX protocol matrix] unavailable.";
         }
         finally
         {
@@ -1329,33 +1604,26 @@ public sealed class TrayAppContext : ApplicationContext
             {
                 _timer.Interval = _forcePoll ? 100 : DiscoveryInterval();
                 _timer.Start();
+                RefreshDeviceDisplay();
             }
         }
+        if (_closing) return;
+        ShowDiagnosticReview(report);
     }
 
-    private async Task ShowExtendedDiagnosticsAsync()
+    private void ShowDiagnosticReview(string report)
     {
-        if (_closing || _diagnosticsBusy) return;
-        _diagnosticsBusy = true;
-        try
-        {
-            string inventory = await Task.Run(ExtendedDeviceDiagnostics.ReadInventory);
-            if (_closing) return;
-            string report = BuildExtendedReport(inventory);
-            if (!DiagnosticReportForm.PromptSave(report) && !_closing)
-            {
-                using DiagnosticReportForm review = new(report);
-                review.ShowDialog();
-            }
-        }
-        catch (Exception error)
-        {
-            if (!_closing)
-                MessageBox.Show(UiText.Get("Unable to collect diagnostic report.") +
-                    " (" + error.GetType().Name + ")", "AJAZZ Battery Tray",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
-        finally { _diagnosticsBusy = false; }
+        if (_closing) return;
+        using DiagnosticReportForm review = new(report, _diagnosticSession.Active
+            ? () => AddSessionSnapshot(DiagnosticMarker.ReviewedReport, report) : null);
+        review.ShowDialog();
+    }
+
+    /// <summary>Use the actual selected receiver observation, not the batch completion time.</summary>
+    private string UsbSampleProvenance()
+    {
+        var state = _latestUsbReading?.PresenceKnown == true ? _receivers.SummaryState : null;
+        return ApexDisplayPolicy.DiagnosticSample(state?.MeasuredAt, state?.ScheduledSkip == true);
     }
 
     private string BuildExtendedReport(string inventory)
@@ -1365,6 +1633,7 @@ public sealed class TrayAppContext : ApplicationContext
         string attempts = usb?.Attempts is { Count: > 0 } trace
             ? string.Join(Environment.NewLine, trace) : "No completed poll trace.";
         return "AJAZZ Battery Tray extended diagnostic report" + Environment.NewLine +
+            "Report schema: windows-extended-v1\n" +
             $"App version: {Application.ProductVersion}\n" +
             $"Windows: {Environment.OSVersion.VersionString}; OS architecture: {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}\n" +
             $"Report UTC: {DateTimeOffset.UtcNow:O}\n" +
@@ -1373,46 +1642,32 @@ public sealed class TrayAppContext : ApplicationContext
             $"Completed UTC: {_latestUsbReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {usb?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {usb?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {usb?.Percent?.ToString() ?? "unavailable"}; status: {usb?.Details ?? "not checked"}\n" +
-            attempts + "\n\n[Independent AJAZZ receivers]\n" +
+            UsbSampleProvenance() + "\n" +
+            BatteryReportParser.DiagnosticUnverifiedField(usb?.UnverifiedPercent) + "\n" +
+            attempts + "\n\n" + _usbDiagnosticHistory.Format() + "\n\n[Independent AJAZZ receivers]\n" +
             string.Join("\n", _receivers.Devices.Select(x =>
-                $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}")) +
+                $"{x.Label}: present={x.Present}; presence known={x.Reading.PresenceKnown}; battery={x.Reading.Percent?.ToString() ?? "unavailable"}; interval={_settings.EffectivePollInterval(x.Key)}s; sampled UTC={x.MeasuredAt?.ToString("O") ?? "never"}; scheduled skip={x.ScheduledSkip}; " +
+                BatteryReportParser.DiagnosticUnverifiedField(x.Reading.UnverifiedPercent, !x.ScheduledSkip))) +
             $"\nSeparate tray icons: {_settings.MultipleTrayIcons}\n" +
-            "\n[AULA L99 last measurement]\n" +
+            $"Operational log failed writes (this process): {FileLog.FailedWrites}\n" +
+            "\n[AJAZZ ordinary unverified observation streaks — session only]\n" +
+            string.Join("\n", _receivers.Devices.Select(x =>
+                $"{x.Label}: {x.UnverifiedStreak.DiagnosticText()}; scheduled skip={x.ScheduledSkip}")) +
+            "\n\n[AULA L99 last measurement]\n" +
             $"Auto monitoring: {_settings.MonitorAulaL99}; interval={_settings.EffectivePollInterval(DeviceAliasRules.AulaSlot)}s; UTC: {_aulaLastReadAt?.ToString("O") ?? "never"}\n" +
             $"Receiver present: {aula?.ReceiverPresent.ToString() ?? "unknown"}; presence known: {aula?.PresenceKnown.ToString() ?? "unknown"}\n" +
             $"Battery: {aula?.Percent?.ToString() ?? "unavailable"}; status: {aula?.Details ?? "not checked"}\n" +
             AulaCacheReport() + "\n\n" +
             "[Bluetooth fallback state]\n" +
             $"Enabled: {BleEnabled}; displayed device: {_lastDevice}; source: {_lastSource}; displayed battery: {_lastPercent?.ToString() ?? "unknown"}\n" +
-            $"Opted-in BLE devices: {_bleSlots.Count}; request pending: {_ble.IsBusy}\n" + BleDiagnosticSummary() + "\n" +
-            "\nNo device paths, serial numbers, Bluetooth addresses, usernames, or raw report payloads are included.\n" +
-            "Collection does not issue additional HID commands or scan Bluetooth devices.";
+            $"Opted-in BLE devices: {_bleSlots.Count}; request pending: {_ble.IsBusy}\n" +
+            $"Saved BLE consent count: {_settings.ConsentedBleEndpoints.Count}; pending discovery: {_bleRestoreBusy}\n" + BleDiagnosticSummary() + "\n" +
+            "\nThe extended monitoring section excludes device paths, serial numbers, Bluetooth addresses, usernames and raw payloads.\n" +
+            "Collecting this section does not issue additional HID commands or scan Bluetooth devices.\n\n" +
+            (_bluetoothWindow is { IsDisposed: false } inspector ? inspector.DiagnosticSummary() :
+                "[Bluetooth manual inspection — historical] Not opened this session.\n");
     }
 
-
-    private static void CopyDeviceReport()
-    {
-        string report = "AJAZZ Battery Tray diagnostic report\n" +
-            $"Version: {Application.ProductVersion}\n" +
-            $"Windows: {Environment.OSVersion.VersionString}\n" +
-            DeviceDiagnostics.Read();
-        try
-        {
-            Clipboard.SetText(report);
-        }
-        catch (Exception error)
-        {
-            FileLog.Write("WARN", "Cannot copy diagnostics to clipboard", error);
-            MessageBox.Show(UiText.Get("The Windows clipboard is currently unavailable."),
-                "AJAZZ Battery Tray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
-    }
-
-    private static void ShowDiagnostics()
-    {
-        MessageBox.Show(DeviceDiagnostics.Read(), UiText.Get("AJAZZ APEX device diagnostics"),
-            MessageBoxButtons.OK, MessageBoxIcon.Information);
-    }
 
     private void ConfigureStartupMenu()
     {
@@ -1432,7 +1687,7 @@ public sealed class TrayAppContext : ApplicationContext
         }
         catch (Exception error)
         {
-            FileLog.Write("ERROR", "Cannot change Windows startup", error);
+            FileLog.Write(LogEvent.StartupChangeFailed, error);
             MessageBox.Show(error.Message, "AJAZZ Battery Tray",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
@@ -1471,6 +1726,7 @@ public sealed class TrayAppContext : ApplicationContext
     {
         if (_closing) return;
         _forcePoll = true;
+        StartBluetoothPoll(_latestUsbReading?.ReceiverPresent == true);
         if (_busy)
         {
             return;
@@ -1502,7 +1758,9 @@ public sealed class TrayAppContext : ApplicationContext
             bool manualClock = _manualClockSync;
             _manualClockSync = false;
             bool autoClock = _settings.AutomaticDockClockSync;
-            var result = await Task.Run(() => QueryAndSync(deferred, manualClock, autoClock));
+            CancellationToken closing = _captureClosing.Token;
+            var result = await Task.Run(() => QueryAndSyncAsync(
+                deferred, manualClock, autoClock, closing));
             if (!_closing)
             {
                 _usbSchedule.Reconcile(result.Batch.Receivers.Select(x => x.Key),
@@ -1511,14 +1769,16 @@ public sealed class TrayAppContext : ApplicationContext
                     _usbSchedule.Complete(item.Key, item.CompletedTick);
                 _latestUsbReadAt = DateTimeOffset.UtcNow;
                 ApplyReading(result.Batch);
+                // Preserve an explicit clock request through unknown USB presence.
+                _manualClockSync |= result.DeferredManualClock;
                 ApplyClockResult(result.Attempted, result.Succeeded);
-                StartBluetoothPoll(result.Batch.Summary.ReceiverPresent);
                 if (force && _settings.MonitorAulaL99) _ = PollAulaAsync(manual: true);
             }
         }
+        catch (OperationCanceledException) when (_closing) { }
         catch (Exception error)
         {
-            FileLog.Write("ERROR", "Unexpected poll failure", error);
+            FileLog.Write(LogEvent.PollFailed, error);
             if (!_closing)
             {
                 _latestUsbReading = new AjazzHidReader.Reading(
@@ -1539,34 +1799,80 @@ public sealed class TrayAppContext : ApplicationContext
         }
     }
 
-    private (AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded)
-        QueryAndSync(IReadOnlySet<string> deferred, bool manual, bool autoClock)
+    private async Task<(AjazzHidReader.Batch Batch, bool Attempted, bool Succeeded,
+        bool DeferredManualClock)> QueryAndSyncAsync(IReadOnlySet<string> deferred,
+        bool manual, bool autoClock, CancellationToken closing)
     {
-        AjazzHidReader.Batch batch = _reader.ReadAll(shouldSample: key => !deferred.Contains(key));
+        AjazzHidReader.Batch batch = await ReadRoutineBatchAsync(deferred, closing)
+            .ConfigureAwait(false);
         AjazzHidReader.Reading reading = batch.Summary;
         DateTimeOffset now = DateTimeOffset.UtcNow;
         bool automatic = _clockSchedule.ShouldAttempt(
-            now, autoClock, reading.ReceiverPresent);
+            now, autoClock, reading.ReceiverPresent, reading.PresenceKnown);
+        if (!reading.PresenceKnown)
+            return (batch, false, false, manual);
+
         if (!manual && !automatic)
         {
-            return (batch, false, false);
+            return (batch, false, false, false);
         }
 
         if (!reading.ReceiverPresent)
         {
-            return (batch, true, false);
+            return (batch, true, false, false);
         }
 
-        bool sent = _reader.TrySyncDockClock(DateTime.Now);
+        closing.ThrowIfCancellationRequested();
+        // Record before starting: a timed-out write may have reached the device.
         _clockSchedule.RecordAttempt(now);
-        return (batch, true, sent);
+        bool sent = await SyncRoutineClockAsync(closing).ConfigureAwait(false);
+        return (batch, true, sent, false);
+    }
+
+    private async Task<AjazzHidReader.Batch> ReadRoutineBatchAsync(
+        IReadOnlySet<string> deferred, CancellationToken closing)
+    {
+        if (!_isolatedPolling)
+            return _reader.ReadAll(shouldSample: key => !deferred.Contains(key));
+        try
+        {
+            return await RoutinePollWorker.ReadAsync(deferred.ToArray(), closing)
+                .ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            FileLog.Write(LogEvent.IsolatedPollTimedOut);
+            return new AjazzHidReader.Batch(
+                new AjazzHidReader.Reading(false, null, "HID read timed out",
+                    PresenceKnown: false, Issue: UsbReadIssue.Timeout),
+                Array.Empty<AjazzHidReader.ReceiverReading>());
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            FileLog.Write(LogEvent.IsolatedPollUnavailable, error);
+            return new AjazzHidReader.Batch(
+                new AjazzHidReader.Reading(false, null, "HID worker unavailable",
+                    PresenceKnown: false), Array.Empty<AjazzHidReader.ReceiverReading>());
+        }
+    }
+
+    private async Task<bool> SyncRoutineClockAsync(CancellationToken closing)
+    {
+        if (!_isolatedPolling) return _reader.TrySyncDockClock(DateTime.Now);
+        try { return await RoutinePollWorker.SyncClockAsync(closing).ConfigureAwait(false); }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // Never automatically replay an uncertain RTC transfer.
+            FileLog.Write(LogEvent.IsolatedClockUnavailable, error);
+            return false;
+        }
     }
 
     private void StartBluetoothPoll(bool receiverPresent, bool force = false, string? key = null)
     {
-        if (_closing || _latestUsbReading is not { PresenceKnown: true, ReceiverPresent: false }) return;
-        var request = _ble.TryBegin(true, receiverPresent, DateTimeOffset.UtcNow,
-            force ? key ?? PrimaryBleKey : null);
+        if (_closing) return;
+        var request = _ble.TryBegin(_latestUsbReading?.PresenceKnown == true, receiverPresent, DateTimeOffset.UtcNow,
+            force ? key ?? PrimaryBleKey ?? _bleSlots.OrderBy(x => x.Value.Number).Select(x => x.Key).FirstOrDefault() : null);
         if (request is null || !_bleSlots.TryGetValue(request.Key, out var slot)) return;
         UpdateBluetoothStatus();
         _ = PollBluetoothFallbackAsync(slot, request);
@@ -1575,26 +1881,29 @@ public sealed class TrayAppContext : ApplicationContext
     private async Task PollBluetoothFallbackAsync(BleSlot slot, BluetoothMultiSession.Request request)
     {
         BluetoothBatteryResult response;
+        DateTimeOffset completedAt;
         try
         {
-            response = await BluetoothOperationTimeout.Run(
+            (response, completedAt) = await BluetoothOperationTimeout.RunStamped(
                 BluetoothBatteryReader.ReadAsync(slot.Candidate), TimeSpan.FromSeconds(12));
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Bluetooth fallback read failed: " + error.GetType().Name);
+            FileLog.Write(LogEvent.BluetoothFallbackFailed, error);
             response = new BluetoothBatteryResult(null, BluetoothBatterySource.Unavailable, "Read failed.");
+            completedAt = DateTimeOffset.UtcNow;
         }
         if (_closing) return;
         bool known = _latestUsbReading?.PresenceKnown == true;
         bool present = _latestUsbReading?.ReceiverPresent == true;
-        if (_ble.Complete(request, response, DateTimeOffset.UtcNow, known, present) &&
-            response.IsFreshGatt && response.Percent is int percent)
+        if (_ble.Complete(request, response, completedAt, known, present) &&
+            response.IsFreshGatt && response.Percent is int percent &&
+            _ble.VisiblePercent(request.Key, known, present, DateTimeOffset.UtcNow) == percent)
             ShowLowBatteryAlert(slot, percent);
         RefreshDeviceDisplay();
         // Continue with another due device, not another read of the same slot.
         await Task.Yield();
-        if (!_closing && known && !present) StartBluetoothPoll(false);
+        if (!_closing) StartBluetoothPoll(present);
     }
 
     private void ApplyClockResult(bool attempted, bool succeeded)
@@ -1607,8 +1916,7 @@ public sealed class TrayAppContext : ApplicationContext
         _lastClockUpdate = DateTime.Now;
         _lastClockSucceeded = succeeded;
         UpdateClockStatus();
-        FileLog.Write(succeeded ? "INFO" : "WARN",
-            _clockStatus.Text ?? "Dock clock status unavailable");
+        FileLog.Write(succeeded ? LogEvent.DockClockSucceeded : LogEvent.DockClockFailed);
     }
 
     private void UpdateClockStatus()
@@ -1621,14 +1929,26 @@ public sealed class TrayAppContext : ApplicationContext
                 _lastClockUpdate.Value.ToString("HH:mm:ss"));
     }
 
+    private void RememberUsbDiagnostic(AjazzHidReader.Batch batch)
+    {
+        if (!batch.Summary.PresenceKnown || batch.Receivers.Count != 1) return;
+        var sample = batch.Receivers[0];
+        if (!sample.Sampled || sample.MeasuredAt is not { } at ||
+            !sample.Reading.PresenceKnown || !sample.Reading.ReceiverPresent) return;
+        _usbDiagnosticHistory.Observe(sample.Revision, sample.Reading.Percent,
+            sample.Reading.UnverifiedPercent, at);
+    }
+
     private void ApplyReading(AjazzHidReader.Batch batch)
     {
+        RememberUsbDiagnostic(batch);
         _ble.ObserveUsbPresence(batch.Summary.PresenceKnown, batch.Summary.ReceiverPresent);
-        _receivers.Apply(batch, _settings, _tray, BleEnabled,
+        _receivers.Apply(batch, _settings, _tray, false,
             DateTimeOffset.UtcNow);
         _latestUsbReading = batch.Summary.PresenceKnown && _receivers.SummaryState is { } primary
             ? primary.Reading with { Attempts = batch.Summary.Attempts,
-                Details = primary.ScheduledSkip ? "Last scheduled battery reading" : primary.Reading.Details }
+                Details = primary.ScheduledSkip ? "Last scheduled battery reading" : primary.Reading.Details,
+                UnverifiedPercent = primary.ScheduledSkip ? null : primary.Reading.UnverifiedPercent }
             : batch.Summary;
         UpdateTrayDisplay(_latestUsbReading);
     }
@@ -1647,46 +1967,67 @@ public sealed class TrayAppContext : ApplicationContext
             ToolTipIcon.Warning);
     }
 
-    private void RefreshDeviceDisplay()
+    private void RefreshDeviceDisplay(bool publishSnapshot = true)
     {
         if (_closing) return;
         UpdateTrayDisplay(_latestUsbReading ??
-            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false));
+            new AjazzHidReader.Reading(false, null, "Not checked", PresenceKnown: false, Issue: UsbReadIssue.NotChecked),
+            publishSnapshot);
     }
 
     /// <summary>Refresh only the tray: do not replay history or USB alerts.</summary>
-    private void UpdateTrayDisplay(AjazzHidReader.Reading reading)
+    private void UpdateTrayDisplay(AjazzHidReader.Reading reading, bool publishSnapshot = true)
     {
         string? primaryBle = PrimaryBleKey;
         int? blePercent = primaryBle is not null
             ? _ble.VisiblePercent(primaryBle, reading.PresenceKnown,
                 reading.ReceiverPresent, DateTimeOffset.UtcNow) : null;
-        BatteryDisplayState display = BatteryDisplayState.Resolve(
-            reading.ReceiverPresent, reading.Percent,
-            BleEnabled, blePercent, reading.PresenceKnown);
         bool aulaPresent = _settings.MonitorAulaL99 &&
             _aulaLatest is { ReceiverPresent: true, PresenceKnown: true };
         bool showAula = aulaPresent && IsTrayVisible(DeviceAliasRules.AulaSlot);
-        var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons,
-            _settings.HiddenTrayDevices);
-        int? aulaLevel = AulaDisplayPercent();
-        bool aulaStale = _aulaLatest?.Percent is null && aulaLevel.HasValue;
-        bool bluetoothPrimary = reading.PresenceKnown &&
-            !reading.ReceiverPresent && BleEnabled;
-        bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary;
-        bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary &&
-            (reading.ReceiverPresent || aulaPresent);
+        var linked = LinkedTrayDevices();
+        var hiddenUsb = new HashSet<string>(_settings.HiddenTrayDevices, StringComparer.Ordinal);
+        hiddenUsb.UnionWith(_settings.BleUsbLinks.Values);
+        var usbNow = DateTimeOffset.UtcNow;
+        var receiver = _receivers.VisiblePrimary(_settings.MultipleTrayIcons, hiddenUsb, usbNow);
+        var aulaState = AulaDashboardState();
+        int? aulaLevel = aulaState.Percent;
+        bool aulaStale = aulaState.Status == DeviceDashboardStatus.Cached;
+        var usbDisplay = receiver is not null && reading.PresenceKnown
+            ? ReceiverMonitor.Presentation(receiver, usbNow) : null;
+        int? usbPercent = usbDisplay?.Percent;
+        bool usbCached = usbDisplay?.Status == DeviceDashboardStatus.Cached;
+        int? currentUsbPercent = usbCached ? null : usbPercent;
+        bool retainCachedBle = primaryBle is not null && _lastSource == "Bluetooth" &&
+            _lastDevice == BleLabel(_bleSlots[primaryBle]) &&
+            _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow).HasValue &&
+            !currentUsbPercent.HasValue;
+        bool bluetoothPrimary = BatteryDisplayState.PreferIndependentBluetooth(
+            receiver is not null, currentUsbPercent, primaryBle is not null, blePercent) || retainCachedBle;
+        // Keep a logical primary across transport and unrelated receiver changes.
+        _primaryLinkedUsbKey = TransportLinks.SelectPrimary(_primaryLinkedUsbKey,
+            linked.Select(x => x.UsbKey), receiver is not null || bluetoothPrimary);
+        var linkedPrimary = linked.FirstOrDefault(x => x.UsbKey == _primaryLinkedUsbKey);
+        if (linkedPrimary is not null) bluetoothPrimary = false;
+        bool aulaIsPrimary = showAula && receiver is null && !bluetoothPrimary && linkedPrimary is null;
+        bool neutral = receiver is null && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null &&
+            (reading.ReceiverPresent || aulaPresent || _settings.BleUsbLinks.Count > 0);
 
         string device = bluetoothPrimary && primaryBle is not null ? BleLabel(_bleSlots[primaryBle]) :
             receiver?.Label ?? "AJAZZ APEX";
-        int? displayPercent = receiver is not null && reading.PresenceKnown
-            ? receiver.Reading.Percent : display.Percent;
-        string source = display.SourceName;
+        int? displayPercent = bluetoothPrimary ? blePercent : usbPercent;
+        string source = bluetoothPrimary ? "Bluetooth" : "2.4 GHz";
         if (aulaIsPrimary)
         {
             device = "AULA L99";
             displayPercent = aulaLevel;
             source = "2.4 GHz";
+        }
+        if (linkedPrimary is { } pair)
+        {
+            device = "AJAZZ linked mouse";
+            displayPercent = pair.Display.Percent;
+            source = pair.Display.Percent is null ? "2.4 GHz / Bluetooth" : pair.Display.Bluetooth ? "Bluetooth" : "2.4 GHz";
         }
         if (neutral)
         {
@@ -1695,13 +2036,21 @@ public sealed class TrayAppContext : ApplicationContext
             displayPercent = null;
         }
         bool displayConnected = displayPercent.HasValue;
-        bool stale = aulaIsPrimary && aulaStale;
+        bool stale = (aulaIsPrimary && aulaStale) || linkedPrimary?.Display.Cached == true ||
+            (!aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null && usbCached);
+        if (bluetoothPrimary && primaryBle is not null && !blePercent.HasValue)
+        {
+            displayPercent = _ble.CachedPercent(primaryBle, DateTimeOffset.UtcNow);
+            stale = displayPercent.HasValue;
+            displayConnected = stale;
+        }
         int? previousPercent = _lastPercent;
         if (displayConnected != _lastConnected ||
             previousPercent != displayPercent || source != _lastSource || device != _lastDevice || stale != _lastStale)
         {
-            FileLog.Write("INFO", $"{device} {source} battery: " +
-                (displayConnected ? $"{displayPercent}%" + (stale ? " (cached)" : "") : "unavailable"));
+            FileLog.Write(stale ? LogEvent.BatteryDisplayCached :
+                displayConnected ? LogEvent.BatteryDisplayAvailable :
+                LogEvent.BatteryDisplayUnavailable);
         }
 
         _lastPercent = displayPercent;
@@ -1709,47 +2058,95 @@ public sealed class TrayAppContext : ApplicationContext
         _lastSource = source;
         _lastDevice = device;
         _lastStale = stale;
-        string displayName = bluetoothPrimary && primaryBle is not null ? BleDisplayLabel(_bleSlots[primaryBle]) :
-            aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device;
+        string displayName = linkedPrimary?.Name ?? (bluetoothPrimary && primaryBle is not null ? BleDisplayLabel(_bleSlots[primaryBle]) :
+            aulaIsPrimary ? AulaName : receiver?.DisplayLabel ?? device);
         string value = displayConnected ? $"{displayPercent}%" : UiText.Get("unavailable");
         if (stale) value += " (" + UiText.Get("cached") + ")";
-        else if (displayConnected && !aulaIsPrimary && receiver?.ScheduledSkip == true)
+        else if (displayConnected && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null && usbDisplay?.Status == DeviceDashboardStatus.Scheduled)
             value += " (" + UiText.Get("Last scheduled reading") + ")";
+        bool unknownUsb = !displayConnected && !neutral && !aulaIsPrimary && !bluetoothPrimary && linkedPrimary is null;
+        int? unverified = unknownUsb && receiver is not null && reading.PresenceKnown
+            ? ReceiverMonitor.Unverified(receiver, usbNow, _settings.ShowUnverifiedUsbCharge) : null;
+        if (unknownUsb)
+        {
+            var usb = receiver?.Reading ?? reading;
+            value = UsbTrayStatus.WithLastVerified(
+                UsbTrayStatus.Reason(usb.PresenceKnown, usb.ReceiverPresent, usb.Issue),
+                receiver?.LastVerifiedAt);
+            if (unverified is int raw) value = UsbTrayStatus.UnverifiedField(raw);
+        }
         string status = neutral ? UiText.Get("Device Manager") : $"{displayName} — {source}: {value}";
-        if (_statusItem.Text != status) _statusItem.Text = status;
-        string tooltip = neutral ? UiText.Get("Device Manager") : $"{value} — {displayName} ({source})";
+        if (!_diagnosticsBusy && _statusItem.Text != status) _statusItem.Text = status;
+        string color = linkedPrimary is { } linkedIcon ? DeviceColor(linkedIcon.UsbKey) :
+            aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
+            !bluetoothPrimary && receiver is not null ? DeviceColor(receiver.Key) : _settings.DefaultTrayColor;
+        string tooltip = neutral ? UiText.Get("Device Manager") :
+            $"{value} · {UiText.Get("Tray color " + color)} — {displayName} ({source})";
+        if (unknownUsb) tooltip = $"{source} · {value} — {displayName}";
         tooltip = tooltip[..Math.Min(63, tooltip.Length)];
         if (_tray.Text != tooltip) _tray.Text = tooltip;
-        string color = aulaIsPrimary ? DeviceColor(DeviceAliasRules.AulaSlot) :
-            receiver is not null ? DeviceColor(receiver.Key) : TrayColorRules.Default;
-        UpdateIcon(displayPercent, displayConnected, stale, neutral, color);
+        UpdateIcon(displayPercent ?? unverified, displayConnected || unverified.HasValue, stale, neutral, color,
+            _settings.MouseTrayIcon && !aulaIsPrimary, unverified.HasValue);
         if (_tray.ContextMenuStrip is { } menu)
             _receivers.RefreshIcons(_settings.MultipleTrayIcons, showAula,
                 aulaLevel, aulaStale, aulaIsPrimary, menu, PollSoon, AulaName,
-                receiver?.Key, _settings.HiddenTrayDevices, DeviceColor,
-                BluetoothExtraIcons(reading, primaryBle));
+                bluetoothPrimary || linkedPrimary is not null ? null : receiver?.Key, hiddenUsb, DeviceColor,
+                BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null),
+                _settings.ShowUnverifiedUsbCharge, _settings.MouseTrayIcon, linked.Where(x => x != linkedPrimary).Select(x =>
+                    (x.UsbKey, x.Name, x.Display.Percent, x.Display.Cached,
+                    x.Display.Percent is null ? "2.4 GHz / Bluetooth" : x.Display.Bluetooth ? "Bluetooth" : "2.4 GHz")).ToArray());
         UpdateBluetoothStatus();
-        RefreshDashboard();
+        RefreshDashboard(publishSnapshot);
     }
 
-    private IReadOnlyList<(string Key, string Name, int? Percent)> BluetoothExtraIcons(
-        AjazzHidReader.Reading reading, string? primary)
+    private sealed record LinkedTrayDevice(string UsbKey, string Name, TransportLinks.Display Display);
+
+    private IReadOnlyList<LinkedTrayDevice> LinkedTrayDevices()
     {
-        if (!_settings.MultipleTrayIcons || _bleSlots.Count == 0 ||
-            !reading.PresenceKnown || reading.ReceiverPresent)
-            return Array.Empty<(string, string, int?)>();
+        var now = DateTimeOffset.UtcNow;
+        var result = new List<LinkedTrayDevice>();
+        foreach (var pair in _settings.BleUsbLinks.OrderBy(x => x.Value, StringComparer.Ordinal))
+        {
+            if (!IsTrayVisible(pair.Value)) continue;
+            var usb = _receivers.Devices.FirstOrDefault(x => x.Key == pair.Value);
+            _bleSlots.TryGetValue(pair.Key, out var ble);
+            var state = usb is null ? null : ReceiverMonitor.Presentation(usb, now);
+            int? usbValue = state?.Status == DeviceDashboardStatus.Fresh ? state.Percent : null;
+            int? scheduled = state?.Status == DeviceDashboardStatus.Scheduled ? state.Percent : null;
+            int? cachedUsb = state?.Status == DeviceDashboardStatus.Cached ? state.Percent : null;
+            var display = TransportLinks.Select(usbValue,
+                _ble.VisiblePercent(pair.Key, true, false, now), _ble.CachedPercent(pair.Key, now), scheduled, cachedUsb);
+            string name = usb?.DisplayLabel ?? (ble is not null ? BleDisplayLabel(ble) :
+                DeviceAliasRules.DisplayName("AJAZZ", _settings.DeviceAliases.GetValueOrDefault(pair.Value)));
+            result.Add(new(pair.Value, name, display));
+        }
+        return result;
+    }
+
+    private IReadOnlyList<(string Key, string Name, int? Percent, bool Stale)> BluetoothExtraIcons(
+        string? primary)
+    {
+        if (!_settings.MultipleTrayIcons || _bleSlots.Count == 0)
+            return Array.Empty<(string, string, int?, bool)>();
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        return _bleSlots.Where(x => x.Key != primary).OrderBy(x => x.Value.Number)
-            .Select(x => ($"BLE:{x.Value.Number}", BleDisplayLabel(x.Value),
-                _ble.VisiblePercent(x.Key, true, false, now))).ToArray();
+        return _bleSlots.Where(x => x.Key != primary && !_settings.BleUsbLinks.ContainsKey(x.Key)).OrderBy(x => x.Value.Number)
+            .Select(x =>
+            {
+                int? fresh = _ble.VisiblePercent(x.Key, true, false, now);
+                int? cached = _ble.CachedPercent(x.Key, now);
+                return ($"BLE:{x.Value.Number}", BleDisplayLabel(x.Value),
+                    fresh ?? cached, !fresh.HasValue && cached.HasValue);
+            }).ToArray();
     }
 
     private void UpdateIcon(int? percent, bool connected, bool stale = false,
-        bool neutral = false, string? color = null)
+        bool neutral = false, string? color = null, bool mouseStyle = false, bool unverified = false)
     {
-        var key = TrayIconRenderKey.Create(percent, connected, stale, neutral, color);
+        var key = TrayIconRenderKey.Create(percent, connected, stale, neutral, color, mouseStyle,
+            _settings.ApplicationIconColor, unverified);
         if (_icon is not null && _iconRenderKey == key) return;
-        Icon next = TrayIconFactory.Create(percent, connected, stale, neutral, color);
+        Icon next = TrayIconFactory.Create(percent, connected, stale, neutral, color, mouseStyle,
+            _settings.ApplicationIconColor, unverified);
         try { _tray.Icon = next; }
         catch { next.Dispose(); throw; }
         Icon? previous = _icon;
@@ -1771,6 +2168,9 @@ public sealed class TrayAppContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         _closing = true;
+        _diagnosticSession.Clear();
+        _captureClosing.Cancel();
+        _captureClosing.Dispose();
         _localApiWindow?.Close();
         _localSnapshot?.Clear();
         _localSnapshot = null;
@@ -1780,6 +2180,8 @@ public sealed class TrayAppContext : ApplicationContext
         _updateRequestCancellation?.Cancel();
         _timer.Stop();
         _timer.Dispose();
+        _bleTimer.Stop();
+        _bleTimer.Dispose();
         _aulaPoll.Close();
         StopAulaTimer();
         _ble.DisableAll();
@@ -1793,7 +2195,8 @@ public sealed class TrayAppContext : ApplicationContext
         _tray.ContextMenuStrip?.Dispose();
         _tray.Dispose();
         _icon?.Dispose();
-        FileLog.Write("INFO", "Application stopped");
+        _applicationIcon?.Dispose();
+        FileLog.Write(LogEvent.ApplicationStopped);
         base.ExitThreadCore();
     }
 }

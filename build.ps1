@@ -18,7 +18,7 @@ $out = Join-Path $root 'dist\app'
 $archive = Join-Path $root 'dist\AJAZZBatteryTray-win-x64.zip'
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    throw 'Install .NET 8 SDK from https://dotnet.microsoft.com/download/dotnet/8.0'
+    throw 'Install the SDK pinned in global.json from https://dotnet.microsoft.com/download/dotnet/11.0'
 }
 
 if (-not $SkipTests) {

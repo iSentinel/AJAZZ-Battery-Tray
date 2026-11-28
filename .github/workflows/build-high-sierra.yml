@@ -4,24 +4,87 @@ on:
   pull_request:
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/package-app.sh'
+      - 'macos/AppIcon*.icns'
+      - 'tools/measure_apple_worker.py'
+      - 'macos/AjazzBatteryReport.h'
+      - 'macos/AjazzDiagnosticExport.h'
+      - 'macos/AjazzSessionArchive.h'
+      - 'tests/fixtures/apex-f7-v1.csv'
+      - 'macos/AjazzIoLease.h'
+      - 'macos/AjazzOperationalEvent.h'
+      - 'macos/AjazzOperationalJournal.h'
+      - 'tools/check_apple_io_lease.py'
+      - 'tools/verify_apple_group_catalog.py'
+      - 'tests/fixtures/apple-native-groups-v1.json'
       - '.github/workflows/build-high-sierra.yml'
       - '.github/workflows/release-high-sierra.yml'
   push:
     branches: [main]
     paths:
       - 'macos/high-sierra/**'
+      - 'macos/package-app.sh'
+      - 'macos/AppIcon*.icns'
+      - 'tools/measure_apple_worker.py'
+      - 'macos/AjazzBatteryReport.h'
+      - 'macos/AjazzDiagnosticExport.h'
+      - 'macos/AjazzSessionArchive.h'
+      - 'tests/fixtures/apex-f7-v1.csv'
+      - 'macos/AjazzIoLease.h'
+      - 'macos/AjazzOperationalEvent.h'
+      - 'macos/AjazzOperationalJournal.h'
+      - 'tools/check_apple_io_lease.py'
+      - 'tools/verify_apple_group_catalog.py'
+      - 'tests/fixtures/apple-native-groups-v1.json'
       - '.github/workflows/build-high-sierra.yml'
   workflow_dispatch:
 
 jobs:
   build-high-sierra:
     runs-on: macos-15-intel
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Record selected Apple toolchain versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          swiftc --version
+          clang --version | sed -n '1p'
+          xcrun --sdk macosx --show-sdk-version
       - name: Build native Intel app and run parser tests
-        run: bash macos/high-sierra/build.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          capture="$RUNNER_TEMP/ajazz-high-sierra-build.txt"
+          review="$RUNNER_TEMP/ajazz-high-sierra-group-review.json"
+          test ! -e "$capture"
+          test ! -e "$review"
+          bash macos/high-sierra/build.sh | tee "$capture"
+          python3 tools/verify_apple_group_catalog.py --edition high-sierra --capture "$capture" --output "$review"
+      - name: Retain scoped native Apple group review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: apple-high-sierra-native-group-review
+          path: ${{ runner.temp }}/ajazz-high-sierra-group-review.json
+          if-no-files-found: error
+      - name: Verify shared vendor I/O gate without HID
+        run: |
+          python3 tools/check_apple_io_lease.py --exe "dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra"
+      - name: Measure synthetic worker startup without HID
+        run: |
+          python3 tools/measure_apple_worker.py --dry-run
+          python3 tools/measure_apple_worker.py --exe "dist/high-sierra/AJAZZ Battery Tray High Sierra.app/Contents/MacOS/AJAZZBatteryTrayHighSierra" --output "$RUNNER_TEMP/macos-high-sierra-intel-worker.csv"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: macos-high-sierra-intel-worker-startup-baseline
+          path: ${{ runner.temp }}/macos-high-sierra-intel-worker.csv
+          if-no-files-found: error
       - name: Validate hardware acceptance helper without USB traffic
         run: |
           bash -n macos/high-sierra/acceptance.sh
@@ -43,6 +106,13 @@ jobs:
           grep -q 'BEGIN: diagnostic=' "$REPORT"
           grep -q 'TEST: worker started' "$REPORT"
           grep -q 'TIMEOUT: worker exceeded' "$REPORT"
+          CHILD_PID="$(sed -n 's/^TEST: worker started; pid=\([0-9][0-9]*\);.*/\1/p' "$REPORT")"
+          test -n "$CHILD_PID"
+          if kill -0 "$CHILD_PID" 2>/dev/null; then
+            echo "FAIL: timed-out worker still exists"
+            exit 1
+          fi
+          echo "PASS: timed-out worker exited before return"
           test "$(stat -f %Lp "$REPORT")" = 600
           ln -s "$REPORT" "$REPORT.symlink"
           if "$EXE" --self-test-watchdog --output "$REPORT.symlink"; then
@@ -63,8 +133,9 @@ jobs:
           lipo -info "$EXE" | grep -q x86_64
           if otool -L "$EXE" | grep -iq libswift; then exit 1; fi
           (cd dist && shasum -a 256 -c AJAZZBatteryTray-macOS-HighSierra-Intel.sha256)
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
+          archive: true
           name: AJAZZBatteryTray-HighSierra-Intel
           path: |
             dist/AJAZZBatteryTray-macOS-HighSierra-Intel.zip

@@ -5,15 +5,23 @@ namespace AjazzBatteryTray;
 
 internal static class Program
 {
+    internal const string TrayMutexName = "Local\\AJAZZBatteryTray_AJ179_APEX";
+
     [STAThread]
     private static void Main(string[] args)
     {
-        if (args.Length > 0)
+        if (args.Length == 1 && args[0] == InstallerShutdownWindow.ProbeMode)
+        {
+            Environment.ExitCode = InstallerShutdownWindow.RunProbe();
+            return;
+        }
+        bool isolated = args.Length == 1 && args[0] == "--experimental-isolated-polling";
+        if (args.Length > 0 && !isolated)
         {
             Environment.ExitCode = WindowsHidDiagnostics.Run(args);
             return;
         }
-        using Mutex singleInstance = new(true, "Local\\AJAZZBatteryTray_AJ179_APEX", out bool first);
+        using Mutex singleInstance = new(true, TrayMutexName, out bool first);
         if (!first)
         {
             MessageBox.Show("AJAZZ Battery Tray is already running.",
@@ -22,7 +30,9 @@ internal static class Program
         }
 
         ApplicationConfiguration.Initialize();
-        FileLog.Write("INFO", "Application started");
-        Application.Run(new TrayAppContext());
+        FileLog.Write(LogEvent.ApplicationStarted);
+        using TrayAppContext context = new(isolated);
+        using InstallerShutdownWindow shutdown = new(context.ExitThread);
+        Application.Run(context);
     }
 }

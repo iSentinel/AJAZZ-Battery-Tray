@@ -1,0 +1,60 @@
+name: Replay exact native package self-test evidence
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-native-package-selftest-replay.yml'
+      - 'tools/verify_native_package_selftests.py'
+      - 'tools/test_verify_native_package_selftests.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
+      - name: Retrieve exact original artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          root="$(mktemp -d "$RUNNER_TEMP/ajazz-native-replay.XXXXXX")"
+          echo "AJAZZ_REPLAY_ROOT=$root" >> "$GITHUB_ENV"
+          gh api repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15161214672/zip > "$root/windows-evidence.zip"
+          gh api repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15161801759/zip > "$root/apple-evidence.zip"
+          gh api repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15110510075/zip > "$root/windows.zip"
+          gh api repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15108849028/zip > "$root/universal.zip"
+          gh api repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15109082825/zip > "$root/high-sierra.zip"
+      - name: Test scoped replay
+        run: python -m unittest discover -s tools -p 'test_verify_native_package_selftests.py'
+      - name: Verify actual original observations
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$AJAZZ_REPLAY_ROOT"
+          python tools/verify_native_package_selftests.py \
+            --windows-evidence "$root/windows-evidence.zip" \
+            --apple-evidence "$root/apple-evidence.zip" \
+            --windows-archive "$root/windows.zip" \
+            --universal-archive "$root/universal.zip" \
+            --high-sierra-archive "$root/high-sierra.zip" \
+            --output "$root/review.json"
+      - name: Retain scoped JSON review only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: native-package-selftest-replay
+          path: ${{ env.AJAZZ_REPLAY_ROOT }}/review.json
+          if-no-files-found: error
+          retention-days: 7

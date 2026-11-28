@@ -11,6 +11,31 @@ enum AppText {
             "ru": "График заряда...", "uk": "Графік заряду..."],
         "Open battery history folder...": [
             "ru": "Открыть папку истории...", "uk": "Відкрити теку історії..."],
+        "Diagnostic session": ["ru": "Сеанс диагностики", "uk": "Сеанс діагностики"],
+        "Snapshots": ["ru": "Снимки", "uk": "Знімки"],
+        "Start diagnostic session": ["ru": "Начать сеанс диагностики", "uk": "Почати сеанс діагностики"],
+        "Capture baseline": ["ru": "Снять исходное состояние", "uk": "Зняти початковий стан"],
+        "Mark 2.4 GHz selected": ["ru": "Отметить выбор 2,4 ГГц", "uk": "Позначити вибір 2,4 ГГц"],
+        "Mark Bluetooth selected": ["ru": "Отметить выбор Bluetooth", "uk": "Позначити вибір Bluetooth"],
+        "Mark sleep": ["ru": "Отметить сон", "uk": "Позначити сон"],
+        "Mark wake": ["ru": "Отметить пробуждение", "uk": "Позначити пробудження"],
+        "Capture another snapshot": ["ru": "Снять ещё один снимок", "uk": "Зняти ще один знімок"],
+        "Save diagnostic session...": ["ru": "Сохранить сеанс диагностики...", "uk": "Зберегти сеанс діагностики..."],
+        "Discard diagnostic session": ["ru": "Удалить сеанс диагностики", "uk": "Видалити сеанс діагностики"],
+        "Discard all session snapshots?": ["ru": "Удалить все снимки сеанса?", "uk": "Видалити всі знімки сеансу?"],
+        "Snapshot added": ["ru": "Снимок добавлен", "uk": "Знімок додано"],
+        "Snapshot not added; wait a second or check session limits": ["ru": "Снимок не добавлен; подождите секунду или проверьте лимиты сеанса", "uk": "Знімок не додано; зачекайте секунду або перевірте ліміти сеансу"],
+        "Session may contain reply bytes. Review before sharing.": ["ru": "Сеанс может содержать байты ответа. Проверьте перед отправкой.", "uk": "Сеанс може містити байти відповіді. Перевірте перед надсиланням."],
+        "Add report to diagnostic session": ["ru": "Добавить отчёт в сеанс", "uk": "Додати звіт до сеансу"],
+        "Cancel HID diagnostics": ["ru": "Отменить HID-диагностику", "uk": "Скасувати HID-діагностику"],
+        "Cancelling HID diagnostics...": ["ru": "Отмена HID-диагностики...", "uk": "Скасування HID-діагностики..."],
+        "Running HID diagnostics...": ["ru": "Выполняется HID-диагностика...", "uk": "Виконується HID-діагностика..."],
+        "Run HID diagnostics...": ["ru": "Запустить HID-диагностику...", "uk": "Запустити HID-діагностику..."],
+        "Save diagnostic report...": ["ru": "Сохранить отчёт...", "uk": "Зберегти звіт..."],
+        "Close diagnostic report": ["ru": "Закрыть", "uk": "Закрити"],
+        "Unable to save diagnostic report": ["ru": "Не удалось сохранить новый файл отчёта", "uk": "Не вдалося зберегти новий файл звіту"],
+        "Diagnostic busy; try again after the current read": ["ru": "Идёт опрос; повторите после завершения", "uk": "Триває опитування; повторіть після завершення"],
+        "HID diagnostic consent": ["en": "F7/05 query, up to 8 seconds. Report includes first 8 reply bytes. No RTC or configuration writes. Review before sharing.", "ru": "Опрос F7/05, до 8 секунд. Отчёт содержит первые 8 байт ответа. Без RTC и настроек. Проверьте перед отправкой.", "uk": "Опитування F7/05, до 8 секунд. Звіт містить перші 8 байтів відповіді. Без RTC і налаштувань. Перевірте перед надсиланням."],
         "Device diagnostics...": [
             "ru": "Диагностика устройства...", "uk": "Діагностика пристрою..."],
         "Check connected Bluetooth battery...": [
@@ -18,6 +43,13 @@ enum AppText {
         "Copy diagnostic report": [
             "ru": "Копировать отчёт диагностики", "uk": "Копіювати звіт діагностики"],
         "Settings": ["ru": "Настройки", "uk": "Налаштування"],
+        "Application icon": ["ru": "Иконка приложения", "uk": "Значок застосунку"],
+        "Tray icon color": ["ru": "Цвет иконки", "uk": "Колір значка"],
+        "Mouse-shaped tray icon": ["ru": "Значок мыши", "uk": "Значок миші"],
+        "Orange": ["ru": "Оранжевый", "uk": "Помаранчевий"],
+        "White": ["ru": "Белый", "uk": "Білий"],
+        "Black": ["ru": "Чёрный", "uk": "Чорний"],
+        "Blue": ["ru": "Синий", "uk": "Синій"],
         "Notifications": ["ru": "Уведомления", "uk": "Сповіщення"],
         "Low battery notifications": [
             "ru": "Уведомления о низком заряде", "uk": "Сповіщення про низький заряд"],
@@ -64,6 +96,22 @@ enum AppText {
         "AJAZZ APEX receiver not found": [
             "ru": "Приёмник AJAZZ APEX не найден",
             "uk": "Приймач AJAZZ APEX не знайдено"],
+        "No charge readings in this period": [
+            "ru": "За этот период нет измерений заряда",
+            "uk": "За цей період немає вимірювань заряду"],
+        "Last verified USB sample (session): %@": [
+            "ru": "Последнее подтверждённое USB-измерение (сеанс): %@",
+            "uk": "Останнє підтверджене USB-вимірювання (сеанс): %@"],
+        "HID read timed out": [
+            "ru": "Тайм-аут чтения HID",
+            "uk": "Час очікування читання HID вичерпано"
+        ],
+        "Cannot check USB receiver access": [
+            "ru": "Не удалось проверить доступ к USB-приёмнику",
+            "uk": "Не вдалося перевірити доступ до USB-приймача"],
+        "Receiver HID collection not supported": [
+            "ru": "HID-интерфейс приёмника не поддерживается",
+            "uk": "HID-інтерфейс приймача не підтримується"],
         "Receiver found; battery status unavailable": [
             "ru": "Приёмник найден, заряд неизвестен",
             "uk": "Приймач знайдено, заряд невідомий"],
@@ -105,6 +153,11 @@ enum AppText {
         "No observations for the selected period": [
             "ru": "За выбранный период нет измерений",
             "uk": "За вибраний період немає вимірювань"],
+        "disconnected": ["ru": "приёмник отключён", "uk": "приймач відключено"],
+        "unavailable": ["ru": "заряд неизвестен", "uk": "заряд невідомий"],
+        "Unable to read battery history": [
+            "ru": "Не удалось прочитать историю заряда",
+            "uk": "Не вдалося прочитати історію заряду"],
         "no data": ["ru": "нет данных", "uk": "немає даних"],
         "Latest: %@  •  Minimum: %@": [
             "ru": "Последний: %@  •  Минимум: %@",

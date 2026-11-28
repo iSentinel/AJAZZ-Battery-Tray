@@ -1,0 +1,289 @@
+name: Test Windows installer upgrade
+
+on:
+  pull_request:
+    paths:
+      - 'global.json'
+      - 'src/**'
+      - 'installer/**'
+      - 'tools/Invoke-InstallerCompiler.ps1'
+      - '.github/workflows/test-installer-upgrade.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upgrade:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '11.0.100'
+      - name: Verify selected .NET SDK
+        shell: pwsh
+        run: |
+          $actual = dotnet --version
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '11.0.100') {
+            throw 'Selected SDK differs from reviewed global.json'
+          }
+          Write-Host "Selected .NET SDK: $actual"
+          dotnet --list-runtimes | ForEach-Object {
+            if ($_ -match '^([A-Za-z0-9.]+) ([0-9.]+) \[') {
+              Write-Host ("Available runtime: " + $Matches[1] + " " + $Matches[2])
+            }
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime inventory failed' }
+      - name: Build unpublished versioned upgrade candidate
+        shell: pwsh
+        run: |
+          dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.61 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
+          if ($LASTEXITCODE -ne 0) { throw 'Candidate publish failed' }
+          ./tools/Invoke-InstallerCompiler.ps1 -AppVersion '0.3.0-beta.61' -InventoryOutput (Join-Path $env:RUNNER_TEMP 'ajazz-beta61-inno-inventory.json')
+      - name: Verify baseline, upgrade, retained data and uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $old = Join-Path $env:RUNNER_TEMP 'ajazz-beta60-setup.exe'
+          $url = 'https://github.com/iSentinel/AJAZZ-Battery-Tray/releases/download/v0.3.0-beta.60/AJAZZBatteryTray-Setup-win-x64.exe'
+          Invoke-WebRequest -Uri $url -OutFile $old
+          if ((Get-FileHash $old -Algorithm SHA256).Hash.ToLowerInvariant() -ne '555b957b809c2f1bb4228c10a818abadad2df78e455925871713ee7779970672') {
+            throw 'Published baseline hash mismatch'
+          }
+          $dir = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'
+          $data = Join-Path $env:APPDATA 'AJAZZBatteryTray'
+          $installed = Join-Path $dir 'AJAZZBatteryTray.exe'
+          $uninstaller = Join-Path $dir 'unins000.exe'
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9829045F-37F0-4AC3-ACBD-1B5E4129A179}_is1'
+          if ((Test-Path $dir) -or (Test-Path $data) -or (Test-Path $key)) {
+            throw 'Expected clean ephemeral CI runner'
+          }
+          function Install-Checked([string]$Setup, [string]$Version) {
+            $p = Start-Process -FilePath $Setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or !(Test-Path $installed)) { throw "Install failed: $($p.ExitCode)" }
+            if ((Get-ItemProperty -LiteralPath $key).DisplayVersion -ne $Version) { throw 'Unexpected registered version' }
+            if (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) { throw 'Silent install launched tray' }
+          }
+          try {
+            Install-Checked $old '0.3.0-beta.60'
+            $oldHash = (Get-FileHash $installed).Hash
+            $oldUninstallerHash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+            New-Item -ItemType Directory -Path $data | Out-Null
+            $settings = Join-Path $data 'settings.json'
+            $history = Join-Path $data 'battery-history.csv'
+            '{"Language":"uk","PollSeconds":60,"AutomaticUpdateChecks":false,"AutomaticDockClockSync":false}' | Set-Content -LiteralPath $settings -Encoding utf8
+            "utc_timestamp,percent,state" | Set-Content -LiteralPath $history -Encoding utf8
+            "2026-11-24T00:00:00Z,83,online" | Add-Content -LiteralPath $history -Encoding utf8
+            $settingsHash = (Get-FileHash $settings).Hash
+            $historyHash = (Get-FileHash $history).Hash
+            $candidate = (Resolve-Path 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe').Path
+            Install-Checked $candidate '0.3.0-beta.61'
+            $iconNames = @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')
+            foreach ($name in $iconNames) {
+              $expectedIcon = Join-Path 'src/AjazzBatteryTray/Assets' $name
+              $installedIcon = Join-Path (Join-Path $dir 'Icons') $name
+              if (!(Test-Path -LiteralPath $installedIcon) -or
+                  (Get-FileHash $installedIcon).Hash -ne (Get-FileHash $expectedIcon).Hash) {
+                throw "Missing or invalid shortcut icon: $name"
+              }
+            }
+            $actualHash = (Get-FileHash $installed).Hash
+            $expectedHash = (Get-FileHash 'dist/app/AJAZZBatteryTray.exe').Hash
+            if ($actualHash -eq $oldHash -or $actualHash -ne $expectedHash) { throw 'Upgrade did not install candidate binary' }
+            if ((Get-FileHash $settings).Hash -ne $settingsHash -or (Get-FileHash $history).Hash -ne $historyHash) {
+              throw 'Upgrade changed user data'
+            }
+            foreach ($case in @(
+              @{ Argument = '--self-test-full-hid-watchdog'; Expected = 124 },
+              @{ Argument = '--self-test-full-hid-start-gate'; Expected = 0 },
+              @{ Argument = '--self-test-full-hid-parent-exit'; Expected = 0 }
+            )) {
+              $p = Start-Process -FilePath $installed -ArgumentList $case.Argument -PassThru
+              if (-not $p.WaitForExit(30000)) { $p.Kill($true); throw "Installed synthetic worker test hung" }
+              if ($p.ExitCode -ne $case.Expected) { throw "Installed synthetic worker test failed: $($case.Argument)" }
+            }
+            Write-Host 'PASS: installed synthetic full HID worker lifecycle; no device I/O'
+            # Retain only the exact executable exercised below, never its uninstall log/data.
+            $uninstallEvidence = Join-Path $env:RUNNER_TEMP 'ajazz-beta61-uninstaller'
+            New-Item -ItemType Directory -Path $uninstallEvidence -ErrorAction Stop | Out-Null
+            $item = Get-Item -LiteralPath $uninstaller
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or
+                $item.Length -le 0 -or $item.Length -gt 16777216) { throw 'Unexpected uninstaller file' }
+            $uninstallCopy = Join-Path $uninstallEvidence 'unins000.exe'
+            $uninstallHash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+            Copy-Item -LiteralPath $uninstaller -Destination $uninstallCopy
+            if ((Get-FileHash -LiteralPath $uninstallCopy -Algorithm SHA256).Hash.ToLowerInvariant() -ne $uninstallHash -or
+                (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne $uninstallHash) {
+              throw 'Uninstaller copy mismatch'
+            }
+            $p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or (Test-Path $installed) -or (Test-Path $key)) { throw 'Uninstall failed' }
+            if ((Get-FileHash $settings).Hash -ne $settingsHash -or (Get-FileHash $history).Hash -ne $historyHash) { throw 'Uninstall changed user data' }
+            foreach ($name in $iconNames) {
+              if (Test-Path -LiteralPath (Join-Path (Join-Path $dir 'Icons') $name)) {
+                throw "Installed icon remains after uninstall: $name"
+              }
+            }
+            $source = git rev-parse HEAD
+            if ($LASTEXITCODE -ne 0 -or $source -notmatch '^[0-9a-f]{40}$') { throw 'Source revision unavailable' }
+            [ordered]@{
+              schema = 'installer-uninstaller-v1'
+              source_sha = $source
+              version = '0.3.0-beta.61'
+              setup_sha256 = (Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $actualHash.ToLowerInvariant()
+              baseline_uninstaller_sha256 = $oldUninstallerHash
+              uninstaller_sha256 = $uninstallHash
+              uninstaller_bytes = (Get-Item -LiteralPath $uninstallCopy).Length
+              scenario = 'beta60_to_beta61'
+              uninstall_smoke = 'PASS'
+              engine_attribution = 'NOT_VERIFIED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $uninstallEvidence 'uninstaller.json') -Encoding utf8
+            Write-Host 'PASS: four installed shortcut ICO resources and uninstall cleanup'
+            Write-Host 'PASS: pinned beta.60 -> unpublished beta.61 -> uninstall, settings/history preserved; no tray launch or HID'
+          } finally {
+            if (Test-Path $uninstaller) {
+              Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
+            }
+            if (Test-Path $data) { Remove-Item -LiteralPath $data -Recurse -Force }
+            if (Test-Path $old) { Remove-Item -LiteralPath $old -Force }
+          }
+
+      - name: Preserve verified beta.61 candidate before synthetic rebuild
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-beta61-candidate'
+          New-Item -ItemType Directory -Path $evidence -ErrorAction Stop | Out-Null
+          $setup = 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe'
+          $app = 'dist/app/AJAZZBatteryTray.exe'
+          $copy = Join-Path $evidence 'AJAZZBatteryTray-Setup-win-x64.exe'
+          Copy-Item -LiteralPath $setup -Destination $copy
+          $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ((Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash.ToLowerInvariant() -ne $hash) {
+            throw 'Candidate copy mismatch'
+          }
+          [ordered]@{
+            schema = 'installer-candidate-v1'
+            source_sha = (git rev-parse HEAD)
+            version = '0.3.0-beta.61'
+            setup_sha256 = $hash
+            app_sha256 = (Get-FileHash -LiteralPath $app -Algorithm SHA256).Hash.ToLowerInvariant()
+            lifecycle_probe = $false
+            physical_acceptance = 'NOT_VERIFIED'
+            release_admission = 'NOT_VERIFIED'
+          } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'candidate.json') -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'Candidate source revision unavailable' }
+
+      - name: Verify running tray closure and automatic relaunch (synthetic)
+        shell: pwsh
+        timeout-minutes: 8
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Resolve-Path 'dist/installer/AJAZZBatteryTray-Setup-win-x64.exe').Path
+          $prior = Join-Path $env:RUNNER_TEMP 'ajazz-lifecycle-beta61.exe'
+          Copy-Item -LiteralPath $setup -Destination $prior
+          $dir = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'
+          $installed = Join-Path $dir 'AJAZZBatteryTray.exe'
+          $uninstaller = Join-Path $dir 'unins000.exe'
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9829045F-37F0-4AC3-ACBD-1B5E4129A179}_is1'
+          $mode = '--internal-installer-lifecycle-probe'
+          $readyName = 'Local\AJAZZBatteryTray_InstallerProbe_v1'
+          $flags = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/RESTARTEXITCODE=3010','/SP-','/CLOSEAPPLICATIONS','/NOFORCECLOSEAPPLICATIONS')
+          function Invoke-Setup([string]$Path, [string]$Launch) {
+            $p = Start-Process -FilePath $Path -ArgumentList ($flags + "/LAUNCH=$Launch") -PassThru
+            if (-not $p.WaitForExit(90000)) { $p.Kill($true); throw 'Setup exceeded deadline' }
+            if ($p.ExitCode -ne 0) { throw "Setup failed or requires reboot: $($p.ExitCode)" }
+          }
+          function Wait-Probe([Diagnostics.Process]$Process) {
+            $until = [DateTime]::UtcNow.AddSeconds(15)
+            do {
+              if ($Process.HasExited) { throw 'Probe exited before ready' }
+              try {
+                $event = [Threading.EventWaitHandle]::OpenExisting($readyName)
+                try { if ($event.WaitOne(0)) { return } } finally { $event.Dispose() }
+              } catch [Threading.WaitHandleCannotBeOpenedException] { }
+              Start-Sleep -Milliseconds 200
+            } while ([DateTime]::UtcNow -lt $until)
+            throw 'Probe did not signal readiness'
+          }
+          $oldProcess = $null
+          $newProcess = $null
+          try {
+            if (Test-Path $dir) { throw 'Expected clean CI install directory' }
+            dotnet publish src/AjazzBatteryTray/AjazzBatteryTray.csproj -c Release -r win-x64 --self-contained true -p:Version=0.3.0-beta.62 -p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -o dist/app
+            if ($LASTEXITCODE -ne 0) { throw 'Lifecycle target publish failed' }
+            # CI-only installer launches a synthetic no-HID probe.
+            ./tools/Invoke-InstallerCompiler.ps1 -AppVersion '0.3.0-beta.62' -LifecycleProbe
+            Invoke-Setup $prior '0'
+            if ((Get-ItemProperty -LiteralPath $key).DisplayVersion -ne '0.3.0-beta.61') {
+              throw 'Unexpected lifecycle baseline version'
+            }
+            $oldHash = (Get-FileHash $installed).Hash
+            $oldProcess = Start-Process -FilePath $installed -ArgumentList $mode -PassThru
+            Wait-Probe $oldProcess
+            Invoke-Setup $setup '1'
+            if (-not $oldProcess.WaitForExit(5000) -or $oldProcess.ExitCode -ne 0) {
+              throw 'Old probe did not exit gracefully'
+            }
+            $until = [DateTime]::UtcNow.AddSeconds(15)
+            do {
+              $matches = @(Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue |
+                Where-Object { $_.Id -ne $oldProcess.Id -and $_.Path -eq $installed })
+              if ($matches.Count -gt 1) { throw 'Multiple replacement processes' }
+              if ($matches.Count -eq 1) { $newProcess = $matches[0]; break }
+              Start-Sleep -Milliseconds 200
+            } while ([DateTime]::UtcNow -lt $until)
+            if (-not $newProcess) { throw 'Automatic relaunch did not start' }
+            Wait-Probe $newProcess
+            $hash = (Get-FileHash $installed).Hash
+            if ($hash -eq $oldHash -or $hash -ne (Get-FileHash 'dist/app/AJAZZBatteryTray.exe').Hash -or
+                (Get-ItemProperty -LiteralPath $key).DisplayVersion -ne '0.3.0-beta.62') {
+              throw 'Relaunch does not use updated installation'
+            }
+            Write-Host 'PASS: Restart Manager gracefully closed old PID, upgraded EXE and launched new PID; synthetic only'
+          } finally {
+            foreach ($process in @($oldProcess, $newProcess)) {
+              if ($process -and -not $process.HasExited) { $process.Kill(); [void]$process.WaitForExit(5000) }
+              if ($process) { $process.Dispose() }
+            }
+            # Cleanup only the known installed path on this disposable CI runner.
+            if (Test-Path $uninstaller) {
+              Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
+            }
+            Remove-Item -LiteralPath $prior -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload verified unpublished beta.61 installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: AJAZZBatteryTray-unpublished-beta61-installer
+          path: |
+            ${{ runner.temp }}/ajazz-beta61-candidate/AJAZZBatteryTray-Setup-win-x64.exe
+            ${{ runner.temp }}/ajazz-beta61-candidate/candidate.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload exercised unpublished beta.61 uninstaller
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: AJAZZBatteryTray-beta61-uninstaller-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-beta61-uninstaller/unins000.exe
+            ${{ runner.temp }}/ajazz-beta61-uninstaller/uninstaller.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload normal candidate compiler inventory
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: AJAZZBatteryTray-beta61-inno-compiler-inventory
+          path: ${{ runner.temp }}/ajazz-beta61-inno-inventory.json
+          if-no-files-found: error
+          retention-days: 7

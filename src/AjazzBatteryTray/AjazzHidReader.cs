@@ -10,7 +10,8 @@ public sealed class AjazzHidReader
     /// <summary>PresenceKnown is false when Windows could not enumerate USB.</summary>
     public sealed record Reading(bool ReceiverPresent, int? Percent,
         string Details, bool PresenceKnown = true,
-        IReadOnlyList<string>? Attempts = null);
+        IReadOnlyList<string>? Attempts = null, UsbReadIssue Issue = UsbReadIssue.None,
+        int? UnverifiedPercent = null);
 
     /// <summary>One receiver, identified locally; never export Key.</summary>
     public sealed record ReceiverReading(string Key, ushort? Revision, Reading Reading,
@@ -23,12 +24,23 @@ public sealed class AjazzHidReader
             ?? receivers.FirstOrDefault();
 
     public Batch ReadAll(bool captureProtocol = false, Func<string, bool>? shouldSample = null,
-        Action<string>? progress = null, bool redactRaw = false)
+        Action<string>? progress = null, bool redactRaw = false,
+        bool compareGetIds = false)
     {
+        if (compareGetIds && (!captureProtocol || !redactRaw))
+            throw new ArgumentException("GET ID comparison requires redacted diagnostics");
         List<string> attempts = new();
         List<ReceiverReading> receivers = new();
         try
         {
+            using var lease = AjazzIoLease.TryAcquire();
+            if (lease is null)
+            {
+                progress?.Invoke("STEP: AJAZZ vendor I/O busy; no HID request");
+                return new Batch(new Reading(false, null, "AJAZZ vendor I/O busy",
+                    PresenceKnown: false, Issue: UsbReadIssue.Busy),
+                    Array.Empty<ReceiverReading>());
+            }
             progress?.Invoke("STEP: enumerating receiver HID paths");
             IReadOnlyList<string> paths = HidNative.FindAjazzPaths();
             attempts.Add($"Matching MI_02 paths: {paths.Count}");
@@ -45,24 +57,30 @@ public sealed class AjazzHidReader
                 }
                 List<string> trace = new();
                 if (captureProtocol) trace.Add($"[Receiver #{receivers.Count + 1}]");
+                if (compareGetIds)
+                    progress?.Invoke($"STEP: experimental receiver #{receivers.Count + 1}");
                 Reading? reading;
                 ushort? revision = null;
                 try
                 {
                     reading = QueryPath(path, trace, out revision, captureProtocol,
-                        progress, redactRaw);
+                        progress, redactRaw, compareGetIds);
                 }
                 catch (Exception error)
                 {
                     trace.Add("  Receiver poll exception: " + error.GetType().Name);
                     reading = null;
                 }
-                reading ??= new Reading(true, null, "HID collection unavailable");
+                reading ??= new Reading(true, null, "HID collection unavailable",
+                    Issue: UsbReadIssue.InterfaceUnavailable);
                 receivers.Add(new ReceiverReading(key,
                     revision, reading with { Attempts = trace.ToArray() },
                     MeasuredAt: DateTimeOffset.UtcNow, CompletedTick: Environment.TickCount64));
                 if (captureProtocol)
+                {
                     trace.Add($"  Receiver result: {reading.Percent?.ToString() ?? "unavailable"}; {reading.Details}");
+                    trace.Add("  " + BatteryReportParser.DiagnosticUnverifiedField(reading.UnverifiedPercent));
+                }
                 attempts.AddRange(trace);
             }
 
@@ -73,7 +91,7 @@ public sealed class AjazzHidReader
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "HID read failed: " + error.GetType().Name);
+            FileLog.Write(LogEvent.HidReadFailed, error);
             attempts.Add("Poll exception: " + error.GetType().Name);
             return new Batch(new Reading(false, null, "HID read error; see log",
                 PresenceKnown: false, Attempts: attempts.ToArray()), Array.Empty<ReceiverReading>());
@@ -85,6 +103,8 @@ public sealed class AjazzHidReader
     {
         try
         {
+            using var lease = AjazzIoLease.TryAcquire();
+            if (lease is null) return false;
             foreach (string path in HidNative.FindAjazzPaths())
             {
                 using SafeFileHandle handle = HidNative.Open(path);
@@ -109,14 +129,15 @@ public sealed class AjazzHidReader
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Dock clock HID transfer failed", error);
+            FileLog.Write(LogEvent.DockClockTransferFailed, error);
         }
 
         return false;
     }
 
     private static Reading? QueryPath(string path, List<string> attempts, out ushort? revision,
-        bool captureProtocol, Action<string>? progress, bool redactRaw)
+        bool captureProtocol, Action<string>? progress, bool redactRaw,
+        bool compareGetIds)
     {
         revision = null;
         attempts.Add($"Interface: {DiagnosticHidIdentity.FromPath(path)}");
@@ -142,6 +163,11 @@ public sealed class AjazzHidReader
         }
 
         var attributes = HidNative.GetAttributes(handle);
+        if (compareGetIds && attributes is null)
+        {
+            attempts.Add("  Experimental comparison requires verified USB descriptor; skipped");
+            return null;
+        }
         revision = attributes?.VersionNumber;
         if (attributes is { } identity &&
             (identity.VendorID != 0x3151 || identity.ProductID != 0x5007))
@@ -153,14 +179,22 @@ public sealed class AjazzHidReader
         attempts.Add($"  Feature report size: {caps.FeatureReportByteLength}");
         if (captureProtocol)
             attempts.Add($"  Usage: {caps.UsagePage:X4}:{caps.Usage:X4}; input={caps.InputReportByteLength}; output={caps.OutputReportByteLength}");
+        if (compareGetIds)
+            return CompareGetIds(handle, caps.FeatureReportByteLength, attempts, progress);
         // Normal polling retains the original order and timing.
         int? firstValid = null;
-        int validAttempts = 0, totalAttempts = 0;
+        int validAttempts = 0, totalAttempts = 0, matching = 0;
+        int? firstUnverified = null;
         foreach (var (length, delay) in ApexProtocolMatrix.Build(caps.FeatureReportByteLength, captureProtocol))
         {
             int? percent = PollBattery(handle, length, attempts, delay,
-                captureProtocol, progress, redactRaw);
+                captureProtocol, progress, redactRaw, out int? candidate);
             totalAttempts++;
+            if (candidate.HasValue)
+            {
+                firstUnverified ??= candidate;
+                if (candidate == firstUnverified) matching++;
+            }
             if (percent.HasValue)
             {
                 if (!captureProtocol)
@@ -169,16 +203,36 @@ public sealed class AjazzHidReader
                 validAttempts++;
             }
         }
+        int? unverified = revision == 2 && !firstValid.HasValue
+            ? BatteryReportParser.ConsistentUnverifiedField(firstUnverified, matching, totalAttempts)
+            : null;
         if (captureProtocol)
+        {
             attempts.Add($"  Matrix result: {validAttempts}/{totalAttempts} valid replies; first valid={firstValid?.ToString() ?? "unavailable"}");
+            attempts.Add($"  Ready-clear field agreement: {matching}/{totalAttempts}; " +
+                BatteryReportParser.DiagnosticUnverifiedField(unverified));
+        }
         return firstValid.HasValue ? new Reading(true, firstValid, "2.4 GHz / 8K") :
-            new Reading(true, null, "No valid battery status report");
+            new Reading(true, null, "No valid battery status report", UnverifiedPercent: unverified);
+    }
+
+    /// <summary>Never publish an experimental comparison as battery telemetry.</summary>
+    private static Reading CompareGetIds(SafeFileHandle handle, int descriptorLength,
+        List<string> attempts, Action<string>? progress)
+    {
+        foreach (var (length, delay, id) in ApexProtocolMatrix.CompareGetIds(descriptorLength))
+        {
+            progress?.Invoke($"PAIR: delay={delay}ms length={length} request={id:X2}");
+            PollBattery(handle, length, attempts, delay, true, progress, true, out _, id, true);
+        }
+        return new Reading(true, null, "Experimental GET ID comparison; no battery claimed");
     }
 
     private static int? PollBattery(SafeFileHandle handle, int length,
         List<string> attempts, int delayMs, bool captureProtocol,
-        Action<string>? progress, bool redactRaw)
+        Action<string>? progress, bool redactRaw, out int? candidate, byte reportId = 0x05, bool comparison = false)
     {
+        candidate = null;
         // Only the existing allowlisted zero-payload telemetry request.
         byte[] poll = new byte[length];
         poll[1] = 0xF7;
@@ -203,36 +257,54 @@ public sealed class AjazzHidReader
         Thread.Sleep(delayMs);
         long waitMs = elapsed.ElapsedMilliseconds;
         byte[] response = new byte[length];
-        response[0] = 0x05;
+        response[0] = reportId;
+        string getId = reportId.ToString("X2");
         if (captureProtocol)
             attempts.Add(redactRaw ?
-                $"  GET request buffer[{length}]: report 05, rest zero" :
+                $"  GET request buffer[{length}]: report {getId}, rest zero" :
                 $"  GET request buffer[{length}]={Convert.ToHexString(response)}");
-        progress?.Invoke($"STEP: GET 05 begin length={length}");
+        progress?.Invoke($"STEP: GET {getId} begin length={length}");
         elapsed.Restart();
         bool received = HidNative.HidD_GetFeature(handle, response, length);
         int getError = received ? 0 : Marshal.GetLastWin32Error();
         long getMs = elapsed.ElapsedMilliseconds;
-        progress?.Invoke($"STEP: GET 05 {(received ? "OK" : "FAILED")} Win32={getError} elapsed={getMs}ms");
+        progress?.Invoke($"STEP: GET {getId} {(received ? "OK" : "FAILED")} Win32={getError} elapsed={getMs}ms");
         if (captureProtocol)
             attempts.Add($"  SET elapsed={setMs}ms; actual wait={waitMs}ms; GET elapsed={getMs}ms");
         if (!received)
         {
-            attempts.Add($"  SET F7 OK; GET 05 ({length} bytes): failed, Win32 {getError}");
+            attempts.Add($"  SET F7 OK; GET {getId} ({length} bytes): failed, Win32 {getError}");
             return null;
         }
 
-        int? percent = BatteryReportParser.ParseWindowsFeature(response);
-        attempts.Add($"  SET F7 / GET 05 ({length} bytes): OK; " +
+        var observation = BatteryReportParser.ObserveSharedF7(response);
+        int? percent = observation is { } shared ? shared.VerifiedPercent :
+            BatteryReportParser.ParseWindowsFeature(response);
+        if (!comparison && reportId == 0x05 && percent is null)
+            candidate = observation?.UnverifiedPercent;
+        if (comparison)
+        {
+            string observed = $"OBSERVED: request={getId} returned={response[0]:X2} " +
+                $"length={length} delay={delayMs}ms status10={Convert.ToHexString(response.AsSpan(0, Math.Min(10, response.Length)))}; " +
+                $"existing-parser candidate={percent?.ToString() ?? "unavailable"} (not telemetry)";
+            progress?.Invoke(observed);
+        }
+        attempts.Add($"  SET F7 / GET {getId} ({length} bytes): OK; " +
             $"header={DiagnosticHidIdentity.BatteryHeader(response)}; " +
-            (percent.HasValue ? $"battery={percent}%" : "no valid battery"));
+            (comparison ? "experimental observation only" :
+                percent.HasValue ? $"battery={percent}%" : "no valid battery"));
+        if (!comparison)
+            attempts.Add("  " + BatteryReportParser.DiagnosticF7Gate(observation));
         if (captureProtocol)
         {
             attempts.Add(redactRaw ?
                 $"  RX prefix[{length}]={DiagnosticHidIdentity.SafeFeaturePreview(response)}" :
                 $"  RX buffer[{length}]={Convert.ToHexString(response)}");
             attempts.Add("  Parser: " + BatteryReportParser.DescribeWindowsFeature(response));
+            if (reportId == 0x00)
+                attempts.Add($"  Experimental GET 00 returned ID={response[0]:X2}; " +
+                    "not accepted as a battery measurement");
         }
-        return percent;
+        return comparison ? null : percent;
     }
 }

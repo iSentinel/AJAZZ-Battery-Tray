@@ -32,14 +32,19 @@ public sealed class AulaBatteryState
     }
 
     /// <summary>Cache is display-only, bounded by age and confirmed receiver presence.</summary>
-    public int? DisplayPercent(bool present, bool known, int? fresh, DateTimeOffset now)
+    public int? CachedPercent(bool present, bool known, DateTimeOffset now)
     {
         if (!known || !present) return null;
-        if (fresh is >= 1 and <= 100) return fresh;
         if (LastGoodAt is not { } at || now < at || now - at >= CacheLifetime)
             return null;
         return LastGoodPercent;
     }
+
+    /// <summary>Use the worker completion time, never a delayed UI delivery time.</summary>
+    public bool IsFreshSample(int? percent, DateTimeOffset? measuredAt, DateTimeOffset now)
+        => percent is >= 1 and <= 100 && measuredAt is { } at && at <= now &&
+            now - at <= DeviceDashboardState.MaximumFreshAge &&
+            percent == LastGoodPercent && at == LastGoodAt;
 
     /// <summary>Project AULA observations consistently for the dashboard and local API.</summary>
     public DeviceDashboardState Dashboard(string name, bool automatic, bool checkedOnce,
@@ -48,9 +53,9 @@ public sealed class AulaBatteryState
         const string transport = "2.4 GHz";
         if (!automatic && !checkedOnce)
             return new(name, transport, DeviceDashboardStatus.Disabled, null, null);
-        if (fresh is not (>= 1 and <= 100) || measuredAt is null || measuredAt > now)
+        if (!IsFreshSample(fresh, measuredAt, now))
             fresh = null;
-        int? cached = DisplayPercent(present, known, fresh, now);
+        int? cached = CachedPercent(present, known, now);
         var state = DeviceDashboardState.FromPoll(name, transport, checkedOnce,
             known, present, fresh, measuredAt, cached, LastGoodAt);
         return !automatic && state.Status == DeviceDashboardStatus.Fresh

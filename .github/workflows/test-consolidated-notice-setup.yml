@@ -1,0 +1,481 @@
+name: Compile exact consolidated notice-bearing setup
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-consolidated-notice-setup.yml'
+      - 'tools/test_consolidated_notice_setup.py'
+      - 'tools/build_local_inno674_candidate.py'
+      - 'tools/test_build_local_inno674_candidate.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  consolidated-notice-setup:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: f939fea7fb422aa588649138d29a750ce62cd22a
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
+      - name: Retrieve exact original Windows portable artifact
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git rev-parse HEAD) -cne 'f939fea7fb422aa588649138d29a750ce62cd22a') {
+            throw 'Original source checkout differs'
+          }
+          $zip = Join-Path $env:RUNNER_TEMP 'original-portable.zip'
+          @'
+          import subprocess
+          import sys
+          with open(sys.argv[1], "xb") as output:
+              subprocess.run(["gh", "api",
+                              "repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/15110510075/zip"],
+                             stdout=output, check=True, timeout=120)
+          '@ | python - $zip
+          if ($LASTEXITCODE -ne 0) { throw 'Original artifact retrieval failed' }
+          python tools/stage_local_inno674_payload.py --source (Get-Location).Path --source-sha f939fea7fb422aa588649138d29a750ce62cd22a --archive $zip --archive-sha256 e06bda2f95725a37f206cfbaffe6f3b333c735ea0a8e580fe092ccbfed340302
+          if ($LASTEXITCODE -ne 0) { throw 'Original payload staging failed' }
+          if ((Get-FileHash 'dist/app/AJAZZBatteryTray.exe').Hash.ToLowerInvariant() -cne '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c') { throw 'Original EXE differs' }
+      - name: Acquire exact official asset without execution
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher'
+          New-Item -ItemType Directory -Path $root | Out-Null
+          $asset = Join-Path $root 'innosetup-6.7.4.exe'
+          $url = 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_4/innosetup-6.7.4.exe'
+          curl.exe --fail --silent --show-error --location --max-redirs 5 --proto '=https' --proto-redir '=https' --tlsv1.2 --max-time 90 --max-filesize 10604576 --output $asset $url
+          if ($LASTEXITCODE -ne 0) { throw 'Official asset download failed' }
+          $item = Get-Item -LiteralPath $asset
+          $hash = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($item.Length -ne 10604576 -or $hash -cne 'a549929319f9120716677c685535ca4671e4b937b5fdc87e2585f32d8eb30e8c') {
+            throw 'Official asset identity differs'
+          }
+      - name: Verify native Authenticode and exact publisher
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher'
+          $asset = Join-Path $root 'innosetup-6.7.4.exe'
+          $sig = Get-AuthenticodeSignature -LiteralPath $asset
+          if ($sig.Status -ne 'Valid' -or $sig.SignatureType -ne 'Authenticode' -or
+              !$sig.SignerCertificate -or !$sig.TimeStamperCertificate) {
+            throw 'Native Authenticode or timestamp evidence missing or invalid'
+          }
+          $cert = $sig.SignerCertificate
+          $publisher = $cert.GetNameInfo([Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+          if ($publisher -cne 'Pyrsys B.V.') { throw 'Unexpected official publisher' }
+          $record = [ordered]@{
+            schema = 'inno-publisher-authenticode-v1'
+            asset_sha256 = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+            status = $sig.Status.ToString()
+            signature_type = $sig.SignatureType.ToString()
+            publisher = $publisher
+            subject = $cert.Subject
+            issuer = $cert.Issuer
+            signer_cert_sha256 = $cert.GetCertHashString([Security.Cryptography.HashAlgorithmName]::SHA256).ToLowerInvariant()
+            timestamp_subject = $sig.TimeStamperCertificate.Subject
+            timestamp_cert_sha256 = $sig.TimeStamperCertificate.GetCertHashString([Security.Cryptography.HashAlgorithmName]::SHA256).ToLowerInvariant()
+            release_admission = 'NOT_VERIFIED'
+          }
+          $record | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'authenticode.json') -Encoding utf8
+      - name: Verify immutable release attestation
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher'
+          $asset = Join-Path $root 'innosetup-6.7.4.exe'
+          gh --version
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI unavailable' }
+          $result = gh release verify-asset is-6_7_4 $asset --repo jrsoftware/issrc --format json
+          if ($LASTEXITCODE -ne 0 -or !$result) { throw 'Official release attestation verification failed' }
+          $json = $result -join "`n"
+          $null = ConvertFrom-Json -InputObject $json -ErrorAction Stop
+          $json | Set-Content -LiteralPath (Join-Path $root 'release-attestation.json') -Encoding utf8
+      - name: Deploy verified upstream portable compiler on ephemeral runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher'
+          $asset = Join-Path $root 'innosetup-6.7.4.exe'
+          $compiler = Join-Path $root 'portable-compiler'
+          if ($env:GITHUB_ACTIONS -cne 'true' -or (Test-Path -LiteralPath $compiler)) {
+            throw 'Expected fresh ephemeral runner target'
+          }
+          if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant() -cne 'a549929319f9120716677c685535ca4671e4b937b5fdc87e2585f32d8eb30e8c') {
+            throw 'Verified asset changed'
+          }
+          $p = Start-Process -FilePath $asset -ArgumentList @('/PORTABLE=1','/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/NOICONS',"/DIR=`"$compiler`"") -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Portable compiler deployment failed' }
+          python tools/verify_inno674_components.py --root $compiler --output (Join-Path $root 'components-before.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Compiler input identity failed' }
+      - name: Stage exact reviewed notices
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          New-Item -ItemType Directory -Path $root | Out-Null
+          $packs = [ordered]@{
+            host = 'microsoft.netcore.app.host.win-x64/11.0.0'
+            core = 'microsoft.netcore.app.runtime.win-x64/11.0.0'
+            desktop = 'microsoft.windowsdesktop.app.runtime.win-x64/11.0.0'
+            sdk = 'microsoft.windows.sdk.net.ref/10.0.19041.87'
+          }
+          foreach ($entry in $packs.GetEnumerator()) {
+            $parts = $entry.Value.Split('/')
+            $url = "https://api.nuget.org/v3-flatcontainer/$($entry.Value)/$($parts[0]).$($parts[1]).nupkg"
+            $path = Join-Path $root "$($entry.Key).nupkg"
+            curl.exe --fail --silent --show-error --location --max-redirs 3 --proto '=https' --proto-redir '=https' --tlsv1.2 --max-time 120 --max-filesize 268435456 --output $path $url
+            if ($LASTEXITCODE -ne 0) { throw 'Pinned pack download failed' }
+          }
+          python tools/stage_windows_notices.py --host (Join-Path $root 'host.nupkg') --core (Join-Path $root 'core.nupkg') --desktop (Join-Path $root 'desktop.nupkg') --sdk (Join-Path $root 'sdk.nupkg') --output (Join-Path $root 'staged')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice staging failed' }
+          python tools/verify_windows_notice_transport.py --tree (Join-Path $root 'staged') --output (Join-Path $root 'staged-evidence.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Notice identity failed' }
+      - name: Compile exact original application with reviewed notices
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          python tools/build_local_inno674_candidate.py --compiler $compiler --notices (Join-Path $root 'staged') --output $root --dry-run
+          if ($LASTEXITCODE -ne 0) { throw 'Exact candidate preflight failed' }
+          $noticeRoot = Join-Path $root 'staged'
+          $app = Get-Item -LiteralPath 'dist/app/AJAZZBatteryTray.exe'
+          $inputs = @($app)
+          foreach ($name in @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')) {
+            $inputs += Get-Item -LiteralPath "src/AjazzBatteryTray/Assets/$name"
+          }
+          $inputs += Get-ChildItem -LiteralPath $noticeRoot -File -Recurse
+          if ($inputs.Count -ne 15) { throw 'Unexpected installer timestamp inputs' }
+          $stamps = [ordered]@{}
+          foreach ($item in $inputs) {
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+              throw 'Expected regular staged installer input'
+            }
+            $stamps[$item.FullName] = $item.LastWriteTimeUtc
+          }
+          $fixedStamp = [datetime]::new(2000, 1, 1, 0, 0, 0, [DateTimeKind]::Utc)
+          $repeat = Join-Path $root 'repeat-normalized'
+          $different = Join-Path $root 'repeat-changed-app-time'
+          New-Item -ItemType Directory -Path $repeat,$different | Out-Null
+          try {
+            foreach ($path in $stamps.Keys) { [IO.File]::SetLastWriteTimeUtc($path, $fixedStamp) }
+            foreach ($destination in @($root, $repeat, $different)) {
+              if ($destination -ceq $different) {
+                [IO.File]::SetLastWriteTimeUtc($app.FullName, $fixedStamp.AddDays(1))
+              }
+              python tools/build_local_inno674_candidate.py --compiler $compiler --notices $noticeRoot --output $destination --compile
+              if ($LASTEXITCODE -ne 0) { throw 'Exact candidate compilation failed' }
+            }
+          } finally {
+            foreach ($path in $stamps.Keys) { [IO.File]::SetLastWriteTimeUtc($path, $stamps[$path]) }
+          }
+          @'
+          import json
+          from pathlib import Path
+          import sys
+
+          sys.path.insert(0, "tools")
+          from compare_inno_loader import digest
+          from run_offline_qa import write_json
+          from verify_inno_inner_engine import recover
+          from verify_inno_setup_data import decode_setup0
+          from verify_windowsdesktop_provenance import read_local
+
+          root, repeat, different = map(Path, sys.argv[1:])
+          names = ("normalized_primary", "normalized_repeat", "changed_app_time")
+          builds = {}
+          records = []
+          for name, directory in zip(names, (root, repeat, different)):
+              record = json.loads(read_local(directory / "local-build-evidence.json"))
+              raw = read_local(directory / "AJAZZBatteryTray-Setup-win-x64.exe")
+              sha = digest(raw)
+              if record.pop("setup_sha256") != sha:
+                  raise ValueError("Build record digest differs")
+              records.append(record)
+              engine, section = recover(raw)
+              a, b, c = (section[key] for key in ("offset1", "offset0", "engine_offset"))
+              setup_records, location_records, _ = decode_setup0(raw[b:c])
+              builds[name] = {"setup_sha256": sha, "loader_sha256": digest(raw[:a]),
+                              "solid_payload_sha256": digest(raw[a:b]),
+                              "setup_records_sha256": digest(setup_records),
+                              "location_records_sha256": digest(location_records),
+                              "inner_engine_sha256": digest(engine)}
+          if any(record != records[0] for record in records[1:]):
+              raise ValueError("Build byte inputs differ")
+          write_json(root / "setup-repeat-observation.json", {
+              "schema": "notice-setup-repeat-v1", "source_sha": "f939fea7fb422aa588649138d29a750ce62cd22a",
+              "app_sha256": records[0]["app_sha256"], "builds": builds,
+              "scope": "one runner; same byte inputs; only the app timestamp deliberately varied",
+              "release_admission": "NOT_VERIFIED",
+          })
+          '@ | python - $root $repeat $different
+          if ($LASTEXITCODE -ne 0) { throw 'Setup repeat observation failed' }
+          $record = Get-Content (Join-Path $root 'local-build-evidence.json') -Raw | ConvertFrom-Json
+          if ($record.app_sha256 -cne '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c' -or
+              $record.setup_sha256 -cne (Get-FileHash (Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe')).Hash.ToLowerInvariant() -or
+              $record.release_admission -cne 'NOT_VERIFIED') { throw 'Build evidence differs' }
+      - name: Verify product notice lifecycle without tray launch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $setup = Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe'
+          $target = Join-Path $env:ProgramFiles 'AJAZZ Battery Tray'
+          $app = Join-Path $target 'AJAZZBatteryTray.exe'
+          $uninstaller = Join-Path $target 'unins000.exe'
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9829045F-37F0-4AC3-ACBD-1B5E4129A179}_is1'
+          $data = Join-Path $env:APPDATA 'AJAZZBatteryTray'
+          if ($env:GITHUB_ACTIONS -cne 'true' -or !$env:ProgramFiles) { throw 'Expected ephemeral CI runner' }
+          if (!(Test-Path -LiteralPath $setup -PathType Leaf) -or (Test-Path $target) -or (Test-Path $key) -or (Test-Path $data) -or (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue)) {
+            throw 'Expected clean isolated product probe target'
+          }
+          $expected = (Get-FileHash -LiteralPath 'dist/app/AJAZZBatteryTray.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          try {
+            # Match normal silent setup: no /DIR or /LAUNCH override.
+            $p = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-') -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or !(Test-Path -LiteralPath $app -PathType Leaf) -or !(Test-Path -LiteralPath $uninstaller -PathType Leaf)) {
+              throw 'Product probe installation failed'
+            }
+            if ((Get-FileHash -LiteralPath $app -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expected -or (Get-ItemProperty -LiteralPath $key).DisplayVersion -cne '0.3.0-beta.61' -or (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) -or (Test-Path $data)) {
+              throw 'Unexpected product identity or launch'
+            }
+            foreach ($name in @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')) {
+              if ((Get-FileHash -LiteralPath (Join-Path $target "Icons/$name")).Hash -cne (Get-FileHash -LiteralPath "src/AjazzBatteryTray/Assets/$name").Hash) { throw 'Product icon differs' }
+            }
+            python tools/verify_windows_notice_transport.py --tree (Join-Path $target 'Notices') --output (Join-Path $root 'product-installed-evidence.json')
+            if ($LASTEXITCODE -ne 0) { throw 'Product notices differ' }
+            $capture = Join-Path $root 'exercised-unins000.exe'
+            if (Test-Path -LiteralPath $capture) { throw 'Uninstaller capture already exists' }
+            $hash = (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+            Copy-Item -LiteralPath $uninstaller -Destination $capture
+            if ((Get-FileHash -LiteralPath $capture -Algorithm SHA256).Hash.ToLowerInvariant() -cne $hash -or
+                (Get-FileHash -LiteralPath $uninstaller -Algorithm SHA256).Hash.ToLowerInvariant() -cne $hash) {
+              throw 'Uninstaller capture differs'
+            }
+            $p = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+            if ($p.ExitCode -ne 0 -or (Test-Path $app) -or (Test-Path $key) -or (Test-Path $data) -or (Test-Path (Join-Path $target 'Icons')) -or (Test-Path (Join-Path $target 'Notices'))) {
+              throw 'Product probe uninstall cleanup failed'
+            }
+            [ordered]@{
+              schema = 'product-notice-probe-v1'
+              source_sha = (git rev-parse HEAD)
+              setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $expected
+              installed_notices = 'MATCH'
+              uninstalled_notices = 'REMOVED'
+              tray_launch = 'NOT_OBSERVED'
+              physical_acceptance = 'NOT_VERIFIED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'product-lifecycle.json') -Encoding utf8
+            [ordered]@{
+              schema = 'inno-674-exercised-uninstaller-v1'
+              source_sha = (git rev-parse HEAD)
+              setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $expected
+              uninstaller_sha256 = $hash
+              uninstall_result = 'REMOVED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'exercised-uninstaller.json') -Encoding utf8
+            [ordered]@{
+              schema = 'inno-674-production-shape-v1'
+              source_sha = (git rev-parse HEAD)
+              setup_sha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+              app_sha256 = $expected
+              output_filename = 'AJAZZBatteryTray-Setup-win-x64.exe'
+              version = '0.3.0-beta.61'
+              default_program_files_install = 'MATCH'
+              default_silent_launch = 'NOT_OBSERVED'
+              uninstalled = 'REMOVED'
+              release_admission = 'NOT_VERIFIED'
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'production-shape.json') -Encoding utf8
+          } finally {
+            if (Test-Path -LiteralPath $uninstaller -PathType Leaf) {
+              Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait
+            }
+          }
+      - name: Exercise exact setup upgrade and same-version reinstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $setupName = 'AJAZZBatteryTray-Setup-win-x64.exe'
+          $setup = Join-Path $root $setupName
+          $clean = Get-Content -LiteralPath (Join-Path $root 'product-lifecycle.json') -Raw | ConvertFrom-Json
+          if ($clean.setup_sha256 -cne (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()) {
+            throw 'Setup changed after clean lifecycle'
+          }
+          & ./tools/Test-ProductNoticeUpgrade.ps1 -ProbeRoot $root -CandidateName $setupName
+          $upgrade = Get-Content -LiteralPath (Join-Path $root 'product-upgrade-lifecycle.json') -Raw | ConvertFrom-Json
+          if ($upgrade.source_sha -cne $clean.source_sha -or $upgrade.setup_sha256 -cne $clean.setup_sha256 -or
+              $upgrade.app_sha256 -cne $clean.app_sha256 -or $upgrade.synthetic_user_data -cne 'PRESERVED' -or
+              $upgrade.upgrade_notices -cne 'MATCH' -or $upgrade.reinstall_restores_missing_notice -cne 'PASS' -or
+              $upgrade.uninstall_notices -cne 'REMOVED' -or $upgrade.tray_launch -cne 'NOT_OBSERVED' -or
+              $upgrade.release_admission -cne 'NOT_VERIFIED') {
+            throw 'Upgrade, reinstall or clean lifecycle identity differs'
+          }
+          $noticeDigest = (Get-FileHash -LiteralPath (Join-Path $root 'staged-evidence.json') -Algorithm SHA256).Hash
+          foreach ($name in @('product-upgrade-notices.json', 'product-reinstall-notices.json')) {
+            if ((Get-FileHash -LiteralPath (Join-Path $root $name) -Algorithm SHA256).Hash -cne $noticeDigest) {
+              throw 'Upgrade notice evidence differs from staged notices'
+            }
+          }
+      - name: Check out private build tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: qualification-tools
+          persist-credentials: false
+      - name: Independently validate the scoped normalized Setup and local build path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $compiler = Join-Path $env:RUNNER_TEMP 'ajazz-inno-674-publisher/portable-compiler'
+          $noticeRoot = Join-Path $root 'staged'
+          $private = Join-Path $root 'private-build-replay'
+          New-Item -ItemType Directory -Path $private | Out-Null
+          $builder = 'qualification-tools/tools/build_local_inno674_candidate.py'
+          python $builder --source (Get-Location).Path --compiler $compiler --notices $noticeRoot --output $private --reproducible --dry-run
+          if ($LASTEXITCODE -ne 0 -or @(Get-ChildItem -LiteralPath $private).Count) {
+            throw 'Private build preflight failed or wrote files'
+          }
+          python $builder --source (Get-Location).Path --compiler $compiler --notices $noticeRoot --output $private --reproducible --compile
+          if ($LASTEXITCODE -ne 0) { throw 'Private build replay failed' }
+          @'
+          from pathlib import Path
+          import sys
+
+          sys.path.insert(0, "tools")
+          from compare_inno_loader import digest
+          from run_offline_qa import write_json
+          from validate_scoped_sbom_schema import document
+          from verify_inno674_solid_payload import inventory, locations, script_header
+          from verify_inno_inner_engine import recover
+          from verify_inno_setup_data import decode_setup0
+          from verify_inno_solid import file_hashes
+          from verify_windowsdesktop_provenance import read_local
+
+          root, private = map(Path, sys.argv[1:])
+          basename = "AJAZZBatteryTray-Setup-win-x64.exe"
+          primary = read_local(root / basename)
+          repeat = read_local(private / basename)
+          app = read_local(Path("dist/app/AJAZZBatteryTray.exe"))
+          sha = digest(primary)
+          records = [document(read_local(path / "local-build-evidence.json")) for path in (root, private)]
+          if (primary != repeat or records[0] != records[1] or
+                  records[0]["setup_sha256"] != sha or records[0]["app_sha256"] != digest(app)):
+              raise ValueError("Private build identity differs from normalized primary")
+          _, offsets = recover(primary)
+          data_start, records_start, engine_start = (offsets[key] for key in
+              ("offset1", "offset0", "engine_offset"))
+          first, second, framing = decode_setup0(primary[records_start:engine_start])
+          payload = primary[data_start:records_start]
+          files = inventory(app, Path("src/AjazzBatteryTray/Assets"), root / "staged")
+          locations(second, payload, files)
+          write_json(root / "candidate-payload-replay.json", {
+              "schema": "normalized-notice-setup-payload-v1",
+              "source_sha": "f939fea7fb422aa588649138d29a750ce62cd22a",
+              "setup_sha256": sha, "app_sha256": digest(app),
+              "private_build_match": True, "files": file_hashes(payload, files),
+              "script": script_header(first), "framing": framing,
+              "installer_bytes_retained": False, "release_admission": "NOT_VERIFIED",
+          })
+          '@ | python - $root $private
+          if ($LASTEXITCODE -ne 0) { throw 'Exact payload verification failed' }
+          $app = 'dist/app/AJAZZBatteryTray.exe'
+          $setup = Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe'
+          python tools/verify_interactive_acceptance.py --candidate (Join-Path $root 'local-build-evidence.json') --setup $setup --app $app --output (Join-Path $root 'interactive-checklist.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Exact interactive checklist creation failed' }
+      - name: Observe native signature status of the exact normalized product
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-notice-probe'
+          $source = 'f939fea7fb422aa588649138d29a750ce62cd22a'
+          $setupHash = 'e7195b3817e919eeff47606c036089a2e9fabc44b2238eae466918b992da90a8'
+          $appHash = '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c'
+          $record = Get-Content -LiteralPath (Join-Path $root 'exercised-uninstaller.json') -Raw | ConvertFrom-Json
+          if ((git rev-parse HEAD) -cne $source -or $record.source_sha -cne $source -or
+              $record.setup_sha256 -cne $setupHash -or $record.app_sha256 -cne $appHash -or
+              $record.uninstaller_sha256 -cnotmatch '^[0-9a-f]{64}$' -or
+              $record.uninstall_result -cne 'REMOVED' -or $record.release_admission -cne 'NOT_VERIFIED') {
+            throw 'Normalized signature observation identity differs'
+          }
+          $files = [ordered]@{
+            'app' = @{ path = 'dist/app/AJAZZBatteryTray.exe'; sha256 = $appHash }
+            'setup' = @{ path = (Join-Path $root 'AJAZZBatteryTray-Setup-win-x64.exe'); sha256 = $setupHash }
+            'uninstaller' = @{ path = (Join-Path $root 'exercised-unins000.exe'); sha256 = $record.uninstaller_sha256 }
+          }
+          $observations = [ordered]@{}
+          foreach ($name in $files.Keys) {
+            $file = $files[$name]
+            $before = (Get-FileHash -LiteralPath $file.path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($before -cne $file.sha256) { throw 'Exact signature input differs' }
+            $signature = Get-AuthenticodeSignature -LiteralPath $file.path
+            $after = (Get-FileHash -LiteralPath $file.path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($before -cne $after) { throw 'Signature input changed' }
+            $observations[$name] = [ordered]@{
+              sha256 = $before
+              status = $signature.Status.ToString()
+              signature_type = $signature.SignatureType.ToString()
+              signer_present = ($null -ne $signature.SignerCertificate)
+              timestamp_present = ($null -ne $signature.TimeStamperCertificate)
+            }
+          }
+          $win = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+          [ordered]@{
+            schema = 'normalized-product-authenticode-observation-v1'
+            source_sha = $source
+            os_build = "$($win.CurrentBuildNumber).$($win.UBR)"
+            files = $observations
+            product_trust = 'NOT_VERIFIED'
+            release_admission = 'NOT_VERIFIED'
+          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $root 'normalized-product-signatures.json') -Encoding utf8
+      - name: Retain exact candidate evidence only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: consolidated-notice-setup-evidence
+          path: |
+            ${{ runner.temp }}/ajazz-notice-probe/local-build-evidence.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-components-before.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-components-after.json
+            ${{ runner.temp }}/ajazz-notice-probe/staged-evidence.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-installed-evidence.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-lifecycle.json
+            ${{ runner.temp }}/ajazz-notice-probe/production-shape.json
+            ${{ runner.temp }}/ajazz-notice-probe/exercised-uninstaller.json
+            ${{ runner.temp }}/ajazz-notice-probe/setup-repeat-observation.json
+            ${{ runner.temp }}/ajazz-notice-probe/candidate-payload-replay.json
+            ${{ runner.temp }}/ajazz-notice-probe/interactive-checklist.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-lifecycle.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-upgrade-notices.json
+            ${{ runner.temp }}/ajazz-notice-probe/product-reinstall-notices.json
+            ${{ runner.temp }}/ajazz-inno-674-publisher/authenticode.json
+            ${{ runner.temp }}/ajazz-inno-674-publisher/release-attestation.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Retain normalized product signature observation only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: normalized-product-signature-observation
+          path: ${{ runner.temp }}/ajazz-notice-probe/normalized-product-signatures.json
+          if-no-files-found: error
+          retention-days: 7

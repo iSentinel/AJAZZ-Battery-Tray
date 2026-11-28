@@ -1,0 +1,52 @@
+{
+  "schema": "apple-native-group-catalog-v1",
+  "profiles": {
+    "universal": {
+      "reference": {
+        "run_id": 45955903257,
+        "job_id": 140362193936,
+        "checkout": "47a60b79fe29caf39fc987c38335b818e21e96bd"
+      },
+      "package_name": "AJAZZBatteryTray-macOS-universal.zip",
+      "groups": [
+        "four bundled app icons and 36 appearance rendering cases",
+        "20 shared F7 observations, CSV and alert policy",
+        "self-test observation-corpus",
+        "self-test provenance",
+        "self-test sample-age",
+        "self-test shared-frame",
+        "self-test presence",
+        "self-test localization",
+        "self-test bluetooth-payload",
+        "self-test alerts",
+        "self-test timeout-alerts",
+        "self-test selected-alerts",
+        "self-test jump-alerts",
+        "self-test history-recovery",
+        "self-test history-chart",
+        "self-test history-writer",
+        "self-test clock-payload",
+        "self-test clock-guard",
+        "self-test legacy-parser",
+        "HID report parser",
+        "bounded worker IPC, rejection, timeout, cancellation and recovery"
+      ]
+    },
+    "high-sierra": {
+      "reference": {
+        "run_id": 45952170403,
+        "job_id": 140350319184,
+        "checkout": "0a5fc9c"
+      },
+      "package_name": "AJAZZBatteryTray-macOS-HighSierra-Intel.zip",
+      "groups": [
+        "four bundled app icons and 36 appearance rendering cases",
+        "sample age",
+        "20 shared F7 observations and alert policy (no notifications delivered)",
+        "compact and shared HID reports, unverified states",
+        "legacy routine IPC, overlap, timeout, cancellation and recovery (no HID)",
+        "menu capture timeout, cancellation, reaping and redaction without HID"
+      ]
+    }
+  }
+}

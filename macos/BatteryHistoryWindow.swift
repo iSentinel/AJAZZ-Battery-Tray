@@ -8,14 +8,21 @@ struct BatteryObservation {
     let state: String
 }
 
-/// Parses saved CSV. No USB access is performed when opening the chart.
-enum BatteryHistoryReader {
-    static func parse(_ row: String) -> BatteryObservation? {
+/// Reuse both timestamp formats for one CSV read, including Windows round-trip timestamps.
+struct HistoryRowDecoder {
+    private let seconds = ISO8601DateFormatter()
+    private let fractions: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    func parse(_ row: String) -> BatteryObservation? {
         let fields = row.split(separator: ",", omittingEmptySubsequences: false)
         guard fields.count == 3 else { return nil }
-
-        let parser = ISO8601DateFormatter()
-        guard let time = parser.date(from: String(fields[0])) else { return nil }
+        let stamp = String(fields[0])
+        let formatter = stamp.contains(".") ? fractions : seconds
+        guard let time = formatter.date(from: stamp) else { return nil }
         let state = String(fields[2])
         guard ["online", "unavailable", "disconnected"].contains(state) else {
             return nil
@@ -31,16 +38,26 @@ enum BatteryHistoryReader {
         }
         return BatteryObservation(timestamp: time, percent: charge, state: state)
     }
+}
+
+enum BatteryHistoryReader {
+    static func parse(_ row: String) -> BatteryObservation? {
+        HistoryRowDecoder().parse(row)
+    }
 
     static func load(_ file: URL, from start: Date, through end: Date)
-        -> [BatteryObservation] {
-        guard let csv = try? String(contentsOf: file, encoding: .utf8) else {
+        throws -> [BatteryObservation] {
+        let csv: String
+        do {
+            csv = try String(contentsOf: file, encoding: .utf8)
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
             return []
         }
+        let decoder = HistoryRowDecoder()
 
-        return csv.split(separator: "\n")
+        return csv.split(whereSeparator: \.isNewline)
             .filter { $0 != "utc_timestamp,percent,state" }
-            .compactMap { parse(String($0)) }
+            .compactMap { decoder.parse(String($0)) }
             .filter { $0.timestamp >= start && $0.timestamp <= end }
             .sorted { $0.timestamp < $1.timestamp }
             .suffix(20_000).map { $0 }
@@ -50,6 +67,7 @@ enum BatteryHistoryReader {
 /// Percentage-over-time chart. Gaps are never interpreted as 0% charge.
 final class BatteryHistoryChart: NSView {
     var samples = [BatteryObservation]() { didSet { needsDisplay = true } }
+    var readFailed = false
     var periodStart = Date().addingTimeInterval(-86_400)
     var periodEnd = Date()
 
@@ -87,19 +105,24 @@ final class BatteryHistoryChart: NSView {
             let fraction = Double(step) / 4
             let instant = periodStart.addingTimeInterval(span * fraction)
             let x = plot.minX + CGFloat(fraction) * plot.width
-            (formatter.string(from: instant) as NSString).draw(
-                at: NSPoint(x: x - 37, y: plot.minY - 24),
+            let label = formatter.string(from: instant) as NSString
+            let width = label.size(withAttributes: style).width
+            let left = min(max(bounds.minX, x - width / 2), bounds.maxX - width)
+            label.draw(
+                at: NSPoint(x: left, y: plot.minY - 24),
                 withAttributes: style)
         }
     }
 
     private func drawSeries(_ plot: NSRect) {
-        if samples.isEmpty {
+        if !samples.contains(where: { $0.percent != nil }) {
             let style: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: 13),
                 .foregroundColor: NSColor.secondaryLabelColor
             ]
-            (AppText.text("No observations for the selected period") as NSString).draw(
+            let key = readFailed ? "Unable to read battery history" :
+                (samples.isEmpty ? "No observations for the selected period" : "No charge readings in this period")
+            (AppText.text(key) as NSString).draw(
                 at: NSPoint(x: plot.minX + 12, y: plot.midY),
                 withAttributes: style)
             return
@@ -154,7 +177,6 @@ final class BatteryHistoryWindowController: NSWindowController {
         window.isReleasedWhenClosed = false
         super.init(window: window)
         configure()
-        refresh()
     }
 
     required init?(coder: NSCoder) {
@@ -222,14 +244,23 @@ final class BatteryHistoryWindowController: NSWindowController {
                            range.indexOfSelectedItem == 1 ? 7 : 30
         let end = Date()
         let start = end.addingTimeInterval(-days * 86_400)
-        let points = BatteryHistoryReader.load(file, from: start, through: end)
         plot.periodStart = start
         plot.periodEnd = end
+        let points: [BatteryObservation]
+        do {
+            points = try BatteryHistoryReader.load(file, from: start, through: end)
+            plot.readFailed = false
+        } catch {
+            plot.readFailed = true
+            plot.samples = []
+            status.stringValue = file.lastPathComponent
+            return
+        }
         plot.samples = points
 
         let last = points.last
         let value = last?.percent.map { "\($0)%" } ??
-            last?.state ?? AppText.text("no data")
+            AppText.text(last?.state ?? "no data")
         let minimum = points.compactMap { $0.percent }.min().map { "\($0)%" } ?? "—"
         let absent = points.filter { $0.state == "disconnected" }.count
         status.stringValue = AppText.format(

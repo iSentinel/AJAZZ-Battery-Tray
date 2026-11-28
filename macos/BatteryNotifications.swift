@@ -39,8 +39,8 @@ final class BatteryAlertPolicy {
             }
             return .lowBattery(percent)
 
-        case .unavailable:
-            // Sleeping mouse, but USB receiver remains connected.
+        case .unavailable, .accessUnknown, .unsupportedCollection, .timedOut:
+            // Only consecutive confirmed absences can trigger a disconnect.
             consecutiveMissing = 0
             return nil
 

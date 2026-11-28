@@ -1,0 +1,89 @@
+name: Observe exact consolidated candidate signatures
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-consolidated-signature.yml'
+      - 'tools/stage_consolidated_signature_inputs.py'
+      - 'tools/test_stage_consolidated_signature_inputs.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  consolidated-signature:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Acquire original pinned archives
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-consolidated-signature'
+          New-Item -ItemType Directory -Path $root | Out-Null
+          @'
+          import pathlib
+          import subprocess
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          for name, artifact in (("windows", 15110510075), ("installer", 15109661194),
+                                 ("uninstaller", 15109731177)):
+              with (root / (name + ".zip")).open("xb") as output:
+                  subprocess.run(["gh", "api",
+                                  f"repos/iSentinel/AJAZZ-Battery-Tray/actions/artifacts/{artifact}/zip"],
+                                 stdout=output, check=True, timeout=120)
+          '@ | python - $root
+          if ($LASTEXITCODE -ne 0) { throw 'Archive retrieval failed' }
+      - name: Stage exact inputs without executing files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-consolidated-signature'
+          python tools/stage_consolidated_signature_inputs.py --windows "$root/windows.zip" --installer "$root/installer.zip" --uninstaller "$root/uninstaller.zip" --output "$root/files"
+          if ($LASTEXITCODE -ne 0) { throw 'Candidate identity check failed' }
+      - name: Observe native Authenticode without executing files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'ajazz-consolidated-signature'
+          $pins = [ordered]@{
+            'AJAZZBatteryTray.exe' = '91f8eea23bd06d926fc2d665d3b69bda64da385cf0051cfeae7a0844a7ff9a6c'
+            'AJAZZBatteryTray-Setup-win-x64.exe' = '1cc71e5c2a7119070c80611160b5e263afd2b70155f33b13a88fac848d67542e'
+            'unins000.exe' = '9548d6786c0ae2531a4e4bcd183db9805bd88b7c98571fd033f1b4f05967da65'
+          }
+          $observations = [ordered]@{}
+          foreach ($name in $pins.Keys) {
+            $path = Join-Path "$root/files" $name
+            $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($hash -cne $pins[$name]) { throw 'Staged binary digest differs' }
+            $sig = Get-AuthenticodeSignature -LiteralPath $path
+            $observations[$name] = [ordered]@{
+              sha256 = $hash
+              status = $sig.Status.ToString()
+              signature_type = $sig.SignatureType.ToString()
+              signer_present = ($null -ne $sig.SignerCertificate)
+              timestamp_present = ($null -ne $sig.TimeStamperCertificate)
+            }
+          }
+          $record = [ordered]@{
+            schema = 'consolidated-authenticode-observation-v1'
+            source_sha = 'f939fea7fb422aa588649138d29a750ce62cd22a'
+            files = $observations
+            trusted_signing = 'NOT_VERIFIED'
+            release_admission = 'NOT_VERIFIED'
+          }
+          $record | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$root/authenticode.json" -Encoding utf8
+      - name: Retain observation only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          archive: true
+          name: consolidated-signature-observation
+          path: ${{ runner.temp }}/ajazz-consolidated-signature/authenticode.json
+          if-no-files-found: error
+          retention-days: 7

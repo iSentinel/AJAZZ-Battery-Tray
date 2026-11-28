@@ -17,7 +17,14 @@ public sealed class AppSettings
     public bool NotifyOnDisconnect { get; set; } = false;
     public bool AutomaticDockClockSync { get; set; } = true;
     public bool MonitorAulaL99 { get; set; } = false;
+    public string ApplicationIconColor { get; set; } = "orange";
+    public string DefaultTrayColor { get; set; } = TrayColorRules.Default;
+    public bool MouseTrayIcon { get; set; } = true;
     public bool MultipleTrayIcons { get; set; } = true;
+    public bool ShowUnverifiedUsbCharge { get; set; } = false;
+    // Local consent only; no raw endpoint IDs, names or saved battery levels.
+    public HashSet<string> ConsentedBleEndpoints { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, string> BleUsbLinks { get; set; } = new(StringComparer.Ordinal);
     // Absent key inherits the global sampling interval.
     public Dictionary<string, int> DevicePollIntervals { get; set; } = new(StringComparer.Ordinal);
     // Absent key inherits global thresholds; zero explicitly mutes this device.
@@ -49,9 +56,13 @@ public sealed class AppSettings
                     result.DeviceAlertMasks = CleanDeviceAlertMasks(result.DeviceAlertMasks);
                     result.DeviceDisconnectAlerts =
                         CleanDeviceDisconnectAlerts(result.DeviceDisconnectAlerts);
+                    result.ApplicationIconColor = TrayColorRules.NormalizeAppIcon(result.ApplicationIconColor);
+                    result.DefaultTrayColor = TrayColorRules.Normalize(result.DefaultTrayColor);
                     result.DeviceTrayColors = TrayColorRules.Clean(result.DeviceTrayColors);
                     result.HiddenTrayDevices = TrayVisibilityRules.Clean(result.HiddenTrayDevices);
                     result.DeviceAliases = DeviceAliasRules.Clean(result.DeviceAliases);
+                    result.ConsentedBleEndpoints = BleConsent.Clean(result.ConsentedBleEndpoints);
+                    result.BleUsbLinks = TransportLinks.Clean(result.BleUsbLinks, result.ConsentedBleEndpoints);
                     result.Language = UiText.Normalize(result.Language);
                     result.PollSeconds = result.PollSeconds is 15 or 30 or 60 or 120
                         ? result.PollSeconds : 30;
@@ -61,7 +72,7 @@ public sealed class AppSettings
         }
         catch (Exception error)
         {
-            FileLog.Write("WARN", "Could not read preferences", error);
+            FileLog.Write(LogEvent.PreferencesReadFailed, error);
         }
 
         return new AppSettings();
@@ -123,7 +134,7 @@ public sealed class AppSettings
         }
         catch (Exception error)
         {
-            FileLog.Write("ERROR", "Could not save preferences", error);
+            FileLog.Write(LogEvent.PreferencesSaveFailed, error);
             return false;
         }
     }

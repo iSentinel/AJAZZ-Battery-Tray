@@ -65,7 +65,7 @@ No new receiver write commands have been enabled.
 - Actual radio monitor/RTC wire format remains unconfirmed; no write has
   been implemented. See AULA_L99_SCREEN_SYNC.md.
 
-## Evidence snapshot — 2026-11-06
+## Historical evidence snapshot — 2026-11-06 (not current policy)
 
 | Capability | Implementation / CI | Physical validation |
 | --- | --- | --- |
@@ -91,33 +91,15 @@ No new receiver write commands have been enabled.
 The observed **83%** is one historical reading, not a permanent battery
 level, and does not prove compatibility of all firmware variants or AJ159.
 
-## Highest-value Windows hardware acceptance sequence
+## Current Windows hardware acceptance sequence
 
-Use the newest package from
-[GitHub Latest](https://github.com/iSentinel/AJAZZ-Battery-Tray/releases/latest).
-
-1. Close the vendor AJAZZ utility to avoid HID conflicts, then run Battery
-   Tray. Verify battery percentage over 2.4 GHz. Note the displayed source.
-2. Switch AJ179 APEX to Bluetooth. Open **Check paired Bluetooth battery...**,
-   select **AJ179 APEX**, click **Read selected battery** and confirm the
-   message says **Fresh GATT Battery Level (2A19) read**.
-3. Explicitly enable **Use this mouse in tray when 2.4 GHz receiver is
-   absent (this session)**. The Bluetooth device ID stays in memory only.
-4. **Physically unplug the 2.4 GHz USB receiver.** Confirm the tray switches
-   to **Bluetooth** and shows a fresh percent, or clearly says unavailable.
-5. Check another automatic GATT reading after 60 seconds. It must not be a
-   Windows cached BatteryLife value. If the mouse sleeps, the indicator
-   should become unavailable rather than remain at an obsolete percentage.
-6. Wake the mouse. Use **Refresh Bluetooth battery now** to bypass the
-   automatic retry delay. The success state should reset failure count.
-7. Reinsert the USB receiver. Verify the tray now prioritizes USB.
-   **If the USB receiver is present but the mouse is still in Bluetooth mode,
-   the expected USB display may be unavailable**; Bluetooth is intentionally
-   not substituted while USB is present.
-8. Disable Bluetooth fallback, confirm the UI and diagnostics report it off,
-   restart the application, and verify it has not silently re-enabled.
-9. Copy **Bluetooth monitor status** and record the result. The copied report
-   contains timestamps, counts and transport labels, **not MAC/USB IDs**.
+The November 6 table above is historical, not the current behavior.
+For the integrated candidate after #196 use
+[Candidate Acceptance](CANDIDATE_ACCEPTANCE.md), including independent
+BLE polling, local persistent opt-in, display-only cache, explicit
+transport association and diagnostic sessions. Do not test these new
+features on the public beta.60 release or infer hardware acceptance
+from CI.
 
 ## Dock clock acceptance
 
@@ -218,3 +200,28 @@ battery or clock problem.
 - Final combined candidate CI and physical two-device BLE acceptance pending.
 - Affected AJ159 and working AJ159 full captures and HAR remain outstanding.
   No change to live AJAZZ HID parser.
+
+
+## November 24 audit candidate — current evidence, not new hardware results
+
+Historical readings above remain unchanged. The current candidate is
+not a public release. The affected AJ159 owner report uses 3151:5007
+MI_02 FFFF:0002, rev 0002, and has six successful HID transactions with
+zero validated battery samples. This is a distinct observation from
+historical AJ159 rev 0300 readings. The AJ179 reference includes a 100
+field with the readiness flag clear; the conservative current shared
+decoder rejects that field as fresh. Do not identify either mouse from
+receiver revision, and do not infer physical compatibility from CI.
+
+| Candidate capability | Software evidence | Outstanding field evidence |
+| --- | --- | --- |
+| Shared F7 decoder and downstream history/alerts | PR #119 Windows 45372850872, Universal 45372851026, High Sierra 45372850906 PASS (20 fixture rows) | Two actual charge levels per mouse, wake/sleep/replug |
+| Isolated routine polling on three platforms | Session-only flag, synthetic watchdog/cancellation and exclusion tests | Normal vs isolated P01–P13, resource cost including children |
+| AULA sleep continuity and presentation | Cached/unknown states, 24-hour display-only cache, policy tests | Awake/sleep/recovered A01–A14 evidence |
+| AJ179 BLE and USB priority | Historical manual fresh 83% GATT read; automatic policy tests | Actual automatic handover, expiry, recovery |
+| Windows Device Manager | Localized minimum-size smoke tests | Keyboard and interactive DPI 125/150/200% |
+| High Sierra | Intel 10.13-targeted build exercised on macOS 15 Intel CI | Actual 10.13 iMac acceptance |
+
+See ISOLATED_POLLING_ACCEPTANCE.md and
+AJ159_APEX_F7_HAR_FORENSICS_20261123.md. All field items are pending
+for the current candidate unless a separately labeled observation exists.

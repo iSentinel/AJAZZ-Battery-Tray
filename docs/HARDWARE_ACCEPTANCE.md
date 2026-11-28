@@ -4,16 +4,19 @@ The [Hardware Validation Matrix](VALIDATION_MATRIX.md) distinguishes
 features verified on real hardware from CI-only implementation. Start there
 before marking a scenario as physically validated.
 
+For the development-only isolated polling modes, use the separate
+[Isolated Polling Acceptance](ISOLATED_POLLING_ACCEPTANCE.md) matrix.
+
 This checklist records tests of **physical AJAZZ APEX hardware** separately
 from the GitHub Actions compile, packaging, and unit-test results.
 
-Only the compatible **2.4 GHz / 8K receiver (VID 3151, PID 5007)** is
-targeted. Other receiver variants and Bluetooth are not yet validated.
+The targeted AJAZZ USB receiver is **VID 3151, PID 5007**. A single
+AJ179 direct BLE reading was historically verified; current candidate
+continuous monitoring, other variants and transport handover remain pending.
 
 ## Before testing
 
-1. Download the current installer or macOS ZIP from
-   [GitHub Releases](https://github.com/iSentinel/AJAZZ-Battery-Tray/releases).
+1. Use the exact reviewed CI candidate specified in [candidate acceptance](CANDIDATE_ACCEPTANCE.md). Public beta.60 does not include the new features.
 2. Close the official AJAZZ utility and Halo Battery to avoid competing
    HID feature requests.
 3. In the tray/menu bar, click **Copy diagnostic report**.
@@ -35,7 +38,7 @@ targeted. Other receiver variants and Bluetooth are not yet validated.
 | Receiver replug | Reconnect receiver | Charge reading resumes |
 | Dock RTC | Click Sync dock time now | Date and time visually match PC |
 | History | Open Battery history, choose 24h/7d/30d | Chart and CSV record state transitions |
-| Low charge | Wait for natural 20/10/5% thresholds | At most one alert per threshold |
+| Low charge | Wait for natural 50/25/10% thresholds | At most one alert per threshold |
 | Installer | Install to Program Files, then uninstall | Start menu and uninstall entry work |
 
 ## macOS test matrix (experimental)
@@ -59,81 +62,30 @@ targeted. Other receiver variants and Bluetooth are not yet validated.
   GATT reading on real AJ179 APEX hardware; it does not prove periodic
   polling or receiver handover. No identifying device data was recorded.
 
-## Automatic Bluetooth fallback test (Windows)
+## Independent Bluetooth monitoring (Windows)
 
-1. Switch AJ179 APEX to Bluetooth and use Windows to pair it.
-2. Select the paired mouse in the tray Bluetooth inspector, then click
-   **Read selected battery**. Confirm **Fresh GATT Battery Level**.
-3. Explicitly enable **Use this mouse in tray when 2.4 GHz receiver is
-   absent (this session)**. Close the inspector if desired.
-4. With the USB/2.4 GHz receiver removed, verify the tray label shows
-   **Bluetooth** and a plausible percent; wait more than 60 seconds.
-5. Plug the USB receiver back in: the tray must prioritize **2.4 GHz**,
-   never silently merge both sources. If USB mouse sleeps, show unknown,
-   not a stale Bluetooth percentage.
-6. Unplug receiver and allow Bluetooth to disconnect/sleep. The app must
-   show unavailable after a failed/expired read (maximum 120 seconds).
-7. Select **Disable Bluetooth tray fallback** and confirm there are no
-   further automatic GATT requests. Restart the app; fallback must be off.
+Use the current [candidate acceptance matrix](CANDIDATE_ACCEPTANCE.md)
+for persistent consent, restart, independently scheduled reads, cached
+display, explicit linking, opt-out and multiple devices. This supersedes
+the historical session-only fallback behavior.
 
-## Asynchronous Bluetooth response test (Windows)
-
-1. Enable Bluetooth fallback after a fresh manually verified 2A19 read.
-2. While GATT polling is delayed by a sleeping mouse, reconnect the USB
-   receiver. USB battery reporting should update on its regular interval,
-   without waiting for the 12-second Bluetooth timeout.
-3. Disconnect the USB receiver and allow an automatic BLE read to begin.
-4. Disable Bluetooth fallback before the BLE response arrives. The late
-   response must not update the tray or re-enable fallback.
-5. Select and verify the mouse again. Pending results from the previous
-   Bluetooth session must not update the new session.
-6. Confirm no duplicate USB history rows or low-battery notifications are
-   produced by completion of the asynchronous Bluetooth request.
-
-## Bluetooth sleep/wake and retry backoff (Windows)
-
-1. Enable Bluetooth tray fallback after a direct manual GATT Battery Level
-   read from AJ179 APEX. Remove the 2.4 GHz receiver.
-2. Leave the mouse idle until sleeping. Verify the tray shows unavailable
-   after failed/expired GATT results rather than a stale percentage.
-3. Verify the retry schedule increases after consecutive failures:
-   two minutes, five minutes, then a maximum of ten minutes.
-4. Wake the mouse and choose **Refresh Bluetooth battery now**. A successful
-   fresh GATT read should restore the percent and reset failure counters.
-5. Reinsert the 2.4 GHz receiver: the manual Bluetooth refresh menu item
-   must become disabled and the tray must prioritize USB status.
-6. Disable Bluetooth fallback: neither scheduled nor manual BLE reads
-   should run until a newly verified, opted-in session starts.
-
-## Bluetooth diagnostic report
-
-With the opt-in Bluetooth fallback enabled on Windows, use **Copy Bluetooth
-monitor status** in the tray menu after (1) a fresh 2A19 reading,
-(2) mouse sleep or Bluetooth outage, and (3) recovery. Record whether
-consecutive failures reset to zero and last-success timestamp advances.
-The report contains no Bluetooth address or device instance ID.
-Review all copied data before attaching to a public GitHub issue.
-
-## HID enumeration error versus unplug (Windows)
-
-The 2.4 GHz receiver status can be **present**, **absent**, or **unknown**
-when Windows reports a HID enumeration error. An unknown result should
-keep the battery unavailable; it must **not** be recorded as unplugged,
-trigger a disconnect notification, or activate Bluetooth fallback.
-Only a confirmed absent USB receiver may activate the opted-in BLE path.
-Recheck after a successful enumeration; USB receiver priority must recover.
-
-This behavior has pure unit tests but is **not yet verified under an actual
-Windows USB/HID error**. Do not disable USB controllers or remove device
-drivers just to reproduce the scenario.
+A USB enumeration error must remain unknown, not confirmed absence,
+and must not generate a false USB disconnect alert. It does not inhibit
+an independently opted-in BLE monitor. A cached BLE value must be
+marked stale, never trigger a new alert or become fresh API telemetry.
+Do not disable USB controllers or remove drivers to induce an error.
 
 ## Known limitations
 
 - CI passing **does not** prove USB reports, clock writes, notification
   permission, or login item registration work on a particular real Mac.
-- AJ159 APEX has not yet been tested on this project's hardware.
-- Charging detection, automatic persistent Bluetooth device selection,
-  RGB, GIF uploads and device configuration are not enabled.
+- Historical AJ159 Windows readings exist (including rev 0300), but
+  the affected AJ159 rev 0002 returned 0/6 validated battery replies in
+  the November 23 evidence. Current candidate compatibility is not
+  established; do not infer model identity from receiver revision.
+- Charging detection, automatic USB/BLE identity matching, RGB, GIF uploads
+  and device configuration are not enabled. Explicit local BLE consent
+  is persistent; it is not automatic opt-in.
 - If the receiver is present while the mouse sleeps, that is not counted
   as a disconnect alert.
 - Do not send speculative HID configuration or firmware opcodes.

@@ -1,3 +1,2416 @@
+# Resume — CLI help and source registry coverage
+
+#363 merged ef211330 after 5/5 hosted checks on fe56c39b;
+all five changed blobs match. #364 retargeted and updated to c9fd9cac;
+40 targeted tests PASS, fresh hosted qualification pending.
+Inventory found 91 root Python entrypoints, all registered and using
+argparse. Require both --help and -h in the offline QA and coverage
+catalog, close subprocess stdin and test registry/source agreement.
+Six targeted catalog tests and source audit PASS. No native CLI,
+hardware, runtime or release change. Next: command-specific exit
+contracts and evidence bounds inventory; review native CLI separately.
+
+# Resume — HID timeout consistency and ENG-14 review
+
+#362 merged 45618532 after 5/5 hosted checks on aaf8d0ea;
+all five changed blobs match. #363 retargeted and updated to fe56c39b;
+21 targeted tests PASS, fresh hosted qualification pending.
+Bind native TIMEOUT marker to BEGIN deadline in ordinary and
+experimental logs, including pre-enumeration interrupted experiments.
+Reject duplicate enumeration and displaced experimental outcome even
+on timeout. Preserve timeout as non-telemetry/inconclusive.
+13 GET-ID, 18 HID comparator and 9 CLI analyzer tests PASS;
+source audit PASS. Consolidated scoped ENG-14 evidence in adoption audit.
+No hardware, runtime or release change. Next: command-specific CLI
+contract inventory and remaining acceptance gaps, not more speculative
+protocol changes. Hardware and release remain separate.
+
+# Resume — GET-ID native matrix ordering
+
+#361 merged ff184f75 after 5/5 hosted checks on 8e0738ce;
+all six changed blobs match. #362 retargeted and updated to aaf8d0ea;
+19 targeted tests PASS, fresh hosted qualification pending.
+Require experimental mode, enumeration and receiver markers before
+probes. Validate complete matrices against the descriptor-first native
+order, including either base length or an additional descriptor length.
+Restrict probe lengths and candidates to bounded ASCII numeric syntax.
+Incomplete evidence remains inconclusive; no telemetry inference.
+12 GET-ID and 9 CLI analyzer tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: review remaining
+experimental timeout/report consistency and consolidate ENG-14 status.
+
+# Resume — GET-ID experimental evidence framing
+
+#360 merged 3452f565 after 5/5 hosted checks on 32fad3d2;
+all five changed blobs match. #361 retargeted and updated to 8e0738ce;
+34 targeted tests PASS, fresh hosted qualification pending.
+Reuse bounded identity-checked reader and native UTC BEGIN parser in
+standalone GET-ID comparison. Require unique mode and terminal marker,
+consistent completed experimental outcome and unique enumeration.
+Timeout remains inconclusive, contradictory markers rejected; errors
+no longer echo local paths. Two synthetic regression methods;
+10 GET-ID and 9 CLI tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: review experimental
+probe ordering and numeric field syntax; retain non-telemetry semantics.
+
+# Resume — Windows CLI shared evidence framing
+
+#359 merged 5c53552f after 5/5 hosted checks on de087f0f;
+all five changed blobs match. #360 retargeted and updated to 32fad3d2;
+24 targeted tests PASS, final hosted qualification pending.
+Reuse the identity-checked bounded reader and native UTC BEGIN parser
+in the CLI analyzer for ordinary and experimental reports. Preserve
+1 MiB limit, BOM support, output schema and independent-verification
+status; remove redundant enumeration validation. Two regression methods;
+9 CLI, 17 comparator and 8 GET-ID tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: review standalone GET-ID
+reader and its terminal and experimental marker consistency.
+
+# Resume — Windows HID numeric and UTC framing
+
+#358 merged 5d17c4fa after 5/5 hosted checks on 766640d6;
+all five changed blobs match. #359 retargeted and updated to de087f0f;
+15 targeted tests PASS, fresh hosted qualification pending.
+Validate ordinary diagnostic UTC start timestamps (including native
+seven-digit fractions), 3..90s deadline, ASCII numeric fields, native
+Int32 enumeration/Win32 and Int64 elapsed bounds. Reject malformed
+transfer results; retain signed Win32 errors and begin markers.
+17 comparator and 7 CLI analyzer tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: evaluate related CLI
+analyzer input reader and redundant framing rules.
+
+# Resume — Windows HID verified operation chronology
+
+#357 merged f331c825 after 5/5 hosted checks on 9c31089f;
+all five changed blobs match. Terminal marker candidate prior QA
+582/582 PASS on 5313fd39; rebased by merge to 766640d6 and
+published as #358, 14 targeted tests PASS, hosted CI pending.
+Require positive enumeration, successful open, and ordered SET/GET
+pairs before verified output; reset pending SET across opens. Reject
+successful transfers with nonzero Win32 code and post-result steps.
+One new regression method; 15 targeted tests and source audit PASS.
+Nonverified classifications unchanged; no hardware, runtime or release
+change. Next: review numeric and timestamp evidence boundaries.
+
+# Resume — Windows HID terminal marker validation
+
+#356 merged 18508ff1 after 5/5 hosted checks on 13a1e0ee;
+all five changed blobs match. #357 retargeted to integration and
+updated to 9c31089f; 12 targeted tests PASS, final CI pending.
+Reject duplicate and malformed singleton outcome markers, conflicting
+worker results and misplaced parent terminal markers. Preserve repeated
+native I/O operations and inconclusive-before-timeout race. Two new
+synthetic test methods; 14 targeted tests and source audit PASS.
+No hardware, runtime or release change. Next: review chronological
+verification of enumeration/open/SET/GET and result markers.
+
+# Resume — Windows HID bounded report input
+
+#355 merged c808c2d5 after 5/5 hosted checks on f599f434;
+all five changed blobs match. #356 retargeted to integration and
+merged base into 13a1e0ee; targeted 33 tests PASS, final CI pending.
+Replace the Windows F7/05 log comparator's stat/read sequence with
+the existing bounded identity-checked reader, retaining the 1 MiB
+limit, UTF-8 BOM and CLI exit contract. One regression method covers
+exact cap, directory and link refusal. 12 targeted tests and source
+audit PASS. No device, runtime, publication or release change.
+Next: review contradictory/repeated terminal markers separately.
+
+# Resume — AULA comparison context candidate
+
+#354 merged 11557568 after five hosted checks PASS on fcc09dc0;
+all five changed blobs match. #355 retargeted to integration and merged
+base into f599f434; targeted 31 tests PASS, final hosted qualification
+pending. Reject blank application versions and require the 24-hour
+cache policy across awake, sleep and recovery reports. Two additional
+synthetic regression methods; targeted 33 tests and source audit PASS.
+No runtime, HID, physical or release changes. Release BLOCKED.
+
+# Resume — AULA cache semantics candidate
+
+Dependent on corrected #354; hosted qualification pending.
+Guard missing last-good sample/timestamp before subtracting dates.
+Hidden absent sample is NOT OBSERVED; displayed absent sample FAIL.
+Reject nonfinite or nonpositive cache lifetimes; three-state analysis
+now requires the documented 24-hour policy like two-state analysis.
+Reject fresh initial samples with nonzero failure counter and require
+a no-reply poll later than its cached sample. Two synthetic tests.
+No runtime or physical AULA changes. Release BLOCKED.
+
+# Resume — AULA duplicate field corrected qualification
+
+#353 merged 5221a56 after 4 workflows / 6 jobs PASS on d4c230c;
+all six changed blobs match. Windows native 1028 PASS, zero FAIL.
+Initial #354 offline QA failed on 3e74500; downloaded artifact
+15248149073 SHA-256 matched hosted digest, 575 tests, one failure,
+zero errors/skips. Failed identity: ExtendedEvidenceTests.test_duplicate_extended_field.
+The fixture included the heading instead of the fourth measurement;
+select the four rows dynamically after the section heading. Retarget
+to integration and repeat CI. No hardware or release claim.
+
+# Resume — AULA ambiguous summary fields
+
+Dependent on #353; initial 4 workflows / 6 jobs PASS, final CI pending.
+Reject repeated required clipboard fields and repeated/malformed cache
+rows; reject repeated measurement rows within the extended AULA section
+without treating other sections as the same device. Two synthetic test
+methods. Preserve unknown unrelated notes and existing sleep semantics.
+No hardware access. Next review remaining diagnostic readers and
+numeric/timestamp semantics. Hosted qualification pending.
+
+# Resume — AULA bounded input final qualification
+
+#352 merged 73e8b55 after 4 workflows / 6 jobs PASS on 7c1a853;
+all six changed blobs match, Windows/HA 27 targeted tests, real
+roundtrip 140864178226. Initial #353 4 workflows / 6 jobs PASS
+on 3b13842, real roundtrip 140864457101. Retarget for final
+integrated-base CI. Next: reject ambiguous AULA summary fields.
+No physical hardware or release admission claim.
+
+# Resume — AULA diagnostic input contract
+
+Dependent on #352 initial 4 workflows / 6 jobs PASS; final CI pending.
+ENG-14 moves beyond QA formats to AULA L99 sleep reports. Reuse the
+bounded identity-checked reader with explicit 64 KiB cap, reject
+nonregular and linked files, preserve UTF-8 BOM support and CLI exits.
+One new regression covers exact size limit, directory/hardlink refusal
+and symlink refusal where creation is available. No hardware access.
+Next: review duplicate AULA diagnostic field handling and other CLI
+inputs. Hosted qualification pending.
+
+# Resume — restricted XML final qualification
+
+#351 merged d355758 after 4 workflows / 6 jobs PASS on bbe1233;
+all five changed blobs match. Windows/HA 26 targeted tests and real
+artifact roundtrip 140862126784 PASS. Initial #352 4 workflows /
+6 jobs PASS on d2a5792, Windows/HA 27 targeted tests, real roundtrip
+140862340153. Retarget for final integrated-base CI. Move to other
+CLI input contracts after qualification. Release BLOCKED.
+
+# Resume — restricted JUnit XML parser candidate
+
+Dependent on #351, initially 4 workflows / 6 jobs PASS; final CI
+pending. Share a bounded UTF-8 parser between JUnit counts and case
+coverage. Reject DTD/entity declarations, comments, CDATA and NUL
+before parsing; preserve normal escaped text. One synthetic regression
+method, hosted qualification pending. Not a general XML importer.
+After qualification, move to remaining CLI input audit rather than
+extending the scoped JUnit format indefinitely. Release BLOCKED.
+
+# Resume — strict JUnit final qualification
+
+#350 merged 688a4e5 after 4 workflows / 6 jobs PASS on 61e972a;
+all eight changed blobs match. Windows/HA 25 targeted tests and real
+artifact roundtrip 140860717544 PASS. Initial #351 4 workflows /
+6 jobs PASS on 87743cc, Windows/HA 26 targeted tests, real roundtrip
+140860916064. Retarget for final integrated-base qualification.
+Continue ENG-14 input review; release and hardware remain separate.
+
+# Resume — strict JUnit structure candidate
+
+Dependent on corrected #350, final hosted qualification pending.
+Reject unexpected direct suite children, nested result elements,
+missing/noncanonical counters, malformed XML and oversized input.
+Preserve valid producer format and existing counts/identity checks.
+New synthetic regression; no change to JUnit producer or release gates.
+Hosted qualification pending.
+
+# Resume — deterministic JSON nesting qualification
+
+Initial #350 on 67fd789 failed offline QA and Windows/HA regressions:
+Python 3.13.17 accepted the 2000-level array fixture rather than
+raising RecursionError (job 140859682830). Apple and ACL jobs passed;
+artifact roundtrip skipped. Replace implicit interpreter recursion
+limit with a quote/escape-aware predecode bound of 64 containers
+including the root; require UTF-8, refuse unmatched closing delimiter.
+Add exact boundary, escaped delimiter and invalid UTF-8 regression.
+No bypass of failed CI. Repeat hosted qualification pending.
+
+# Resume — ENG-16 scoped qualification and strict JSON follow-up
+
+#349 merged 6bedf53 after 3 workflows / 5 jobs PASS on 6670a40;
+all five changed blobs match. ACL v3 job 140833872747 passed scoped
+fresh DACL contract; existing root kept its explicit broad read ACE.
+#347 closed as superseded, original branch retained. Recovery #348
+and all ten current ENG-16 scoped increments integrated. Effective
+access, ancestor trust, power-loss durability and authenticity remain
+unqualified. Continue ENG-14/16 strict evidence JSON: reject duplicate
+decoded names, nonstandard constants, nonobjects and parser recursion.
+Three new regressions, hosted CI pending. Release BLOCKED.
+
+# Resume — scoped Windows DACL regression qualification
+
+#348 merged 8ae7b00 after 3 workflows / 4 jobs PASS; all four changed
+blobs match 04ccafc, Windows 22 targeted tests and real artifact
+roundtrip 140832940473 PASS. #347 ACL v2 passed on eb4b858, job
+140832905724: fresh root/run protected, all fresh evidence and existing
+root's new run/files canonical, no selected broad allow ACEs. Existing
+root retained its explicit Everyone read ACE; owner ADMINISTRATORS.
+Carry corrected ACL fixture and workflow onto latest integration,
+require scoped fresh-evidence DACL regression contract and retain
+observation of existing root. Do not merge stale #347; close it only
+after replacement integration. No runtime ACL enforcement or effective
+access guarantee. Release BLOCKED.
+
+# Resume — interrupted publication final qualification
+
+#346 merged e3c1ee7 after 4 workflows / 5 jobs PASS; all five changed
+blobs match checkout a2534f1. Initial #348 3 workflows / 4 jobs PASS
+on 07c107e; Windows 22 targeted tests, real artifact roundtrip
+140831620517. Retargeted for final integrated-base CI. ACL v2 #347
+remains independent and requires a corrected fixture qualification.
+Process interruption is not power-loss durability.
+
+# Resume — interrupted manifest publication fixture
+
+Dependent on #346. Exercise a real child process exiting immediately
+before and after the no-replace manifest link. Both interrupted
+inventories must be rejected without mutation; a fresh sibling run
+must publish and verify independently. No repair, deletion or
+promotion of incomplete evidence. Process exit is not power-loss
+durability. Hosted qualification pending.
+
+# Resume — private root final qualification
+
+#345 merged 664d097 after 3 workflows / 4 jobs PASS; all five changed
+blobs match 7ac3bb5. Initial #346 passed 4 workflows / 5 jobs on
+53eefa1; 21 targeted tests on Windows and HA, real artifact roundtrip
+140829455636. Retarget for final integrated-base CI. Next: native
+Windows ACL observation using temporary synthetic directories, without
+altering production permissions or claiming effective access isolation.
+
+# Resume — evidence root validation candidate
+
+Dependent on #345, initially qualified on 158b2e5; integrated-base
+CI pending. Validate final root and fresh run via lstat, reject final
+reparse entries, non-directories and non-private POSIX modes; compare
+root device/inode before and after creating a unique child. Three
+new synthetic regression cases. No chmod of existing directories.
+Ancestor trust, Windows ACLs and fully race-free creation remain open.
+Release BLOCKED.
+
+# Resume — status consistency final qualification
+
+#344 merged 9498fbd after 4 workflows / 5 jobs PASS; all six changed
+blobs match checkout 1ed7680. Actual artifact roundtrip PASS job
+140825516207. Initial #345 3 workflows / 4 jobs PASS on 158b2e5;
+actual roundtrip job 140825694845. Retarget for integrated-base CI.
+Next: private evidence root handling and native Windows ACL review.
+No actual GUI/hardware, atomic snapshot, authentication or release claim.
+
+# Resume — QA reported status consistency
+
+Dependent on #344 (initial 4 workflows / 5 jobs PASS, final integrated
+base qualification pending). Coverage now checks every command status
+against its exit code, exact integer JUnit counts, and the zero-debt
+audit. Contradictory reported PASS is refused; complete honest FAIL
+can still match coverage. Synthetic regression covers nonzero and
+Boolean codes, failed/skipped tests, audit drift and honest failure.
+No authentication, native ACL, real GUI or release claim.
+
+# Resume — verified-byte coverage final qualification
+
+#343 merged df678e1 after 3 workflows / 4 jobs PASS; all five changed
+blobs match checkout 155c5cb. Actual QA artifact roundtrip passed job
+140735357530 (artifact 15230957804; downloaded coverage 15231207590,
+metadata/logs reviewed). The exact #340 field plan matches d51a419;
+#340 closed as superseded, branch retained. #344 initial 4 workflows /
+5 jobs PASS on 9ec3305, including actual artifact roundtrip job
+140735588411. Retargeted for final integrated-base CI. No actual GUI,
+hardware, atomic filesystem snapshot or release admission claim.
+
+# Resume — manifest-verified coverage bytes
+
+Dependent on #343, which initially passed actual QA artifact roundtrip
+and now includes the unchanged #340 field plan for combined qualification.
+Use one bounded verified inventory for semantic source, command, case
+and count review. Check directory identities again before returning.
+Regression tests assert five reads and reject a late summary mutation.
+No atomic filesystem snapshot, authentication, physical or release
+claim; hosted qualification pending.
+
+# Resume — real QA artifact roundtrip and Apple field plan
+
+#342 merged 7605db9 after 4 workflows / 5 jobs PASS; all five changed
+blobs match 1234fc3. Windows and HA targeted offline fixtures: 18 tests
+PASS. #343 initial run 46054285012 passed actual artifact download,
+manifest and source coverage (job 140693031539, checkout 4390a20).
+Artifact 15226435261 and downloaded coverage 15225487642, metadata
+and logs reviewed. Carry unchanged #340 field plan from d51a419
+(previous 2 workflows PASS on 41ea914) into combined qualification
+to avoid stale-base merges. Actual field tests NOT_RUN. Retargeted
+#343 requires repeat CI. Release BLOCKED.
+
+# Resume — ENG-16 atomic manifest publication candidate
+
+#341 merged fc70039 after 4 workflows / 5 jobs PASS; all five changed
+blobs match 9bcd26d. Offline QA and artifact roundtrip PASS, Windows,
+Universal and HA PASS. #340 field plan passed its previous base, updated
+for current integration and requires repeat CI; field tests NOT_RUN.
+Add same-directory private temporary manifest, flush/fsync and atomic
+no-replace link, then unlink temp and reverify complete inventory.
+Four regressions: success/collision, partial serialization, unsupported
+link and fsync failure. Hosted qualification pending. Whole-directory
+atomicity, crash durability and native ACLs remain open; release BLOCKED.
+
+# Resume — ENG-16 complete-inventory identity recheck
+
+#339 merged b5b7dee after 4 workflows / 6 jobs PASS; five changed blobs
+match checkout 880c649. Repeat benchmark: Linux offer p95 240 ns,
+Intel macOS 1000 ns, 4098 writes each, zero losses, exact retained bytes.
+First stop 1.067/2.881 ms, synthetic only. #340 field plan open;
+real GUI, physical and release acceptance remain NOT_RUN.
+ENG-16: capture path identities of all five manifest inventory entries
+and their root before and after digest verification. Add late-file
+mutation and byte-identical manifest replacement regressions. Hosted
+qualification pending; no atomic snapshot or authenticity claim.
+
+# Resume — paced Apple journal producer benchmark candidate
+
+#338 merged 37c2529 after 5 workflows / 7 jobs PASS; all nine changed
+blobs match tested checkout e0ee3b9. Both native Apple builds PASS.
+The benchmark branch adds a fixed 4096-offer paced benchmark (32 per batch),
+4098 completed writes including start/stop, exact retained generations,
+producer-only latency, total process CPU/RSS and first stop observation.
+Initial Linux/Intel benchmark PASS on a637182, 4098 writes each,
+zero losses, retained records MATCH. Final integrated-base CI required. No real
+AppKit UI, HID, High Sierra hardware or release admission claim.
+
+# Resume — Apple GUI background journal integration
+
+#337 merged 75c93b5 after 4 workflows / 6 jobs PASS; all six changed
+blobs match tested checkout 2cc8908. Edition storage tests PASS on
+Linux and Intel macOS (jobs 140635688913/140635688358). Both AppKit
+delegates now use the shared main-thread lifecycle adapter and one
+independent writer. The stop event is reserved once; shutdown observes
+completion for up to 100 ms best effort, retains heap state on timeout.
+Diagnostics distinguish write failures, drops and unavailable events.
+Shared synthetic lifecycle fixture extended; hosted qualification
+pending. Actual GUI latency, real High Sierra and hardware NOT_RUN.
+No HID or retained beta.61 change. Release BLOCKED.
+
+# Resume — background edition journal sink candidate
+
+#336 merged 5b72631 after 4 workflows / 6 jobs PASS; all six changed
+blobs match tested checkout 43ae56d. Linux/Intel macOS writer tests PASS
+(jobs 140634266952/140634267471); offline, Windows and Universal PASS.
+A separate dependent branch connects the existing secure edition storage to the
+single background writer, with owned bounded path and explicit lifetime.
+Synthetic tests cover both edition files, exact timed/untimed FIFO bytes,
+invalid path arguments, early destruction refusal and unsafe directory
+accounting. Hosted qualification required before merging. GUI, real profile, runtime latency and release remain untouched.
+
+# Resume — Apple background journal writer candidate
+
+#335 merged 39e3502 after 4 workflows / 6 jobs PASS; all six changed
+blobs match tested checkout 3bede5c. Linux and Intel macOS queue fixtures
+PASS (jobs 140630103603/140630103072). Added standalone pthread writer
+with short queue lock, sink outside lock, seal, monotonic bounded wait
+and explicit join only after completion. Synthetic concurrent producer,
+blocked sink, overflow, idle wake and shutdown tests prepared. Hosted
+qualification pending. No actual GUI integration, latency claim, HID or
+retained beta.61 change. Release BLOCKED.
+
+# Resume — bounded Apple journal queue core
+
+#334 merged 7e72b83, 5 workflows / 7 jobs PASS, eight changed blobs
+match 27afe99. Native encoder 80 combinations and five classifications
+PASS. Added fixed FIFO state core with 63 ordinary slots plus reserved
+stop, single in-flight claim, saturating written/failed/dropped counters.
+Deterministic CI fixture pending. Queue requires caller serialization;
+no background adapter or GUI migration yet. Next: serialized producer,
+one writer, bounded shutdown and concurrency tests. Release BLOCKED.
+
+# Resume — isolated Apple supervisor outcome provenance
+
+#333 merged cadd079, 4 workflows / 6 jobs PASS, five changed blobs
+match 61ddc6b. Benchmark both hosts 4096 writes, exact retained records;
+macOS ordinary p95 346 us, max 83028 us, single rotation per host.
+Artifacts 15213888566/15213843768 (logs and metadata reviewed). Added
+separate closed supervisor outcome in Swift and High Sierra, busy reason,
+explicit unavailable events; valid unknown/absent replies and cancellations
+are not failures. 80 combinations and native mapping tests prepared.
+Hosted CI pending; actual GUI/resource performance not qualified.
+Retained beta.61 and HID policy unchanged. Release BLOCKED.
+
+# Resume — synthetic Apple journal storage overhead
+
+#332 merged 03d5115, 5 workflows / 7 jobs PASS, nine changed blobs
+match cb14bed. Added fixed 4096-write production-helper synthetic
+benchmark with normal/rotation latency, CPU delta and process peak RSS;
+verify all retained records, aggregate JSON only. Linux/Intel macOS CI
+pending. Measurements are not actual tray or HID performance. Retained
+beta.61 and HID policy unchanged; release BLOCKED.
+
+# Resume — measured Apple operation duration
+
+#331 merged 62f2750; 5 workflows / 7 jobs PASS, seven changed blobs
+match 9ca9655. Added bounded optional duration_ms for isolated timeout
+and Universal attempted clock outcome using monotonic systemUptime;
+untimed records unchanged. High Sierra in-process watchdog stays
+untimed. Converter/encoder/mixed storage fixtures added. CI pending.
+Next: scoped journal overhead benchmark; real GUI/hardware not run.
+Retained beta.61 and HID policy unchanged; release BLOCKED.
+
+# Resume — Apple scoped operation result journal
+
+#330 merged bcbb1bc; 5 workflows / 7 jobs PASS, nine changed blobs
+match 1eb8a78. Native lifecycle fixtures and both builds PASS. Extend
+closed journal events for isolated polling enabled/actual timeout,
+High Sierra existing watchdog timeout, Universal attempted clock transfer
+result. No inferred failures for unknown/absent, no new HID operations.
+Five synthetic operation pairs through each edition storage path added.
+Hosted qualification pending. Actual GUI, durations and real hardware
+remain open. Retained beta.61 unchanged; release BLOCKED.
+
+# Resume — Apple GUI lifecycle journal candidate
+
+#329 merged 23520a9; 4/4 workflows PASS, eight changed blobs match
+7f7b0a2. Linux and Intel macOS storage/encoder run 45989480249 PASS.
+#328 closed as superseded, branch retained. Added fixed edition private
+journal directories, actual AppKit start/stop hooks and saturating process
+failure counters in existing diagnostics; synthetic lifecycle/refusal
+fixtures, High Sierra header path triggers. CI pending; real GUI not run.
+No poll/clock events yet, no hardware policy or retained candidate changes.
+Release BLOCKED.
+
+# Resume — Darwin journal fixture compilation correction
+
+#329 initial run 45987778921: Linux encoder/storage PASS; macOS
+encoder PASS twice, storage compile failed on hidden Darwin declarations
+(O_NOFOLLOW, flock/LOCK_EX/LOCK_NB, mkdtemp). Windows/Universal build and
+offline QA PASS. Add Darwin-only _DARWIN_C_SOURCE, keep Werror and 10.13.
+Review lifecycle hooks in both delegates; document separate private
+journal directories, actual termination callback and no CLI/worker
+logging. Repeat combined CI required. No application integration or
+release change; #328 remains open until replacement qualification.
+
+# Resume — Apple operational journal storage candidate
+
+#327 merged a78a0e6, 5/5 workflows PASS, nine changed blobs match
+eac0ac6. macOS artifact upload infrastructure failure recovered with
+same-head retry, artifact 15187706950. #328 encoder passed 70 closed
+combinations under two TZs on Linux and Intel macOS on older base.
+Carry it unchanged onto a78a0e6 and add bounded private journal storage
+and standalone fixtures. Combined CI pending; #328 not merged. No app
+call sites, real profile writes, hardware or release change. Release BLOCKED.
+
+# Resume — bounded inventory QA correction
+
+#327 initial native Windows recovery 11/11 PASS, Windows/macOS/HA PASS;
+offline run 45973041921 failed common gate. Artifact 15186490081 retained,
+contents not independently inspected. Source inspection found missing
+nested iterator docstring, corrected without changing assertions. Added
+failure-only bounded AST report. Repeat CI required before integration.
+No runtime or user profile change. Release BLOCKED.
+
+# Resume — bounded evidence directory scans
+
+#326 merged b83d4dd; 4/4 workflows PASS, eight changed blobs match
+53a8aa6. Windows run 45962546491 verified 1028 assertions and 24
+Dashboard groups, artifact 15182150086. ENG-08 scoped catalogs integrated.
+Next ENG-16: streaming profile scan with 4096 total entry cap, exact
+QA inventory scan and final recheck, reject directory reparse points.
+Three regression groups added; hosted and native qualification pending.
+No runtime, live profile, evidence schema or release change. Atomicity,
+ACLs and Apple logging remain open.
+
+# Resume — Windows Dashboard smoke group coverage
+
+#325 merged aff0744; 5 workflows / 6 jobs PASS, nine changed blobs
+match 8900223. Universal 21 and High Sierra six native groups verified.
+Added observed reference for 24 Windows Dashboard groups, ordered
+coverage check, three regression groups and existing smoke CI review.
+Nine scaling groups explicitly synthetic, not real DPI. Hosted QA
+pending. No application, hardware protocol or release changes.
+
+# Resume — Apple native build group coverage
+
+#324 merged e0a4205; 4/4 workflows and 5/5 jobs PASS, eight changed
+blobs match 47a60b7. Windows run 45955903247 verified all 1028 ordered
+assertions with zero FAIL, artifact 15178716878. Added observed Apple
+reference (21 Universal, six High Sierra build self-test groups), exact
+coverage verifier, three regression groups and both Apple CI checks.
+Hosted qualification pending. Group labels are not individual assertions.
+No application/build script or release changes. Dashboard, physical
+acceptance and release gates remain open.
+
+# Resume — Windows native assertion coverage
+
+#323 merged 7e575ac; 4/4 workflows PASS, six changed blobs match
+ aeaf48e. Windows job 140354874607 in run 45953603350 reported
+1028 unique PASS assertions and zero FAIL. Added ordered observed
+reference and bounded verifier, three regression groups, CLI help and
+Windows CI check with aggregate JSON only. Hosted qualification pending.
+No application code, candidate bytes or release admission changed.
+Apple/dashboard catalog and physical acceptance remain open.
+
+# Resume — native package synthetic CLI catalog
+
+#322 merged dc2e0a1; 4/4 workflows PASS, seven changed blobs match
+0f60327. Coverage review run 45953248309 PASS, artifact 15177437809
+(metadata/logs checked). Added catalog of the existing 12 native package
+CLI scenarios with stable edition-qualified IDs, expected exits, deadlines
+and pinned identities, two regression groups and common help gate.
+Hosted QA pending. Full native assertion catalog and actual hardware/GUI
+remain separate. No new application or publication. Release BLOCKED.
+
+# Resume — offline automated case coverage
+
+#321 merged 3888fa2; 4 workflows / 5 jobs PASS, all six changed blobs
+match tested checkout 14a271a. Added offline automated catalog and
+same-checkout manifest/JUnit/command coverage comparison, two regression
+groups and separate hosted coverage review. CI pending. No runtime,
+existing evidence schema, hardware result or release change.
+
+# Resume — acceptance catalog
+
+Integration bfecefc (#320), full draft #99 CI 16/16 PASS. Historical
+#247 closed as superseded, not merged. ENG-08 catalog exporter reads
+existing hardware and normalized interactive case tables, requires exact
+IDs and profile coverage (35 definitions, 63 instances). Three regression
+groups and common CLI help gate added. Hosted QA pending. No checklist
+schema, application bytes, observations or release state changed.
+
+# Resume — exact original rollback completed
+
+#319 merged 2b50265; 4 workflows / 5 jobs PASS. All four changed blobs
+match tested checkout b12b71b. Native job 140335949658 in run
+45947656299 verified beta.60 -> original f939fea beta.61 -> uninstall ->
+beta.60 -> uninstall; registered unins000.exe then unins001.exe.
+Four synthetic profile files, initial and reinstalled baseline EXE hash,
+isolated recovery and final backup matched. No actual profile, GUI or HID.
+Original Setup 15109661194 expires 2026-12-03T10:57:24Z. Actual application
+compatibility, ACL/live restore, interactive and physical acceptance,
+normalized Setup retention and distribution/signing disposition remain
+open. No new binary or publication. Release BLOCKED.
+
+# Resume — exact rollback CI harness correction
+
+#319 initial run 45931292999: verified original inputs and reached
+successful four-file recovery rehearsal after reinstalling beta.60;
+final uninstall failed because hardcoded unins000.exe was absent.
+Use the exact AppId registry command, strictly allowlist the executable
+basename and directory and reject extra arguments. Added native command
+fixtures and phase markers. Repeat CI required. The actual registered
+filename from the failed run is unknown. No new binary, live profile,
+HID, GUI or release action. Release BLOCKED.
+
+# Resume — exact original installer rollback rehearsal
+
+#318 merged ecfdf9c; all 4 workflows / 5 jobs PASS and all six changed
+Git blobs match tested checkout 783235c. Native run 45919940986
+confirmed 10/10 profile backup/recovery tests PASS. The corrected
+Windows helper supersedes #317. Added exact original f939fea Setup
+rollback CI using the retained 6.7.1 artifact and pinned beta.60 Setup,
+four synthetic profile files and isolated recovery; hosted result pending.
+No new binaries or live restoration. Exact original artifact expiry
+2026-12-03T10:57:24Z. Actual interactive/physical acceptance, cross-version
+application interpretation and normalized Setup retention remain open.
+Release BLOCKED.
+
+# Resume — isolated profile recovery rehearsal
+
+#317 all 4 workflows PASS, merged d600514; six changed blobs match
+5488537. Added a dedicated fresh-sibling recovery rehearsal, three
+synthetic regressions and native Windows test workflow. Hosted CI
+pending. No live profile writes, app launch or real rollback claimed.
+Owner confirms f939fea unverified APEX field 82 -> 81 without mouse
+power cycling. Latest report 00:54:17 UTC, 6/6 successful/agreeing,
+0/6 admitted. Issue #53 comment 7206866201. No parser relaxation.
+Physical and interactive acceptance, retained normalized Setup,
+Windows ACL and actual rollback remain open. Release BLOCKED.
+
+
+# Resume — private Windows profile backup
+
+Integration 2fb735e (#316), original f939fea application unchanged.
+ENG-07 local-only profile backup tool added with dry-run, explicit fresh
+backup and independent verification, six synthetic test groups and CLI
+help gate. No logs copied, no actual user data used in CI, no restore or
+installer execution. Hosted checks pending; Windows ACL and actual
+rollback remain unverified. Owner physical acceptance and retained
+normalized Setup remain open. Release BLOCKED.
+
+# Resume — native replay completion and private test handoff
+
+#315 5/5 workflows and 6/6 jobs PASS merged d9d4421. All seven changed
+blobs match 0eaab88. Original replay run 45917165490 passed five tests
+and checked all 12 native observations against three original apps.
+Review artifact 15162827040, ZIP SHA-256 0b1bbd240610e2b09177d0a94fc16835a5865b26e0dfad4b4274b9a50d795029
+(GitHub metadata and hosted logs reviewed; derived ZIP not independently
+downloaded here). Existing original Inno 6.7.1 Setup artifact 15109661194
+remains available until 2026-12-03T10:57:24Z; documented private test
+route distinct from normalized e7195b38. No new package selected.
+Owner GUI/hardware/interactive observations, normalized Setup retention,
+distribution and signing remain open. Release BLOCKED.
+
+# Resume — exact native package self-test replay
+
+#314 5 workflows / 7 jobs PASS merged 25ca8a2; all eight changed
+blob identities match tested checkout 2a0b91f. Run 45914776932:
+Windows 5/5, Universal 3/3 and High Sierra 4/4 scoped native CLI
+cases PASS, as reviewed from logs. Added independent offline replay
+of the two pinned JSON ZIPs and three original app archives, synthetic
+regressions and hosted replay workflow. Replay CI pending. Actual GUI,
+physical and interactive acceptance, retained Setup, selection,
+signing and distribution remain open. Release BLOCKED.
+
+# Resume — native extraction observations and synthetic CLI launch
+
+#313 exact 7/7 merged 5f79094. Original native extraction artifacts
+15160688838 and 15161287908 verified; Windows 16 files and both
+Apple 4 outer/7 inner files, modes and codesign MATCH. Extended
+workflow runs 12 fixed synthetic CLI modes on exact extracted
+packages, with corpus and executable pins, deadlines and post-test
+inventory. Three synthetic groups PASS; native self-test CI pending.
+GUI, physical and interactive acceptance, retained Setup, final
+selection, signing and distribution remain open. Release BLOCKED.
+
+# Resume — native proposed package extraction
+
+#312 exact 4/4 merged 7cf2211. All three actual proposed packages
+and Apple inner archives passed local Python extraction/inventory
+checks (mode bits explicitly restored for Linux replay). Native
+Expand-Archive/ditto workflow checks exact package identity, every
+file, Apple executable bits and codesign; no application launch.
+Native CI pending; retained Setup, human acceptance, final package
+selection, signing and distribution remain open. Release BLOCKED.
+
+# Resume — proposed package checksum and update compatibility
+
+#311 exact 5/5 merged 0f2dcc6. Reviewed exact public beta.60
+e9c1f21 and candidate f939fea: update discovery uses release page,
+existing Windows verifier accepts only named EXEs; Apple wrappers
+require two extraction steps. Add optional companion generation;
+actual three ZIPs sha256sum PASS, missing Setup omitted. Proposal
+f5cc9152 unchanged, no publication or asset selection. Native
+package use, real acceptance, signing and distribution open.
+
+# Resume — normalized package proposal and exact native signatures
+
+#310 exact 5/5 merged 5bef61e. Native original signature and
+same-run lifecycle archives verified; app, normalized Setup and
+exercised uninstaller NotSigned on Windows 26100.33828.
+Three private notice-bearing prototypes reverified. Proposal
+f5cc9152 binds them and expected Setup e7195b38 without changing
+acceptance subject 913bda76. Setup NOT_PROVIDED locally, final
+package selection and real acceptance open. Release BLOCKED.
+
+# Resume — exact normalized product signature and runbook consistency
+
+#309 exact 5/5 merged 2ae646f. Windows runbook now pins that
+tool revision and explicitly assembles the local interactive and
+five hardware forms. Add native Authenticode observation of exact
+e7195b38 Setup, original app and exercised uninstaller, separate
+JSON only. Hosted observation pending; Gateway lists only Linux
+Proxmox, no enrolled Windows desktop. Actual human acceptance and
+distribution/signing decisions remain open. Release BLOCKED.
+
+# Resume — normalized blank acceptance kit
+
+#308 exact 4/4 merged 9848e0e. One offline command now validates
+four original artifacts and creates six blank forms in a new
+directory. Actual original-archive replay preserves subject
+913bda76 and 57+6 NOT_RUN. Four synthetic groups PASS. Retained
+private Setup and human acceptance still open; release BLOCKED.
+
+# Resume — normalized local interactive form compatibility
+
+Integration #307 at 2c64ad6, 13/13 hosted checks PASS. Normalized
+Setup e7195b38 previously reproduced and all 15 decoded inputs matched.
+Combined reviewer now supports exact local form evidence with semantically
+identical hosted build fields and mandatory matching Setup. Original
+baseline replay preserves subject 913bda76, 57+6 NOT_RUN. No private
+Setup or human result supplied. Release BLOCKED.
+
+# Resume — normalized Setup and physical acceptance preflight
+
+Native #305 matched Setup e7195b38 and all 15 decoded inputs.
+Combined preflight now validates the exact hosted evidence ZIP, three
+original f939fea app archives and six baseline forms. Observed
+interactive results require the matching retained Setup. Physical
+and interactive acceptance, final asset selection, distribution,
+signing and publication decisions remain open.
+
+# Resume — reproducible private Setup build and payload replay
+
+Two Windows CI runs matched normalized Setup `e7195b38`. Added a
+private Windows reproducible build path against the pinned f939fea
+application and a native payload replay. The workflow creates an
+interactive form bound to exact Setup and app bytes and retains
+JSON. Hosted result, private executable retention and operator
+acceptance remain open. Publication is held.
+
+# Resume — exact original app notice-bearing hosted setup evidence
+
+#301 exact 5/5 merged e51a31b. Original f939fea app compiled
+with Inno 6.7.4, clean silent install/uninstall PASS, setup
+2512ef43, artifact 15121985132 (JSON only). Ten-document
+exact replay PASS, three synthetic groups. Setup/uninstaller
+bytes not retained; upgrade/reinstall and independent payload
+attribution remain open for the exact-original setup workflow.
+No release selection, signing or publication.
+
+# Resume — exact native notice-bearing setup and Apple observation
+
+#300 exact 6/6 merged b4327e3. Original Apple native artifact
+15115382469 verified: codesign PASS both, AD_HOC, no Authority,
+Gatekeeper exit 3 on macOS 15.7.9. New exact f939fea Windows
+notice setup workflow reuses original EXE, pinned Inno 6.7.4,
+nine notices and isolated silent lifecycle, retaining JSON only.
+Hosted compilation pending; no new Setup hash or release approval.
+
+# Resume — consolidated Apple native signature observation
+
+#299 exact 5/5 merged c946160. Original f939fea Universal and
+High Sierra archive staging and scoped ad-hoc seals PASS.
+New native macOS CI checks original extracted bytes, codesign
+and Gatekeeper exit status without execution, signing or notarizing.
+Native CI pending. Exact notice-bearing Windows compilation,
+distribution and human acceptance remain open. Release BLOCKED.
+
+# Resume — consolidated installer preflight and Apple notice wrappers
+
+Exact f939fea staged Windows payload and reviewed 6.7.4 notice
+installer dry-run PASS; no compiler output. Both external Apple
+wrappers preserve original app ZIP/checksum and add exact MIT
+license and identity. Two synthetic groups and byte-identical
+actual replays PASS. Parent #298 must pass hosted CI and integrate
+before this change. Native compilation, trust, distribution and
+human acceptance remain open; no publication.
+
+# Resume — consolidated notice transport gap and private prototype
+
+#297 exact 5/5 merged 5da4ab4. Exact f939fea normal packages
+lack separate notice files/tree in reviewed inventories. Private
+Windows portable ZIP preserves app and four icons and adds nine
+pinned notices plus manifest and identity. Actual independent
+replay byte-identical, two synthetic groups PASS. No public upload,
+release selection or legal clearance. Normal notice-bearing setup,
+Apple packaging, distribution, signing and human acceptance open.
+
+# Resume — consolidated native unsigned observation replay
+
+#296 exact 6/6 merged d37093b. Original Windows observation
+45811458861 / artifact 15113087216 verified; all three f939fea
+EXEs NotSigned, None, no signer or timestamp. New offline verifier
+passes original archive and three synthetic groups. Trusted signing
+NOT_VERIFIED; distribution disposition and hardware/interactive
+acceptance remain open. Publication BLOCKED.
+
+# Resume — consolidated successor exercised uninstaller and native signature scope
+
+#295 exact 4/4 merged 0295836. Exact f939fea original uninstaller
+archive binding and scoped official 6.7.1 attribution PASS.
+Static certificate tables absent for all three EXEs.
+New pinned archive staging replay PASS and dedicated Windows
+Authenticode observation workflow added; native CI pending.
+No candidate execution, signing, release approval or publication.
+
+# Resume — consolidated successor solid payload and signature scope
+
+#294 exact 4/4 merged ade64bf. Independent f939fea LZMA2
+stream and five decoded file hashes MATCH, with candidate isolation.
+Static app/setup PE certificate tables ABSENT; native Authenticode
+and generated uninstaller trust NOT_VERIFIED. No publication.
+Continue remaining native, distribution and physical gates.
+
+# Resume — consolidated successor dependency and setup replay
+
+#293 exact 2/2 merged 2ec40bc. Regenerated scoped f939fea Windows
+and Apple BOMs, three schema checks PASS; retained NuGet snapshot
+replay and OSV package identity reviewed, no fresh retrieval.
+New pinned setup record/launch policy replay PASS with substitution
+regression. No interactive, full dependency or release admission.
+Continue remaining physical, distribution and signing gates.
+
+# Resume — consolidated successor archive review
+
+#292 exact 4/4 CI merged 5cd37a6. #99 bf4c7c6 passed 10/10;
+all four native build logs identify f939fea checkout, equal tree.
+Original CI archives and asset identities verified; staging dry-run
+PASS. Separate blank admission review: 57 hardware and six interactive
+NOT_RUN, release BLOCKED. Pinned b2c5ce9 and #290 bytes unchanged.
+Requalify dependency and installer evidence for the chosen asset set.
+
+# Resume — successor integration and runtime binding
+
+#290 exact 7/7 merged 840f09d; #291 exact 5/5 merged bf4c7c6
+after tree equality. Owner reports basic display toggle/hiding
+and restart persistence work; partial functional acceptance only.
+The separate v2 display checklist pins the #290 archive and EXE
+and requires the exact reported runtime checkout version for
+recorded results. Two original-archive blank replays pass, 16
+NOT_RUN; independent physical acceptance and release hold remain.
+
+# Resume — separate successor display evidence
+
+#290 exact 7/7 CI PASS, retained separate from pinned b2c5ce9.
+Windows run 45803577992 actual checkout tree matched head;
+artifact 15108187556 verified and all four icons match.
+Three ordinary Windows forms 35 NOT_RUN; new separate display
+acceptance tool validates two eight-case forms, 16 NOT_RUN.
+Physical/visual acceptance and release hold remain open.
+
+# Resume — successor experimental USB display preference
+
+#289 exact 4/4 CI merged fca569a. Separate successor branch adds
+local default-off ShowUnverifiedUsbCharge with explicit confirmation,
+save rollback and EN/RU/UK strings. All standalone USB display
+paths gated; no diagnostics, history, alerts or API changes.
+Pinned b2c5ce9 candidate unchanged. Hosted CI and visual/physical
+acceptance of successor remain open. Release hold unchanged.
+
+# Resume — pinned beta.61 unverified presentation boundary
+
+#288 exact 2/2 CI merged cffcb01. The pinned b2c5ce9 release assets
+remain unchanged. Clarify W01 display-only status, add a timer-only
+dashboard smoke for unverified expiry and verified precedence, and
+guard strict API/history/alert wiring. No production source changes.
+Hosted CI and independent physical acceptance remain open.
+
+# Resume — beta.61 static installer review
+
+The exact b2c5ce9 setup passed full scoped Setup.0 record framing
+and launch policy review. The setup record verifier now accepts
+that exact setup and source pair with `--candidate b2c5ce9`.
+See the [replay command](docs/BETA61_RELEASE_READINESS.md#static-windows-installer-policy-for-the-pinned-beta61-candidate).
+Interactive UAC, field acceptance and distribution remain open.
+
+# Resume — beta.61 dependency evidence
+
+Validated three scoped SBOMs for the pinned `b2c5ce9` assets. NuGet
+VulnerabilityInfo and OSV returned zero matches for the four reviewed
+Windows package versions. See the [readiness record](docs/BETA61_RELEASE_READINESS.md#dependency-evidence-for-the-pinned-beta61-candidate)
+for hashes, feed coverage and remaining installer, macOS OS-build,
+signing, hardware and publication review.
+
+# Resume — beta.61 candidate-bound admission review
+
+The admission review revalidated the real `b2c5ce9` archives and six
+acceptance forms. The report binds all exact artifact hashes and
+recorded coverage to the subject digest. Current coverage is 57
+hardware and six interactive NOT_RUN. Continue with human review
+and the existing signing, distribution and approval gates.
+
+# Resume — exact beta.61 release asset staging
+
+The consolidated integration passed nine workflows. The local staging CLI
+verified the exact four acceptance archives from `b2c5ce9`, staged the
+release bytes and independent High Sierra archive, and replayed every
+checksum. The [readiness record](docs/BETA61_RELEASE_READINESS.md)
+documents the dry run. Human acceptance and the existing publication
+hold still apply to these files.
+
+# Resume — consolidated beta.61 acceptance candidate
+
+Combined the current integration with history recovery, reproducible
+packaging and the APEX USB alert timestamp guard. The normal hosted
+Windows setup archive now has a byte-bound interactive checklist path.
+The [readiness record](docs/BETA61_RELEASE_READINESS.md) contains the
+commands. Rebind consolidated archives after CI before recording
+physical tests, interactive observations or publication admission.
+
+# Resume — APEX USB alert sample age
+
+#279 exact 7/7 CI merged 1f82db4. USB sampled observations
+retain actual measurement UTC; missing/future timestamps rejected
+without synthetic history or cache. Historical valid readings retain
+their time. Alert evaluation and online connection observation
+require current ordinary verified USB sample. One source wiring
+regression and four native assertions. Native Windows CI and
+physical acceptance pending; release hold unchanged.
+
+# Resume — Bluetooth completion provenance
+
+#278 exact 7/7 CI merged d94c1c3. BLE reader await chain avoids
+UI capture; bounded completion UTC used for automatic telemetry
+and manual historical evidence. Fresh visibility gates alerts;
+one-minute consent age unchanged. One source wiring regression
+and four native assertions. Native Windows CI, physical BLE and
+suspend/resume acceptance pending; release hold unchanged.
+
+# Resume — public release reproducibility
+
+The High Sierra repeats from `10f9b4d` had equal app file hashes and
+different release ZIP hashes. Both Apple build entry points now use the
+shared deterministic packager. The offline comparator checks both original
+artifact digests and compares the actual final payload. Native repeats and
+the remaining ENG-10 admission gates are recorded in the
+[beta.61 readiness record](docs/BETA61_RELEASE_READINESS.md).
+
+# Resume — beta.61 release preparation, 26 November 2026
+
+The reviewed #99 integration generation `d94c1c3` passed all nine workflows.
+Windows portable/setup and both Apple archives match GitHub digests. The
+five bound hardware profiles contain 57 NOT_RUN cases. The older field
+kit ran on the owner's Windows PC and produced both logs. Six matched 05/00
+pairs had equal status, field 82 and the read-ready flag clear. The later
+text report showed unverified field 81.
+
+Continue with the combined #266 candidate checks and rebind its final
+artifacts. Hardware, installer interactive acceptance and ENG-10 remain
+open. [Release readiness record](docs/BETA61_RELEASE_READINESS.md)
+
+# Resume — AULA delayed UI delivery provenance
+
+Parent #277 has Windows/macOS and Python checks PASS, installer
+checks pending at review. Child timestamps AULA worker completion
+before UI dispatch, shares the freshness predicate for alert
+admission and presentation, and updates AULA submenu on the
+independent timer. One source regression plus four native
+assertions. No new HID operations. Actual suspend/resume and
+physical acceptance remain unverified; release hold unchanged.
+
+# Resume — Windows age-only presentation refresh
+
+#276 exact 5/5 CI merged a92bfe9. Existing five-second timer
+now reprojects USB/AULA even without BLE, no new HID operations
+or API generation on this age-only path. Active capture text
+preserved; unchanged dashboard rows retained. Source wiring
+regression and native dashboard smoke added. Hosted CI and
+physical/visual acceptance pending; release hold unchanged.
+
+# Resume — private installer payload staging
+
+#275 exact 4/4 CI merged 016da67. Successful 8e3625d CI portable
+artifact 15073934383 verified and staged in a detached checkout;
+38 compiler components, notices and four icons match. Dry-run
+PASS, no compiler executed. New local staging CLI passes four
+synthetic groups and actual replay. Native Windows compilation,
+human acceptance and release hold remain open.
+
+# Resume — private local interactive acceptance path
+
+#274 exact 4/4 CI merged 8e3625d. Public repository retains
+JSON-only native installer qualification. Interactive validator
+now accepts a distinct private local-build record with pinned
+fields and both exact local binaries required. Native qualification
+and source provenance NOT_VERIFIED. Two synthetic groups.
+Actual Windows compilation and human acceptance still open;
+no public binary upload, compiler migration or release authorization.
+
+# Resume — interactive acceptance local binary binding
+
+#273 pending final Windows CI at latest review. Child adds paired
+optional setup/app paths and checks actual SHA-256 values before
+writing a checklist or review. Review local_binary_binding is
+MATCH or NOT_PROVIDED; original checklist schema unchanged.
+Two synthetic groups. Exact setup bytes and human acceptance
+remain unavailable/unverified; compiler and release hold unchanged.
+
+# Resume — hardware acceptance set review
+
+#271 exact 2/2 CI merged 38a4f5b; #272 exact 4/4 CI merged
+970f003. Three 43e3cb5 CI archive hashes verified; five blank
+checklists. New aggregate verifier revalidates original archives
+and checklists, four synthetic groups and real replay: 57 NOT_RUN.
+Hosted CI and physical acceptance remain open. Release hold.
+
+# Resume — diagnostic timeline sample provenance
+
+#271 pending native CI at initial review. Child compares reported
+USB sample timestamps independently from capture time and adds
+AULA last-read versus last-good timestamp relations. Three new
+synthetic groups; no physical identity or fresh telemetry claims.
+Hosted CI, latest artifact binding and hardware gates open.
+
+# Resume — scoped Inno 6.7.4 evidence replay
+
+#270 exact 2/2 CI merged 43e3cb5. Run 45694508038 (head
+5b18c5c, actual checkout 5c825ce) eight archive SHA checks,
+14-document scoped replay and hosted equality PASS. Restore three
+pinned CycloneDX schemas; 269-component schema/binding PASS.
+Retained four-pack NuGet/OSV data replays no matches; freshness
+not verified. Latest CI artifact binding and hardware gates open.
+Release hold and compiler migration hold unchanged.
+
+# Resume — exact acceptance artifact generation checkpoint
+
+#269 exact 4/4 CI merged 5b18c5c after tested-tree equality.
+Verified three original bd84554 CI ZIPs against REST digests,
+actual app identities and five blank/replayed checklists:
+57 NOT_RUN. Later integration source is distinct. Rebind exact
+artifacts for next generation; physical, signing and distribution
+gates open. Release hold unchanged.
+
+# Resume — CLI diagnostic consistency
+
+#268 exact 5/5 CI merged bd84554 after tested-tree equality.
+Child validates terminal outcomes, transport counts and policy label
+consistency without independently verifying telemetry. Two additional
+synthetic groups; legacy logs supported. Native and hardware gates open.
+
+# Resume — local Windows CLI diagnostic analysis
+
+#267 exact 4/4 CI merged 3432dc7 after tested-tree equality.
+New local JSON CLI reuses ordinary and experimental parsers and
+scoped gate sequences; no raw payload export or experimental
+percentage promotion. Five synthetic groups and help coverage.
+Hosted CI and physical acceptance pending; release hold unchanged.
+
+# Resume — reported F7 policy sequence analysis
+
+#265 exact 5/5 CI merged 31f2ec7 after tested-tree equality.
+Extend local timeline with ordinary/active typed gate counts and
+within-collection transitions. Reject orphan/duplicate labels,
+break on missing/failed transfers and exclude interrupted active
+captures. Three synthetic groups. Hosted CI and physical acceptance
+pending; release hold unchanged.
+
+# Resume — Apple bounded F7 trace classifications
+
+#264 exact 5/5 CI merged c105bbf after tested-tree equality.
+Universal and High Sierra trace now emit matching privacy-safe
+F7 gate names via shared C, optional report ID unchanged.
+24 formatter cases and existing corpus/parity PASS on Linux.
+Native macOS CI pending. No ordinary polling, HID or release changes.
+
+# Resume — typed F7 ordinary poll diagnostics
+
+#262 exact corrected head 044c3a9 five workflow PASS, including
+4374 native F7 parity combinations, merged 842d44d. #263 exact
+5/5 including both Apple editions merged 1edcedf. Consume typed
+observation in Windows ordinary poll and add privacy-safe gate
+label, no raw-field promotion or HID changes. Native CI pending.
+Physical acceptance and release hold unchanged.
+
+# Resume — Apple F7 observation parity
+
+#262 corrected head 044c3a9 after initial CS0136 in test matrix;
+native CI pending. Child uses typed classification in shared C
+decoder with unchanged admission gates and framing. Linux native
+C: 4374 synthetic classifications, 8748 decoder evaluations and
+historical corpus PASS. Native macOS CI and physical validation
+pending. No new HID commands or release authorization.
+
+# Resume — F7 parity test compile correction
+
+#261 exact 5/5 CI merged c7264b9. #262 initial Windows test compile
+failed with CS0136 (online local shadowing). Correct matrix names;
+no decoder policy change. Native rerun required. Release hold.
+
+# Resume — typed F7 observation classification
+
+#260 exact 6/6 CI merged 4276f8f after tested-tree equality.
+#261 native Windows PASS, final Inno check pending at review.
+Child refactors existing F7 gate classification without changing
+admission predicates, diagnostic strings or compact fallback.
+Four C# checks include 4374 synthetic combinations of prior rules.
+Native tests pending; physical and release gates remain open.
+
+# Resume — bounded last-verified APEX display cache
+
+#260 preview passed; remaining native CI pending at initial review.
+Child change retains only last verified ordinary USB percentage
+in a per-receiver session display cache, five-minute original-age
+limit, clear on absence or unknown presence, no scheduled extension.
+Nine C# assertions. Strict API/history/alerts and parser unchanged.
+Native CI and physical acceptance pending. Release hold unchanged.
+
+# Resume — scheduled snapshot retention consistency
+
+#259 exact 5/5 CI PASS, merged b39ebd4 after tested-tree equality.
+Share three-minute scheduled display limit with snapshot projection
+and read-time expiration. Five C# assertions; ordinary historical
+and cached behavior unchanged. Native CI and physical acceptance
+pending. No HID parser, history, notification or release changes.
+
+# Resume — receiver selection regression coverage
+
+#258 exact 5/5 CI PASS, merged afd1b8a after tested-tree equality.
+Child change extracts the
+visible-candidate decision to a pure helper, five additional
+native assertions for rank, eligibility and deterministic ties.
+No HID, history, alert or release changes.
+
+# Resume — multi-receiver freshness selection
+
+#257 initially 5/7 CI PASS, Windows native and Python passed.
+New independent child ranks ordinary batch summary and single
+tray icon by fresh > scheduled > unknown, with stable primary
+in multiple-icon mode and hidden/linked exclusion. Two C#
+assertions. Native CI and real multi-receiver testing pending.
+No new HID operation or history/alert changes. Release hold.
+
+# Resume — Windows diagnostic sample provenance
+
+#256 head 7afa270: Python and roundtrip PASS at initial review;
+Windows and Universal pending. Independent stacked change adds
+actual selected receiver timestamp and scheduled flag to existing
+extended-v1 report. Normalizer separates reported sample age
+from batch completion, preserves historical values, refuses age
+qualification of legacy and scheduled readings. Two Python
+regression groups and one C# assertion. Native CI pending.
+No new HID requests or release authorization.
+
+# Resume — Apple diagnostic age evidence
+
+#255 exact 5/5 CI PASS, merged f729ca7 after tested-tree equality.
+Independent parser change preserves reported historical value and classifies
+age at snapshot time, with missing/future/expired and conservative
+300-second boundary. Two new regression groups. No hardware
+evidence or release authorization. Release hold unchanged.
+
+# Resume — Apple retained USB presentation age
+
+#254 corrected head 48a6cf3 passed 6/6 CI, merged df27f42 after
+tested tree equality. Apple shared C age predicate and both native
+presentation projections now hide expired/future/missing readings
+on refresh/menu/diagnostics; history and alerts unchanged.
+Seven shared C boundary assertions passed on Linux. Native Apple
+CI and physical sleep/wake pending. Release hold unchanged.
+
+# Resume — APEX dashboard smoke dependency correction
+
+#254 initial CI 4/5: isolated dashboard smoke compile CS0103
+because BatteryDisplayState referenced LocalBatterySnapshot.
+Move shared five-minute ceiling to DeviceDashboardState and
+keep the API alias. New shared-limit assertion, native rerun
+pending; do not merge failing head. Release hold unchanged.
+
+# Resume — APEX presentation age consistency
+
+#253 exact 5/5 CI merged c2061d3 after tested tree equality.
+New shared APEX display projection limits ordinary USB age to
+5 min, scheduled to 3 min; suppresses expired unverified fields
+and allows fresh linked BLE selection. Seven C# assertions added.
+Native CI pending, physical AULA/APEX acceptance remains open.
+No HID protocol, history, alert or release changes.
+
+# Resume — AULA retained-success freshness consistency
+
+#252 exact 5/5 CI merged d812850. Fix AULA retained successful
+reply: use five-minute API freshness ceiling, cached until 24h,
+clock rollback hidden, common tray/dashboard projection. Six
+native assertions added; native CI pending. No HID, history or
+alert policy change. Physical AULA and APEX acceptance remains
+open. Release hold unchanged.
+
+# Resume — hardware acceptance artifact binding
+
+#251 merged 0b4dec7 after exact 5/5 CI, eight archive digests
+and 14-document independent replay. New local hardware acceptance
+validator separates AJ179, AJ159, AULA, Universal and High Sierra
+profiles; three real CI archive digests and five blank checklists
+validated (57 NOT_RUN). Four regressions. Hosted tool QA pending.
+Exact installer remains unavailable; no physical acceptance, signing,
+distribution approval or production compiler migration. Release hold.
+
+# Resume — native shared compiler evidence binding
+
+#250 merged fb48770 after exact 6/6 CI, eight archive digests,
+13-document replay and local compile record match. New explicit
+--local-build verification binds the entire 14th record to
+candidate identity, solid icon/notice hashes and aligned source.
+Actual #250 extended replay PASS, historical result preserved.
+Native CI rerun pending. Exact test artifact not retained,
+distribution terms/signing/interactive/hardware gates remain open.
+
+# Resume — shared local/CI candidate compiler entrypoint
+
+#249 merged f2f338e after exact 2/2 CI. New shared local/CI
+builder defaults to dry-run; explicit Windows compile validates
+exact pinned inputs before/after, no install or publish. Actual
+#246 portable artifact dry-run PASS, app SHA equals qualified
+#246 setup payload; empty output. Three regressions, native rerun
+pending. Local-use/distribution terms, lifecycle of fresh candidate,
+interactive/hardware, signing and production compiler gates open.
+
+# Resume — candidate distribution review
+
+#248 merged dd38bf4 after exact 5/5 CI. Compared two actual #246
+embedded SDK DLLs to exact pinned net9.0 NuGet archive; both match.
+Official REDIST wording and explicit older paths reviewed, applicable
+license URL unavailable; no redistribution conclusion. New review
+matrix captures remaining terms, notice, signing and exact binary
+test-channel decisions. Release hold active; physical/interactive
+acceptance remains NOT RUN. Production compiler remains 6.7.1.
+
+# Resume — exact native version-default and interactive checklist
+
+#246 merged d68b7e0 after exact 7/7 CI, eight archive digests,
+13-document replay, independent BOM schema and dated advisory checks.
+New local RG01–RG06 candidate-bound checklist validator; three
+regressions PASS; actual #246 checklist 6 NOT_RUN. Exact setup bytes
+not retained by JSON-only CI, so owner testing needs a separately
+qualified exact artifact. Native rerun of tool pending. Legal/signing,
+interactive/hardware and production compiler/notice gates open.
+Release hold unchanged.
+
+# Resume — candidate metadata coherence without publication
+
+#245 merged e20a350 after exact 7/7 CI and eight archive/13-document
+native replay; default Program Files install and scoped attribution
+PASS. Exact BOM schema and dated advisory replay PASS.
+New draft defaults beta.61, Universal build 65; dormant release tag
+aligned, stale embedded notes replaced with draft notes. No overrides
+in 6.7.4 candidate CI; historical replay identical. Two regressions.
+Native rerun, actual production compiler/notice selection, legal,
+signing, interactive and hardware gates open. Release hold.
+
+# Resume — production-shaped non-publishing Inno 6.7.4 qualification
+
+#243 merged fab3734 into draft #99 after 6/6; eight native archive
+digests match, independent 12-document replay differs only CRLF/LF.
+#244 merged 8b48fdd into parent after 2/2. New guarded production-shaped
+beta.61 candidate mode uses normal output basename and default silent
+Program Files install, thirteenth exact profile evidence document.
+Historical #242 replay preserved. Native result pending; actual release
+version/selection, signing, legal, interactive and hardware gates open.
+Production 6.7.1 and release hold unchanged.
+
+# Resume — exact #242 BOM migration checkpoint
+
+Stacked on #243. Actual #242 same-run evidence and independent
+CycloneDX schema/binding PASS. Retained Nov25 NuGet and OSV replay:
+no scoped matches, freshness not established. Next: #243 native
+joined rerun and exact production-shaped non-publishing 6.7.4
+qualification; legal/signing/interactive/hardware remain open.
+Release hold and production 6.7.1 unchanged.
+
+# Resume — single-run 6.7.4 migration evidence
+
+#242 merged dfa8202 into draft #99 after 6/6 CI. Seven exact archives
+match REST; complete scoped Setup.0 PASS. New 12-document/11-edge
+consistency verifier, actual #242 replay PASS, two regressions.
+Native rerun and independent exact BOM schema/advisory checks open.
+Production compiler 6.7.1 and release hold unchanged.
+
+# Resume — native solid payload and complete Setup.0 qualification
+
+#241 merged 3c9dbb0 into draft #99 after 7/7 CI. Three evidence
+archives match REST and exact binding. Fifteen decoded files and
+reviewed 27-instruction IFPS match. New complete Setup.0 verifier
+checks sixteen file destinations, shortcuts, run, language, fixed
+header and wizard images. Two regressions, native result pending.
+Production 6.7.1, interactive/legal/hardware gates and release hold.
+
+# Resume — native 6.7.4 resource and solid payload qualification
+
+#239 merged ff9c55d; #240 merged 1030524 into respective parent branches.
+Exact native binary/resource artifact identities verified; scoped
+resource and 281 English message attribution PASS. New 15-file
+solid stream/IFPS verifier and two regressions; native result pending.
+Full Setup.0 records, integration, interactive, legal and hardware
+gates open. Production 6.7.1, release hold.
+
+# Resume — native 6.7.4 product evidence and resource qualification
+
+#238 merged bfc68a4 into parent after 6/6 CI. Exact three archives
+and compiler/lifecycle/SBOM binding verified, schema PASS. Retained
+Nov25 NuGet/OSV observations replay on exact new BOM, no scoped matches.
+Stacked on #239. New 6.7.4 template resource leaves and English
+source inputs match previous pins; separate resource/message verifier,
+two tests. Hosted binary/resource, solid payload/script, interactive,
+legal and hardware gates open. Production pin 6.7.1, release hold.
+
+# Resume — Inno 6.7.4 scoped product binary attribution
+
+Stacked on #238. New loader and engine pins, actual uninstaller
+capture before execution, binding to successful removal and exact
+product setup/source/app. Scoped PE/frame/message validation,
+two regressions; hosted evidence pending. Resource/solid/script
+and interactive, legal, hardware gates remain open.
+
+# Resume — Inno 6.7.4 product lifecycle qualification
+
+#236 merged 0a5e715, 7/7 CI. Stacked on #237. Exact native fixture
+evidence verified, 38 inputs match before/after. Separate product
+probe with portable 6.7.4 compiler, pinned SDK/notices, clean/upgrade/
+repair/uninstall and scoped SBOM with compiler binding; hosted
+result pending. Interactive UAC, exact binary attribution, legal
+and physical gates remain open. Production pin and release hold unchanged.
+
+# Resume — Inno 6.7.4 interactive launch acceptance boundary
+
+Stacked on #236. Exact source comparison confirms elevation-path
+RedirectionGuardConfigure removal. RG01–RG06 acceptance matrix
+separates real UAC/original-user launch from already-elevated and
+silent CI cases; no mitigation bypass. Native compiler and product
+probe, interactive hardware/OS evidence and legal gates pending.
+
+# Resume — Inno 6.7.4 exact input and portable compiler qualification
+
+#234 merged abfd739 (6/6); #235 merged b64201e into parent (5/5).
+Native upstream publisher artifact verified. Independent extraction:
+38 inputs, 25 identical, 13 changed; 17 signed components PASS.
+Three notice texts unchanged. Exact pin manifest and separate
+portable compiler CI fixture, no product installation yet.
+Native compiler result, actual product migration, legal/hardware gates
+remain open. Production pin 6.7.1 and release hold unchanged.
+
+# Resume — current Apple SBOM and external OS scope
+
+Stacked on #234. Both actual integration 2a7137a Apple archives
+matched REST and internal sidecar SHA; scoped SBOM and independent
+schema validation PASS. Seven shipped files per edition; external OS
+dependencies classified without inferring installed versions.
+Two regressions. Installed OS advisories, native compatibility,
+trusted signing, Inno 6.7.4 qualification and release gates open.
+
+# Resume — Inno 6.7.4 upstream delta
+
+#232 merged a85079d; #233 merged ed26f10 into parent, both 5/5.
+Official 6.7.4 asset and ISSig match immutable release and pinned key.
+RedirectionGuard inheritance correction potentially relevant to product
+runasoriginaluser; separate native publisher verification added.
+Compiler migration, interactive lifecycle, legal and physical gates
+remain open. No release change.
+
+# Resume — exact candidate OSV cross-check
+
+Stacked on #232. Dated OSV querybatch returns four complete results,
+zero IDs for exact NuGet versions; local replay binds request/response
+hashes to native BOM. Two regressions. NuGet and OSV scoped results
+agree, not full vulnerability clearance. Remaining advisory coverage,
+legal terms and physical acceptance open. Release hold.
+
+# Resume — native candidate SBOM and scoped advisory binding
+
+#230 merged 2a7137a (6/6), #231 merged b2430ad into parent (5/5).
+Actual #230 product probe SBOM and both lifecycle archives match
+digests/identity; independent CycloneDX schema and binding PASS.
+Freshly acquired consistent Nov25 NuGet snapshot: 211 ranges, no
+matches for four exact source packs. Two advisory binding tests.
+Other advisory scopes, legal terms and hardware gates open.
+Release hold.
+
+# Resume — independent scoped SBOM schema validation
+
+Stacked on #230. Actual #206 historical BOM passed CycloneDX 1.6
+Draft7 using three pinned local schemas and hash-checked isolated
+validator wheels. Strict local CLI and optional product binding;
+three regressions. New product SBOM evidence, CI/integration,
+advisories, legal and hardware gates remain open. Release hold.
+
+# Resume — candidate-bound product notice SBOM
+
+#229 merged 492b8a2 after 2/2 hosted checks. New hosted SBOM binding
+after clean and upgrade/repair: source/app/setup hashes and lifecycle
+document digests, four pinned packages and exact BOM SHA. Three
+regressions. Native result, schema validation, advisories, legal terms
+and physical acceptance remain open. Release hold.
+
+# Resume — native product upgrade evidence and historical SBOM
+
+#228 merged 2610603 after 6/6 CI. Two exact evidence ZIPs match;
+clean/upgrade/reinstall notice records and candidate identity match.
+Repair and removal PASS, synthetic data preserved. Scoped #206
+SBOM replay: 265 files, 269 components, incomplete scope.
+Final candidate SBOM, independent schema check, legal review and
+hardware acceptance pending. Release hold.
+
+# Resume — product notice upgrade and reinstall
+
+#226 merged 06fa60c (7/7); #227 merged df33fd8 into parent (6/6).
+Exact native product notice evidence matches staged record, removal PASS.
+New CI-only beta.60 -> beta.61 notice upgrade/reinstall with synthetic
+data preservation and cleanup; native result pending. Release hold,
+legal terms and physical acceptance unchanged.
+
+# Resume — opt-in product notice qualification
+
+Stacked on #226. ProductNoticeProbe requires NoticeRoot, cannot combine
+with lifecycle probe; separate filename and CI-only compilation.
+Exact app/icon/notice checks, no tray launch and cleanup required.
+Two regressions; hosted result pending. Default release unchanged.
+Remaining upgrade, legal terms and physical acceptance; release hold.
+
+# Resume — native isolated notice evidence
+
+#225 merged 95b1990 into parent after 6/6 CI. Exact native evidence
+archive digest matches REST; staged/installed notice records equal,
+removal PASS, no application installed. Next: separate opt-in product
+notice candidate, not release admission. Legal and hardware gates open.
+
+# Resume — isolated installed-notice transport probe
+
+#223 merged 5a723a6 into parent, exact 5/5 CI. Stacked on #224.
+Separate notice-only fixture and hosted install/verify/uninstall job.
+Canonical LF manifest and project license checkout preserved; real
+Linux staging replay retains exact pin. Two source regressions.
+Native Windows result pending; release installer unchanged.
+Outstanding distribution terms and hardware acceptance; release hold.
+
+# Resume — candidate-bound portable notice prototype
+
+#221 merged 6f9f2fd, #222 merged 56b40f1 into parent, exact CI 5/5 each.
+Stacked on #223. Exact #206 app recovered from solid stream and local
+portable ZIP verified with nine notices and two manifests. Three tests.
+No binary publication, runtime acceptance or release admission.
+Next: installed notice packaging prototype and outstanding terms.
+
+# Resume — exact Windows notice transport
+
+Nine exact staged files plus manifest verified in a canonical ZIP;
+actual tree and ZIP replay match, three regressions. No candidate
+payload changes. Remaining distribution terms, candidate inclusion,
+hardware acceptance and release hold unchanged.
+
+# Resume — combined Windows notice staging
+
+Stacked on #221. Nine reviewed notice files staged from pinned
+repository and four retained NuGet packs; actual replay PASS.
+Three regressions. No installer or release workflow changed.
+Remaining SDK/single-file/RTL and transitive terms, distribution
+coverage and hardware acceptance remain open. Release hold.
+
+# Resume — native upstream publisher evidence
+
+#220 merged fc81aaa into parent after 5/5 CI. Verified exact native
+publisher evidence artifact digest and reviewed Authenticode and
+attestation JSON. Licensing, distribution notice coverage and physical
+acceptance remain open. Release hold.
+
+# Resume — independent Inno publisher evidence
+
+Stacked on #219. #218 merged 4a38184 (5/5). Vendor HTTPS key
+copies byte-match source pins, ISSig replay 18/18; immutable release
+metadata digest matches. New read-only hosted publisher check for
+Authenticode and release attestation, not yet executed.
+Release hold, licensing and hardware acceptance remain.
+
+# Resume — scoped Inno runtime notices
+
+Stacked on #218. Three exact upstream notice/documentation files staged
+in repository; visible Pascal Script/Inno acknowledgment and two tests.
+Distribution notices, transitive terms (including RTL/VCL), independent
+trust and physical acceptance remain open. No installer payload change.
+
+# Resume — wizard resource provenance
+
+#217 merged 676f64e into parent after 5/5 CI. Both actual #206
+wizard images match exact pinned ISCmplr.dll resources. Two
+regressions. Licensing, independent trust and hardware acceptance
+remain open. Release hold.
+
+# Resume — Setup.0 installation records
+
+Stacked on #216. All 46193 decoded bytes of exact #206 first
+block framed, reviewed header/settings, task, file/shortcut/run
+entries and 281+12 English messages match. Two wizard PNGs inventoried;
+provenance pending. Three regressions. Licensing, trust and hardware
+acceptance remain open. Release hold.
+
+# Resume — scoped IFPS launch policy
+
+#214 merged a19cdfb (5/5), #215 merged 445efc8 into parent (5/5).
+Actual #206 644-byte IFPS: all 32 types, four procedures, two
+globals and 27 instructions reviewed against pinned .iss policy.
+Static match only, no runtime execution or independent recompilation.
+Three regressions. Remaining Setup.0 records, licensing, trust,
+physical acceptance remain open. Release hold.
+
+# Resume — independent solid stream
+
+Stacked on #214. Actual #206 full LZMA2 solid chunk decoded,
+all five file hashes match; exact EOS, no trailing data. Three
+regressions. IFPS semantics, remaining setup header entries,
+licensing, trust and hardware acceptance open. Release hold.
+
+# Resume — Setup.0 framing and inventory
+
+#213 merged d40f0a6 into parent after 4/4 CI. Actual #206 Setup.0
+header, CRC chunks, LZMA1 terminal state and file location records PASS.
+644-byte IFPS isolated; semantics and remaining header entries unverified.
+Four regressions, exact artifact replay. Release hold unchanged.
+
+# Resume — resource serialization reconstruction
+
+Stacked on #212. Actual #206 loader and inner .rsrc areas and
+complete section tails byte-match reconstructed observed layout.
+Three regressions. Scoped payload verification precedes serialization;
+not an independent Windows resource API implementation.
+Compiled script, remaining overlay, licensing, trust and hardware
+remain open. Release hold.
+
+# Resume — exact manifest and version payloads
+
+#210 merged 1efb27b (4/4); #211 merged f3c05a6 into parent (5/5).
+Actual #206 loader manifest transform and both version resources
+reconstructed byte-for-byte; inner manifest unchanged. Scoped leaf
+payloads accounted for, offset CRC/bounds verified. Four regressions.
+Directory metadata and serialization, compiled script, licensing,
+trust and hardware acceptance remain open. Release hold.
+
+# Resume — scoped resource icon attribution
+
+Stacked on #210. Actual #206 setup loader 25 leaves, engine 71;
+14/62 unchanged template leaves and seven custom icon images plus
+MAINICON group match. Exact scoped key sets match; loader offset
+CRC/bounds separately verified. Version, manifest, metadata and
+serialization provenance still open. Three regressions added.
+Compiled script, licensing, trust and hardware remain open.
+
+# Resume — exact English message equivalence
+
+#208 merged ecfc636 (5/5); #209 merged 38e03dd into its parent
+(4/4). Exact #206 compiler inventory and source pins verified.
+All 281 English message strings and 102-byte appearance record
+match reconstructed bytes. Three new regression tests.
+Resource provenance, compiled script, licensing, trust and
+physical acceptance remain open; release hold.
+
+# Resume — uninstaller message block structure
+
+Stacked on #208. Actual #206 message block passes header, CRC,
+281 UTF-16LE messages and 102-byte language record checks.
+Reusable structural parser and three regressions added.
+Text and language semantics, resource provenance, licensing,
+trust and physical acceptance remain open. Release hold.
+
+# Resume — exercised uninstaller attribution
+
+#206 merged 59b718d, #207 merged d20d2bf into #206 branch, both
+5/5 exact CI. Actual #206 paired archives verified. Entire uninstaller
+PE matches recovered engine except documented 4-byte mode marker;
+AppId hash and message tail verified. Offline reusable comparator
+and four tests added. Message semantics, resource provenance,
+licensing, trust and hardware acceptance open; release hold.
+
+# Resume — absent receiver field evidence
+
+#184 merged d32b845. Owner beta.60 report 06:38 UTC shows known absent
+AJAZZ receiver, no retained unverified field, AULA fresh 62% after retry.
+New receiver_absent outcome distinguishes verified enumeration status
+from inconclusive capture. Native CI and physical reconnect remain open.
+No release admission.
+
+# Resume — beta.60 field report compatibility
+
+#182/#183 merged; integrated c5fb1b3. Owner beta.60 report 06:34 UTC:
+93 unverified USB field; 0/6 valid; AULA fresh 62%. Legacy import
+missing manual inspector and interval= separator fixed. No raw report
+committed. Native CI and physical acceptance remain open.
+
+# Resume — active diagnostic outcome normalization
+
+Stacked on #182 1d897ef. Common envelope now reports independent
+active capture outcome and reported percentage, never raw buffers
+or ordinary telemetry promotion. Native CI and hardware open.
+Release hold unchanged.
+
+# Resume — High Sierra interactive cancellation
+
+#180/#181 merged; integrated b9cb5bb. Legacy GUI direct worker
+implements bounded partial capture and cancellation without CLI
+grandchild. Native CI and physical acceptance remain open.
+Release hold unchanged.
+
+# Resume — Universal interactive cancellation
+
+Stacked on #180 da1e5ca. Localized menu cancellation uses existing
+supervisor token; keep exclusion until child exit and show partial
+report. High Sierra cancellation, native CI and physical acceptance
+remain open. Release hold unchanged.
+
+# Resume — cross-platform diagnostics summary
+
+#178/#179 merged; integrated ce9a2b6. Windows extended schema marker
+and common redacted importer added. Keep ordinary USB, cached Bluetooth
+and independent GATT distinct. Native CI and physical reports pending.
+Release hold unchanged.
+
+# Resume — Apple menu report schema
+
+Stacked on #178 969540e. Both Apple editions emit apple-menu-v1.
+Bounded local parser normalizes passive USB and independent GATT
+observations without exporting raw traces. Native CI, real reports and
+Windows adapter remain open. Release hold unchanged.
+
+# Resume — Universal partial HID trace
+
+#176/#177 merged; integrated 56a2c59. New bounded streaming trace
+retains non-terminal partial records on abnormal exit. Native synthetic
+self-tests and physical acceptance still required. Release hold unchanged.
+
+# Resume — manual Apple GATT evidence
+
+Stacked on #176 161e58c, pending native CI. Add independent
+manual GATT status/UTC/duration/verified value and discovery count.
+Guard Universal timeout generation and both service/UUID gates.
+No new automatic operation or identity pairing.
+
+# Resume — Apple GUI diagnostics owner priority
+
+#175 merged 23998be after 4/4 CI; previous integration 6/6.
+Both Apple editions now have consented menu F7/05 capture,
+passive snapshot, preview/copy/private no-clobber save.
+Peer project review and future improvements in
+docs/APPLE_DIAGNOSTICS_MENU.md. Native CI and hardware pending.
+Release hold unchanged.
+
+# Resume — High Sierra SDK name screen
+
+#174 merged dea88bf after 4/4 exact hosted CI.
+Pinned third-party SDK 10.13 mirror, 65 local hash-qualified
+stubs and 62 reexport edges. Actual High Sierra 7c25cfa app:
+139 names present, 134 unrestricted, five AppKit restricted-only.
+Offline replay CLI retains 19 unevaluated linker directives.
+Actual OS provenance, runtime and native acceptance open.
+Release hold unchanged.
+
+# Resume — scoped Apple undefined symbols
+
+#173 merged 390e29c after 3/3 exact CI. Integrated 7c25cfa 6/6 PASS.
+Both hash-qualified 7c25cfa Apple ZIPs passed archive, load, seal,
+SBOM and CycloneDX schema checks. New scoped symbol tool inventories
+462/461 Universal and 139 High Sierra undefined nlist symbols.
+OS exports, runtime lookups and native compatibility unverified.
+Release hold unchanged.
+
+# Resume — extended owner evidence
+
+#172 merged 7c25cfa after 3/3 exact CI and 15/15 native macOS groups.
+New beta.60 owner reports: ready-clear 95 -> 94, zero verified;
+AULA cached 66 (22 misses) -> fresh 66 (zero misses).
+Extended AULA analyzer supports partial two-state evidence,
+never full acceptance without an independent awake report.
+Raw captures not published; release hold unchanged.
+
+# Resume — Apple self-test attribution
+
+Integrated #99 21dd502 run 45554473404 failed aggregate self-test
+after successful build/signing/icons; no Apple source delta. Add
+15 fixed group outcomes without modifying predicates or aggregate exit.
+Native CI required; cause remains unknown. Release hold unchanged.
+
+# Resume — scoped Apple CycloneDX inventory
+
+#169 merged 21dd502 after exact 4/4 CI. #170 joined 5d308f1,
+identical tested tree; repeat exact CI. New stacked Apple SBOM generator
+verified two historical ZIPs and official CycloneDX 1.6 schema: Universal
+31 components (7 shipped, 24 external), High Sierra 14 (7 shipped,
+7 external). Incomplete composition, no trust/compatibility/admission.
+
+# Resume — scoped Apple ad-hoc hash integrity
+
+#168 merged f53a8c4 after exact 4/4 CI. #169 joined bbed1df with
+identical tested tree; fresh exact-head CI required. New stacked tool
+checks 221 Mach-O pages, nine special slots and 16 resource hashes
+across two historical Apple archives, all match. Ad-hoc empty CMS,
+not publisher trust, notarization or general signature validation.
+Native acceptance and release hold unchanged.
+
+# Resume — direct Apple load-command inventory
+
+#166 merged 4eecf64 after 4/4 CI, #168 joined a9e3a95 with 209/209
+local QA. New stacked Mach-O verifier checks both historical archives:
+Universal 13.0.0, SDK 15.5.0, 15 required/9 weak per slice; High Sierra
+10.13.0, SDK 15.5.0, seven required. Both final CLI PASS. Native
+compatibility, symbol availability, signatures and release admission open.
+
+# Resume — Apple archive audit on integrated toolchain base
+
+#166 integrated 4eecf64 after 4/4 exact CI PASS. #168 previous
+head c3b1360 4/4 PASS; merged updated base and retained all QA gates.
+Requalify exact joined head. Native Apple compatibility and release
+trust remain open; release hold unchanged.
+
+# Resume — scoped Apple archive inventory
+
+#164 integrated a0f9b50. New Apple inventory checked e00b229 historical
+Universal and High Sierra archives, exact outer and inner checksums,
+7 files each, x86_64+arm64 and x86_64 respectively. Plist minima 13.0
+and 10.13; no native compatibility or signature claim. Hosted QA and
+load-command/framework/signature review remain open.
+
+# Resume — installer toolchain on integrated advisory base
+
+#165 merged bec5cd1 after exact 4/4 CI. #166 ba022aa 4/4 PASS,
+actual upgrade log 45551287935 confirmed Inno 6.7.1, same ISCC
+SHA256 both compiles, Authenticode Valid observation, and synthetic
+old/new PID lifecycle PASS. Joined exact CI required; trust and
+physical acceptance remain open. Release hold unchanged.
+
+# Resume — reviewed compiler on integrated SBOM base
+
+#164 integrated a0f9b50 after 4/4 exact CI; #166 retains the actual
+engine gate, no floating install, and exact-artifact transport fix.
+Joined native acceptance required. Release hold unchanged.
+
+# Resume — native Inno compiler correction
+
+#166 native CI 45548932515 scalar path fixed at 89acdb4;
+45550141138 then observed frontend FileVersion 0.0.0.
+Require actual compiler engine banner 6.7.1, log frontend metadata only.
+Native CI still pending; trust/admission not qualified.
+
+# Resume — reviewed Inno Setup compiler selection
+
+#163 merged 5d965ce after exact 4/4 CI. Actual prior upgrade log
+engine 6.7.1 for both builds. Shared compiler wrapper removes floating
+Chocolatey fallback, checks reviewed file version and engine banner, logs
+compiler/Setup hashes and signature observation. Exact upstream license
+reviewed, no commercial-status assumption or compliance clearance.
+Native CI required (Gateway has no pwsh). Release hold unchanged.
+
+# Resume — advisory audit stacked on joined scoped SBOM
+
+#167 integrated e00b229, #164 joined 9b64aa9 with 192/192 local QA.
+#165 now builds on that exact SBOM/notice/roundtrip candidate; retain
+all three tool checks and histories. Hosted qualification and release hold
+remain open. Do not merge until #164 has been integrated and base aligned.
+
+# Resume — scoped NuGet advisory audit
+
+#162 merged d01ca8a after exact 4/4 CI. #163 joined d75b620,
+188/188 local QA PASS; #164 awaits joined exact CI. Four pinned
+NuGet versions checked against both official feed pages on 2026-11-25:
+211 ranges, zero matching; OSV exact queries also returned no IDs.
+New offline CLI and six synthetic tests. Not full vulnerability clearance;
+feed freshness/authentication and all other release gates remain open.
+
+# Resume — SBOM with exact artifact roundtrip
+
+#167 merged e00b229 after exact-head 3/3 CI PASS. #164 prior native
+checks passed but artifact roundtrip failed; both roadmap histories
+retained. Requalify the joined head. No release admission.
+
+# Resume — exact CI artifact identities
+
+Base 5d965ce. #164 and #166 had synthetic artifact-roundtrip failures
+(only one downloaded, digest matched). New bounded REST visibility gate
+requires both exact IDs/digests before pinned action and original byte
+checks. Local mock delayed/missing/wrong-digest and source checks PASS.
+#166 scalar path bug corrected separately at 89acdb4, native CI pending.
+Release hold unchanged.
+
+# Resume — combined notice and scoped SBOM candidate
+
+#163 merged 5d965ce, #164 exact 40af0e4 CI 4/4 PASS. Resolve
+three content conflicts preserving notice and SBOM tools/checkpoints.
+Fresh combined QA required. No release admission.
+
+# Resume — scoped Windows CycloneDX inventory
+
+#161 merged a98cb0d after exact 4/4 CI. #162 joined at 6728a01;
+combined QA 185/185 PASS. New scoped BOM generator verified historical
+Tray 265 and HA 184 embedded files, both official CycloneDX 1.6 schema
+PASS, with composition explicitly incomplete. Full distribution coverage,
+licenses, signatures, advisories and release admission remain open.
+
+# Resume — notice staging and field evidence
+
+New stacked notice preparation: five exact files from four pinned packs,
+all five hashes and sizes verified. SDK REDIST lists net8.0/net6.0 paths,
+actual package has net9.0; .NET Windows single-file product terms require
+separate review. No distribution workflow change or legal clearance.
+Owner report 2026-11-25 04:30 UTC: shared receiver candidate 96, 6/6
+agreement, 0/6 validated; AULA fresh 66, zero misses. Prior owner-confirmed
+AJ179 field 97; new report model provisional. No raw report committed,
+no telemetry promotion. #99 comment 7152938353. Release hold unchanged.
+
+# Resume — merge license inventory with resource serialization
+
+#161 integrated a98cb0d after exact 4/4 CI. #162 prior head b48e3de
+4/4 PASS; conflicts resolved retaining both sets of tools and roadmap
+entries. Fresh combined QA required; release hold unchanged.
+
+# Resume — pinned package license inventory
+
+Base f23b8fc #99 6/6 CI PASS. #160 and #161 integration pending.
+Four exact official NuGet packs re-downloaded and hashes verified;
+three MIT declarations and one Windows SDK license URL with acceptance
+required. Exact notices and signature presence recorded, no compliance
+or signature clearance. License CLI and seven regression tests added.
+SDK terms, notice distribution, toolchain, SBOM/advisories and release
+qualification remain open.
+
+# Resume — independent PE resource serialization (scoped inputs)
+
+#158 integrated f23b8fc after 4/4 checks. #160 935a1a4 staged.
+New stacked verifier derives .rsrc bytes and size from pinned Host and
+embedded application resources. Historical #147 Tray 1629900 and HA
+1473220 bytes exact; reconstructed headers and zero tail both PASS.
+Scope limited to reviewed key types and three named resources; no
+independent app build, whole-file reproducibility or signature claim.
+Hosted CI and release/physical gates remain open.
+
+# Resume — conditional PE header reconstruction
+
+#159 merged b21337d after 4/4 CI and actual synthetic lifecycle log PASS.
+#158 joined 00d4cc3, local 166/166 QA, manifest PASS; exact CI pending.
+New stacked header reconstruction compares actual #147 Tray/HA against
+pinned host: 0 unexpected differences, zero resource tail for both.
+Observed resource size is conditional input, not independent serialization.
+Native/physical acceptance and release hold remain open.
+
+# Resume — automatic Windows Setup close and relaunch
+
+- #157 corrected 2afb9c8 passed 4/4 CI and merged into draft #99 at
+  5800d80. Consolidated job lifetime is now the canonical candidate;
+  no main merge or release dispatch.
+- Owner requests automatic application closure and launch after installation.
+  Inno Setup uses graceful Windows Restart Manager, scoped to the installed
+  EXE. Hidden top-level window handles close-app session and uses tray cleanup.
+- Interactive launch defaults on; /LAUNCH=0 suppresses, /LAUNCH=1 enables
+  silent launch. Original user credentials requested (Inno cannot de-elevate
+  an already elevated launcher). No automatic force-kill or new HID commands.
+- Versioned synthetic installer regression (beta.61 -> beta.62 test fixture)
+  checks old PID exit, updated hash/version and new PID readiness without
+  actual tray monitoring. Normal silent upgrade remains no-launch.
+- Exact native CI and real beta.60 running-tray/UAC/diagnostics field tests
+  remain pending; release hold unchanged.
+
+# Resume — consolidated full capture job lifetime
+
+- #155 exact head 4973b71 all four CI PASS; merged into draft #99 at
+  78d3958. PE resource payload scope only; header/signature/license gates open.
+- #156 ddf32fe Windows/macOS PASS, including synthetic parent termination;
+  separate branch overlaps #99 and must not be independently merged to main.
+- Follow-up branch fix/audit-full-hid-job-lifetime ports only the job lifetime
+  and start gate into #99, preserving existing JSON, cancellation, child
+  watchdog, shared I/O lease and installer pin/settings preservation.
+- Portable and installed synthetic watchdog, missing-token and parent-exit
+  cases require exact CI. No device I/O or release dispatch.
+- Owner confirmed AJ179 field 97 in two 2026-11-25 reports, 12/12 agreement,
+  0/12 validated F7 replies; AULA cache 68 to fresh 68, 24 failures to zero.
+  Existing BLE 97 reference is not simultaneous. No telemetry promotion.
+- Keep release hold; native/physical acceptance and supply-chain work open.
+
+# Resume — PE resource overlay
+
+#154 merged 9b8d184 after 5/5 CI, identical tree 71068d0.
+#155 88d23e1 local QA 160/160 PASS and actual #147 EXE resource CLI
+2/2 PASS: Tray 3 host + 10 app, HA 3 host + 2 app, no discrepancies.
+Retarget to draft #99, join integrated parent and requalify exact head.
+Resource payload comparison is not PE metadata, padding, independent
+app source provenance, signature or license clearance. Next header and
+license/notices review. No release/hardware approval.
+
+# Resume — scoped native host verification
+
+#153 merged c15cb7e after macOS artifact DNS retry succeeded, 4/4 checks,
+identical tree 5577d97. #154 original 397e1da local QA 152/152 PASS;
+actual pinned Host pack and both #147 EXEs scoped CLI PASS: six raw
+sections, exact SDK .data patches (67/65 changes, zero unexpected),
+correct subsystem. Resources unresolved, headers partial, signatures
+not verified. Join integrated parent and require new exact CI. Next
+resource/header review and license/signature/advisory evidence.
+No release or hardware acceptance claim.
+
+# Resume — expanded managed runtime provenance
+
+#151 unified diagnostics merged f1e1ec3 (916 C# checks; integrated 7/7 CI).
+#152 merged f061d62 after 5/5 CI, tree 5d7e9c8. Independent #147
+artifact comparison found Desktop 81, Core Tray 179 and HA 181, SDK 2
+exact upstream byte matches; no mismatches. Expand existing comparator
+with explicit reviewed package selection and missing embedded handling.
+Require exact candidate CI and real CLI comparison. Next inspect native
+AppHost, package signatures and license/notices, then scoped SBOM.
+No main merge, release or hardware acceptance claim.
+
+# Resume — unified diagnostics and historical transport evidence
+
+#150 merged b5b5c53 after 5/5 checks, identical tree 9a2bfc0.
+#151 initial 9d2395a Windows 911 assertions PASS and EN/RU/UK dashboard
+smoke PASS; local Python 138/138 PASS. Join #150 parent preserving both
+roadmap blocks; retain last numeric single-receiver USB observation
+as historical diagnostics only, not linked to BLE. Fresh exact-head CI
+and owner acceptance needed. No release or parser promotion.
+
+# Resume — component attribution and runtime provenance
+
+#149 merged 09da592 after 5/5 CI, identical tree eee7a80.
+#150 1cccf03 5/5 CI and clean Gateway 143/143 offline QA PASS.
+Actual #147 EXEs: tray 211 matches, 52 localized unmatched, 0 missing;
+HA 182 matches, 0 unmatched/missing. Retargeted #150 onto draft #99;
+join integrated parent and requalify exact candidate. Next verify
+52 satellite resource hashes against exact upstream runtime pack,
+then licenses/notices and scoped SBOM. Release hold unchanged.
+
+# Resume — Node24 artifact roundtrip correction
+
+#148 initial 14c2eb4 clean isolated Gateway QA 133/133 PASS, tree
+2a6ac7c. Hosted offline QA and both synthetic uploads succeeded, but
+same-job pattern download found one archive, and the two-file assertion
+failed. Move download to a dependent job to mirror release topology;
+exact content and digest checks remain. Full exact-head CI required.
+
+# Resume — ENG-06/12 Node24 candidate
+
+#147 merged 91138db after 4/4 CI, exact tested tree 4e75375.
+Native restore archives 14979074416 and 14979424535 verified by SHA-256
+and exact six reports; all assets v4. Build graph contains ILLink 11.0.0;
+SDK requests .NET runtime packs 11.0.0, Windows ref 10.0.19041.87.
+Requested packs are not packaged-file proof. Candidate updates five
+reviewed action identities to Node24, explicit ZIP/digest policies,
+synthetic merged artifact roundtrip. SDKs and release hold unchanged.
+Next: exact candidate CI, then runtime/SBOM/advisories. No release.
+
+# Resume — .NET 11 WinForms analyzer remediation
+
+PR #145 initial 4c6101a: SDK 11.0.100 selected in HA and upgrade
+logs; offline QA PASS. HA 45518748728 and upgrade 45518748754
+failed WFO1000 on runtime-only BatteryGraphPanel Samples/PeriodStart/
+PeriodEnd. Apply explicit DesignerSerializationVisibility.Hidden to
+all three properties; no global warning suppression or behavior change.
+New exact-head CI required. Independent NuGet inventory #146 is separate;
+no publication, main merge, hardware claim or release hold change.
+
+# Resume — owner-selected .NET 11 migration candidate
+
+#143 merged 48b1fff after six successful hosted checks, identical
+source tree 258249f. Owner explicitly chooses .NET 11 instead of 10.
+#144 tracks direct migration: SDK 11.0.100, all four project TFMs,
+matching CI inputs and checks, HA output path and regression coverage.
+.NET 8 is EOL; the previous pin is a development baseline only.
+Candidate not locally executed; require exact-head hosted checks,
+resolved runtime, OS lifecycle and physical device qualification.
+Native macOS and High Sierra, HID protocol, public releases and
+release hold unchanged. Continue #142 supply-chain inventory after
+migration verification. No main merge or release dispatch.
+
+# Resume — ENG-06 SDK lock candidate after action integration
+
+#141 merged 364fe76 into draft #99, all six hosted checks PASS.
+Downloaded hosted Python QA run 45517669228 verified on reopen:
+121 tests, 14 steps, Python 3.12.16, exact tree f426ee6.
+SDK follow-up cherry-picked as 107ba36 (tree ea2a16f), identical to
+local 778a309; clean offline QA 122 tests PASS. Selected SDK 8.0.428
+and matching CI checks require new native qualification; runtime/NuGet,
+Inno and Apple locks remain open. Next: exact SDK candidate CI, then
+ENG-06/12 resolved toolchain and reviewed upstream inventory. No release.
+
+# Resume — ENG-06 selected SDK follow-up
+
+#141 action pins head 5639def; local 121 tests / common QA PASS.
+Hosted CI running; do not merge without exact successful checks.
+Local branch fix/engineering-sdk-selection is based on #141, not
+pushed. global.json exact SDK 8.0.428 (observed installed, not proven
+previously selected), matching setup/check and Apple toolchain
+observation. Native qualification required; runtime and Inno locks
+remain open. Next: integrate #141 only after PASS, cherry-pick SDK
+candidate onto identical tested tree, submit separate PR.
+No release execution or main merge.
+
+# Resume — ENG-06 exact CI action pins
+
+#140 merged 17a65b8 into draft #99, 3/3 hosted CI; Windows
+45517112616 four metadata checks and 907 total C# PASS.
+ENG-06 first candidate: 26 action uses pinned to five full SHAs
+confirmed from prior logs/upstream API; explicit finite job budgets,
+Python 3.12.16, lock regression. See docs/CI_DEPENDENCY_REVIEW.md.
+Next: verify local QA and exact hosted candidate checks, then SDK and
+runtime/toolchain identity review, ENG-12 upstream inventory.
+No release execution; release hold remains. No full advisory or
+transitive dependency qualification claimed.
+
+# Resume — ENG-15 candidate after ENG-05 integration
+
+#139 merged d665299 into draft #99 after Windows/macOS/upgrade PASS.
+Windows run 45516691219 confirmed all 12 structured log assertions and
+903 total C# checks, zero failures. Tree equals tested 9b1b917.
+ENG-15 follow-up copied onto that exact tree (source 5e7559f, tree
+ e1c467f2a552202ecfd7cab072c54230191c4216). Local Python QA required,
+hosted native checks pending. Network audit corrects future-only MQTT
+risk and rejects ambiguous release metadata. No new hardware I/O.
+Next: verify current ENG-15 PR CI, then ENG-06 supply-chain inventory
+and exact pin review; no publication. Apple logging/ACL/timing open.
+
+# Resume — ENG-15 network metadata candidate
+
+#138 merged b22535d into draft #99 after 4/4 hosted CI; downloaded QA
+manifest verified (117 tests, 14 steps). #139 Windows journal candidate
+9b1b917 / tree a57db6c, local QA PASS; native checks pending.
+Local independent follow-up branch fix/network-metadata-validation is
+based on #139 candidate, not pushed or merged. Source boundary audit and
+duplicate release metadata/tag rejection; four new native checks require
+Windows CI. No real MQTT connector exists. Do not stack-publish before
+#139 passes and merges; rebase/cherry-pick to verified matching tree.
+Next: inspect #139 CI, integrate if PASS and exact head, then submit
+ENG-15 follow-up. No main merge, release or hardware approval.
+
+# Resume — ENG-05 Windows operational journal
+
+#138 eaa150c four hosted checks PASS, downloaded QA artifact independently
+verified (117 tests, 14 steps, Python 3.12.16; merge tree identical).
+ENG-05 closed enum events at all 32 Windows call sites, UTC JSONL,
+256 KiB x two generations, cooperative writer refusal, partial-tail
+handling, per-process failure count, canary/rotation tests.
+Legacy app.log untouched. Native CI required; no local dotnet.
+Next: integrate #138 after exact-head verification, submit separate ENG-05
+candidate. No main merge or release dispatch. Apple/ACL/timing remain open.
+
+# Resume — ENG-03/04/14/16 candidate PR #138
+
+#137 all four checks PASS, normal retry of merge succeeded after prior
+HTTP 401, merged into draft #99 at 4099ae4. No main merge or release.
+Six local commits preserved and cherry-picked into fix/engineering-offline-qa.
+Candidate #138 source 0b1ed6d / tree c230ebc9c073a3c1db1dbca45794dce645f93265.
+Common QA clean run: Python 3.13.5, Linux x86_64, cc 14.2.0,
+117/117 tests, 14 steps, zero failures/errors/skips; AST zero and required
+manifest verified on reopen. Private run ID offline-qa-m7fozn0p.
+ENG-03 Python AST gate, ENG-04 runner, ENG-16 verifier, ENG-14 first
+bounded report fix implemented; hosted checks pending. Full native audit,
+lint/type analysis, atomic evidence publication and release gates open.
+Next: inspect exact #138 CI and merge only on success; ENG-05 safe native
+logging remediation and regression tests. No new HID or publication.
+
+# Resume — ENG-14 bounded local APEX analysis
+
+Source 09b9a47 / tree b76c9c4; common local QA 114/114,
+14 steps, manifest verified on reopen (offline-qa-aainipi4).
+ENG-14 bounded APEX report reader and sanitized failure output
+candidate; existing comparison semantics retained. Regression pending.
+GitHub auth status reports available again, but previous merge failed
+HTTP 401; no alternate credentials or write permission assumed.
+Next: run local common QA, verify current PR head/checks and retry
+normal merge only if authorization and exact reviewed head permit.
+ENG-05 native logging still requires hosted Windows verification.
+
+# Resume — ENG-16 local evidence verification
+
+Source 09e8d3d / tree 1590ec8: common Python QA PASS from clean checkout,
+111/111 tests, 14 steps, no skipped; four file digests checked.
+Private run ID offline-qa-awurdq9m; Python 3.13.5, cc 14.2.0 Linux.
+New explicit --verify and strict required inventory, symlink/hardlink
+and per-file mutation checks. Run regression and clean candidate QA.
+GitHub HTTP 401 remains unresolved, local-only branch; hosted NOT_RUN.
+Next independent action: safe FileLog remediation / native test preparation,
+then dependency pin review, CLI bounds and native QA evidence wrappers.
+No hardware, release or publication authorization.
+
+# Resume — ENG-04 first offline QA candidate
+
+Source: 342824d exact zero-debt gate, 106 local tests PASS.
+New runner and sanitized JUnit writer, fixed help commands, required
+digest inventory, private unique directories, no raw shared exceptions.
+Local regressions 111/111 PASS before final clean-candidate check.
+Next: execute common runner from committed clean tree and inspect manifest.
+GitHub HTTP 401 remains unresolved; local commits not pushed, hosted
+qualification NOT_RUN. No publication or hardware approval.
+Native evidence wrappers, stronger atomic evidence and case catalog open.
+
+# Resume — ENG-03 zero Python source debt
+
+Source: f2553e6 (81 production findings removed), 949665a (247 test
+findings removed). Local Python 3.13.5 regression 104/104 after each.
+Stage: exact empty baseline, recursive source audit and CI gate.
+No reviewed legacy debt entries required. Native audit/lint/types pending.
+GitHub HTTP 401 at #137 merge; local branch fix/engineering-python-types
+not pushed. No hosted evidence for local commits. Release hold unmerged.
+Next independent action: ENG-04 dependency-free offline QA result contract,
+then native wrappers and evidence validation. No production/hardware work.
+
+# Resume — ENG-03 Python annotations
+
+Source: PR #137 tested head 0e140d3 / tree ad04238d1f7d9dc9f5668257bb57335b80824434.
+Four hosted checks PASS, 104 Python tests. Merge returned HTTP 401.
+Local branch only; no alternate credential, push or merge assumed.
+Stage: explicit annotations in seven production tools. Test source
+debt remains; no blanket baseline. Run exact inventory and regression.
+Next: test source debt remediation, then zero-debt gate and QA evidence.
+Release workflow hold remains unmerged to main. No publication.
+
+# Resume — portable engineering policy adoption
+
+Source: c416b3f / tree 101f0ce13fdac2d3c0f08a4fd1bab04bb44945df.
+Stage: ENG-01/02 initial audit, adapted standards and release safety hold.
+Actual baseline: #99 six CI PASS; Python 3.13.5 unittest 97 PASS.
+Changes: AGENTS, standard/audit, architecture, security, roadmap pointer;
+release workflows fail closed; no existing releases or settings changed.
+Candidate CI pending. No release, production change or hardware fault approved.
+ENG-03 source-only audit, exact comparator and release-hold tests added.
+Inventory-only CI until exact baseline review; no claim of debt gate PASS.
+Next: review baseline and activate exact no-new-debt gate, then ENG-04. Native tooling via hosted CI only.
+Owner 99 appeared without power cycle; ready-clear not verified telemetry.
+
+# Resume — ordinary unverified observation streak
+
+- #135 all three CI PASS (97 Python tests), merged 99a271a.
+- Owner reports normal-use field unchanged; power-cycle-only change.
+- Added session-only per-receiver consecutive ordinary observation
+  count and first/last UTC, reset on changed/missing/unknown/absent.
+  Skips and full captures do not increment it. Native CI pending.
+- No change to HID requests, validated telemetry or public release.
+
+# Resume — AJ179 ordinary/full disagreement
+
+- #134 all three CI PASS, merged 46f3018.
+- Owner power-cycled mouse; ordinary 98 at 23:19:43 UTC, full 100
+  at 23:19:53 UTC (six replies), both unverified. AULA fresh 71.
+- Added offline disagreement warning and INCONCLUSIVE override.
+  Preserve original full matrix result separately. Native CI pending.
+- No runtime changes or promotion of unverified fields.
+
+# Resume — ready-clear evidence chain
+
+- #133 Windows/Universal/Python PASS (89 tests), merged cff8181.
+- Hardened offline comparison with exact TX and GET buffers, successful
+  status markers, lengths, header and ordering. Added CLI help CI and
+  sanitized replay of both known report prefixes. CI pending.
+- No new hardware evidence; no change to runtime or public release.
+
+# Resume — ready-clear matrix comparison
+
+- #132 third CI all three PASS; EN/RU/UK transition tests confirmed
+  in Windows log; merged ef4e3c3, identical tree to 8239df5.
+- Added offline two-report comparator for observed ready-clear rev 0002
+  matrices. Distinct UTC, six consistent pairs, explicit uncertainty.
+  No HID, runtime, history, alerts or local API changes.
+- Changed-charge field evidence remains open; no public release.
+
+# Resume — Device Manager unverified display
+
+- #131 all three CI PASS, merged c467172; identical tree to 265d7be.
+- Device Manager Entry-only display candidate, localized status and tooltip.
+  No changes to shared dashboard state, local snapshot, history or alerts.
+  Initial #132 Windows smoke compilation failed (CS0103, missing
+  BatteryDisplayState.cs link); fixed. Rerun 5bf66e4 reached runtime
+  smoke tests and failed stale candidate tooltip assertion. Explicitly
+  set battery tooltip for all states, assert replacement after both
+  unavailable and verified transitions; third native CI pending.
+  Universal and upgrade checks passed the initial head.
+- Owner accepted tray 100? and AULA 75% on 9cd415b.
+  Actual changed-charge accuracy remains unverified.
+
+# Resume — explicit unverified diagnostic fields
+
+- Audit 6f165c3 all six CI PASS. Owner accepted gray AJ179 100? and
+  AULA 75% fit on Windows 9cd415b (identical tree).
+- 21:35 UTC report again showed six ready-clear 100 fields.
+  GearHub full-looking gauge only, no numeric reference.
+- Ordinary, per-receiver and full capture reports now label candidate
+  separately from verified telemetry; scheduled skip suppresses candidate.
+  Native CI pending. No poll/alert/history changes.
+- Changed-charge and other physical acceptance gates remain open.
+
+# Resume — owner AJ179/AULA regression
+
+- #99 357b967 all six CI PASS. Owner new AJ179 reports show 6/6
+  responses with raw field 100 and ready clear, 0/6 verified.
+- Display-only gray unverified candidate and numeric glyph fitting
+  added for Windows; CI pending. No parser relaxation for telemetry.
+- Owner vendor-display comparison and real tray verification remain open.
+
+# Resume — Windows shortcut icon resources
+
+- #128 all four checks PASS; 36 Apple rendering cases per edition
+  confirmed in native logs. Merged ca2ffa1 into draft #99.
+- Added four installer/portable ICO files and explicit no-clobber
+  resource export for single-file Windows EXE; new CI pending.
+- No shortcut is rewritten automatically; actual Properties/hover/restart
+  acceptance and hardware gates remain open. No public release.
+
+# Resume — appearance acceptance
+
+- #127 exact head 077e693 all four CI PASS; merged 9dabf9a into #99,
+  identical source tree. Windows log confirms resource load, red
+  critical pixels, palette precedence and preference JSON round trip.
+- Added native Apple resource/pixel boundary tests and actual menu previews.
+  Native CI pending. Owner hover, restart and actual display checks remain.
+- Hardware gates and public release unchanged.
+
+# Resume — mouse color themes
+
+- #126 all four CI PASS, merged fcda8dd into draft #99.
+- Four official-color inspired app resources bundled; Windows appearance
+  and independent tray palette implemented, critical <=10% red numeric.
+- Windows and Apple selection UI implemented; native CI pending.
+- Hardware acceptance still open; no release.
+
+# Resume — orange mouse application icon
+
+- Draft #99 4f4b96c all six CI checks PASS before branding changes.
+- Orange-shell mouse artwork now wired into Windows EXE/setup and both
+  macOS bundles. Dynamic tray battery icons unchanged.
+- Native packaging CI pending. Hardware acceptance still open.
+
+# Resume — installer CI and dashboard acceptance
+
+- #124 Windows/Universal/upgrade CI PASS; actual upgrade log
+  45426251349 confirms beta.60 -> CI-only beta.61 -> uninstall
+  preserved synthetic user files. Merged into #99 as 59dbf62.
+- Dashboard candidate explicitly orders keyboard actions, adds Escape
+  close and synthetic font/window scaling at 125/150/200% in EN/RU/UK.
+  Native CI pending; not real monitor DPI or interactive keyboard evidence.
+- Real hardware and owner upgrade remain open. No public release.
+
+# Resume — installer upgrade acceptance
+
+- Draft #99 ff37a72: all five final checks PASS; 81 offline regressions.
+- Verified exact-head field artifacts and tool kit; no new device evidence.
+- New CI candidate tests pinned public beta.60 setup -> CI-only beta.61
+  candidate -> uninstall, preserving synthetic per-user settings/history.
+  No launch, HID, release publication or permanent version bump.
+- Actual owner upgrade and hardware checks remain open (#93, #53, #34).
+
+# Resume — field evidence tools
+
+- #121 merged 942dd31 and #122 merged 574d390 into #120 after
+  Windows/Universal/Python CI PASS. Combined #120 CI pending.
+- Single-receiver GET-ID offline analyzer candidate: no battery promotion,
+  no HID access; explicit pairing and incomplete/malformed detection.
+- Next: native/offline CI, integrate into draft #99 and collect actual
+  AJ159/AJ179/AULA and resource evidence. No public release.
+
+# Resume — final audit CI and resource measurement
+
+- Draft #99 head ceb4cfc: all five final CI checks PASS. No main merge.
+- New candidate Windows Job Object sampler measures cumulative CPU
+  including exited children; synthetic no-HID test added to CI.
+- No physical resource or device observations have been collected.
+  Current published beta.60 / High Sierra .5 remain unchanged.
+
+# Resume — consolidation and field acceptance readiness
+
+- #119 all three platform CI PASS, merged eef78f5 into #117; #118
+  already merged 6c81320. Combined branch CI remains the merge gate.
+- Shared fixture now triggers Apple CI on fixture-only changes.
+- Validation matrix distinguishes historical AJ159 rev 0300 successes
+  from current affected rev 0002 (0/6 validated); no new hardware PASS.
+- Next: consolidate tested branches #117 -> #113 -> #104 -> draft #99,
+  verify artifacts for final SHA, field acceptance and resource evidence.
+- Public beta.60 / High Sierra .5 unchanged.
+
+# Resume — shared corpus observation regression
+
+- #117 Windows/Universal/HA PASS after formatter separation; #118
+  Windows/Universal PASS and merged 6c81320 into #117.
+- Candidate extends 20-row corpus into actual temporary Windows and
+  Universal history CSVs and rejected-frame disconnect alert checks on
+  all three editions. No actual notification delivery or HID in fixture run.
+- Next: native CI, consolidate #117 -> #113 -> #104 -> draft #99.
+  Hardware acceptance remains open; published beta.60 / High Sierra .5.
+
+# Resume — BLE/AULA status parity
+
+- #116 passed Windows/Universal/High Sierra and merged 98708ee.
+- Shared dashboard and menu status labels for BLE/AULA; timestamp
+  provenance, no stale numeric value on unknown/standby. AULA unknown
+  polls interrupt disconnect debounce and unexpected errors record gaps.
+- CI pending; consolidate #113 and #104 into draft #99 after checks.
+- Actual device tests and resource acceptance remain open. No release.
+
+# Resume — Apple observation parity
+
+- PR #114 merged 1f9f74a, all three platform development artifacts
+  verified on that SHA. PR #115 merged ed25a4f after Windows/macOS PASS.
+  Combined #113 checks pending before consolidation into #104/#99.
+- Apple candidate: separate HID open failure from no validated charge,
+  localized session-only last verified USB timestamp, cleared on confirmed
+  absence; no identity-bound cache or new device traffic.
+- Next: candidate native CI, consolidate branches, remaining field gates
+  and BLE/AULA presentation. No public release or new hardware evidence.
+
+# Resume — High Sierra opt-in isolated polling
+
+- Universal opt-in PR #111 merged 68576f0; legacy prototype #112 merged
+  95be0b9. All associated CI checks PASS.
+- High Sierra session-only --experimental-isolated-polling candidate:
+  cancellation, child reaping, deferred AppKit quit, timeout status and
+  stronger synthetic IPC/recovery tests. CI pending.
+- Next: one owner acceptance matrix, combined CI, development artifacts
+  and field verification. Default polling remains unchanged; no release.
+- Published beta.60 / High Sierra .5; AJ159 charge still unverified.
+
+# Resume — opt-in Universal Apple menu candidate
+
+- PR #108 merged fbeeccf; #109 merged 859093c; #110 merged 63563a7.
+  All their required CI checks PASS before merging.
+- Universal session-only --experimental-isolated-polling integrates
+  bounded battery and RTC workers, deferred quit/cancellation, unknown
+  presence and localized timeout reason. No default worker activation.
+- Synthetic timeout alert and clock IPC tests added. CI pending.
+- Next: legacy High Sierra regular read prototype; owner field test
+  and final combined branch CI. Public beta.60 / High Sierra .5 unchanged.
+
+# Resume — Universal bounded IOKit-read prototype
+
+- PR #106 merged at 76510ac4; Windows/macOS/High Sierra/Python PASS.
+  Both Apple CSVs verified: universal p50 14.716/p95 20.310 ms,
+  High Sierra target p50 9.669/p95 12.959 ms, 20/20 each on Intel CI.
+- Prototype macOS/ApexBoundedWorker.swift, typed status/percent IPC,
+  in-process exclusion, parent deadline, independent child alarm,
+  simulated overlap, hang and recovery self-test. CI pending.
+- Menu-bar polling, RTC, BLE and legacy app behavior unchanged.
+  Next: gate/shutdown integration and separate High Sierra prototype.
+- Hardware acceptance, actual owner CPU/RAM and AJ159 GET-ID evidence
+  still required. Public beta.60 and High Sierra .5 unchanged.
+
+# Resume — Apple worker startup measurement candidate
+
+- PR #105 Windows/macOS CI PASS; merged into #104 branch at d7cd7e2.
+  The combined #104 still requires CI before merging into draft #99.
+- Add the same synthetic worker sample to both Apple executables,
+  Python measurement helper, six offline tests and CI CSV artifacts.
+  All 65 offline Python tests PASS locally.
+- No default or experimental Apple HID polling changes. Modern and
+  High Sierra measurements run on macOS 15 Intel, not real 10.13 or
+  Apple Silicon hardware. Await both CI results and actual CSV data.
+- Physical Windows isolated polling, AJ159 comparison, iMac
+  acceptance and public release remain open.
+
+# Resume — opt-in isolated Windows tray polling candidate
+
+- On top of PR #104 (vendor gate), add session-only launch flag
+  --experimental-isolated-polling. No change to normal invocation.
+- Routine AJAZZ battery and existing scheduled RTC sends use separate
+  bounded child processes. Unknown reads cannot create fresh samples,
+  false disconnection or BLE fallback. Preserve manual RTC request
+  on unknown discovery; rate-limit ambiguous writes, do not replay.
+- Test synthetic clock IPC and localized busy/timeout reasons.
+  Await Windows/macOS CI and review. No public release or hardware PASS.
+- Next: owner compare opt-in vs normal CPU/RAM, sleep/replug/exit,
+  AJ159 GET ID diagnostic, and Apple routine polling overhead.
+
+# Resume — AJAZZ cross-process vendor gate candidate
+
+- PR #102 merged 89fe3f60 and PR #103 merged 87b2d4b8 into draft #99.
+  Both Windows/macOS checks PASS. Prototype routine self-test passed.
+- New session-local named mutex for AjazzHidReader.ReadAll and
+  TrySyncDockClock. Busy read maps to unknown, not physical removal.
+- Separate-process Windows CI gate fixture; no real HID access.
+- Routine timer still uses original reader; opt-in integration next
+  after gate CI. Published beta.60 unchanged.
+
+# Resume — routine HID worker prototype after benchmark
+
+- PR #101 merged into draft PR #99 at 4155c1c; Windows/macOS/Python PASS.
+- CI artifact 14890313646: 20/20 samples; p50 112.419 ms,
+  p95 148.834 ms, max 304.940 ms. See docs/POLL_WORKER_BASELINE.md.
+- Internal RoutinePollWorker prototype; normal tray timer unchanged.
+  Local stdin/stdout IPC, deferred keys, exclusive in-process gate,
+  parent deadline and independent child watchdog.
+- Synthetic Windows CI self-test for overlap, timeout, cancellation,
+  scheduled skip and recovery. Pending CI before merging.
+- Next: integration design for unknown presence, RTC schedule,
+  cross-process exclusion and shutdown; physical resource/USB test.
+- PR #100 GET 00/05 diagnostic already merged into draft #99;
+  hardware issue #53 remains open. Published Latest still beta.60.
+
+# Resume — follow-up GET ID differential on top of draft PR 99
+
+- Baseline for this change: draft PR 99 at 697daca, all four CI checks PASS.
+- Add explicit Windows --hid-compare-get-ids with paired existing F7/GET
+  05 and 00 requests, same lengths and delays, bounded worker, immediate
+  ten-byte status prefix and refusal while the tray singleton exists.
+- The experiment never publishes a battery value. Default polling is
+  unchanged. Separate hardware evidence for AJ159 issue #53 is required.
+- Pending: Windows CI for this follow-up, development build acceptance,
+  then the routine poll worker-overhead benchmark in the active roadmap.
+
+# Resume — 24 November audit and roadmap work in draft PR 99
+
+The current software work is on `fix/battery-audit-20261124`; the released
+baseline is beta.60, with High Sierra .5 distributed separately.
+[Active roadmap and acceptance criteria](docs/ROADMAP.md#active-work-after-the-24-november-2026-audit).
+
+- The first audit commit 09a1950 passed all four PR workflows, including
+  Windows raw-capture timeout and both native Apple builds.
+- Follow-up changes add one field/synthetic HID corpus, the offline current
+  parser result, per-receiver Windows tray explanations and a compact Device
+  Manager. The full comparison report from the affected AJ159 replayed 6/6
+  responses and 0 verified percentages.
+- Open field work: compare AJ159 and AJ179 with the manufacturer's display
+  at two levels and test the Intel iMac. Check desktop DPI, keyboard navigation
+  and installer upgrade. For regular polling stalls, start with a worker-cost
+  baseline. Refer to the roadmap for software vs field status.
+
 # Resume — beta.60 released; AJ159 physical battery acceptance open
 
 - PR #97 merged e9c1f21acee64e51b7b064a97492e434ad41b52f.
@@ -317,3 +2730,239 @@
   and USB cases, actual Windows resource before/after measurements.
 - No claim of measured CPU savings, physical hardware acceptance or
   completed Home Assistant integration; HID protocol remains unchanged.
+
+## Independent BLE priority checkpoint
+
+#185 merged 99c51a0. Windows production BLE session now independent of
+USB enumeration, including unknown USB; explicit fresh direct-GATT opt-in
+remains session-only. A valid visible USB reading retains primary priority;
+fresh BLE can become primary if USB lacks a valid reading. Independent
+extra icons and USB disconnect policy are preserved. No physical-device
+association. Hosted Windows CI and persistent consent are next.
+
+## Persistent BLE consent checkpoint
+
+#186 merged d1d53bb. Local consent fingerprints only, no persisted charge,
+exact paired LE matching and pending slots, dedicated BLE timer, local
+opt-out including missing endpoints. Native Windows CI and hardware
+restart/switch acceptance remain open. No automatic USB/BLE association.
+
+## BLE cached display checkpoint
+
+Stacked on #187. Session-only 30-minute last direct GATT cache; fresh
+telemetry remains bounded to 120 seconds. Cached state in dashboard,
+local API and both icon paths; retain prior BLE primary during transient
+failure when USB has no verified value. No cached alerts. Native CI,
+explicit association and physical acceptance remain open.
+
+## Explicit transport link checkpoint
+
+Stacked on #188 f4eb298; #187 integrated e1f4ae5. User-confirmed one-to-one
+local BLE/USB display links; one combined tray presentation keyed by
+receiver, fresh USB then fresh GATT then marked cached values, unknown
+otherwise. Separate history, alerts, dashboard and local API retained.
+Hardware acceptance and native CI pending.
+
+## Stable linked primary checkpoint
+
+#188 integrated 64635db; stacked on #189 4d2b466. Keep linked primary
+selected until hidden/unlinked even when unrelated USB or BLE appears.
+Other icons remain independent. Hosted CI and physical acceptance open.
+
+## Universal corpus CI triage checkpoint
+
+Integration bda4dc0: 5/6 PASS, Universal run 45565394706/job
+139038945524 failed observation-corpus only. Add fixed stage/row
+diagnostics and explicit whole-second CSV flooring with three
+deterministic boundary replays per fixture. Suspected formatter/prune
+boundary issue, not confirmed original root cause. Native CI pending.
+
+## Diagnostic timeline checkpoint
+
+#189/#190 merged bda4dc0. New tools/compare_diagnostic_timeline.py accepts
+2–32 existing local reports, sorts timestamps, rejects duplicate captures,
+projects AULA cache separately and compares complete ready-clear matrices
+as unverified observations only. No raw buffers, paths, names or inferred
+identity in JSON. No hardware I/O. Hosted CI and actual multi-report
+replay / interactive capture workflow remain open.
+
+## Windows diagnostic session checkpoint
+
+#192 merged 09c71c3; #191 combined head 3e1737e after resolving only
+append-only roadmap conflicts. New Windows session menu collects
+explicit passive owner annotations or reviewed reports; memory-only
+32/1MiB/8MiB bounds, local ZIP with individual texts and manifest,
+CreateNew output, no uploads. A failed write may leave a partial ZIP
+but retains in-memory reports. Native CI, ZIP importer, macOS workflow
+and physical acceptance remain open.
+
+## Direct session ZIP import checkpoint
+
+#191 merged cd5af94; stacked on #193 46172b6. Timeline accepts
+--session path.zip without extraction; bounded regular ZIP, exact manifest,
+fixed member names, CRC, UTF-8, owner annotation chronology. Initial
+unchecked AULA remains not_checked. Synthetic exporter-layout fixtures;
+real Windows ZIP interoperability and physical acceptance pending.
+
+## Native session roundtrip checkpoint
+
+#193 merged 544bb8f; stacked on #194 9faa2b6. Windows CI now requires
+test-only C# export through actual DiagnosticSession.Export and Python
+verification of synthetic states/markers. No real captures or device
+I/O. Native roundtrip result pending CI; macOS session next.
+
+## Apple diagnostic session checkpoint
+
+#194 merged cf700ab. #195 native Windows C# / Python roundtrip passed;
+Apple session branch stacked on #195 6fd2bcb. Shared C bounded
+session and stored ZIP export, Universal Swift and legacy ObjC menus,
+EN/RU/UK, passive owner markers and explicit reviewed report addition.
+32 x 64 KiB, 0600 exclusive ZIP, no extra HID request, no upload.
+Portable C compile + Python import passes; native CI and physical
+menu acceptance remain open. Duplicate whole-second snapshot UTC is
+rejected; a failed export may leave a partial new ZIP.
+
+## Candidate acceptance refresh
+
+#195 merged 33629e7; #196 merged d5d3313, identical to tested #196
+3d143a3. New CANDIDATE_ACCEPTANCE.md supersedes obsolete session-only
+fallback instructions, 18 Windows and 11 per-Apple-edition physical
+scenario IDs. All physical results NOT RUN. Exact artifact verification
+and actual 10.13.6 runtime acceptance remain open. Public beta.60 held.
+
+Exact #196 Apple archive replay: Universal artifact 15001581433 and
+High Sierra 15001876157, outer/inner digest checks, archive/load
+commands/symbol inventory/resource seal/SBOM PASS. SDK name screen
+completed with no runtime compatibility claim. Private evidence at
+/root/ajazz-current-apple-artifacts.ZJ9mpoRM. See CANDIDATE_ACCEPTANCE.md.
+
+## Windows candidate artifact checkpoint
+
+#197 merged e5b0046. Exact #196 portable artifact 15001321555 verified;
+EXE SHA256 3d96f335de50fa3e63bb6092424745b361f5f46e0bbd55f479658c282a3f38e0.
+Scoped PE/bundle/269-component SBOM checks PASS; three SBOMs schema
+PASS. Windows certificate table absent, no trust claim. Private
+evidence /root/ajazz-current-windows-artifacts.vAlfBQTy. New CI
+retains the tested normal beta.61 setup before synthetic beta.62
+rebuild. Hosted installer artifact verification and hardware tests
+pending; release hold unchanged.
+
+## Retained installer checkpoint
+
+#198 merged 8f08c8a. Artifact 15001949427 from run 45572270704 checked;
+archive and setup hashes match, manifest checkout 57bbbe0 is the
+actual CI merge with identical tree to fa2f81f and 8f08c8a. New
+verify_installer_candidate.py passes actual ZIP. Bootstrap x86 PE32,
+certificate table absent; app hash manifest only independently,
+native CI checked installed hash. Evidence
+/root/ajazz-beta61-installer-verified.evVtmGsl. Physical acceptance,
+independent installer payload verification and trust/redistribution
+remain open. Release hold unchanged.
+
+## Independent installer payload checkpoint
+
+#199 merged e88676c. Exact #198 setup artifact independently extracted
+using innoextract 1.13.0 pinned asset 519954318, unprivileged minimal
+systemd chroot, no network or installer execution. All five declared
+files match; extracted beta.61 EXE SHA256 f4878037d453719eb017378e32b9320dbe74da7627012e02d4dfb30ab476e33c.
+Replayed scoped PE/.NET/SBOM 269 components, schema PASS. New
+verify_installer_payload.py actual replay PASS; private evidence
+/root/ajazz-inno-payload.jg9QPEie. Setup engine, uninstaller,
+signature/trust, licensing and physical acceptance still open.
+
+## Inno compiler observation checkpoint
+
+#198 job 139061565151 logged Inno 6.7.1, ISCC SHA256
+eb6f4410c8db367a5f74127e8025ad2ccacc0afabbe783959d237df3050f97fb
+and Authenticode Valid (runner observation only). Official is-6_7_1
+tag resolves cfdf48923178df4b4f040e038b423aa555a61ffc. New normal
+beta.61-only inventory option records scoped top-level input files
+before/after compile and separate artifact, source SHA/setup SHA,
+NOT_VERIFIED trust. Actual native qualification pending. This does
+not establish which modules were loaded or embedded.
+
+## Official compiler comparison checkpoint
+
+#200 merged 2ed65a7, #201 merged c7f44c7 after 4/4 CI each.
+Exact #201 inventory artifact 15003144789 and candidate 15004565401
+bound to checkout d03bbd8; tree equals 098ec00/c7f44c7. Official
+Inno 6.7.1 release asset 357294783 independently extracted in
+isolated unprivileged chroot. 38/38 observed components (21 inputs,
+17 ISSig sidecars) match. compare_inno_compiler.py actual replay PASS.
+Private evidence /root/ajazz-inno-official.kZflC3tb. Cryptographic
+signature/publisher qualification, embedded engine attribution,
+new candidate payload, licensing and hardware acceptance remain open.
+
+ISSig exploratory replay on official package plus 17 sidecars:
+18/18 ECDSA P-256 signatures valid for def01/def02 from pinned source
+commit. Private issig-observations.json in official evidence directory.
+Committed reusable verifier and independent key trust still open.
+
+## Reproducible ISSig verifier checkpoint
+
+Stacked on #202 364e7b1. New verify_inno_issig.py checks pinned
+def01/def02 key bytes, key IDs, exact observed v2 empty-tag records,
+actual metadata and ECDSA scalars using OpenSSL. Actual 18/18 replay
+PASS. Four synthetic regressions, including real OpenSSL P-256
+verification. Key trust, Authenticode, engine and release admission
+remain NOT_VERIFIED. No application runtime dependency added.
+
+#202 merged b35316e; #203 verifier branch 76272ce. New #201 candidate
+15004565401 independently extracted in fresh isolated chroot; exact
+five declared files match, EXE hash fcf1831766b88236908da0286827a615600ae85eef56c51a0efd697da9a1376b.
+Scoped PE/.NET and 269-component CycloneDX schema PASS. Private
+evidence /root/ajazz-201-payload.Lb7VSIiW. No engine/signature trust
+or physical acceptance claim; public release hold unchanged.
+
+## Scoped loader comparison checkpoint
+
+#203 merged e0dac42; exact tree equals eccb848. Earlier b35316e
+Universal self-tests 15/15 PASS but artifact ENOTFOUND, rerun requested.
+#201 exact setup vs pinned official SetupLdr.e32: ten non-resource
+section records and bytes/gaps match, five resource-growth header
+fields differ. New compare_inno_loader.py actual replay PASS;
+resource and overlay explicitly unqualified. Evidence
+/root/ajazz-201-payload.Lb7VSIiW/loader-comparison.json.
+Inner engine offset table/LZMA/call transform, uninstaller, trust,
+licensing and physical acceptance remain open.
+
+## Inner engine checkpoint
+
+Stacked on #204 904b1b1. Actual #201 unique RCDATA/11111 table CRC
+PASS; 325 chunk CRCs, bounded LZMA EOS, recovered engine CRC PASS.
+Recovered EXE SHA256 b22936d9f95b3c088ad7d5cb3f39c17983353849c966e266c2bcb29666baa873.
+Ten non-resource sections and gaps match pinned official Setup.e32.
+New verify_inno_inner_engine.py actual replay PASS, five regressions.
+Evidence /root/ajazz-201-payload.Lb7VSIiW/inner-engine-verification.json.
+Resources, compiled script, actual uninstaller, trust/licensing and
+physical acceptance remain open; public release held.
+
+# Resume — exercised uninstaller evidence candidate
+
+#205 merged d1a60f5 with exact 5/5 checks and identical candidate tree.
+Retain exact upgrade uninstaller before execution; separate CI artifact
+with candidate and baseline digests, no uninstall data/log. Hosted
+upgrade run and independent engine attribution pending. Release hold.
+
+Notice probe CI bootstrap correction: Windows x64 Python 3.12.16 is
+unavailable; pin verified available stable 3.13.17 for this job only.
+#224 merged 18118e1 after 5/5 CI. Native install evidence still pending.
+
+## History and chart review, 25 November 2026
+
+Candidate [#266](https://github.com/iSentinel/AJAZZ-Battery-Tray/pull/266), branch `fix/history-csv-recovery-review`,
+code commit `401ab3fbe5e3efc39da1838eebddedb5b123e140`, tree
+`36d828403456e83e7d9b981bfda855618e649b95`, based on `c105bbf`.
+Linux Python 3.13.5 passed `python3 -m unittest discover -s tools -p 'test_*.py' -q`
+(428 cases), `python3 tools/run_offline_qa.py --output-root <private-dir>`
+and evidence verification. Hosted checks for this code commit passed:
+[Windows](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162729),
+[universal macOS](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162680),
+[Windows upgrade](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162608),
+[notice transport](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162626) and
+[Inno evidence](https://github.com/iSentinel/AJAZZ-Battery-Tray/actions/runs/45686162570).
+Windows exercised five history-recovery assertions. The Mac binary passed
+history-recovery, history-chart and history-writer. Follow the
+[roadmap](docs/ROADMAP.md#25-november-review--history-recovery-and-chart-acceptance)
+for field comparison at a second charge level, chart performance, accessibility
+and upgrade acceptance with interrupted history. Physical acceptance is open.

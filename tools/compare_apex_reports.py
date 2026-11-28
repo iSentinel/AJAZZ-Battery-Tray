@@ -3,24 +3,38 @@
 
 import argparse
 from collections import Counter
+from collections.abc import Iterator
+import os
 from pathlib import Path
 import re
+import stat
 
 RX = re.compile(r"^\s*RX buffer\[(\d+)\]=([0-9a-fA-F]+)\s*$")
 TX = re.compile(r"^\s*Attempt UTC=.*?delay=(\d+)ms; TX\[(\d+)\]=")
 RECEIVER = re.compile(r"^\[Receiver #(\d+)\]$")
 SECTION = "[Fresh APEX protocol matrix — full vendor buffers]"
+MAX_REPORT_BYTES = 1024 * 1024
 
 
-def legacy_percent(data):
-    """Mirror the existing Windows parser; zero remains unavailable."""
+def legacy_percent(data: bytes) -> int | None:
+    """Decode the historical compact layout used before beta.60."""
     if len(data) >= 4 and data[:3] == b"\x05\x00\x00":
         if 1 <= data[3] <= 100:
             return data[3]
     return None
 
 
-def vendor_candidate(data):
+def current_percent(data: bytes) -> int | None:
+    """Replay the current Windows parser on a numbered HID response."""
+    if len(data) < 10 or data[0] != 5 or data[7] not in (1, 2, 3):
+        return legacy_percent(data)
+    if (data[7] == 1 or data[4] > 1 or data[1] != 1
+            or data[5] != 0 or data[6] != 1 or data[9] != 0):
+        return None
+    return data[3] if 1 <= data[3] <= 100 else None
+
+
+def vendor_candidate(data: bytes) -> tuple[str, int | None]:
     """Hypothetical Windows alignment of GearHub F7 fields, not live parser."""
     if len(data) < 10 or data[0] != 5:
         return "unrecognized", None
@@ -38,7 +52,7 @@ def vendor_candidate(data):
     return "candidate-only", mouse
 
 
-def read_attempts(text):
+def read_attempts(text: str) -> Iterator[tuple[str, int, int, bytes | None]]:
     """Read only fresh capture lines; do not count the prior monitor state."""
     if SECTION not in text:
         raise ValueError("beta.41 fresh matrix section not found")
@@ -59,40 +73,63 @@ def read_attempts(text):
             yield receiver, delay, length, data
 
 
-def inspect(path):
+def read_report(path: Path) -> str:
+    """Read only a bounded regular local report, not a pipe or symlink."""
+    before = path.lstat()
+    if not stat.S_ISREG(before.st_mode):
+        raise ValueError("Expected a regular local report")
+    if before.st_size > MAX_REPORT_BYTES:
+        raise ValueError("Report exceeds one MiB")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    fd = os.open(path, flags | getattr(os, "O_BINARY", 0))
+    with os.fdopen(fd, "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        if (not stat.S_ISREG(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino)):
+            raise ValueError("Report identity changed before read")
+        data = stream.read(MAX_REPORT_BYTES + 1)
+    if len(data) > MAX_REPORT_BYTES:
+        raise ValueError("Report exceeds one MiB")
+    return data.decode("utf-8-sig")
+
+
+def inspect(path: Path) -> None:
     """Summarize each returned buffer and distinguish no-RX attempts."""
     attempts = Counter()
     received = Counter()
+    valid = 0
     print(f"\n=== {path.name} ===")
-    for receiver, delay, length, data in read_attempts(
-            path.read_text(encoding="utf-8-sig")):
+    for receiver, delay, length, data in read_attempts(read_report(path)):
         key = (receiver, delay, length)
         if data is None:
             attempts[key] += 1
             continue
         received[key] += 1
+        current = current_percent(data)
+        valid += current is not None
         state, candidate = vendor_candidate(data)
         print(f"receiver={receiver} delay={delay}ms bytes={length} "
+              f"current={current if current is not None else 'unknown'} "
               f"legacy={legacy_percent(data)} vendor={candidate} state={state}")
     if not attempts:
         print("No eligible query attempts; inspect descriptor inventory.")
     for (receiver, delay, length), count in (attempts - received).items():
         print(f"receiver={receiver} delay={delay}ms bytes={length} "
               f"no RX ({count} attempts)")
-    print(f"Attempts={sum(attempts.values())}; RX={sum(received.values())}")
+    print(f"Attempts={sum(attempts.values())}; RX={sum(received.values())}; current valid={valid}")
 
 
-def main():
+def main() -> int:
     """Command line entry point; return nonzero on malformed input."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reports", nargs="+", type=Path)
     args = parser.parse_args()
     failed = False
-    for path in args.reports:
+    for index, path in enumerate(args.reports, 1):
         try:
             inspect(path)
         except (OSError, ValueError) as error:
-            print(f"{path.name}: ERROR: {error}")
+            print(f"Report #{index}: ERROR: {type(error).__name__}")
             failed = True
     print("\nCandidate fields are hypotheses, not validated live battery readings.")
     return 1 if failed else 0

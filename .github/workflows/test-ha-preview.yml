@@ -4,15 +4,23 @@ on:
   push:
     branches: [main]
     paths:
+      - 'global.json'
       - 'integrations/home-assistant/**'
       - 'src/AjazzBatteryTray/LocalBatterySnapshot.cs'
       - 'src/AjazzBatteryTray/DeviceDashboardState.cs'
+      - 'src/AjazzBatteryTray/DeviceDashboardText.cs'
+      - 'tools/inventory_nuget_assets.py'
+      - 'tools/run_offline_qa.py'
       - '.github/workflows/test-ha-preview.yml'
   pull_request:
     paths:
+      - 'global.json'
       - 'integrations/home-assistant/**'
       - 'src/AjazzBatteryTray/LocalBatterySnapshot.cs'
       - 'src/AjazzBatteryTray/DeviceDashboardState.cs'
+      - 'src/AjazzBatteryTray/DeviceDashboardText.cs'
+      - 'tools/inventory_nuget_assets.py'
+      - 'tools/run_offline_qa.py'
       - '.github/workflows/test-ha-preview.yml'
   workflow_dispatch:
 
@@ -22,17 +30,35 @@ permissions:
 jobs:
   preview:
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '11.0.100'
+      - name: Verify selected .NET SDK
+        shell: pwsh
+        run: |
+          $actual = dotnet --version
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '11.0.100') {
+            throw 'Selected SDK differs from reviewed global.json'
+          }
+          Write-Host "Selected .NET SDK: $actual"
+          dotnet --list-runtimes | ForEach-Object {
+            if ($_ -match '^([A-Za-z0-9.]+) ([0-9.]+) \[') {
+              Write-Host ("Available runtime: " + $Matches[1] + " " + $Matches[2])
+            }
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime inventory failed' }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
       - name: Build standalone preview
         run: dotnet build integrations/home-assistant/AjazzHaPreview.csproj -c Release
       - name: Validate CLI exit codes and isolation
         shell: pwsh
         run: |
-          $app = "integrations/home-assistant/bin/Release/net8.0/AjazzHaPreview.dll"
+          $app = "integrations/home-assistant/bin/Release/net11.0/AjazzHaPreview.dll"
           dotnet $app --help
           if ($LASTEXITCODE -ne 0) { throw 'Help failed' }
           dotnet $app --port 0
@@ -46,6 +72,20 @@ jobs:
             throw 'Optional integration must not be referenced by tray'
           }
           Write-Host 'PASS: CLI smoke checks and project isolation'
+      - name: Verify inventory reader on Windows
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tools -p 'test_inventory_nuget_assets.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Inventory regression failed' }
+          python -m unittest discover -s tools -p 'test_offline_qa.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Evidence regression failed' }
+      - name: Record HA framework restore inventory
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-nuget-inventory'
+          New-Item -ItemType Directory -Path $evidence -ErrorAction Stop | Out-Null
+          python tools/inventory_nuget_assets.py --assets 'integrations/home-assistant/obj/project.assets.json' --output (Join-Path $evidence 'ha-framework.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: ha-framework' }
       - name: Publish independent Windows x64 preview
         shell: pwsh
         run: |
@@ -61,8 +101,23 @@ jobs:
           # The expected negative CLI test leaves LASTEXITCODE=2.
           # Only report success after its assertion and checksum creation.
           exit 0
-      - uses: actions/upload-artifact@v4
+      - name: Record HA win-x64 publish restore inventory
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-nuget-inventory'
+          python tools/inventory_nuget_assets.py --assets 'integrations/home-assistant/obj/project.assets.json' --output (Join-Path $evidence 'ha-win-x64.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: ha-win-x64' }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
+          archive: true
+          name: ha-nuget-restore-inventory
+          path: |
+            ${{ runner.temp }}/ajazz-nuget-inventory/ha-framework.json
+            ${{ runner.temp }}/ajazz-nuget-inventory/ha-win-x64.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
           name: optional-AjazzHaPreview-win-x64
           path: |
             dist/ha-preview/AjazzHaPreview.exe

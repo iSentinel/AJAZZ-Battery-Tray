@@ -39,14 +39,24 @@ internal sealed class DeviceAlertForm : Form
             var check = _thresholds[i];
             check.AutoSize = true;
             check.Text = UiText.Format("Below {0}%", levels[i]);
-            check.Checked = ((existing ?? globalMask) & (1 << i)) != 0;
             layout.Controls.Add(check);
         }
+        int customMask = existing ?? globalMask;
         void RefreshEnabled()
         {
-            foreach (var check in _thresholds) check.Enabled = !_inherit.Checked;
+            for (int i = 0; i < _thresholds.Length; i++)
+            {
+                _thresholds[i].Enabled = !_inherit.Checked;
+                _thresholds[i].Checked = (((_inherit.Checked ? globalMask : customMask) >> i) & 1) != 0;
+            }
         }
-        _inherit.CheckedChanged += (_, _) => RefreshEnabled();
+        _inherit.CheckedChanged += (_, _) =>
+        {
+            if (_inherit.Checked)
+                customMask = (_thresholds[0].Checked ? 1 : 0) |
+                    (_thresholds[1].Checked ? 2 : 0) | (_thresholds[2].Checked ? 4 : 0);
+            RefreshEnabled();
+        };
         RefreshEnabled();
         AddDisconnectControls(layout, disconnect, globalDisconnect);
         layout.Controls.Add(new Label
@@ -74,9 +84,11 @@ internal sealed class DeviceAlertForm : Form
         _disconnect.AutoSize = true;
         _disconnect.Checked = existing ?? globalDefault;
         _disconnect.Enabled = existing.HasValue;
+        bool custom = _disconnect.Checked;
         _disconnectInherit.CheckedChanged += (_, _) =>
         {
-            if (_disconnectInherit.Checked) _disconnect.Checked = globalDefault;
+            if (_disconnectInherit.Checked) custom = _disconnect.Checked;
+            _disconnect.Checked = _disconnectInherit.Checked ? globalDefault : custom;
             _disconnect.Enabled = !_disconnectInherit.Checked;
         };
         layout.Controls.Add(_disconnectInherit);

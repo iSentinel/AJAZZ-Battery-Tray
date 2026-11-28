@@ -1,6 +1,6 @@
 # Optional local API preview
 
-This separate .NET 8 console project is an experimental read-only consumer,
+This separate .NET 11 console project is an experimental read-only consumer,
 not a complete Home Assistant integration. It is not included in the tray
 installer or portable distribution, has no automatic startup or service,
 and has no MQTT dependency.
@@ -10,7 +10,7 @@ and has no MQTT dependency.
 1. Run the tray version beta.52 or newer and explicitly start Local battery API.
 2. Keep that window open. Use Copy API token; never put the token in a command
    line, environment variable, saved configuration or issue report.
-3. In a local interactive terminal with the .NET 8 SDK installed:
+3. In a local interactive terminal with the .NET 11 SDK installed:
 
 ```powershell
 dotnet run --project integrations/home-assistant/AjazzHaPreview.csproj -c Release -- --help

@@ -13,6 +13,14 @@ EXE="$APP/Contents/MacOS/AJAZZBatteryTrayHighSierra"
 ZIP="$ROOT/dist/AJAZZBatteryTray-macOS-HighSierra-Intel.zip"
 mkdir -p "$APP/Contents/MacOS"
 cp "$ROOT/macos/high-sierra/Info.plist" "$APP/Contents/Info.plist"
+mkdir -p "$APP/Contents/Resources"
+cp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cmp "$ROOT/macos/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+for color in white black blue; do
+  cp "$ROOT/macos/AppIcon-$color.icns" "$APP/Contents/Resources/AppIcon-$color.icns"
+  cmp "$ROOT/macos/AppIcon-$color.icns" "$APP/Contents/Resources/AppIcon-$color.icns"
+done
+/usr/libexec/PlistBuddy -c "Print :CFBundleIconFile" "$APP/Contents/Info.plist" | grep -Fxq AppIcon.icns
 if [[ -n "${AJAZZ_HIGHSIERRA_BUILD_NUMBER:-}" ]]; then
   [[ "$AJAZZ_HIGHSIERRA_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || {
     echo "FAIL: expected a positive numeric High Sierra build number"
@@ -33,11 +41,13 @@ fi
 codesign --force --sign - "$APP"
 codesign --verify --verbose "$APP"
 if [[ "$(uname -m)" == "x86_64" ]]; then
-  "$EXE" --self-test
+  AJAZZ_TEST_CORPUS="$ROOT/tests/fixtures/apex-f7-v1.csv" "$EXE" --self-test
+  "$EXE" --self-test-routine-poll
+  "$EXE" --self-test-menu-diagnostic
   "$EXE" --help
 else
   echo "SKIP: executable smoke test needs Intel runner"
 fi
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+bash "$ROOT/macos/package-app.sh" "$APP" "$ZIP"
 (cd "$ROOT/dist" && shasum -a 256 "$(basename "$ZIP")"   > AJAZZBatteryTray-macOS-HighSierra-Intel.sha256)
 echo "PASS: $ZIP"

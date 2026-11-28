@@ -1,14 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net11.0-windows10.0.19041.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>AJAZZBatteryTray</AssemblyName>
     <RootNamespace>AjazzBatteryTray</RootNamespace>
-    <Version>0.3.0-beta.60</Version>
+    <Version>0.3.0-beta.61</Version>
+    <ApplicationIcon>Assets/AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets/AppIcon*.ico" LogicalName="AjazzBatteryTray.Assets.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

@@ -246,3 +246,117 @@ Only process explicitly selected, paired mice. Do not log or expose Bluetooth
 MAC addresses or system-generated device identifiers. Do not put BLE
 advertisement contents into diagnostic report or GitHub issues. Never write
 to a GATT characteristic in this battery-monitoring workflow.
+
+## Persistent independent BLE monitoring (candidate, supersedes session-only fallback)
+
+Explicit opt-in after a fresh direct GATT read now remembers consent
+on this PC. Local settings contain at most 32 domain-separated SHA-256
+fingerprints of paired LE endpoint IDs (not raw IDs, names or readings).
+Fingerprints are local identifiers, not anonymization against someone
+who already knows the endpoint ID. They are excluded from portable
+preference backup and diagnostic exports. No new pairing or writes.
+A dedicated five-second UI timer schedules due reads independently
+of USB and checks for missing saved endpoints at most every two minutes.
+Discovery enumerates paired LE endpoints only, matches exact fingerprints,
+and restores a pending slot with no historical percentage. Only fresh
+direct GATT is admitted as telemetry; normal single-flight and retry
+backoff remain. Disable individual saved or active slots or disable all.
+If saving opt-out fails, monitoring stops in the current session and
+the UI warns it may resume after restart. No name-based USB association.
+Actual Windows restart, unavailable endpoint, re-pair and transport
+switch acceptance are still required.
+
+## Bounded session-only BLE display cache
+
+A last successful direct GATT sample is retained for display for up to
+30 minutes within the current process. A failed read or expired
+120-second freshness window does not make the cached sample current.
+Dashboard and local snapshot distinguish cached from fresh; the local
+snapshot exposes cached data only as lastKnownPercent. Both tray icon
+paths render the cached marker. If the current primary BLE slot
+temporarily loses its reply while USB has no verified level, retain
+the cached primary instead of jumping back to an unverified USB icon.
+A valid USB level still takes priority. No new low-battery alerts
+from cache. No cache survives opt-out or process restart. This is
+not proof of continued physical connectivity. The 30-minute lifetime
+is a candidate default, pending physical acceptance.
+
+## Explicit USB/BLE display association (candidate)
+
+In Bluetooth > Opted-in BLE devices, choose a monitor, Link to USB
+receiver, then the currently enumerated receiver. Confirm only if both
+belong to the same physical mouse. Links are one-to-one, stored locally
+as endpoint and receiver fingerprints, excluded from portable backups
+and diagnostics. Unlink at any time; BLE opt-out also removes the link.
+The receiver key owns the combined tray presentation, including color
+and visibility. Linked endpoints are excluded from standalone icons.
+Prefer a verified USB reading, then fresh direct GATT, then recent
+scheduled USB (marked cached, at most three minutes old), then BLE cache.
+No unverified HID value is promoted. With neither reading, retain the
+linked icon in unknown state. In multiple-icon mode a linked device
+can be an extra icon; a sole linked mouse uses the main icon. Histories,
+notifications, dashboard rows and local API telemetry remain separate.
+Physical identity is user-confirmed, not independently verified; a
+different receiver key requires a new link. Native CI and hardware
+acceptance remain necessary.
+
+A linked primary is now sticky within the application session: arrival
+of an unrelated mouse or changes in transport availability do not
+replace it. Hiding/unlinking the linked primary permits a new selection.
+Other independently monitored devices remain separate extra icons in
+multiple-icon mode. No local receiver key is added to diagnostics.
+
+## Offline diagnostic timeline
+
+Compare existing reports without issuing any new requests:
+
+```sh
+python3 tools/compare_diagnostic_timeline.py before.txt switched.txt after.txt
+```
+
+Accepts 2–32 bounded local reports supported by the common normalizer,
+including the exact beta.60 Windows legacy layout. Sorts by normalized
+UTC, rejects duplicate timestamps, and emits a redacted JSON timeline.
+Windows AULA cache observations are independently validated. Complete
+single-receiver F7 ready-clear matrices can be compared as unverified
+fields, never as battery telemetry. Apple reports retain their existing
+normalized USB and historical manual GATT observations. No automatic
+identity matching, physical transport inference, raw buffer export,
+device requests or uploads. Exit 0 means the reports parsed, not hardware
+acceptance; exit 2 means invalid or unsupported input.
+
+### Collect a Windows diagnostic session from the tray
+
+Diagnostics > Diagnostic session > Start diagnostic session. Capture
+a baseline, then select a marker after actually changing transport or
+observing sleep/wake. Markers describe owner actions, not independently
+detected hardware events. Passive markers copy existing monitoring
+state, without new HID access. Existing full diagnostic review offers
+an explicit Add report to diagnostic session button. Those reviewed
+reports may include raw vendor buffers if previously authorized.
+Save at least two snapshots to a new local ZIP and review before sharing.
+The archive contains separate snapshot-NN.txt files and manifest.json;
+extract locally and pass the texts to compare_diagnostic_timeline.py.
+The current importer does not read ZIP directly. No automatic uploads,
+no persisted in-memory session after app exit. Limits: 32 reports,
+one MiB per report, eight MiB total UTF-8. A failed export may leave
+a partial file; the session remains available for retry at a new path.
+
+### Direct session archive analysis
+
+The timeline importer now accepts the Windows diagnostic session ZIP
+directly:
+
+```sh
+python3 tools/compare_diagnostic_timeline.py --session session.zip
+```
+
+No files are extracted. The importer validates the manifest, fixed
+snapshot names, entry count, declared and actual sizes, CRC, allowed
+compression, UTF-8, and chronological annotation timestamps. Limits:
+32 reports, 1 MiB each, 8 MiB total, 9 MiB archive, 64 KiB manifest.
+The result retains explicit owner annotations separately from the
+observations; selecting Bluetooth or marking sleep is not hardware
+proof. The archive is not authenticated. Unknown AULA before its first
+poll is reported as not_checked. Invalid input exits 2 without
+printing partial results. No original report content is uploaded.

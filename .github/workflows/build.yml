@@ -4,9 +4,15 @@ on:
   push:
     branches: [main]
     paths:
+      - 'global.json'
       - 'src/**'
       - 'tests/**'
+      - 'tools/inventory_nuget_assets.py'
+      - 'tools/run_offline_qa.py'
       - 'tools/Measure-TrayResources.ps1'
+      - 'tools/Measure-TrayJobCpu.ps1'
+      - 'tools/TrayJobAccounting.cs'
+      - 'tools/Measure-PollWorker.ps1'
       - '.github/workflows/build.yml'
   pull_request:
   workflow_dispatch:
@@ -18,18 +24,85 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '11.0.100'
+      - name: Verify selected .NET SDK
+        shell: pwsh
+        run: |
+          $actual = dotnet --version
+          if ($LASTEXITCODE -ne 0 -or $actual -ne '11.0.100') {
+            throw 'Selected SDK differs from reviewed global.json'
+          }
+          Write-Host "Selected .NET SDK: $actual"
+          dotnet --list-runtimes | ForEach-Object {
+            if ($_ -match '^([A-Za-z0-9.]+) ([0-9.]+) \[') {
+              Write-Host ("Available runtime: " + $Matches[1] + " " + $Matches[2])
+            }
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime inventory failed' }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
       - name: Run unit tests
         shell: pwsh
         run: |
-          dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj
+          $capture = Join-Path $env:RUNNER_TEMP 'ajazz-native-assertions.txt'
+          $review = Join-Path $env:RUNNER_TEMP 'ajazz-native-assertion-review.json'
+          if ((Test-Path -LiteralPath $capture) -or (Test-Path -LiteralPath $review)) {
+            throw 'Expected fresh assertion evidence paths'
+          }
+          dotnet run -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj |
+            Tee-Object -FilePath $capture
           if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed' }
+          python tools/verify_windows_assertion_catalog.py --capture $capture --output $review
+          if ($LASTEXITCODE -ne 0) { throw 'Native assertion coverage differs' }
+      - name: Retain scoped native assertion review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-native-assertion-review
+          path: ${{ runner.temp }}/ajazz-native-assertion-review.json
+          if-no-files-found: error
+      - name: Verify native diagnostic session roundtrip
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP ('ajazz-session-' + [Guid]::NewGuid().ToString('N') + '.zip')
+          try {
+            dotnet run --no-build -c Release --project tests/AjazzBatteryTray.Tests/AjazzBatteryTray.Tests.csproj -- --export-diagnostic-session-fixture $archive
+            if ($LASTEXITCODE -ne 0) { throw 'Native session export failed' }
+            python tools/verify_diagnostic_session_roundtrip.py $archive
+            if ($LASTEXITCODE -ne 0) { throw 'Native session import failed' }
+          } finally {
+            Remove-Item -LiteralPath $archive -ErrorAction SilentlyContinue
+          }
+      - name: Smoke-test localized Device Manager controls
+        shell: pwsh
+        run: |
+          $capture = Join-Path $env:RUNNER_TEMP 'ajazz-dashboard-groups.txt'
+          $review = Join-Path $env:RUNNER_TEMP 'ajazz-dashboard-group-review.json'
+          if ((Test-Path -LiteralPath $capture) -or (Test-Path -LiteralPath $review)) {
+            throw 'Expected fresh Dashboard evidence paths'
+          }
+          dotnet run -c Release --project tests/AjazzDashboard.Smoke | Tee-Object -FilePath $capture
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard smoke failed' }
+          python tools/verify_dashboard_group_catalog.py --capture $capture --output $review
+          if ($LASTEXITCODE -ne 0) { throw 'Dashboard group coverage differs' }
+      - name: Retain scoped Dashboard group review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-dashboard-group-review
+          path: ${{ runner.temp }}/ajazz-dashboard-group-review.json
+          if-no-files-found: error
+      - name: Smoke-test cumulative process-tree CPU accounting
+        shell: pwsh
+        run: ./tools/Measure-TrayJobCpu.ps1 -SelfTest
       - name: Smoke-test resource sampler
         shell: pwsh
         run: |
@@ -49,6 +122,26 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $output -ErrorAction SilentlyContinue
           }
+      - name: Verify inventory reader on Windows
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tools -p 'test_inventory_nuget_assets.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Inventory regression failed' }
+          python -m unittest discover -s tools -p 'test_offline_qa.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Evidence regression failed' }
+      - name: Record framework restore inventories
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-nuget-inventory'
+          New-Item -ItemType Directory -Path $evidence -ErrorAction Stop | Out-Null
+          dotnet restore src/AjazzBatteryTray/AjazzBatteryTray.csproj
+          if ($LASTEXITCODE -ne 0) { throw 'Framework restore failed' }
+          python tools/inventory_nuget_assets.py --assets 'src/AjazzBatteryTray/obj/project.assets.json' --output (Join-Path $evidence 'tray-framework.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: tray-framework' }
+          python tools/inventory_nuget_assets.py --assets 'tests/AjazzBatteryTray.Tests/obj/project.assets.json' --output (Join-Path $evidence 'unit-tests.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: unit-tests' }
+          python tools/inventory_nuget_assets.py --assets 'tests/AjazzDashboard.Smoke/obj/project.assets.json' --output (Join-Path $evidence 'dashboard-smoke.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: dashboard-smoke' }
       - name: Publish single-file Windows executable
         shell: pwsh
         run: |
@@ -57,6 +150,70 @@ jobs:
             -p:PublishSingleFile=true -p:PublishTrimmed=false `
             -p:DebugType=None -o dist/app
           if ($LASTEXITCODE -ne 0) { throw 'Windows publish failed' }
+      - name: Record tray win-x64 publish restore inventory
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'ajazz-nuget-inventory'
+          python tools/inventory_nuget_assets.py --assets 'src/AjazzBatteryTray/obj/project.assets.json' --output (Join-Path $evidence 'tray-win-x64.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Restore inventory failed: tray-win-x64' }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-nuget-restore-inventory
+          path: |
+            ${{ runner.temp }}/ajazz-nuget-inventory/tray-framework.json
+            ${{ runner.temp }}/ajazz-nuget-inventory/unit-tests.json
+            ${{ runner.temp }}/ajazz-nuget-inventory/dashboard-smoke.json
+            ${{ runner.temp }}/ajazz-nuget-inventory/tray-win-x64.json
+          if-no-files-found: error
+      - name: Verify job CPU sampler preflight
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $path = Join-Path $env:RUNNER_TEMP ('ajazz-job-dry-' + [Guid]::NewGuid().ToString('N') + '.csv')
+          $dry = & ./tools/Measure-TrayJobCpu.ps1 -ExePath $exe -OutputPath $path -Mode Isolated -DryRun -DurationSeconds 30 -IntervalSeconds 15
+          if ($dry -notmatch 'DRY-RUN' -or (Test-Path -LiteralPath $path)) {
+            throw 'Preflight did not remain side-effect free'
+          }
+          if (Get-Process -Name AJAZZBatteryTray -ErrorAction SilentlyContinue) {
+            throw 'Preflight started tray'
+          }
+          $rejected = $false
+          try {
+            & ./tools/Measure-TrayJobCpu.ps1 -ExePath $exe -OutputPath $path -DryRun -DurationSeconds 30 -IntervalSeconds 16
+          } catch {
+            $rejected = $_.Exception.Message -like '*half the duration*'
+          }
+          if (-not $rejected -or (Test-Path -LiteralPath $path)) {
+            throw 'Invalid sample interval was not rejected'
+          }
+      - name: Measure synthetic worker startup baseline
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $output = Join-Path $env:RUNNER_TEMP 'ajazz-worker-baseline.csv'
+          $dry = & ./tools/Measure-PollWorker.ps1 -ExePath $exe -OutputPath $output -DryRun
+          if ($dry -notmatch 'DRY-RUN' -or (Test-Path -LiteralPath $output)) {
+            throw 'Worker benchmark dry-run had a side effect'
+          }
+          & ./tools/Measure-PollWorker.ps1 -ExePath $exe -OutputPath $output -Iterations 20
+          $rows = @(Import-Csv -LiteralPath $output)
+          if ($rows.Count -ne 20 -or @($rows | Where-Object {
+              [double]$_.elapsed_ms -le 0 -or [int]$_.stdout_bytes -le 0
+          }).Count -ne 0) { throw 'Invalid worker baseline' }
+          $before = (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash
+          $refused = $false
+          try { & ./tools/Measure-PollWorker.ps1 -ExePath $exe -OutputPath $output -Iterations 5 }
+          catch { $refused = $_.Exception.Message -like '*Output already exists*' }
+          if (-not $refused -or (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash -ne $before) {
+            throw 'Existing benchmark report was modified'
+          }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-worker-startup-baseline
+          path: ${{ runner.temp }}/ajazz-worker-baseline.csv
+          if-no-files-found: error
       - name: Verify opt-in Windows HID diagnostic watchdog
         shell: pwsh
         run: |
@@ -82,6 +239,75 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $report -ErrorAction SilentlyContinue
           }
+      - name: GET ID comparison refuses active tray without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $log = Join-Path $env:RUNNER_TEMP ('ajazz-get-id-' + [Guid]::NewGuid().ToString('N') + '.txt')
+          $guard = [Threading.Mutex]::new($true, 'Local\AJAZZBatteryTray_AJ179_APEX')
+          try {
+            $arguments = '--hid-compare-get-ids --timeout 40 --output "' + $log + '"'
+            $p = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru
+            if (-not $p.WaitForExit(10000)) { $p.Kill($true); throw 'Comparison guard hung' }
+            if ($p.ExitCode -ne 1) { throw "Expected refusal, got $($p.ExitCode)" }
+            if ((Get-Content -LiteralPath $log -Raw) -notmatch 'close AJAZZ Battery Tray') {
+              throw 'Missing explicit refusal marker'
+            }
+            echo 'PASS: experimental comparison refuses active tray'
+          } finally {
+            $guard.Dispose()
+            Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
+          }
+      - name: Verify cross-process AJAZZ vendor I/O exclusion without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $log = Join-Path $env:RUNNER_TEMP ('ajazz-busy-' + [Guid]::NewGuid().ToString('N') + '.txt')
+          $gate = [Threading.Mutex]::new($false, 'Local\AJAZZBatteryTray_ApexVendorIo_v1')
+          $held = $gate.WaitOne(0)
+          try {
+            if (-not $held) { throw 'Fixture could not acquire gate' }
+            $arguments = '--hid-diagnose --timeout 8 --output "' + $log + '"'
+            $p = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru
+            if (-not $p.WaitForExit(12000)) { $p.Kill($true); throw 'Busy check hung' }
+            $body = Get-Content -LiteralPath $log -Raw
+            if ($p.ExitCode -ne 2 -or $body -notmatch 'vendor I/O busy' -or
+                $body -match 'enumerating receiver HID paths|SET F7 begin') {
+              throw 'Busy worker attempted HID or misclassified presence'
+            }
+            echo 'PASS: busy gate prevents HID and returns unknown'
+          } finally {
+            if ($held) { $gate.ReleaseMutex() }
+            $gate.Dispose()
+            Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
+          }
+      - name: Verify prototype routine worker timeout and recovery without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test-routine-poll-worker' -PassThru
+          if (-not $p.WaitForExit(25000)) { $p.Kill($true); throw 'Routine worker self-test hung' }
+          if ($p.ExitCode -ne 0) { throw "Routine worker self-test failed: $($p.ExitCode)" }
+          echo 'PASS: deferred keys, overlap rejection, timeout, shutdown cancellation, recovery'
+      - name: Verify full GUI capture watchdog without HID
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          $timer = [Diagnostics.Stopwatch]::StartNew()
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test-full-hid-watchdog' -PassThru
+          if (-not $p.WaitForExit(15000)) { $p.Kill($true); throw 'Capture worker hung' }
+          if ($p.ExitCode -ne 124 -or $timer.Elapsed.TotalSeconds -lt 1) { throw 'Expected a bounded timeout' }
+      - name: Verify full HID worker start gate and forced parent exit
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
+          $exe = (Resolve-Path 'dist/app/AJAZZBatteryTray.exe').Path
+          foreach ($argument in @('--self-test-full-hid-start-gate', '--self-test-full-hid-parent-exit')) {
+            $p = Start-Process -FilePath $exe -ArgumentList $argument -PassThru
+            if (-not $p.WaitForExit(30000)) { $p.Kill($true); throw "Test hung: $argument" }
+            if ($p.ExitCode -ne 0) { throw "Test failed: $argument ($($p.ExitCode))" }
+          }
+          echo 'PASS: no start without token and forced parent exit reaps synthetic child'
       - name: Validate owner HID acceptance helper
         shell: pwsh
         run: |
@@ -109,10 +335,24 @@ jobs:
           } finally {
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
           }
+      - name: Package shortcut icon choices
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/app/Icons | Out-Null
+          foreach ($name in @('AppIcon.ico','AppIcon-white.ico','AppIcon-black.ico','AppIcon-blue.ico')) {
+            $source = Join-Path 'src/AjazzBatteryTray/Assets' $name
+            $target = Join-Path 'dist/app/Icons' $name
+            Copy-Item -LiteralPath $source -Destination $target
+            if ((Get-FileHash $source).Hash -ne (Get-FileHash $target).Hash) {
+              throw "Icon copy mismatch: $name"
+            }
+          }
+          echo 'PASS: four shortcut ICO files packaged'
       # upload-artifact already delivers a ZIP download. Upload the executable
       # directory, not a pre-zipped archive, to avoid nested ZIP files.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
+          archive: true
           name: AJAZZBatteryTray-win-x64
           path: dist/app/
           if-no-files-found: error

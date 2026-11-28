@@ -1,0 +1,181 @@
+"""Check the production independent BLE wiring without a Windows device."""
+
+from pathlib import Path
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class IndependentBleMonitorTests(unittest.TestCase):
+    """Guard integration between scheduler and separate tray icons."""
+
+    def test_production_scheduler(self) -> None:
+        """The production session uses independent scheduling, not USB gating."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        self.assertIn('BluetoothMultiSession _ble = new(independent: true)', code)
+        poll = code.split('private void StartBluetoothPoll(', 1)[1].split(
+            'private async Task PollBluetoothFallbackAsync(', 1)[0]
+        self.assertNotIn('ReceiverPresent: false', poll)
+        self.assertIn('_ble.TryBegin(', poll)
+
+    def test_separate_icons_and_alerts(self) -> None:
+        """An unrelated BLE device must neither hide nor silence USB."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        self.assertIn('BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null)', code)
+        self.assertIn('bluetoothPrimary || linkedPrimary is not null ? null : receiver?.Key', code)
+        self.assertIn('_receivers.Apply(batch, _settings, _tray, false,', code)
+        self.assertIn('BatteryDisplayState.PreferIndependentBluetooth(', code)
+
+    def test_persistent_consent_is_local_and_fresh(self) -> None:
+        """Restore only exact consent matches, never cached Windows charge."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        self.assertIn('BleConsent.Key(candidate.DeviceId)', code)
+        self.assertIn('!_settings.ConsentedBleEndpoints.Contains(key) || !_ble.Restore(key)', code)
+        self.assertIn('candidate with { WindowsPercent = null }', code)
+        self.assertIn('_settings.ConsentedBleEndpoints.Remove(key)', code)
+        self.assertIn('_bleTimer.Tick += OnBleTimer', code)
+        self.assertIn('_bleTimer.Dispose()', code)
+        backup = (ROOT / 'src/AjazzBatteryTray/PreferencesBackup.cs').read_text()
+        self.assertNotIn('ConsentedBleEndpoints', backup)
+
+
+    def test_cache_presentation_remains_distinct(self) -> None:
+        """Propagate cached status to dashboard and both icon paths."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('fresh, _ble.LastSuccess(key), cached, _ble.LastSuccess(key)', code)
+        self.assertIn('stale = displayPercent.HasValue', code)
+        self.assertIn('!fresh.HasValue && cached.HasValue', code)
+        self.assertIn('retainCachedBle', code)
+        extra = (root / 'ReceiverMonitor.cs').read_text()
+        self.assertIn('stale: item.Stale', extra)
+        self.assertIn('response.IsFreshGatt && response.Percent is int percent', code)
+
+    def test_display_ages_without_ble_or_usb_poll_completion(self) -> None:
+        """The existing independent timer refreshes presentation without new telemetry."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        timer = code.split('private void OnBleTimer(', 1)[1].split(
+            'private async Task RestoreBleConsentAsync(', 1)[0]
+        self.assertIn('if (_closing) return;', timer)
+        self.assertIn('else if (_latestUsbReading is not null || _aulaLatest is not null)', timer)
+        self.assertIn('RefreshDeviceDisplay(publishSnapshot: false);', timer)
+        self.assertNotIn('PollSoon()', timer)
+        self.assertNotIn('ApplyReading(', timer)
+        display = code.split('private void RefreshDeviceDisplay(', 1)[1].split(
+            'private sealed record LinkedTrayDevice', 1)[0]
+        self.assertIn('publishSnapshot);', display)
+        self.assertIn('RefreshDashboard(publishSnapshot);', display)
+        self.assertIn('if (!_diagnosticsBusy && _statusItem.Text != status)', display)
+        dashboard = code.split('private void RefreshDashboard(', 1)[1].split(
+            'private void PublishLocalSnapshot(', 1)[0]
+        self.assertIn('if (publishSnapshot) PublishLocalSnapshot();', dashboard)
+        self.assertIn('skipUnchanged: !publishSnapshot', dashboard)
+
+    def test_aula_completion_provenance(self) -> None:
+        """Preserve worker completion across delayed UI delivery and menu aging."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        poll = code.split('private async Task PollAulaAsync(', 1)[1].split(
+            'private void NotifyAulaBattery(', 1)[0]
+        self.assertIn('await _aulaReader.ReadAsync().ConfigureAwait(false)', poll)
+        self.assertIn('return (reading, DateTimeOffset.UtcNow);', poll)
+        self.assertIn('_aulaLastReadAt = completedAt;', poll)
+        self.assertIn('_aulaHistory.Record(completedAt, result.Percent,', poll)
+        self.assertIn('_aulaBattery.IsFreshSample(percent, completedAt, DateTimeOffset.UtcNow)', poll)
+        timer = code.split('private void OnBleTimer(', 1)[1].split(
+            'private async Task RestoreBleConsentAsync(', 1)[0]
+        self.assertIn('if (_aulaLatest is not null) UpdateAulaStatus();', timer)
+
+    def test_ble_completion_provenance(self) -> None:
+        """Use bounded operation completion for automatic and manual GATT paths."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('(response, completedAt) = await BluetoothOperationTimeout.RunStamped(', code)
+        self.assertIn('_ble.Complete(request, response, completedAt, known, present)', code)
+        self.assertIn('_ble.VisiblePercent(request.Key, known, present, DateTimeOffset.UtcNow) == percent', code)
+        form = (root / 'BluetoothBatteryForm.cs').read_text()
+        self.assertIn('RecordManual(selected, result, completedAt);', form)
+        self.assertIn('_verifiedAt = completedAt;', form)
+        self.assertIn('ConsentSampleCurrent(DateTimeOffset.UtcNow)', form)
+        timeout = (root / 'BluetoothOperationTimeout.cs').read_text()
+        self.assertIn('await Run(operation, limit).ConfigureAwait(false)', timeout)
+        reader = (root / 'BluetoothBatteryReader.cs').read_text()
+        read_path = reader.split('public static async Task<BluetoothBatteryResult> ReadAsync(', 1)[1]
+        self.assertEqual(read_path.count('await '), read_path.count('.ConfigureAwait(false)'))
+        self.assertEqual(read_path.count('.AsTask().ConfigureAwait(false)'), 4)
+
+    def test_usb_alert_sample_age(self) -> None:
+        """USB history retains sample time but only current samples can mutate alerts."""
+        code = (ROOT / 'src/AjazzBatteryTray/ReceiverMonitor.cs').read_text()
+        self.assertIn('state.MeasuredAt = item.MeasuredAt;', code)
+        self.assertNotIn('item.MeasuredAt ?? now', code)
+        self.assertIn('state.MeasuredAt is not { } measured || measured > now', code)
+        self.assertIn('Percent = null, UnverifiedPercent = null', code)
+        self.assertIn('Record(state, settings, notifier, bluetoothEnabled, measured, now);', code)
+        record = code.split('private static void Record(', 1)[1].split(
+            'internal static DeviceDashboardState Dashboard(', 1)[0]
+        self.assertIn('state.History.Record(measured, percent, state.Present);', record)
+        self.assertIn('ApexDisplayPolicy.AlertPercent(', record)
+        self.assertLess(record.index('if (fresh is not int level) return;'),
+                        record.index('state.Alerts.Evaluate('))
+
+    def test_unverified_presentation_is_not_snapshot_input(self) -> None:
+        """Guard the separate display-only USB field and strict API projection."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        dashboard = code.split('private void RefreshDashboard(', 1)[1].split(
+            'private void PublishLocalSnapshot(', 1)[0]
+        self.assertIn('UnverifiedPercent: ReceiverMonitor.Unverified(receiver, now, _settings.ShowUnverifiedUsbCharge)', dashboard)
+        inputs = code.split('private List<LocalBatterySnapshot.Input> CollectSnapshotInputs(', 1)[1]
+        inputs = inputs.split('return inputs;', 1)[0]
+        self.assertIn('ReceiverMonitor.Dashboard(receiver, DateTimeOffset.UtcNow)', inputs)
+        self.assertNotIn('Unverified', inputs)
+        self.assertNotIn('ReceiverMonitor.Presentation', inputs)
+        monitor = (root / 'ReceiverMonitor.cs').read_text()
+        record = monitor.split('private static void Record(', 1)[1].split(
+            'internal static DeviceDashboardState Dashboard(', 1)[0]
+        self.assertNotIn('Unverified', record)
+        self.assertIn('int? percent = state.Reading.Percent;', record)
+
+    def test_unverified_display_opt_in_wiring(self) -> None:
+        """Keep local display opt-in on each UI path and out of diagnostics."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('ReceiverMonitor.Unverified(receiver, usbNow, _settings.ShowUnverifiedUsbCharge)', code)
+        self.assertIn('_settings.ShowUnverifiedUsbCharge, _settings.MouseTrayIcon,', code)
+        self.assertEqual(code.count('state => EditDeviceInterval(state.Key, state.DisplayLabel),'
+                                    ' _settings.ShowUnverifiedUsbCharge);'), 2)
+        toggle = code.split('private ToolStripMenuItem BuildUnverifiedUsbDisplayToggle()', 1)[1]
+        toggle = toggle.split('private ToolStripMenuItem BuildUpdateSettingsMenu()', 1)[0]
+        self.assertIn('MessageBoxDefaultButton.Button2', toggle)
+        self.assertIn('_settings.ShowUnverifiedUsbCharge = previous;', toggle)
+        self.assertIn('RefreshDeviceDisplay(publishSnapshot: false);', toggle)
+        monitor = (root / 'ReceiverMonitor.cs').read_text()
+        self.assertIn('ApexDisplayPolicy.UnverifiedForDisplay(showUnverified,', monitor)
+        self.assertIn('Unverified(pair.Value, now, showUnverified)', monitor)
+        self.assertNotIn('ShowUnverifiedUsbCharge', (root / 'PreferencesBackup.cs').read_text())
+
+    def test_explicit_links_project_single_icon(self) -> None:
+        """Keep link consent explicit, independent telemetry and local preferences."""
+        root = ROOT / 'src/AjazzBatteryTray'
+        code = (root / 'TrayAppContext.cs').read_text()
+        self.assertIn('TransportLinks.CanLink(', code)
+        self.assertIn('same physical mouse. Continue?', code)
+        self.assertIn('hiddenUsb.UnionWith(_settings.BleUsbLinks.Values)', code)
+        self.assertIn('!_settings.BleUsbLinks.ContainsKey(x.Key)', code)
+        self.assertIn('_settings.BleUsbLinks.Remove(key)', code)
+        self.assertIn('TransportLinks.Select(usbValue,', code)
+        self.assertIn('linked.Where(x => x != linkedPrimary)', code)
+        self.assertNotIn('BleUsbLinks', (root / 'PreferencesBackup.cs').read_text())
+        self.assertIn('wanted.Add(item.Key)', (root / 'ReceiverMonitor.cs').read_text())
+
+    def test_sticky_linked_primary_keeps_other_icons(self) -> None:
+        """A linked primary must not swallow an unrelated receiver or BLE icon."""
+        code = (ROOT / 'src/AjazzBatteryTray/TrayAppContext.cs').read_text()
+        self.assertIn('TransportLinks.SelectPrimary(_primaryLinkedUsbKey,', code)
+        self.assertIn('if (linkedPrimary is not null) bluetoothPrimary = false;', code)
+        self.assertIn('bluetoothPrimary || linkedPrimary is not null ? null : receiver?.Key', code)
+        self.assertIn('BluetoothExtraIcons(bluetoothPrimary ? primaryBle : null)', code)
+
+
+if __name__ == '__main__':
+    unittest.main()

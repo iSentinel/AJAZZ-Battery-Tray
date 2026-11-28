@@ -34,7 +34,7 @@ public sealed class LocalSnapshotStore
     private static LocalBatterySnapshot.Entry Age(LocalBatterySnapshot.Entry entry, DateTimeOffset now)
     {
         if (entry.MeasuredAt is not { } measured) return entry;
-        if (measured > now || now - measured > LocalBatterySnapshot.MaximumCachedAge)
+        if (!LocalBatterySnapshot.WithinRetention(entry.Status, measured, now))
             return entry with { Status = "unavailable", BatteryPercent = null,
                 LastKnownPercent = null, MeasuredAt = null };
         if (entry.BatteryPercent.HasValue && now - measured > LocalBatterySnapshot.MaximumFreshAge)

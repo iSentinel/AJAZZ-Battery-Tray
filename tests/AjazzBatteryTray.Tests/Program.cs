@@ -1,5 +1,7 @@
 using AjazzBatteryTray;
 
+if (args.Length != 0) return DiagnosticSessionInterop.Run(args);
+
 // Dependency-free tests run on Windows, macOS or Linux with .NET 8.
 int passed = 0;
 int failed = 0;
@@ -17,6 +19,44 @@ void Check(string name, bool valid)
         Console.WriteLine($"FAIL {name}");
     }
 }
+
+var manualAt = new DateTimeOffset(2026, 11, 25, 1, 17, 0, TimeSpan.Zero);
+var manual97 = BluetoothManualObservation.Create("AJ179 APEX", true,
+    new(97, BluetoothBatterySource.DirectGatt, "PRIVATE_CANARY"), manualAt);
+Check("Manual diagnostic preserves fresh source and historical UTC",
+    manual97.Format().Contains("AJ179 APEX; transport=BLE; battery=97; source=DirectGatt") &&
+    manual97.Format().Contains("historical=true") && manual97.CompletedAt == manualAt &&
+    !manual97.Format().Contains("PRIVATE_CANARY"));
+var privateManual = BluetoothManualObservation.Create("PRIVATE_NAME", true,
+    new(97, BluetoothBatterySource.WindowsCached, "PRIVATE_STATUS"), manualAt);
+Check("Manual diagnostic redacts unknown name and labels cache",
+    privateManual.Source == BluetoothBatterySource.WindowsCached &&
+    !privateManual.Format().Contains("PRIVATE_"));
+Check("Manual diagnostic rejects invalid fresh percentage",
+    BluetoothManualObservation.Create("AJ179 APEX", true,
+        new(101, BluetoothBatterySource.DirectGatt, "invalid"), manualAt).Percent is null);
+Check("Manual diagnostic rejects Classic direct GATT claim",
+    BluetoothManualObservation.Create("AJ179 APEX", false,
+        new(97, BluetoothBatterySource.DirectGatt, "invalid"), manualAt).Percent is null);
+
+var usbEvidence = new UsbDiagnosticHistory();
+Check("USB diagnostic empty before first numeric observation",
+    usbEvidence.Format().EndsWith("never"));
+usbEvidence.Observe(2, null, 97, manualAt);
+usbEvidence.Observe(2, null, null, manualAt.AddMinutes(1));
+Check("USB diagnostic preserves last unverified observation after no value",
+    usbEvidence.Format().Contains("unverified field=97") &&
+    usbEvidence.Format().Contains("verified at observation=unavailable") &&
+    usbEvidence.Format().Contains("historical=true"));
+usbEvidence.Observe(2, 90, null, manualAt.AddSeconds(-1));
+Check("USB diagnostic does not replace evidence with older observation",
+    usbEvidence.Format().Contains("unverified field=97"));
+usbEvidence.Observe(2, 96, 97, manualAt.AddMinutes(2));
+Check("USB diagnostic distinguishes verified observation from unverified",
+    usbEvidence.Format().Contains("verified at observation=96; unverified field=unavailable"));
+usbEvidence.Observe(2, 101, 0, manualAt.AddMinutes(3));
+Check("USB diagnostic rejects out-of-range observations",
+    usbEvidence.Format().Contains("verified at observation=96;"));
 
 Check("100 percent", BatteryReportParser.ParseWindowsFeature(
     new byte[] { 0x05, 0, 0, 100, 1, 1, 1, 2 }) == 100);
@@ -79,6 +119,180 @@ byte[] f7KeyboardSlot = (byte[])syntheticGatedMouse.Clone();
 f7KeyboardSlot[7] = 1;
 Check("F7 keyboard-only reply cannot be mistaken for mouse battery",
     BatteryReportParser.ParseWindowsFeature(f7KeyboardSlot) is null);
+
+f7KeyboardSlot[1] = 0;
+Check("Unreadable keyboard slot cannot fall back to compact mouse parsing",
+    BatteryReportParser.ParseWindowsFeature(f7KeyboardSlot) is null &&
+    BatteryReportParser.DescribeWindowsFeature(f7KeyboardSlot).Contains("keyboard-only"));
+var malformedMouse = (byte[])f7Unreadable.Clone();
+malformedMouse[4] = 2;
+Check("Invalid F7 flag cannot fall back to compact mouse parsing",
+    BatteryReportParser.ParseWindowsFeature(malformedMouse) is null);
+
+byte[] aj179OwnerNov24 = Convert.FromHexString("05000064010001020000");
+Check("Nov24 AJ179 ready-clear 100 remains unknown telemetry",
+    BatteryReportParser.ParseWindowsFeature(aj179OwnerNov24) is null &&
+    BatteryReportParser.UnverifiedMouseField(aj179OwnerNov24) == 100);
+Check("AJ159 zero never provisional", BatteryReportParser.UnverifiedMouseField(observedAj159F7) is null);
+Check("Ready verified is not provisional", BatteryReportParser.UnverifiedMouseField(syntheticGatedMouse) is null);
+Check("Invalid flags never provisional", BatteryReportParser.UnverifiedMouseField(malformedMouse) is null);
+Check("Keyboard slot never provisional", BatteryReportParser.UnverifiedMouseField(f7KeyboardSlot) is null);
+foreach (int index in new[] { 5, 6, 9 })
+{
+    byte[] bad = (byte[])aj179OwnerNov24.Clone();
+    bad[index] ^= 1;
+    Check($"Provisional rejects invalid link flag {index}", BatteryReportParser.UnverifiedMouseField(bad) is null);
+}
+Check("Typed F7 observation separates reported and verified charge",
+    BatteryReportParser.ObserveSharedF7(syntheticGatedMouse) is
+        { Gate: F7MouseGate.Accepted, ReportedField: 83, VerifiedPercent: 83, UnverifiedPercent: null } &&
+    BatteryReportParser.ObserveSharedF7(f7Unreadable) is
+        { Gate: F7MouseGate.ReadUnavailable, ReportedField: 83, VerifiedPercent: null, UnverifiedPercent: 83 });
+Check("Typed F7 observation preserves rejection reasons",
+    BatteryReportParser.ObserveSharedF7(f7Offline)?.Gate == F7MouseGate.Offline &&
+    BatteryReportParser.ObserveSharedF7(f7CannotSend)?.Gate == F7MouseGate.CannotSend &&
+    BatteryReportParser.ObserveSharedF7(f7RfBoot)?.Gate == F7MouseGate.RadioBoot &&
+    BatteryReportParser.ObserveSharedF7(malformedMouse)?.Gate == F7MouseGate.InvalidStatus &&
+    BatteryReportParser.ObserveSharedF7(f7Above100)?.Gate == F7MouseGate.OutOfRange &&
+    BatteryReportParser.ObserveSharedF7(aj159ReadableWithoutCharge)?.Gate == F7MouseGate.ZeroField);
+Check("Typed F7 observation excludes keyboard-only and unrecognized frames",
+    BatteryReportParser.ObserveSharedF7(f7KeyboardSlot) is
+        { Gate: F7MouseGate.KeyboardOnly, ReportedField: null, VerifiedPercent: null, UnverifiedPercent: null } &&
+    BatteryReportParser.ObserveSharedF7(new byte[] { 5, 0, 0, 50 }) is null &&
+    BatteryReportParser.ObserveSharedF7(new byte[10]) is null);
+Check("F7 ordinary diagnostic reason contains no reported field",
+    BatteryReportParser.DiagnosticF7Gate(BatteryReportParser.ObserveSharedF7(f7Unreadable)) ==
+        "F7 policy gate: ReadUnavailable" &&
+    BatteryReportParser.DiagnosticF7Gate(BatteryReportParser.ObserveSharedF7(syntheticGatedMouse)) ==
+        "F7 policy gate: Accepted" &&
+    BatteryReportParser.DiagnosticF7Gate(null) == "F7 policy gate: Unrecognized");
+// Exhaustively replay a synthetic grid against the previous admission predicates.
+bool f7PolicyParity = true;
+int f7PolicyCases = 0;
+foreach (byte matrixSlot in new byte[] { 1, 2, 3 })
+foreach (byte matrixReady in new byte[] { 0, 1, 2 })
+foreach (byte matrixKeyboard in new byte[] { 0, 1, 2 })
+foreach (byte matrixOnline in new byte[] { 0, 1, 2 })
+foreach (byte matrixSend in new byte[] { 0, 1, 2 })
+foreach (byte matrixBoot in new byte[] { 0, 1, 2 })
+foreach (byte matrixField in new byte[] { 0, 1, 42, 100, 101, 255 })
+{
+    byte[] matrixFrame = { 5, matrixReady, 0, matrixField, matrixKeyboard, matrixOnline, matrixSend, matrixSlot, 0, matrixBoot };
+    bool matrixValid = matrixKeyboard <= 1 && matrixOnline == 0 && matrixSend == 1 && matrixBoot == 0 &&
+        matrixField is >= 1 and <= 100;
+    int? matrixVerified = matrixValid && matrixReady == 1 && matrixSlot != 1 ? matrixField : null;
+    int? matrixProvisional = matrixValid && matrixReady == 0 && matrixSlot == 2 ? matrixField : null;
+    f7PolicyParity &= BatteryReportParser.ParseWindowsFeature(matrixFrame) == matrixVerified &&
+        BatteryReportParser.UnverifiedMouseField(matrixFrame) == matrixProvisional;
+    f7PolicyCases++;
+}
+Check("Typed F7 preserves previous admission predicates across 4374 synthetic combinations",
+    f7PolicyParity && f7PolicyCases == 4374);
+Check("Provisional needs all attempts and two samples",
+    BatteryReportParser.ConsistentUnverifiedField(100, 2, 2) == 100 &&
+    BatteryReportParser.ConsistentUnverifiedField(100, 1, 2) is null &&
+    BatteryReportParser.ConsistentUnverifiedField(100, 1, 1) is null);
+Check("Unverified 8 is gray not red",
+    TrayIconRenderKey.Create(8, true, false, mouseStyle: true, unverified: true)
+        is { Mouse: false, Background: TrayColorRules.Gray, Unverified: true });
+Check("Unverified and cached render keys distinct",
+    TrayIconRenderKey.Create(100, true, false, unverified: true) !=
+    TrayIconRenderKey.Create(100, true, true));
+
+Check("Diagnostic candidate label is explicit",
+    BatteryReportParser.DiagnosticUnverifiedField(100) == "unverified mouse field (not telemetry)=100");
+Check("Diagnostic candidate suppressed on scheduled skip",
+    BatteryReportParser.DiagnosticUnverifiedField(100, false) == "unverified mouse field (not telemetry)=unavailable");
+Check("Diagnostic candidate absent or invalid stays unavailable",
+    new int?[] { null, 0, -1, 101 }.All(x =>
+        BatteryReportParser.DiagnosticUnverifiedField(x) == "unverified mouse field (not telemetry)=unavailable"));
+
+var observationStreak = new UnverifiedObservationStreak();
+var streakStart = new DateTimeOffset(2026, 11, 24, 23, 18, 7, TimeSpan.Zero);
+observationStreak.Observe(100, streakStart);
+observationStreak.Observe(100, streakStart.AddSeconds(30));
+observationStreak.Observe(100, streakStart.AddSeconds(30));
+Check("Repeated candidate counts distinct ordinary observations only",
+    observationStreak.Count == 2 && observationStreak.First == streakStart &&
+    observationStreak.Last == streakStart.AddSeconds(30) &&
+    observationStreak.DiagnosticText().Contains("span seconds=30.0; not telemetry"));
+observationStreak.Observe(98, streakStart.AddSeconds(60));
+Check("Changed candidate starts a new observation streak",
+    observationStreak.Field == 98 && observationStreak.Count == 1 &&
+    observationStreak.First == streakStart.AddSeconds(60));
+observationStreak.Observe(100, streakStart.AddSeconds(90));
+Check("Return to 100 starts a separate streak",
+    observationStreak.Field == 100 && observationStreak.Count == 1);
+observationStreak.Observe(100, streakStart.AddSeconds(80));
+Check("Clock reversal resets observation streak",
+    observationStreak.Count == 1 && observationStreak.First == streakStart.AddSeconds(80));
+foreach (int? missingCandidate in new int?[] { null, 0, 101 })
+{
+    observationStreak.Observe(98, streakStart);
+    observationStreak.Observe(missingCandidate, streakStart.AddSeconds(30));
+    Check($"No streak for invalid candidate {missingCandidate}",
+        observationStreak.Count == 0 && observationStreak.Field is null &&
+        observationStreak.First is null && observationStreak.Last is null);
+}
+observationStreak.Observe(98, streakStart);
+observationStreak.Reset();
+Check("Absence or unknown presence clears observation streak",
+    observationStreak.DiagnosticText() == "no consecutive unverified ordinary observations");
+
+// The Apple and offline readers replay the same sanitized fixtures in CI.
+string corpus = Path.Combine(AppContext.BaseDirectory, "fixtures", "apex-f7-v1.csv");
+foreach (string row in File.ReadLines(corpus).Skip(1))
+{
+    string[] fields = row.Split(',');
+    int? expected = fields[3] == "unknown" ? null : int.Parse(fields[3]);
+    int? actual = BatteryReportParser.ParseWindowsFeature(Convert.FromHexString(fields[2]));
+    Check($"Shared F7 corpus {fields[0]}", actual == expected);
+    string directory = Path.Combine(Path.GetTempPath(), "ajazz-corpus-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        var history = new BatteryHistory("test.csv", directory);
+        history.Record(DateTimeOffset.UtcNow, actual, receiverPresent: true);
+        var sample = history.ReadRecent().SingleOrDefault();
+        Check($"Shared F7 history {fields[0]}", sample is not null &&
+            sample.Percent == expected && sample.State == (expected is null ? "unavailable" : "online"));
+        if (expected is null)
+        {
+            var connection = new ConnectionAlertPolicy();
+            connection.Evaluate(true, true);
+            bool first = connection.Evaluate(false, false);
+            bool unknown = connection.Evaluate(actual.HasValue, true);
+            bool next = connection.Evaluate(false, false);
+            Check($"Shared F7 unknown does not trigger disconnect {fields[0]}", !first && !unknown && !next);
+        }
+    }
+    finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+}
+
+string previousTrayLanguage = UiText.Language;
+foreach (string lang in new[] { "en", "ru", "uk" })
+{
+    UiText.SetLanguage(lang);
+    Check($"Unknown charge distinguishes startup, enumeration, absence, access and reply ({lang})",
+        new[] {
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.NotChecked),
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.None),
+            UsbTrayStatus.Reason(true, false, UsbReadIssue.None),
+            UsbTrayStatus.Reason(true, true, UsbReadIssue.InterfaceUnavailable),
+            UsbTrayStatus.Reason(true, true, UsbReadIssue.None),
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.Busy),
+            UsbTrayStatus.Reason(false, false, UsbReadIssue.Timeout)
+        }.Distinct().Count() == 7);
+    Check($"Unknown or timed-out USB does not permit Bluetooth fallback ({lang})",
+        !BatteryDisplayState.MayUseBluetooth(false, false) &&
+        BatteryDisplayState.Resolve(false, null, true, 75, false).Percent is null);
+    string noReply = UsbTrayStatus.Reason(true, true, UsbReadIssue.None);
+    Check($"Unknown charge without previous reading has no historical time ({lang})",
+        UsbTrayStatus.WithLastVerified(noReply, null) == noReply);
+    DateTimeOffset stamp = DateTimeOffset.Parse("2026-11-23T18:32:52Z");
+    Check($"Unknown charge displays time of last verified sample ({lang})",
+        UsbTrayStatus.WithLastVerified(noReply, stamp).Contains(stamp.ToLocalTime().ToString("g")));
+}
+UiText.SetLanguage(previousTrayLanguage);
 
 // Diagnostic classification must not broaden the valid battery format.
 Check("Protocol reason: empty", BatteryReportParser.DescribeWindowsFeature(Array.Empty<byte>()) == "short buffer");
@@ -166,6 +380,121 @@ var scheduledDashboard = DeviceDashboardState.FromPoll("Mouse", "2.4 GHz",
 Check("Scheduled display preserves measurement time and percent",
     scheduledDashboard.Status == DeviceDashboardStatus.Scheduled &&
     scheduledDashboard.MeasuredAt == scheduleMeasurement && scheduledDashboard.Percent == 83);
+Check("Shared display freshness ceiling matches API",
+    DeviceDashboardState.MaximumFreshAge == TimeSpan.FromMinutes(5) &&
+    LocalBatterySnapshot.MaximumFreshAge == DeviceDashboardState.MaximumFreshAge);
+Check("APEX diagnostic sample keeps original time during scheduled skip",
+    ApexDisplayPolicy.DiagnosticSample(scheduleMeasurement, true) ==
+        $"USB sample UTC: {scheduleMeasurement.ToUniversalTime():O}; scheduled: True" &&
+    ApexDisplayPolicy.DiagnosticSample(null, false) == "USB sample UTC: never; scheduled: False");
+Check("APEX fresh boundary matches API",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(5)).Status == DeviceDashboardStatus.Fresh);
+Check("APEX expired success hides percentage",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(5).AddTicks(1)) is
+        { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("APEX scheduled boundary is three minutes",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, true, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(3)).Status == DeviceDashboardStatus.Scheduled &&
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, true, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(3).AddTicks(1)).Percent is null);
+Check("APEX missing or future timestamps cannot produce charge",
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83, null, scheduleMeasurement).Percent is null &&
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement.AddTicks(1), scheduleMeasurement).Percent is null);
+Check("APEX unknown presence and zero never produce charge",
+    ApexDisplayPolicy.Dashboard("Mouse", false, true, false, 83, scheduleMeasurement, scheduleMeasurement).Percent is null &&
+    ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 0, scheduleMeasurement, scheduleMeasurement).Percent is null);
+Check("APEX unverified field only on current ordinary observation",
+    ApexDisplayPolicy.Unverified(true, true, false, 83, scheduleMeasurement, scheduleMeasurement) == 83 &&
+    ApexDisplayPolicy.Unverified(true, true, true, 83, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.Unverified(true, true, false, 83, scheduleMeasurement, scheduleMeasurement.AddMinutes(6)) is null &&
+    ApexDisplayPolicy.Unverified(false, true, false, 83, scheduleMeasurement, scheduleMeasurement) is null);
+Check("APEX verified current USB sample permits alerts",
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, scheduleMeasurement,
+        scheduleMeasurement.AddMinutes(5)) == 9);
+Check("APEX expired or future timestamp cannot trigger an alert",
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, scheduleMeasurement,
+        scheduleMeasurement.AddMinutes(5).AddTicks(1)) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, scheduleMeasurement,
+        scheduleMeasurement.AddTicks(-1)) is null);
+Check("APEX missing timestamp or scheduled sample cannot trigger an alert",
+    ApexDisplayPolicy.AlertPercent(true, true, false, 9, null, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, true, 9, scheduleMeasurement, scheduleMeasurement) is null);
+Check("APEX unknown or absent receiver and invalid charge cannot trigger alerts",
+    ApexDisplayPolicy.AlertPercent(false, true, false, 9, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, false, false, 9, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, 0, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, 101, scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.AlertPercent(true, true, false, null, scheduleMeasurement, scheduleMeasurement) is null);
+var receiverFresh = ApexDisplayPolicy.Dashboard("Fresh", true, true, false, 71,
+    scheduleMeasurement, scheduleMeasurement);
+var receiverScheduled = ApexDisplayPolicy.Dashboard("Scheduled", true, true, true, 64,
+    scheduleMeasurement, scheduleMeasurement);
+var receiverExpired = ApexDisplayPolicy.Dashboard("Expired", true, true, false, 92,
+    scheduleMeasurement, scheduleMeasurement.AddMinutes(6));
+Check("APEX fresh receiver outranks scheduled and expired observations",
+    ApexDisplayPolicy.SelectionRank(receiverFresh) >
+    ApexDisplayPolicy.SelectionRank(receiverScheduled) &&
+    ApexDisplayPolicy.SelectionRank(receiverScheduled) >
+    ApexDisplayPolicy.SelectionRank(receiverExpired));
+Check("APEX missing presence and invalid values have no selection priority",
+    ApexDisplayPolicy.SelectionRank(ApexDisplayPolicy.Dashboard("Unknown", false, true,
+        false, 71, scheduleMeasurement, scheduleMeasurement)) == 0 &&
+    ApexDisplayPolicy.SelectionRank(receiverFresh with { Percent = 0 }) == 0 &&
+    ApexDisplayPolicy.SelectionRank(receiverFresh with { Percent = null }) == 0);
+Check("APEX fresh visible candidate replaces preferred scheduled receiver",
+    ApexDisplayPolicy.PreferCandidate("b", 2, true, false, "a", 1, "a"));
+Check("APEX old preferred receiver cannot replace fresh receiver",
+    !ApexDisplayPolicy.PreferCandidate("a", 1, true, false, "b", 2, "a"));
+Check("APEX hidden and absent candidates cannot win",
+    !ApexDisplayPolicy.PreferCandidate("a", 2, true, true, null, -1, "a") &&
+    !ApexDisplayPolicy.PreferCandidate("a", 2, false, false, null, -1, "a"));
+Check("APEX equal rank keeps preferred identity in either iteration order",
+    ApexDisplayPolicy.PreferCandidate("b", 0, true, false, "a", 0, "b") &&
+    !ApexDisplayPolicy.PreferCandidate("a", 0, true, false, "b", 0, "b"));
+Check("APEX equal rank without preferred candidate uses ordinal order",
+    ApexDisplayPolicy.PreferCandidate("a", 2, true, false, "b", 2, "c") &&
+    !ApexDisplayPolicy.PreferCandidate("b", 2, true, false, "a", 2, "c"));
+var apexCache = new ApexVerifiedDisplayCache();
+var noReplyView = ApexDisplayPolicy.Dashboard("Mouse", true, true, false, null,
+    scheduleMeasurement, scheduleMeasurement);
+Check("APEX display cache cannot invent an initial value",
+    apexCache.Present(noReplyView, scheduleMeasurement).Percent is null);
+apexCache.Observe(true, true, 68, scheduleMeasurement);
+apexCache.Observe(true, true, null, scheduleMeasurement.AddMinutes(1));
+var cachedView = apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(1));
+Check("APEX display cache retains verified percent and original timestamp",
+    cachedView is { Status: DeviceDashboardStatus.Cached, Percent: 68 } &&
+    cachedView.MeasuredAt == scheduleMeasurement);
+Check("APEX display cache leaves strict API observation unchanged",
+    LocalBatterySnapshot.Create(scheduleMeasurement.AddMinutes(1), new[] {
+        new LocalBatterySnapshot.Input(LocalBatterySource.ApexReceiver, 1, noReplyView)
+    }).Devices[0] is { BatteryPercent: null, LastKnownPercent: null });
+Check("APEX cache expires without renewal from failed observations",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(5)).Percent == 68 &&
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(5).AddTicks(1)).Percent is null &&
+    apexCache.Present(noReplyView, scheduleMeasurement.AddTicks(-1)).Percent is null);
+Check("APEX cache cannot extend an expired scheduled observation",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(4), scheduled: true).Percent is null);
+Check("APEX cache never replaces a fresh or scheduled observation",
+    apexCache.Present(receiverFresh, scheduleMeasurement) == receiverFresh &&
+    apexCache.Present(receiverScheduled, scheduleMeasurement) == receiverScheduled);
+apexCache.Observe(false, true, null, scheduleMeasurement.AddMinutes(2));
+Check("APEX unknown presence clears display cache",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(2)).Percent is null);
+apexCache.Observe(true, true, 67, scheduleMeasurement.AddMinutes(2));
+apexCache.Observe(true, false, null, scheduleMeasurement.AddMinutes(3));
+Check("APEX disconnect clears display cache",
+    apexCache.Present(noReplyView, scheduleMeasurement.AddMinutes(3)).Percent is null);
+Check("APEX linked cache remains subordinate to fresh BLE",
+    TransportLinks.Select(null, 62, null, null, 67) is { Bluetooth: true, Cached: false, Percent: 62 } &&
+    TransportLinks.Select(null, null, null, null, 67) is { Bluetooth: false, Cached: true, Percent: 67 });
+Check("APEX expired USB allows linked fresh BLE selection",
+    TransportLinks.Select(ApexDisplayPolicy.Dashboard("Mouse", true, true, false, 83,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(6)).Percent, 77, null) is
+        { Bluetooth: true, Cached: false, Percent: 77 });
 Check("Scheduled flag cannot hide confirmed disconnect",
     DeviceDashboardState.FromPoll("Mouse", "2.4 GHz", true, true, false,
         83, scheduleMeasurement, scheduled: true).Status == DeviceDashboardStatus.Disconnected);
@@ -387,23 +716,23 @@ var aulaTime = DateTimeOffset.Parse("2026-11-22T15:17:48Z");
 aulaCache.Observe(true, true, 98, aulaTime);
 aulaCache.Observe(true, true, null, aulaTime.AddSeconds(31));
 Check("AULA retains last good percentage on transient no reply",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(31)) == 98 &&
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(31)) == 98 &&
     aulaCache.ConsecutiveFailures == 1 && aulaCache.LastGoodAt == aulaTime);
 Check("AULA cached percentage remains visible during eight-hour sleep",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddHours(8)) == 98);
+    aulaCache.CachedPercent(true, true, aulaTime.AddHours(8)) == 98);
 Check("AULA cached percentage expires after 24 hours",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddHours(24)) is null);
+    aulaCache.CachedPercent(true, true, aulaTime.AddHours(24)) is null);
 Check("AULA unknown presence hides cache",
-    aulaCache.DisplayPercent(true, false, null, aulaTime.AddSeconds(32)) is null);
+    aulaCache.CachedPercent(true, false, aulaTime.AddSeconds(32)) is null);
 Check("AULA clock rollback hides old cache",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(-1)) is null);
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(-1)) is null);
 aulaCache.Observe(true, true, 97, aulaTime.AddSeconds(60));
 Check("AULA successful recovery clears failure count",
     aulaCache.LastGoodPercent == 97 && aulaCache.ConsecutiveFailures == 0);
 aulaCache.Observe(false, true, null, aulaTime.AddSeconds(61));
 Check("AULA unplug invalidates cache",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null &&
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(62)) is null);
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(62)) is null);
 aulaCache.Observe(true, true, 96, aulaTime.AddSeconds(70));
 aulaCache.Reset();
 Check("AULA opt-out invalidates cache", aulaCache.LastGoodPercent is null);
@@ -411,9 +740,9 @@ aulaCache.Observe(true, true, 93, aulaTime);
 aulaCache.Observe(false, false, null, aulaTime.AddSeconds(30));
 Check("AULA uncertain enumeration retains hidden last-good sample",
     aulaCache.LastGoodPercent == 93 && aulaCache.LastGoodAt == aulaTime &&
-    aulaCache.DisplayPercent(false, false, null, aulaTime.AddSeconds(30)) is null);
+    aulaCache.CachedPercent(false, false, aulaTime.AddSeconds(30)) is null);
 Check("AULA same receiver can reuse cached sample after uncertainty",
-    aulaCache.DisplayPercent(true, true, null, aulaTime.AddSeconds(31)) == 93);
+    aulaCache.CachedPercent(true, true, aulaTime.AddSeconds(31)) == 93);
 aulaCache.Observe(false, true, null, aulaTime.AddSeconds(32));
 Check("AULA confirmed unplug still invalidates sample",
     aulaCache.LastGoodPercent is null && aulaCache.LastGoodAt is null);
@@ -456,12 +785,60 @@ var colors = TrayColorRules.Clean(new Dictionary<string, string>
     [DeviceAliasRules.AulaSlot] = "green", ["path"] = "pink"
 });
 Check("Tray palettes preserve independent valid preferences",
-    colors.Count == 2 && colors[colorKeyA] == "blue" && colors[colorKeyB] == "purple");
+    colors.Count == 3 && colors[colorKeyA] == "blue" && colors[colorKeyB] == "purple" &&
+    colors[DeviceAliasRules.AulaSlot] == "green");
 Check("Tray palette null settings safe", TrayColorRules.Clean(null).Count == 0);
 Check("Tray colors survive settings round trip",
     System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
         System.Text.Json.JsonSerializer.Serialize(new AppSettings { DeviceTrayColors = colors }))
         ?.DeviceTrayColors[colorKeyB] == "purple");
+
+foreach (string theme in TrayColorRules.AppIcons)
+{
+    Check($"App icon choice {theme} recognized", TrayColorRules.NormalizeAppIcon(theme) == theme);
+    Check($"Critical {theme} is red", TrayColorRules.Resolve(10, true, false, theme) == TrayColorRules.Red);
+    Check($"Fresh {theme} normal mouse", TrayColorRules.ShowMouse(21, true, false, true));
+}
+Check("Unknown icon choice defaults orange", TrayColorRules.NormalizeAppIcon("../bad") == "orange");
+Check("Inherit global color", TrayColorRules.EffectiveColor(null, "orange") == "orange");
+Check("Explicit green overrides global", TrayColorRules.EffectiveColor("green", "orange") == "green");
+Check("Critical always numeric", !TrayColorRules.ShowMouse(10, true, false, true));
+Check("Amber warning numeric", !TrayColorRules.ShowMouse(20, true, false, true));
+Check("Stale always numeric", !TrayColorRules.ShowMouse(80, true, true, true));
+Check("Mouse icon unchanged across normal levels",
+    TrayIconRenderKey.Create(80, true, false, color: "orange", mouseStyle: true) ==
+    TrayIconRenderKey.Create(79, true, false, color: "orange", mouseStyle: true));
+Check("Neutral icon changes with branding",
+    TrayIconRenderKey.Create(null, false, false, true, brand: "white") !=
+    TrayIconRenderKey.Create(null, false, false, true, brand: "black"));
+Check("Critical redraws on percentage change",
+    TrayIconRenderKey.Create(8, true, false, color: "orange", mouseStyle: true) !=
+    TrayIconRenderKey.Create(7, true, false, color: "orange", mouseStyle: true));
+Check("Appearance preferences round trip",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(new AppSettings
+        { ApplicationIconColor = "blue", DefaultTrayColor = "white", MouseTrayIcon = false }))
+        is { ApplicationIconColor: "blue", DefaultTrayColor: "white", MouseTrayIcon: false });
+
+Check("Unverified USB display defaults off for new and legacy preferences",
+    !new AppSettings().ShowUnverifiedUsbCharge &&
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>("{}") is { ShowUnverifiedUsbCharge: false });
+Check("Unverified USB local opt-in survives settings round trip",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(
+        System.Text.Json.JsonSerializer.Serialize(new AppSettings { ShowUnverifiedUsbCharge = true }))
+        is { ShowUnverifiedUsbCharge: true });
+Check("Unverified USB display opt-in does not alter portable backup",
+    !System.Text.Encoding.UTF8.GetString(PreferencesBackup.Capture(
+        new AppSettings { ShowUnverifiedUsbCharge = true }).Export()).Contains("ShowUnverifiedUsbCharge"));
+Check("Unverified USB display requires opt-in and valid ordinary sample",
+    ApexDisplayPolicy.UnverifiedForDisplay(false, true, true, false, 37,
+        scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.UnverifiedForDisplay(true, true, true, false, 37,
+        scheduleMeasurement, scheduleMeasurement) == 37 &&
+    ApexDisplayPolicy.UnverifiedForDisplay(true, true, true, true, 37,
+        scheduleMeasurement, scheduleMeasurement) is null &&
+    ApexDisplayPolicy.UnverifiedForDisplay(true, true, true, false, 37,
+        scheduleMeasurement, scheduleMeasurement.AddMinutes(6)) is null);
 
 // Tray visibility must not alter receiver measurement identity.
 string trayKeyA = new string('A', 64);
@@ -564,6 +941,32 @@ Check("Dashboard rejects invalid out-of-range values",
     Dashboard(fresh: 101, cached: -1) is
         { Status: DeviceDashboardStatus.NoReply, Percent: null });
 
+string statusLanguage = UiText.Language;
+foreach (string language in new[] { "en", "ru", "uk" })
+{
+    UiText.SetLanguage(language);
+    Check($"AULA cached menu retains original time ({language})",
+        cachedDashboard.MenuStatus().Contains("98%") &&
+        cachedDashboard.MenuStatus().Contains(UiText.Get("Cached reading")) &&
+        cachedDashboard.MenuStatus().Contains(cachedDashboard.MeasuredAt!.Value.ToLocalTime().ToString("g")));
+    Check($"Manual and fresh status remain distinct ({language})",
+        (Dashboard(fresh: 97) with { Status = DeviceDashboardStatus.ManualReading })
+            .MenuStatus().Contains(UiText.Get("Manual reading")) &&
+        Dashboard(fresh: 97).MenuStatus().Contains(UiText.Get("Fresh reading")));
+    Check($"Unknown presence hides numbers and timestamps ({language})",
+        Dashboard(known: false, fresh: 98, cached: 98).MenuStatus(dashboardAt) ==
+            UiText.Get("Receiver status unknown"));
+    Check($"BLE standby hides historical values ({language})",
+        new DeviceDashboardState("BLE", "Bluetooth", DeviceDashboardStatus.Standby, null, null)
+            .MenuStatus(dashboardAt) == UiText.Get("Standby (USB priority)"));
+    Check($"No reply preserves only historical time ({language})",
+        Dashboard().MenuStatus(dashboardAt) ==
+            UsbTrayStatus.WithLastVerified(UiText.Get("No valid reply"), dashboardAt));
+    Check($"BLE zero is valid numeric sample ({language})",
+        Dashboard(fresh: 0).MenuStatus().StartsWith("0%"));
+}
+UiText.SetLanguage(statusLanguage);
+
 // AULA's shared dongle must never be probed unless manually requested/opted in.
 Check("AULA opt-in defaults off", !new AppSettings().MonitorAulaL99);
 Check("AULA separate history CSV",
@@ -637,6 +1040,24 @@ Check("clock periodic resync", schedule.ShouldAttempt(start.AddMinutes(5), true,
 schedule.RecordAttempt(start.AddMinutes(5));
 Check("clock receiver removed", !schedule.ShouldAttempt(start.AddMinutes(6), true, false));
 Check("clock receiver reconnected", schedule.ShouldAttempt(start.AddMinutes(6), true, true));
+
+// A transient unknown presence must not restart the dock RTC schedule.
+DockClockSchedule uncertainClock = new();
+Check("clock initially present", uncertainClock.ShouldAttempt(start, true, true));
+uncertainClock.RecordAttempt(start);
+Check("clock unknown absence never writes",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(1), true, false, presenceKnown: false));
+Check("clock unknown presence never writes",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(1), true, true, presenceKnown: false));
+Check("clock same confirmed receiver after uncertainty is not a reconnect",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(2), true, true));
+Check("clock deadline remains due after uncertainty",
+    uncertainClock.ShouldAttempt(start.AddMinutes(5), true, true));
+uncertainClock.RecordAttempt(start.AddMinutes(5));
+Check("clock confirmed unplug still resets",
+    !uncertainClock.ShouldAttempt(start.AddMinutes(6), true, false));
+Check("clock confirmed replug still synchronizes",
+    uncertainClock.ShouldAttempt(start.AddMinutes(6), true, true));
 
 // A corrected Windows clock must not postpone RTC synchronization for hours.
 DockClockSchedule correctedClock = new();
@@ -998,6 +1419,19 @@ Check("first confirmed missing poll after error ignored",
 Check("second confirmed missing poll raises warning",
     transientError.Evaluate(false, false));
 
+ConnectionAlertPolicy interruptedAbsence = new();
+interruptedAbsence.Evaluate(true, true);
+Check("first absent poll is debounced", !interruptedAbsence.Evaluate(false, false));
+interruptedAbsence.ObserveUnknown();
+Check("unknown between absent polls interrupts the sequence",
+    !interruptedAbsence.Evaluate(false, false));
+Check("two consecutive confirmed absences still notify",
+    interruptedAbsence.Evaluate(false, false));
+interruptedAbsence.ObserveUnknown();
+Check("unknown does not reset a delivered disconnect alert",
+    !interruptedAbsence.Evaluate(false, false) &&
+    !interruptedAbsence.Evaluate(false, false));
+
 Check("USB disconnect alert preserved without BLE",
     BatteryDisplayState.NotifyReceiverDisconnect(true, false));
 
@@ -1167,6 +1601,209 @@ pausedBle.Enable("y", bleDirect, multiAt.AddMinutes(1));
 pausedBle.ObserveUsbPresence(true, false);
 Check("Opt-in while USB blocked requires a new read", pausedBle.VisiblePercent("y", true, false, multiAt.AddMinutes(1)) is null);
 
+// Explicitly opted-in independent BLE is not a USB receiver association.
+var independentBle = new BluetoothMultiSession(independent: true);
+independentBle.ObserveUsbPresence(true, true);
+Check("Independent BLE opt-in while USB present", independentBle.Enable("x", bleDirect, multiAt));
+Check("Independent BLE initial value remains visible", independentBle.VisiblePercent("x", true, true, multiAt) == 83);
+var independentRequest = independentBle.TryBegin(true, true, multiAt.AddMinutes(1));
+Check("Independent BLE polls while USB present", independentRequest is not null);
+independentBle.ObserveUsbPresence(false, false);
+Check("Independent BLE accepts response despite USB uncertainty", independentRequest is not null &&
+    independentBle.Complete(independentRequest, bleDirect, multiAt.AddMinutes(1), false, false));
+Check("Independent BLE survives USB state changes",
+    independentBle.VisiblePercent("x", false, false, multiAt.AddMinutes(1)) == 83);
+Check("Independent BLE chooses primary when USB value unavailable",
+    BatteryDisplayState.PreferIndependentBluetooth(true, null, true, 83));
+Check("Valid USB stays primary, BLE remains independent",
+    !BatteryDisplayState.PreferIndependentBluetooth(true, 90, true, 83));
+Check("BLE unknown keeps its primary icon without USB",
+    BatteryDisplayState.PreferIndependentBluetooth(false, null, true, null));
+Check("No unverified BLE primary while USB present",
+    !BatteryDisplayState.PreferIndependentBluetooth(true, null, true, null));
+independentBle.DisableAll();
+
+// Persistent consent does not persist telemetry or infer identity from names.
+string consentKey = BleConsent.Key("paired-endpoint-A");
+Check("BLE consent fingerprint is canonical and domain separated",
+    BleConsent.Valid(consentKey) && consentKey == BleConsent.Key("PAIRED-ENDPOINT-A") &&
+    consentKey != ReceiverIdentity.LocalKey("paired-endpoint-A"));
+Check("BLE consent rejects raw IDs and invalid hashes",
+    BleConsent.Clean(new[] { consentKey, consentKey, "paired-endpoint-A", new string('G', 64) })
+        .SetEquals(new[] { consentKey }));
+Check("BLE consent collection has a bounded size",
+    BleConsent.Clean(Enumerable.Range(0, 40).Select(x => BleConsent.Key(x.ToString())))
+        .Count == BleConsent.MaximumDevices);
+var consentSettings = new AppSettings { ConsentedBleEndpoints = new() { consentKey } };
+string localConsentJson = System.Text.Json.JsonSerializer.Serialize(consentSettings);
+Check("Local settings preserve fingerprint only",
+    System.Text.Json.JsonSerializer.Deserialize<AppSettings>(localConsentJson)!
+        .ConsentedBleEndpoints.Contains(consentKey) && !localConsentJson.Contains("paired-endpoint-A"));
+Check("Portable backup excludes BLE consent",
+    !System.Text.Encoding.UTF8.GetString(PreferencesBackup.Capture(consentSettings).Export())
+        .Contains(consentKey));
+var restoredBle = new BluetoothMultiSession(independent: true);
+Check("Restored BLE starts without a reading", restoredBle.Restore(consentKey) &&
+    restoredBle.VisiblePercent(consentKey, true, true, multiAt) is null &&
+    restoredBle.LastSuccess(consentKey) is null);
+Check("Restored BLE cannot duplicate its slot", !restoredBle.Restore(consentKey));
+var restoreRequest = restoredBle.TryBegin(true, true, multiAt);
+Check("Restored consent immediately requests new GATT", restoreRequest?.Key == consentKey);
+Check("Restored BLE rejects cached battery as telemetry", restoreRequest is not null &&
+    restoredBle.Complete(restoreRequest, bleCached, multiAt, true, true) &&
+    restoredBle.VisiblePercent(consentKey, true, true, multiAt) is null);
+var pendingConsent = restoredBle.TryBegin(true, true, multiAt, consentKey);
+restoredBle.Disable(consentKey);
+Check("Opt-out invalidates an in-flight restored read", pendingConsent is not null &&
+    !restoredBle.Complete(pendingConsent, bleDirect, multiAt, true, true) &&
+    restoredBle.Count == 0);
+
+// Simulate a direct GATT completion delivered after a paused UI.
+var delayedBle = new BluetoothMultiSession(independent: true);
+delayedBle.Restore("delayed");
+var delayedRequest = delayedBle.TryBegin(true, true, multiAt);
+var bleCompletedAt = multiAt.AddSeconds(1);
+Check("BLE delayed delivery preserves worker timestamp",
+    delayedRequest is not null && delayedBle.Complete(delayedRequest, bleDirect, bleCompletedAt, true, true) &&
+    delayedBle.LastSuccess("delayed") == bleCompletedAt);
+Check("BLE delayed delivery loses fresh alert eligibility",
+    delayedBle.VisiblePercent("delayed", true, true, bleCompletedAt.AddMinutes(2)) == 83 &&
+    delayedBle.VisiblePercent("delayed", true, true, bleCompletedAt.AddMinutes(2).AddTicks(1)) is null &&
+    delayedBle.VisiblePercent("delayed", true, true, bleCompletedAt.AddTicks(-1)) is null);
+Check("BLE delayed delivery retains only bounded historical cache",
+    delayedBle.CachedPercent("delayed", bleCompletedAt.AddMinutes(10)) == 83 &&
+    delayedBle.CachedPercent("delayed", bleCompletedAt.AddMinutes(30)) is null);
+var stampBefore = DateTimeOffset.UtcNow;
+var stampedBle = BluetoothOperationTimeout.RunStamped(Task.FromResult(bleDirect),
+    TimeSpan.FromSeconds(1)).GetAwaiter().GetResult();
+Check("BLE bounded stamped result preserves source and completion",
+    stampedBle.Result == bleDirect && stampedBle.CompletedAt >= stampBefore &&
+    stampedBle.CompletedAt <= DateTimeOffset.UtcNow);
+
+// BLE cache is presentation-only, independent of the USB device.
+var bleCache = new BluetoothMultiSession(independent: true);
+bleCache.Enable("cache", bleDirect, multiAt);
+var cacheFailure = bleCache.TryBegin(true, true, multiAt.AddMinutes(1));
+Check("BLE failure invalidates fresh value without losing display cache",
+    cacheFailure is not null && bleCache.Complete(cacheFailure, bleFailed, multiAt.AddMinutes(1), true, true) &&
+    bleCache.VisiblePercent("cache", true, true, multiAt.AddMinutes(1)) is null &&
+    bleCache.CachedPercent("cache", multiAt.AddMinutes(1)) == 83);
+Check("BLE cache expires and rejects reversed time",
+    bleCache.CachedPercent("cache", multiAt.AddMinutes(30)) is null &&
+    bleCache.CachedPercent("cache", multiAt.AddSeconds(-1)) is null);
+var cacheRecovery = bleCache.TryBegin(false, false, multiAt.AddMinutes(3));
+Check("BLE recovery replaces the old cache",
+    cacheRecovery is not null && bleCache.Complete(cacheRecovery,
+        bleDirect with { Percent = 80 }, multiAt.AddMinutes(3), false, false) &&
+    bleCache.VisiblePercent("cache", false, false, multiAt.AddMinutes(3)) == 80 &&
+    bleCache.CachedPercent("cache", multiAt.AddMinutes(3)) == 80);
+bleCache.Disable("cache");
+Check("BLE opt-out removes cache", bleCache.CachedPercent("cache", multiAt.AddMinutes(3)) is null);
+bleCache.Restore("cache");
+Check("Restored consent has no historical cache", bleCache.CachedPercent("cache", multiAt.AddMinutes(3)) is null);
+var cachedBleSnapshot = LocalBatterySnapshot.Create(multiAt.AddMinutes(1), new[] {
+    new LocalBatterySnapshot.Input(LocalBatterySource.Bluetooth, 1,
+        new DeviceDashboardState("", "Bluetooth", DeviceDashboardStatus.Cached, 83, multiAt))
+});
+Check("BLE cached snapshot never exports fresh battery percentage",
+    cachedBleSnapshot.Devices[0].BatteryPercent is null &&
+    cachedBleSnapshot.Devices[0].LastKnownPercent == 83 &&
+    cachedBleSnapshot.Devices[0].Status == "cached");
+
+// Explicit transport associations affect presentation only, not hardware identity.
+string linkBleA = BleConsent.Key("link-ble-a");
+string linkBleB = BleConsent.Key("link-ble-b");
+string linkUsbA = ReceiverIdentity.LocalKey("link-usb-a");
+string linkUsbB = ReceiverIdentity.LocalKey("link-usb-b");
+var linkConsent = new HashSet<string> { linkBleA, linkBleB };
+var transportLinks = new Dictionary<string, string>();
+Check("Explicit link requires consent and different valid keys",
+    TransportLinks.CanLink(transportLinks, linkConsent, linkBleA, linkUsbA) &&
+    !TransportLinks.CanLink(transportLinks, linkConsent, linkBleA, linkBleA) &&
+    !TransportLinks.CanLink(transportLinks, linkConsent, "unknown", linkUsbA));
+transportLinks.Add(linkBleA, linkUsbA);
+Check("Explicit link is one-to-one",
+    !TransportLinks.CanLink(transportLinks, linkConsent, linkBleB, linkUsbA) &&
+    !TransportLinks.CanLink(transportLinks, linkConsent, linkBleA, linkUsbB));
+transportLinks.Add(linkBleB, linkUsbA);
+Check("Duplicate USB target cleaned deterministically",
+    TransportLinks.Clean(transportLinks, linkConsent).Count == 1);
+Check("Unconsented association removed",
+    TransportLinks.Clean(transportLinks, new HashSet<string>()).Count == 0);
+Check("Linked display prefers validated USB",
+    TransportLinks.Select(80, 83, 82) == new TransportLinks.Display(80, false, false));
+Check("Linked display switches to fresh BLE when USB unknown",
+    TransportLinks.Select(null, 83, 82) == new TransportLinks.Display(83, false, true));
+Check("Linked display marks scheduled USB or BLE cache",
+    TransportLinks.Select(null, null, 82, 80) == new TransportLinks.Display(80, true, false) &&
+    TransportLinks.Select(null, null, 82) == new TransportLinks.Display(82, true, true));
+Check("Linked display keeps unknown instead of fabricating charge",
+    TransportLinks.Select(null, null, null).Percent is null);
+Check("Linked display admits zero only on BLE",
+    TransportLinks.Select(0, 0, null) == new TransportLinks.Display(0, false, true));
+var linkSettings = new AppSettings { ConsentedBleEndpoints = linkConsent, BleUsbLinks = transportLinks };
+Check("Portable preferences omit transport links",
+    !System.Text.Encoding.UTF8.GetString(PreferencesBackup.Capture(linkSettings).Export()).Contains(linkUsbA));
+
+// Primary identity is not selected again on every transport change.
+Check("Linked primary initially yields to existing standalone mouse",
+    TransportLinks.SelectPrimary(null, new[] { linkUsbA }, true) is null);
+Check("A sole linked mouse becomes primary without a battery reading",
+    TransportLinks.SelectPrimary(null, new[] { linkUsbA }, false) == linkUsbA);
+Check("Linked primary remains stable when unrelated mouse arrives",
+    TransportLinks.SelectPrimary(linkUsbA, new[] { linkUsbB, linkUsbA }, true) == linkUsbA);
+Check("Hidden or unlinked primary yields to standalone mouse",
+    TransportLinks.SelectPrimary(linkUsbA, new[] { linkUsbB }, true) is null);
+Check("Hidden or unlinked primary selects remaining linked mouse",
+    TransportLinks.SelectPrimary(linkUsbA, new[] { linkUsbB }, false) == linkUsbB);
+Check("No visible links clears primary",
+    TransportLinks.SelectPrimary(linkUsbA, Array.Empty<string>(), false) is null);
+
+// Bounded in-memory diagnostic session; owner labels are not physical observations.
+var diagnosticSession = new DiagnosticSession();
+var diagnosticAt = DateTimeOffset.Parse("2026-11-25T07:00:00Z");
+Check("Inactive diagnostic session rejects capture",
+    !diagnosticSession.Add(DiagnosticMarker.Baseline, "first", diagnosticAt));
+diagnosticSession.Start();
+Check("Diagnostic session admits first explicit snapshot",
+    diagnosticSession.Add(DiagnosticMarker.Baseline, "first", diagnosticAt));
+Check("Diagnostic session rejects equal or reversed timestamps",
+    !diagnosticSession.Add(DiagnosticMarker.Wake, "second", diagnosticAt) &&
+    !diagnosticSession.Add(DiagnosticMarker.Wake, "second", diagnosticAt.AddSeconds(-1)));
+Check("Diagnostic session rejects invalid marker or oversized UTF8",
+    !diagnosticSession.Add((DiagnosticMarker)999, "second", diagnosticAt.AddSeconds(1)) &&
+    !diagnosticSession.Add(DiagnosticMarker.Other, new string('ї', 600000), diagnosticAt.AddSeconds(1)));
+Check("Diagnostic session admits reviewed report",
+    diagnosticSession.Add(DiagnosticMarker.ReviewedReport, "second", diagnosticAt.AddSeconds(1)));
+using (var archiveBytes = new MemoryStream())
+{
+    diagnosticSession.Export(archiveBytes);
+    archiveBytes.Position = 0;
+    using var archive = new System.IO.Compression.ZipArchive(archiveBytes);
+    using var reportReader = new StreamReader(archive.GetEntry("snapshot-01.txt")!.Open());
+    using var manifestReader = new StreamReader(archive.GetEntry("manifest.json")!.Open());
+    string manifest = manifestReader.ReadToEnd();
+    Check("Diagnostic session preserves separate texts and owner marker manifest",
+        archive.Entries.Count == 3 && reportReader.ReadToEnd() == "first" &&
+        manifest.Contains("OWNER_ANNOTATED") && manifest.Contains("NOT_VERIFIED") &&
+        manifest.Contains("ReviewedReport"));
+}
+for (int i = 2; i < DiagnosticSession.MaximumReports; i++)
+    diagnosticSession.Add(DiagnosticMarker.Other, "next", diagnosticAt.AddSeconds(i));
+Check("Diagnostic session bounds snapshot count",
+    diagnosticSession.Count == DiagnosticSession.MaximumReports &&
+    !diagnosticSession.Add(DiagnosticMarker.Other, "overflow", diagnosticAt.AddMinutes(2)));
+diagnosticSession.Clear();
+Check("Diagnostic session discard clears state", !diagnosticSession.Active && diagnosticSession.Count == 0);
+diagnosticSession.Start();
+string maximumReport = new string('x', DiagnosticSession.MaximumReportBytes);
+for (int i = 0; i < 8; i++)
+    diagnosticSession.Add(DiagnosticMarker.Other, maximumReport, diagnosticAt.AddSeconds(i));
+Check("Diagnostic session bounds cumulative UTF8 bytes",
+    diagnosticSession.Count == 8 &&
+    !diagnosticSession.Add(DiagnosticMarker.Other, "overflow", diagnosticAt.AddSeconds(8)));
+diagnosticSession.Clear();
+
 // Release checks are local, deterministic, and perform no HTTP requests.
 var installedVersion = ReleaseVersion.Parse("v0.3.0-beta.41")!;
 Check("Update accepts beta tag", installedVersion.Beta == 41);
@@ -1238,6 +1875,23 @@ Check("Release decoder rejects absent flags",
 Check("Release decoder rejects nonboolean flags",
     RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":"false","prerelease":false}]""")));
 Check("Release decoder rejects over-limit body", RejectReleaseJson(new byte[2 * 1024 * 1024 + 1]));
+Check("Release decoder rejects ambiguous duplicate known fields",
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":true,"draft":false,"prerelease":false}]""")) &&
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","tag_name":"v9.0.0","draft":false,"prerelease":false}]""")) &&
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":false,"prerelease":true,"prerelease":false}]""")));
+Check("Release decoder rejects duplicate additive fields and escaped equivalent name",
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":false,"prerelease":false,"id":1,"id":2}]""")) &&
+    RejectReleaseJson(ReleaseJson("""[{"tag_name":"v0.3.0","draft":true,"dr\u0061ft":false,"prerelease":false}]""")));
+Check("Release decoder rejects repeated supported release tags",
+    RejectReleaseJson(ReleaseJson("""
+        [{"tag_name":"v0.3.0","draft":true,"prerelease":false},
+         {"tag_name":"v0.3.0","draft":false,"prerelease":false}]
+        """)));
+Check("Release decoder accepts unique additive metadata without trusting its URL",
+    UpdateClient.Parse(ReleaseJson("""
+        [{"tag_name":"v0.3.0","draft":false,"prerelease":false,"id":1,"html_url":"https://example.invalid"}]
+        """), installedVersion, false)?.Page == UpdateClient.ReleasesPage + "/tag/v0.3.0");
+
 var ordinaryApexPlan = ApexProtocolMatrix.Build(65, false);
 Check("Ordinary APEX retains original two lengths and 30ms", ordinaryApexPlan.SequenceEqual(new[] { (65, 30), (67, 30) }));
 var fullApexPlan = ApexProtocolMatrix.Build(65, true);
@@ -1247,6 +1901,18 @@ Check("Distinct descriptor length first at each delay", ApexProtocolMatrix.Build
     ApexProtocolMatrix.Build(128, true)[3] == (128, 100));
 Check("Invalid descriptor sizes filtered", ApexProtocolMatrix.Build(257, true).SequenceEqual(fullApexPlan) &&
     ApexProtocolMatrix.Build(0, true).SequenceEqual(fullApexPlan));
+
+var comparisonPlan = ApexProtocolMatrix.CompareGetIds(65);
+Check("GET comparison uses 12 paired probes", comparisonPlan.Count == 12);
+Check("GET comparison uses only the existing lengths and delays",
+    comparisonPlan.Where(x => x.ReportId == 0x05)
+        .Select(x => (x.Length, x.DelayMs)).SequenceEqual(fullApexPlan));
+Check("GET comparison alternates 05 and 00 for each probe",
+    comparisonPlan.Chunk(2).All(pair => pair.Length == 2 &&
+        pair[0].ReportId == 0x05 && pair[1].ReportId == 0x00 &&
+        pair[0].Length == pair[1].Length && pair[0].DelayMs == pair[1].DelayMs));
+Check("GET comparison filters invalid descriptor lengths",
+    ApexProtocolMatrix.CompareGetIds(257).SequenceEqual(comparisonPlan));
 
 // Local verification uses synthetic files only; no network or executable launch.
 string verifyDirectory = Path.Combine(Path.GetTempPath(), "ajazz-verify-" + Guid.NewGuid().ToString("N"));
@@ -1455,6 +2121,15 @@ Check("API old fresh measurement demoted to stale", apiOld.Status == "stale" && 
 var apiCache = SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-2));
 Check("API cached data never current", apiCache.Status == "cached" && apiCache.BatteryPercent is null && apiCache.LastKnownPercent == 70);
 Check("API scheduled data never current", SnapshotRow(DeviceDashboardStatus.Scheduled, 70, snapshotNow).BatteryPercent is null);
+Check("API and tray share the scheduled retention ceiling",
+    DeviceDashboardState.MaximumScheduledAge == TimeSpan.FromMinutes(3) &&
+    ApexDisplayPolicy.ScheduledLifetime == DeviceDashboardState.MaximumScheduledAge);
+Check("API scheduled observation retained exactly through its deadline",
+    SnapshotRow(DeviceDashboardStatus.Scheduled, 71, snapshotNow.AddMinutes(-3)) is
+        { Status: "scheduled", BatteryPercent: null, LastKnownPercent: 71 });
+Check("API scheduled observation past deadline removes all numeric data",
+    SnapshotRow(DeviceDashboardStatus.Scheduled, 71, snapshotNow.AddMinutes(-3).AddTicks(-1)) is
+        { Status: "unavailable", BatteryPercent: null, LastKnownPercent: null, MeasuredAt: null });
 Check("API expired data unavailable", SnapshotRow(DeviceDashboardStatus.Cached, 70, snapshotNow.AddHours(-25)).LastKnownPercent is null);
 Check("API future measurement unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, snapshotNow.AddSeconds(1)).BatteryPercent is null);
 Check("API missing timestamp unavailable", SnapshotRow(DeviceDashboardStatus.Fresh, 50, null).BatteryPercent is null);
@@ -1489,6 +2164,15 @@ Check("Snapshot read automatically ages fresh value", agedSnapshot?.Devices[0].L
 Check("Snapshot read does not rewrite generation or measurement time",
     agedSnapshot?.GeneratedAt == snapshotNow && agedSnapshot.Devices[0].MeasuredAt == snapshotNow);
 Check("Snapshot read expires old values", snapshotStore.Read(snapshotNow.AddHours(25))?.Devices[0].LastKnownPercent is null);
+var scheduledStore = new LocalSnapshotStore();
+scheduledStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Scheduled, 71, snapshotNow) });
+Check("Snapshot read retains scheduled value at deadline without publishing again",
+    scheduledStore.Read(snapshotNow.AddMinutes(3))?.Devices[0] is
+        { Status: "scheduled", BatteryPercent: null, LastKnownPercent: 71 });
+Check("Snapshot read expires scheduled value without extending generation",
+    scheduledStore.Read(snapshotNow.AddMinutes(3).AddTicks(1)) is { } expiredScheduled &&
+    expiredScheduled.GeneratedAt == snapshotNow && expiredScheduled.Devices[0] is
+        { Status: "unavailable", BatteryPercent: null, LastKnownPercent: null, MeasuredAt: null });
 Check("Snapshot clock rollback unavailable", snapshotStore.Read(snapshotNow.AddSeconds(-1)) is null);
 bool invalidSnapshotPublish = false;
 try { snapshotStore.Publish(snapshotNow, new[] { SnapshotInput(DeviceDashboardStatus.Fresh, 1, snapshotNow, 0) }); }
@@ -1610,6 +2294,15 @@ try
     Check("History new sample written and retained", lazyHistory.ReadRecent().LastOrDefault()?.Percent == 69);
     lazyHistory.Record(historyNow.AddSeconds(1), 69, true);
     Check("History repeated sample does not append", File.ReadAllLines(lazyHistoryPath).Length == 3);
+    // Unknown enumeration is a history gap, including when the same level returns.
+    lazyHistory.Record(historyNow.AddSeconds(2), null, receiverPresent: true);
+    lazyHistory.Record(historyNow.AddSeconds(3), 69, receiverPresent: true);
+    var gapRows = File.ReadAllLines(lazyHistoryPath).Skip(1)
+        .Select(BatteryHistoryCsv.Parse).OfType<BatterySample>().ToArray();
+    Check("Unknown history gap contains no charge or disconnected state",
+        gapRows.Length == 4 && gapRows[2].Percent is null &&
+        gapRows[2].State == "unavailable" && gapRows[3].Percent == 69 &&
+        gapRows[3].State == "online");
 }
 finally { Directory.Delete(lazyHistoryDir, true); }
 
@@ -1785,6 +2478,25 @@ aulaLifecycle.Configure(true);
 Check("AULA lifecycle closed state cannot be re-enabled", !aulaLifecycle.Enabled);
 
 // AULA dashboard and optional API must classify real sleep/recovery consistently.
+// Simulate UI delivery after suspend or a blocked message loop; no hardware I/O.
+var delayedAula = new AulaBatteryState();
+var workerCompleted = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
+delayedAula.Observe(true, true, 42, workerCompleted);
+Check("AULA worker timestamp fresh at five-minute boundary",
+    delayedAula.IsFreshSample(42, workerCompleted, workerCompleted.AddMinutes(5)));
+Check("AULA delayed delivery cannot renew fresh alert eligibility",
+    !delayedAula.IsFreshSample(42, workerCompleted, workerCompleted.AddMinutes(5).AddTicks(1)) &&
+    !delayedAula.IsFreshSample(42, workerCompleted, workerCompleted.AddTicks(-1)) &&
+    !delayedAula.IsFreshSample(42, workerCompleted.AddMinutes(6), workerCompleted.AddMinutes(6)));
+var delayedAulaView = delayedAula.Dashboard("Keyboard", true, true, true, true,
+    42, workerCompleted, workerCompleted.AddHours(8));
+Check("AULA delayed delivery retains original cached timestamp",
+    delayedAulaView is { Status: DeviceDashboardStatus.Cached, Percent: 42 } &&
+    delayedAulaView.MeasuredAt == workerCompleted);
+Check("AULA delayed delivery beyond retention is unavailable",
+    delayedAula.Dashboard("Keyboard", true, true, true, true, 42, workerCompleted,
+        workerCompleted.AddHours(24)).Percent is null);
+
 var aulaSleep = new AulaBatteryState();
 DateTimeOffset sleepStart = DateTimeOffset.Parse("2026-11-22T12:00:00Z");
 DeviceDashboardState AulaSleepView(bool automatic, bool checkedOnce, bool known,
@@ -1798,6 +2510,27 @@ aulaSleep.Observe(true, true, 87, sleepStart);
 Check("AULA completed automatic poll is fresh, not scheduled",
     AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart) is
     { Status: DeviceDashboardStatus.Fresh, Percent: 87 });
+Check("AULA freshness includes exact five-minute boundary",
+    AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart.AddMinutes(5)) is
+    { Status: DeviceDashboardStatus.Fresh, Percent: 87 });
+var agedAula = AulaSleepView(true, true, true, true, 87, sleepStart,
+    sleepStart.AddMinutes(5).AddTicks(1));
+Check("AULA retained successful poll ages to cache without another HID reply",
+    agedAula is { Status: DeviceDashboardStatus.Cached, Percent: 87 } &&
+    agedAula.MeasuredAt == sleepStart);
+Check("AULA aged successful poll is not current API telemetry",
+    LocalBatterySnapshot.Create(sleepStart.AddMinutes(6),
+        new[] { new LocalBatterySnapshot.Input(LocalBatterySource.AulaReceiver, 1, agedAula) })
+        .Devices[0] is { Status: "cached", BatteryPercent: null, LastKnownPercent: 87 });
+Check("AULA retained reply cannot bypass 24-hour expiry",
+    AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart.AddHours(24)) is
+    { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("AULA retained reply cannot bypass clock rollback",
+    AulaSleepView(true, true, true, true, 87, sleepStart, sleepStart.AddTicks(-1)) is
+    { Status: DeviceDashboardStatus.NoReply, Percent: null });
+Check("AULA mismatched current sample is not fresh",
+    AulaSleepView(true, true, true, true, 88, sleepStart, sleepStart) is
+    { Status: DeviceDashboardStatus.Cached, Percent: 87 });
 Check("AULA explicit read while disabled is manual only",
     AulaSleepView(false, true, true, true, 87, sleepStart, sleepStart).Status == DeviceDashboardStatus.ManualReading);
 for (int n = 1; n <= 960; n++)
@@ -2357,6 +3090,9 @@ Check("BLE streaming selector honors conservative USB priority",
     bleSelection.TryBegin(true, true, multiAt.AddMinutes(5)) is null &&
     bleSelection.TryBegin(false, false, multiAt.AddMinutes(5)) is null);
 bleSelection.DisableAll();
+
+HistoryRecoveryTests.Run(Check);
+SafeLogTests.Run(Check);
 
 Console.WriteLine($"Summary: PASS={passed}, FAIL={failed}");
 return failed == 0 ? 0 : 1;

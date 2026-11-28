@@ -6,7 +6,7 @@ namespace AjazzBatteryTray;
 /// <summary>Selectable diagnostic report with local copy/save, no network operations.</summary>
 internal sealed class DiagnosticReportForm : Form
 {
-    public DiagnosticReportForm(string report)
+    public DiagnosticReportForm(string report, Action? addToSession = null)
     {
         Text = UiText.Get("Extended device diagnostics");
         ClientSize = new Size(840, 560);
@@ -30,6 +30,16 @@ internal sealed class DiagnosticReportForm : Form
         Button close = new() { Text = UiText.Get("Close"), AutoSize = true };
         close.Click += (_, _) => Close();
         buttons.Controls.AddRange(new Control[] { copy, save, close });
+        if (addToSession is not null)
+        {
+            Button add = new() { Text = UiText.Get("Add report to diagnostic session"), AutoSize = true };
+            add.Click += (_, _) =>
+            {
+                add.Enabled = false;
+                addToSession();
+            };
+            buttons.Controls.Add(add);
+        }
         Controls.Add(content);
         Controls.Add(buttons);
     }

@@ -9,21 +9,26 @@ internal sealed class DeviceDashboardForm : Form
     internal sealed record Entry(DeviceDashboardState State, Action? ShowHistory = null,
         string? Key = null, Action? EditName = null, bool? TrayVisible = null,
         Action? ToggleTray = null, Action? EditColor = null, Action? EditAlerts = null,
-        Action? EditInterval = null);
+        Action? EditInterval = null, int? UnverifiedPercent = null);
 
     private readonly DataGridView _grid = new();
     private readonly Button _refresh = new();
     private readonly Button _history = new();
-    private readonly Button _rename = new();
-    private readonly Button _visibility = new();
-    private readonly Button _color = new();
-    private readonly Button _alerts = new();
-    private readonly Button _interval = new();
+    private readonly Button _settings = new();
     private readonly Button _diagnostics = new();
-    private readonly Button _telemetry = new();
+    private readonly ContextMenuStrip _deviceMenu = new();
+    private readonly ContextMenuStrip _diagnosticMenu = new();
+    private readonly ToolStripMenuItem _rename = new();
+    private readonly ToolStripMenuItem _visibility = new();
+    private readonly ToolStripMenuItem _color = new();
+    private readonly ToolStripMenuItem _alerts = new();
+    private readonly ToolStripMenuItem _interval = new();
+    private readonly ToolStripMenuItem _report = new();
+    private readonly ToolStripMenuItem _telemetry = new();
     private readonly Button _close = new();
     private readonly Label _detail = new();
     private readonly Label _note = new();
+    private bool _updatingRows;
 
     internal DeviceDashboardForm(Action refresh, Action diagnostics, Action telemetry)
     {
@@ -32,7 +37,11 @@ internal sealed class DeviceDashboardForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         BuildLayout();
         _refresh.Click += (_, _) => refresh();
-        _diagnostics.Click += (_, _) => diagnostics();
+        _deviceMenu.Items.AddRange(new ToolStripItem[] { _rename, _visibility, _color, _alerts, _interval });
+        _diagnosticMenu.Items.AddRange(new ToolStripItem[] { _report, _telemetry });
+        AttachMenu(_settings, _deviceMenu);
+        AttachMenu(_diagnostics, _diagnosticMenu);
+        _report.Click += (_, _) => diagnostics();
         _telemetry.Click += (_, _) => telemetry();
         _history.Click += (_, _) => CurrentEntry()?.ShowHistory?.Invoke();
         _rename.Click += (_, _) => CurrentEntry()?.EditName?.Invoke();
@@ -41,12 +50,36 @@ internal sealed class DeviceDashboardForm : Form
         _alerts.Click += (_, _) => CurrentEntry()?.EditAlerts?.Invoke();
         _interval.Click += (_, _) => CurrentEntry()?.EditInterval?.Invoke();
         _close.Click += (_, _) => Close();
+        CancelButton = _close;
         _grid.SelectionChanged += (_, _) => UpdateSelection();
         _grid.CellDoubleClick += (_, e) =>
         {
             if (e.RowIndex >= 0) CurrentEntry()?.ShowHistory?.Invoke();
         };
         ApplyLanguage();
+    }
+
+    private static void AttachMenu(Button button, ContextMenuStrip menu)
+    {
+        button.ContextMenuStrip = menu;
+        button.AccessibleRole = AccessibleRole.ButtonDropDown;
+        button.Click += (_, _) => menu.Show(button, new Point(0, button.Height));
+        button.KeyDown += (_, e) =>
+        {
+            if (e.KeyCode != Keys.Down) return;
+            e.SuppressKeyPress = true;
+            button.PerformClick();
+        };
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _deviceMenu.Dispose();
+            _diagnosticMenu.Dispose();
+        }
+        base.Dispose(disposing);
     }
 
     private void BuildLayout()
@@ -64,13 +97,15 @@ internal sealed class DeviceDashboardForm : Form
         _detail.AutoSize = true;
         _detail.Margin = new Padding(3, 10, 3, 6);
         ConfigureGrid();
+        _grid.TabIndex = 0;
         FlowLayoutPanel actions = new()
         {
-            Dock = DockStyle.Fill, AutoSize = true, WrapContents = true
+            Dock = DockStyle.Fill, AutoSize = true, WrapContents = true, TabIndex = 1
         };
-        foreach (Button button in new[] { _refresh, _history, _rename, _visibility, _color, _alerts, _interval, _diagnostics, _telemetry, _close })
+        foreach (Button button in new[] { _refresh, _history, _settings, _diagnostics, _close })
         {
             button.AutoSize = true;
+            button.TabIndex = actions.Controls.Count;
             button.Padding = new Padding(6, 3, 6, 3);
             actions.Controls.Add(button);
         }
@@ -115,7 +150,9 @@ internal sealed class DeviceDashboardForm : Form
         _color.Text = UiText.Get("Tray icon color...");
         _alerts.Text = UiText.Get("Device notifications...");
         _interval.Text = UiText.Get("Device polling interval...");
-        _diagnostics.Text = UiText.Get("Extended device diagnostics...");
+        _settings.Text = UiText.Get("Device settings") + " ▾";
+        _diagnostics.Text = UiText.Get("Diagnostics") + " ▾";
+        _report.Text = UiText.Get("Collect full diagnostics...");
         _telemetry.Text = UiText.Get("System telemetry preview...");
         _close.Text = UiText.Get("Close");
         foreach (DataGridViewColumn column in _grid.Columns)
@@ -123,9 +160,30 @@ internal sealed class DeviceDashboardForm : Form
         UpdateSelection();
     }
 
-    internal void SetEntries(IReadOnlyList<Entry> entries)
+    // Timer-only refresh: keep row widgets when presentation is unchanged.
+    private bool RefreshUnchangedEntries(IReadOnlyList<Entry> entries)
     {
+        if (_grid.Rows.Count != entries.Count) return false;
+        for (int i = 0; i < entries.Count; i++)
+        {
+            Entry next = entries[i];
+            if (_grid.Rows[i].Tag is not Entry old || old.Key != next.Key ||
+                old.State != next.State || old.TrayVisible != next.TrayVisible ||
+                old.UnverifiedPercent != next.UnverifiedPercent)
+                return false;
+        }
+        // Retain the widgets, but update the action targets.
+        for (int i = 0; i < entries.Count; i++)
+            _grid.Rows[i].Tag = entries[i];
+        UpdateSelection();
+        return true;
+    }
+
+    internal void SetEntries(IReadOnlyList<Entry> entries, bool skipUnchanged = false)
+    {
+        if (skipUnchanged && RefreshUnchangedEntries(entries)) return;
         Entry? previous = CurrentEntry();
+        _updatingRows = true;
         _grid.SuspendLayout();
         try
         {
@@ -135,45 +193,46 @@ internal sealed class DeviceDashboardForm : Form
             {
                 var state = entry.State;
                 int row = _grid.Rows.Add(state.Name, state.Transport,
-                    StatusText(state.Status), FormatBattery(state),
+                    EntryStatus(entry), FormatBattery(entry),
                     entry.TrayVisible is bool visible ? UiText.Get(visible ? "Allowed" : "Hidden") : "—",
                     state.MeasuredAt?.ToLocalTime().ToString("g") ?? "—");
                 _grid.Rows[row].Tag = entry;
+                _grid.Rows[row].Cells["Battery"].ToolTipText = HasUnverifiedField(entry)
+                    ? UsbTrayStatus.UnverifiedField(entry.UnverifiedPercent!.Value)
+                    : FormatBattery(entry);
                 if (previous is not null && (previous.Key is not null
                     ? previous.Key == entry.Key
                     : entry.Key is null && previous.State.Name == state.Name &&
                       previous.State.Transport == state.Transport)) selected = row;
             }
+            if (selected < 0 && _deviceMenu.Visible) _deviceMenu.Close();
             if (selected >= 0) _grid.CurrentCell = _grid.Rows[selected].Cells[0];
         }
-        finally { _grid.ResumeLayout(); }
+        finally
+        {
+            _grid.ResumeLayout();
+            _updatingRows = false;
+        }
         UpdateSelection();
     }
 
-    private static string FormatBattery(DeviceDashboardState state)
-        => state.Percent is int level
-            ? $"{level}%" + (state.Status == DeviceDashboardStatus.Cached ? "*" : "")
-            : "—";
+    private static bool HasUnverifiedField(Entry entry)
+        => entry.State.Status == DeviceDashboardStatus.NoReply &&
+            entry.State.Percent is null && entry.UnverifiedPercent is >= 1 and <= 100;
 
-    private static string StatusText(DeviceDashboardStatus status) => UiText.Get(status switch
-    {
-        DeviceDashboardStatus.NotChecked => "Not checked",
-        DeviceDashboardStatus.Disabled => "Monitoring disabled",
-        DeviceDashboardStatus.Standby => "Standby (USB priority)",
-        DeviceDashboardStatus.PresenceUnknown => "Receiver status unknown",
-        DeviceDashboardStatus.Disconnected => "Disconnected",
-        DeviceDashboardStatus.NoReply => "No valid reply",
-        DeviceDashboardStatus.Fresh => "Fresh reading",
-        DeviceDashboardStatus.ManualReading => "Manual reading",
-        DeviceDashboardStatus.Cached => "Cached reading",
-        DeviceDashboardStatus.Scheduled => "Last scheduled reading",
-        _ => "unavailable"
-    });
+    private static string EntryStatus(Entry entry)
+        => HasUnverifiedField(entry) ? UiText.Get("Unverified charge field") : entry.State.StatusText();
+
+    private static string FormatBattery(Entry entry)
+        => entry.State.Percent is int level
+            ? $"{level}%" + (entry.State.Status == DeviceDashboardStatus.Cached ? "*" : "")
+            : HasUnverifiedField(entry) ? $"{entry.UnverifiedPercent}?" : "—";
 
     private Entry? CurrentEntry() => _grid.CurrentRow?.Tag as Entry;
 
     private void UpdateSelection()
     {
+        if (_updatingRows) return;
         Entry? entry = CurrentEntry();
         _history.Enabled = entry?.ShowHistory is not null;
         _rename.Enabled = entry?.EditName is not null;
@@ -181,8 +240,10 @@ internal sealed class DeviceDashboardForm : Form
         _color.Enabled = entry?.EditColor is not null;
         _alerts.Enabled = entry?.EditAlerts is not null;
         _interval.Enabled = entry?.EditInterval is not null;
+        _settings.Enabled = _rename.Enabled || _visibility.Enabled || _color.Enabled ||
+            _alerts.Enabled || _interval.Enabled;
         _visibility.Text = UiText.Get(entry?.TrayVisible == true ? "Hide device in tray" : "Show device in tray");
         _detail.Text = entry is null ? UiText.Get("No device readings yet") :
-            $"{entry.State.Name} — {StatusText(entry.State.Status)}";
+            $"{entry.State.Name} — {EntryStatus(entry)}";
     }
 }

@@ -5,6 +5,17 @@ public static class UiText
 {
     private static readonly Dictionary<string, (string Ru, string Uk)> Messages = new()
     {
+        ["No charge readings in this period"] = ("За этот период нет измерений заряда", "За цей період немає вимірювань заряду"),
+        ["Capturing HID report (up to {0} s)…"] = ("Сбор отчёта HID (до {0} с)…", "Збирання звіту HID (до {0} с)…"),
+        ["HID capture timed out. No battery reading was verified."] = ("Время сбора отчёта HID истекло. Получить достоверный заряд не удалось.", "Час збирання звіту HID вичерпано. Отримати достовірний рівень заряду не вдалося."),
+        ["HID read timed out"] = ("Тайм-аут чтения HID", "Час очікування читання HID вичерпано"),
+        ["HID interface busy"] = ("HID-интерфейс занят", "HID-інтерфейс зайнятий"),
+        ["HID interface unavailable"] = ("HID-интерфейс недоступен", "HID-інтерфейс недоступний"),
+        ["Receiver disconnected"] = ("Приёмник отключён", "Приймач відключено"),
+        ["Receiver present, no fresh charge"] = ("Приёмник подключён, свежих данных нет", "Приймач підключено, свіжих даних немає"),
+        ["{0}% (unverified)"] = ("{0}% (не подтверждено)", "{0}% (не підтверджено)"),
+        ["Last verified {0}"] = ("Последний замер {0}", "Останній вимір {0}"),
+        ["Device settings"] = ("Настройки устройства", "Налаштування пристрою"),
         ["Device Manager"] = ("Управление устройствами", "Керування пристроями"),
         ["Live monitor — existing readings only; cached values are marked."] = ("Мониторинг устройств — только полученные данные; кэш отмечен звёздочкой.", "Моніторинг пристроїв — лише отримані дані; кеш позначено зірочкою."),
         ["Device"] = ("Устройство", "Пристрій"),
@@ -18,6 +29,7 @@ public static class UiText
         ["Receiver status unknown"] = ("Статус приёмника неизвестен", "Стан приймача невідомий"),
         ["Disconnected"] = ("Отключено", "Відключено"),
         ["No valid reply"] = ("Нет корректного ответа", "Немає коректної відповіді"),
+        ["Unverified charge field"] = ("Не подтверждено", "Не підтверджено"),
         ["Manual reading"] = ("Результат ручного запроса", "Результат ручного запиту"),
         ["Fresh reading"] = ("Свежие данные", "Свіжі дані"),
         ["Cached reading"] = ("Последние известные данные", "Останні відомі дані"),
@@ -47,7 +59,18 @@ public static class UiText
         ["Unable to save device preference."] = ("Не удалось сохранить настройку устройства.", "Не вдалося зберегти налаштування пристрою."),
         ["Tray icon color..."] = ("Цвет иконки в трее...", "Колір значка в треї..."),
         ["Warning and cached colors are unchanged."] = ("Цвета предупреждений и кэша не изменяются.", "Кольори попереджень і кешу не змінюються."),
-        ["Tray color green"] = ("Зелёный (по умолчанию)", "Зелений (за замовчуванням)"),
+        ["Tray color green"] = ("Зелёный", "Зелений"),
+        ["Tray color orange"] = ("Оранжевый", "Помаранчевий"),
+        ["Tray color white"] = ("Белый", "Білий"),
+        ["Tray color black"] = ("Чёрный", "Чорний"),
+        ["Tray color inherit"] = ("Общий цвет", "Загальний колір"),
+        ["Application icon"] = ("Иконка приложения", "Значок застосунку"),
+        ["Save selected icon..."] = ("Сохранить выбранную иконку...", "Зберегти вибраний значок..."),
+        ["Cannot save icon. Choose a new writable file."] =
+            ("Не удалось сохранить иконку. Выберите новый доступный для записи файл.",
+             "Не вдалося зберегти значок. Виберіть новий доступний для запису файл."),
+        ["Default tray color"] = ("Общий цвет трея", "Загальний колір трею"),
+        ["Mouse-shaped tray icon"] = ("Значок мыши в трее", "Значок миші в треї"),
         ["Tray color blue"] = ("Синий", "Синій"),
         ["Tray color purple"] = ("Фиолетовый", "Фіолетовий"),
         ["Tray color teal"] = ("Бирюзовый", "Бірюзовий"),
@@ -58,10 +81,27 @@ public static class UiText
         ["Refresh now"] = ("Обновить сейчас", "Оновити зараз"),
         ["AJAZZ receivers"] = ("Приёмники AJAZZ", "Приймачі AJAZZ"),
         ["Legacy battery history..."] = ("Старая история заряда...", "Стара історія заряду..."),
+        ["Show unverified USB charge (experimental)"] =
+            ("Показывать неподтверждённый заряд USB (экспериментально)",
+             "Показувати непідтверджений заряд USB (експериментально)"),
+        ["Unverified USB values may be stale or inaccurate. Show them with a question mark?"] =
+            ("Неподтверждённые значения USB могут быть устаревшими или неточными. Показывать их со знаком вопроса?",
+             "Непідтверджені значення USB можуть бути застарілими або неточними. Показувати їх зі знаком питання?"),
         ["Separate tray icons"] = ("Отдельные иконки в трее", "Окремі значки в треї"),
         ["Battery history..."] = ("История заряда...", "Історія заряду..."),
         ["Check paired Bluetooth battery..."] = ("Проверить батарею Bluetooth...", "Перевірити батарею Bluetooth..."),
         ["Bluetooth"] = ("Bluetooth", "Bluetooth"),
+        ["Enable selected BLE monitor (remember on this PC)"] = ("Включить мониторинг BLE (запомнить на этом ПК)", "Увімкнути моніторинг BLE (запам’ятати на цьому ПК)"),
+        ["Bluetooth monitor saved on this PC; independent of USB."] = ("Мониторинг Bluetooth сохранён на этом ПК независимо от USB.", "Моніторинг Bluetooth збережено на цьому ПК незалежно від USB."),
+        ["Unable to enable or save Bluetooth monitoring."] = ("Не удалось включить или сохранить мониторинг Bluetooth.", "Не вдалося увімкнути або зберегти моніторинг Bluetooth."),
+        ["Waiting for saved Bluetooth devices"] = ("Ожидание сохранённых Bluetooth-устройств", "Очікування збережених Bluetooth-пристроїв"),
+        ["Saved BLE device #{0} (not found)"] = ("Сохранённое BLE-устройство №{0} (не найдено)", "Збережений BLE-пристрій №{0} (не знайдено)"),
+        ["Bluetooth monitoring stopped; settings could not be saved. It may resume after restart."] = ("Мониторинг Bluetooth остановлен, но настройки не сохранены. После перезапуска он может возобновиться.", "Моніторинг Bluetooth зупинено, але налаштування не збережено. Після перезапуску він може відновитися."),
+        ["Link to USB receiver..."] = ("Связать с USB-приёмником...", "Пов’язати з USB-приймачем..."),
+        ["Unlink USB receiver"] = ("Отвязать USB-приёмник", "Відв’язати USB-приймач"),
+        ["Link {0} to this USB receiver only if both belong to the same physical mouse. Continue?"] = ("Свяжите {0} с этим USB-приёмником только если они относятся к одной физической мыши. Продолжить?", "Пов’яжіть {0} з цим USB-приймачем лише якщо вони належать одній фізичній миші. Продовжити?"),
+        ["Disable Bluetooth monitors"] = ("Отключить мониторинг Bluetooth", "Вимкнути моніторинг Bluetooth"),
+        ["Bluetooth monitor enabled for this session; independent of USB."] = ("Мониторинг Bluetooth включён на сеанс независимо от USB.", "Моніторинг Bluetooth увімкнено на сеанс незалежно від USB."),
         ["Bluetooth fallback: off"] = ("Bluetooth: отключён", "Bluetooth: вимкнено"),
         ["Bluetooth fallback: standby (USB primary)"] = ("Bluetooth: ожидание (приоритет USB)", "Bluetooth: очікування (пріоритет USB)"),
         ["Bluetooth fallback: checking battery..."] = ("Bluetooth: проверка заряда...", "Bluetooth: перевірка заряду..."),
@@ -257,6 +297,8 @@ public static class UiText
             ("Заряд клавиатуры {0}%; ниже {1}%.",
              "Заряд клавіатури {0}%; нижче {1}%."),
         ["AJAZZ APEX — Battery history"] = ("AJAZZ APEX — История заряда", "AJAZZ APEX — Історія заряду"),
+        ["Unable to read battery history"] =
+            ("Не удалось прочитать историю заряда", "Не вдалося прочитати історію заряду"),
         ["No observations yet. History is saved locally."] =
             ("Пока нет измерений. История хранится локально.", "Вимірювань ще немає. Історія зберігається локально."),
         ["No battery observations yet"] = ("Пока нет измерений заряда", "Вимірювань заряду ще немає"),
@@ -271,6 +313,26 @@ public static class UiText
         ["Show all paired Bluetooth devices (if mouse name is different)"] =
             ("Показать все сопряжённые устройства Bluetooth", "Показати всі спарені пристрої Bluetooth"),
         ["Copy lookup summary"] = ("Копировать результат поиска", "Копіювати результат пошуку"),
+        ["Diagnostic session"] = ("Сеанс диагностики", "Сеанс діагностики"),
+        ["Snapshots: {0}/{1}"] = ("Снимки: {0}/{1}", "Знімки: {0}/{1}"),
+        ["Start diagnostic session"] = ("Начать сеанс диагностики", "Почати сеанс діагностики"),
+        ["Capture baseline"] = ("Снять исходное состояние", "Зняти початковий стан"),
+        ["Mark 2.4 GHz selected"] = ("Отметить выбор 2,4 ГГц", "Позначити вибір 2,4 ГГц"),
+        ["Mark Bluetooth selected"] = ("Отметить выбор Bluetooth", "Позначити вибір Bluetooth"),
+        ["Mark sleep"] = ("Отметить сон", "Позначити сон"),
+        ["Mark wake"] = ("Отметить пробуждение", "Позначити пробудження"),
+        ["Capture another snapshot"] = ("Снять ещё один снимок", "Зняти ще один знімок"),
+        ["Save diagnostic session..."] = ("Сохранить сеанс диагностики...", "Зберегти сеанс діагностики..."),
+        ["Discard diagnostic session"] = ("Удалить сеанс диагностики", "Видалити сеанс діагностики"),
+        ["Discard all session snapshots?"] = ("Удалить все снимки сеанса?", "Видалити всі знімки сеансу?"),
+        ["Snapshot added ({0})."] = ("Снимок добавлен ({0}).", "Знімок додано ({0})."),
+        ["Snapshot not added: session inactive, full or clock changed."] = ("Снимок не добавлен: сеанс неактивен, заполнен или изменилось время.", "Знімок не додано: сеанс неактивний, заповнений або змінився час."),
+        ["Session may contain raw vendor buffers. Save locally and review before sharing?"] = ("Сеанс может содержать исходные буферы. Сохранить локально и проверить перед отправкой?", "Сеанс може містити вихідні буфери. Зберегти локально й перевірити перед надсиланням?"),
+        ["Add report to diagnostic session"] = ("Добавить отчёт в сеанс", "Додати звіт до сеансу"),
+        ["Collect full diagnostics..."] = ("Собрать полную диагностику...", "Зібрати повну діагностику..."),
+        ["Collect full diagnostics? Yes includes raw vendor buffers; close the official utility first. No collects existing monitoring data only. Review before sharing."] =
+            ("Собрать полную диагностику? Да — с сырыми буферами; сначала закройте официальную утилиту. Нет — только имеющиеся данные мониторинга. Проверьте отчёт перед отправкой.",
+             "Зібрати повну діагностику? Так — із сирими буферами; спочатку закрийте офіційну утиліту. Ні — лише наявні дані моніторингу. Перевірте звіт перед надсиланням."),
         ["Find paired Bluetooth devices"] = ("Найти устройства Bluetooth", "Знайти пристрої Bluetooth"),
         ["Read selected battery"] = ("Прочитать заряд", "Зчитати заряд"),
         ["Use this mouse in tray when 2.4 GHz receiver is absent (this session)"] =
@@ -329,6 +391,12 @@ public static class UiText
 
     public static string Get(string english)
     {
+        if (Language == "en" && english.StartsWith("Tray color ", StringComparison.Ordinal))
+        {
+            string color = english["Tray color ".Length..];
+            if (color == "inherit") return "Global color";
+            if (color.Length > 0) return char.ToUpperInvariant(color[0]) + color[1..];
+        }
         if (!Messages.TryGetValue(english, out var translated)) return english;
         return Language switch
         {

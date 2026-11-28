@@ -5,11 +5,21 @@ on:
     branches: [main]
     paths:
       - 'tools/**'
-      - '.github/workflows/test-tools.yml'
+      - 'config/code-audit-baseline.json'
+      - 'config/ci-actions-lock.json'
+      - 'global.json'
+      - '.github/workflows/**'
+      - 'tests/fixtures/**'
+      - 'macos/AjazzBatteryReport.h'
   pull_request:
     paths:
       - 'tools/**'
-      - '.github/workflows/test-tools.yml'
+      - 'config/code-audit-baseline.json'
+      - 'config/ci-actions-lock.json'
+      - 'global.json'
+      - '.github/workflows/**'
+      - 'tests/fixtures/**'
+      - 'macos/AjazzBatteryReport.h'
   workflow_dispatch:
 
 permissions:
@@ -18,15 +28,208 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      a-id: ${{ steps.upload-a.outputs.artifact-id }}
+      b-id: ${{ steps.upload-b.outputs.artifact-id }}
+      a-digest: ${{ steps.upload-a.outputs.artifact-digest }}
+      b-digest: ${{ steps.upload-b.outputs.artifact-digest }}
+      qa-id: ${{ steps.upload-qa.outputs.artifact-id }}
+      qa-digest: ${{ steps.upload-qa.outputs.artifact-digest }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: '3.12'
-      - name: Run offline regressions
-        run: python -m unittest discover -s tools -p 'test_*.py' -v
-      - name: Validate help
+          python-version: '3.12.16'
+      - name: Run provider-independent offline QA
         run: |
-          python tools/compare_tray_resources.py --help
-          python tools/analyze_aula_sleep.py --help
-          python tools/compare_windows_hid_logs.py --help
+          openssl version
+          python tools/run_offline_qa.py
+      - name: Preserve sanitized required QA evidence
+        id: upload-qa
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: offline-python-qa
+          path: artifacts/offline-qa-*/*
+          if-no-files-found: error
+      - name: Report bounded source audit failures
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/code_audit.py --baseline config/code-audit-baseline.json
+      - name: Verify exact offline case and command coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs=(artifacts/offline-qa-*)
+          test "${#runs[@]}" -eq 1
+          test -d "${runs[0]}"
+          python tools/export_offline_qa_catalog.py --verify-run "${runs[0]}" --output "$RUNNER_TEMP/ajazz-offline-coverage.json"
+          jq -e '.coverage == "MATCH" and .reported_status == "PASS"' "$RUNNER_TEMP/ajazz-offline-coverage.json"
+      - name: Preserve scoped coverage review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: offline-qa-coverage
+          path: ${{ runner.temp }}/ajazz-offline-coverage.json
+          if-no-files-found: error
+      - name: Prepare synthetic artifact roundtrip
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/ajazz-ci-roundtrip"
+          printf '%s\n' 'ajazz-synthetic-a' > "$RUNNER_TEMP/ajazz-ci-roundtrip/a.txt"
+          printf '%s\n' 'ajazz-synthetic-b' > "$RUNNER_TEMP/ajazz-ci-roundtrip/b.txt"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: upload-a
+        with:
+          archive: true
+          name: ci-roundtrip-a
+          path: ${{ runner.temp }}/ajazz-ci-roundtrip/a.txt
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: upload-b
+        with:
+          archive: true
+          name: ci-roundtrip-b
+          path: ${{ runner.temp }}/ajazz-ci-roundtrip/b.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  artifact-roundtrip:
+    needs: python
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Wait for both exact uploaded artifacts in REST listing
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          A_ID: ${{ needs.python.outputs.a-id }}
+          B_ID: ${{ needs.python.outputs.b-id }}
+          A_DIGEST: ${{ needs.python.outputs.a-digest }}
+          B_DIGEST: ${{ needs.python.outputs.b-digest }}
+        run: |
+          set -euo pipefail
+          [[ "$A_ID" =~ ^[1-9][0-9]*$ && "$B_ID" =~ ^[1-9][0-9]*$ && "$A_ID" != "$B_ID" ]]
+          [[ "$A_DIGEST" =~ ^[a-f0-9]{64}$ && "$B_DIGEST" =~ ^[a-f0-9]{64}$ ]]
+          # Only missing metadata may be retried. Wrong identity/digest is fatal.
+          for attempt in {1..12}; do
+            listing="$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100")"
+            for suffix in a b; do
+              if [[ "$suffix" == a ]]; then id="$A_ID"; digest="$A_DIGEST"; else id="$B_ID"; digest="$B_DIGEST"; fi
+              count="$(jq --arg id "$id" '[.artifacts[] | select((.id | tostring) == $id)] | length' <<< "$listing")"
+              if [[ "$count" == 0 ]]; then continue; fi
+              [[ "$count" == 1 ]]
+              jq -e --arg id "$id" --arg name "ci-roundtrip-$suffix" --arg digest "sha256:$digest" '.artifacts[] | select((.id | tostring) == $id) | .name == $name and .digest == $digest and .expired == false' <<< "$listing" >/dev/null
+            done
+            if jq -e --arg a "$A_ID" --arg b "$B_ID" '([.artifacts[].id | tostring] | index($a) != null and index($b) != null)' <<< "$listing" >/dev/null; then
+              echo 'PASS: exact uploaded artifact identities and digests visible'
+              break
+            fi
+            if [[ "$attempt" == 12 ]]; then echo 'Missing expected artifact metadata'; exit 1; fi
+            sleep 5
+          done
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          digest-mismatch: error
+          github-token: ${{ github.token }}
+          artifact-ids: ${{ needs.python.outputs.a-id }},${{ needs.python.outputs.b-id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/ajazz-ci-roundtrip-download
+      - name: Verify synthetic artifact roundtrip
+        shell: bash
+        run: |
+          set -euo pipefail
+          downloaded="$RUNNER_TEMP/ajazz-ci-roundtrip-download"
+          test "$(find "$downloaded" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)" = "$(printf 'a.txt\nb.txt\n')"
+          printf '%s\n' 'ajazz-synthetic-a' | cmp - "$downloaded/a.txt"
+          printf '%s\n' 'ajazz-synthetic-b' | cmp - "$downloaded/b.txt"
+          echo 'PASS: synthetic merged artifact roundtrip'
+      - name: Verify real QA artifact identity
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QA_ID: ${{ needs.python.outputs.qa-id }}
+          QA_DIGEST: ${{ needs.python.outputs.qa-digest }}
+        run: |
+          set -euo pipefail
+          [[ "$QA_ID" =~ ^[1-9][0-9]*$ && "$QA_DIGEST" =~ ^[a-f0-9]{64}$ ]]
+          gh api --method GET "repos/$GITHUB_REPOSITORY/actions/artifacts/$QA_ID" |
+            jq -e --arg id "$QA_ID" --arg digest "sha256:$QA_DIGEST" --arg run "$GITHUB_RUN_ID" '
+              (.id | tostring) == $id and .name == "offline-python-qa" and
+              .digest == $digest and .expired == false and
+              (.workflow_run.id | tostring) == $run' >/dev/null
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12.16'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          digest-mismatch: error
+          github-token: ${{ github.token }}
+          artifact-ids: ${{ needs.python.outputs.qa-id }}
+          path: ${{ runner.temp }}/ajazz-real-qa-download
+      - name: Verify downloaded real offline QA inventory and source coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          downloaded="$RUNNER_TEMP/ajazz-real-qa-download"
+          # Accept the flat upload or one run-directory wrapper only.
+          if [[ -f "$downloaded/manifest.json" ]]; then
+            run="$downloaded"
+          else
+            shopt -s nullglob dotglob
+            entries=("$downloaded"/*)
+            test "${#entries[@]}" -eq 1
+            run="${entries[0]}"
+            test -d "$run" && test ! -L "$run"
+            [[ "${run##*/}" == offline-qa-* || "${run##*/}" == offline-python-qa ]]
+          fi
+          python tools/run_offline_qa.py --verify "$run"
+          python tools/export_offline_qa_catalog.py --verify-run "$run" --output "$RUNNER_TEMP/ajazz-downloaded-coverage.json"
+          jq -e '.coverage == "MATCH" and .reported_status == "PASS" and .authentication == "NOT_VERIFIED" and .hardware == "NOT_RUN"' "$RUNNER_TEMP/ajazz-downloaded-coverage.json"
+          echo 'PASS: downloaded real offline QA evidence and exact source coverage'
+      - name: Retain downloaded QA coverage observation
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: offline-qa-downloaded-coverage
+          path: ${{ runner.temp }}/ajazz-downloaded-coverage.json
+          if-no-files-found: error
+
+  windows-acl-observation:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13.17'
+      - name: Parse Windows ACL fixture before execution
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $path = (Resolve-Path './tests/fixtures/windows-qa-acl-observation.ps1').Path
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'ACL fixture syntax invalid' }
+          Write-Output 'PASS: Windows ACL fixture syntax'
+      - name: Observe synthetic QA evidence DACLs
+        shell: pwsh
+        run: |
+          ./tests/fixtures/windows-qa-acl-observation.ps1 -Output "$env:RUNNER_TEMP/ajazz-qa-acl-observation.json"
+      - name: Retain aggregate Windows ACL observation
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: true
+          name: windows-qa-acl-observation
+          path: ${{ runner.temp }}/ajazz-qa-acl-observation.json
+          if-no-files-found: error
