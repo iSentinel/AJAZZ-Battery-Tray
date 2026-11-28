@@ -3374,3 +3374,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       HA 21 targeted tests; real roundtrip 140829455636.
 - [ ] Integrated-base CI and scoped Windows ACL observation;
       recovery and release admission remain separate.
+
+### ENG-16 native Windows DACL observation
+
+- [x] Add a Windows-hosted synthetic fixture using actual QA directory
+      creation, manifest publication and verification.
+- [x] Observe DACL protection, canonicality, owner equality, inherited
+      rules and broad allow/read/write counts on seven entries.
+      Separate disposable positive control for an explicit Everyone
+      read ACE. Retain sanitized aggregate only.
+- [ ] Hosted CI and review observed counts after #346 integration.
+      Effective access, real user ACLs, and crash recovery remain open.
+      No release admission.
