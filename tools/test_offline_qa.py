@@ -3,6 +3,8 @@
 from collections.abc import Iterator
 import json
 import stat
+import subprocess
+import sys
 from types import SimpleNamespace
 from typing import TextIO
 from pathlib import Path
@@ -110,6 +112,51 @@ class OfflineQaTests(unittest.TestCase):
                        side_effect=[before, after]):
                 with self.assertRaisesRegex(ValueError, "root changed"):
                     create_run(root)
+
+    def test_interrupted_manifest_publication(self) -> None:
+        """A killed producer must leave refused evidence and allow a fresh run."""
+        script = """
+import os
+from pathlib import Path
+import sys
+from unittest.mock import patch
+from run_offline_qa import publish_manifest
+real_link = os.link
+
+def interrupt(source, destination):
+    if sys.argv[2] == "after":
+        real_link(source, destination)
+    os._exit(73)
+
+with patch("run_offline_qa.os.link", side_effect=interrupt):
+    publish_manifest(Path(sys.argv[1]))
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for stage in ("before", "after"):
+                with self.subTest(stage=stage):
+                    run = create_run(root)
+                    for name in REQUIRED:
+                        (run / name).write_bytes(b"synthetic")
+                    result = subprocess.run(
+                        [sys.executable, "-c", script, str(run), stage],
+                        cwd=Path(__file__).resolve().parent,
+                        capture_output=True, timeout=15, check=False)
+                    self.assertEqual(result.returncode, 73)
+                    manifest = run / "manifest.json"
+                    self.assertEqual(manifest.exists(), stage == "after")
+                    pending = list(run.glob(".manifest-*"))
+                    self.assertEqual(len(pending), 1)
+                    self.assertEqual(pending[0].stat().st_nlink,
+                                     2 if stage == "after" else 1)
+                    with self.assertRaises(ValueError):
+                        verify_manifest(run)
+            fresh = create_run(root)
+            for name in REQUIRED:
+                (fresh / name).write_bytes(b"synthetic")
+            publish_manifest(fresh)
+            verify_manifest(fresh)
+            self.assertEqual(len(list(root.iterdir())), 3)
 
     def test_publish_manifest_no_replace(self) -> None:
         """Publish a complete single-link manifest and refuse overwriting it."""
