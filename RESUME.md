@@ -1,3 +1,12 @@
+# Resume — interrupted manifest publication fixture
+
+Dependent on #346. Exercise a real child process exiting immediately
+before and after the no-replace manifest link. Both interrupted
+inventories must be rejected without mutation; a fresh sibling run
+must publish and verify independently. No repair, deletion or
+promotion of incomplete evidence. Process exit is not power-loss
+durability. Hosted qualification pending.
+
 # Resume — private root final qualification
 
 #345 merged 664d097 after 3 workflows / 4 jobs PASS; all five changed
