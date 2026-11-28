@@ -3,29 +3,21 @@
 
 import argparse
 from collections import Counter
-from datetime import datetime
 import json
 from pathlib import Path
-import re
 import sys
 
 from compare_diagnostic_timeline import gate_sequences
 from compare_get_ids import MODE, parse, summarize
-from compare_windows_hid_logs import Capture, classify, parse_log
+from compare_windows_hid_logs import Capture, classify, parse_begin, parse_log
+from run_offline_qa import read_evidence
 
 LIMIT = 1024 * 1024
-BEGIN = re.compile(r'BEGIN: UTC=(\S+) timeout=(\d+)s')
 
 
 def read_local(path: Path) -> str:
     """Read bounded UTF-8 text from a local regular file."""
-    if path.is_symlink() or not path.is_file():
-        raise ValueError('expected local regular file')
-    with path.open('rb') as stream:
-        data = stream.read(LIMIT + 1)
-    if len(data) > LIMIT:
-        raise ValueError('log exceeds size limit')
-    return data.decode('utf-8-sig')
+    return read_evidence(path, LIMIT).decode('utf-8-sig')
 
 
 def framing(text: str) -> tuple[list[str], str]:
@@ -36,12 +28,7 @@ def framing(text: str) -> tuple[list[str], str]:
     lines = text.splitlines()
     if not lines or sum(line.startswith('BEGIN:') for line in lines) != 1:
         raise ValueError('missing or duplicate begin')
-    match = BEGIN.fullmatch(lines[0])
-    if not match or not 3 <= int(match[2]) <= 90:
-        raise ValueError('invalid begin')
-    stamp = datetime.fromisoformat(match[1])
-    if stamp.utcoffset() is None:
-        raise ValueError('missing timezone')
+    stamp, _ = parse_begin(lines[0])
     return lines, stamp.isoformat()
 
 
@@ -76,8 +63,6 @@ def validate_completed(lines: list[str], capture: Capture) -> None:
                 if capture.ended == 0 else 'INCONCLUSIVE: no verified battery report')
     if outcomes != [expected] or lines[-2] != expected:
         raise ValueError('contradictory or displaced worker outcome')
-    if sum(line.startswith('STEP: found ') for line in lines) > 1:
-        raise ValueError('duplicate enumeration count')
     if capture.get_ok + capture.get_failed > capture.set_ok:
         raise ValueError('GET count exceeds successful SET count')
 

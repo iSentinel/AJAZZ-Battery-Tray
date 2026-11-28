@@ -1,3 +1,16 @@
+# Resume — Windows CLI shared evidence framing
+
+#359 merged 5c53552f after 5/5 hosted checks on de087f0f;
+all five changed blobs match. #360 retargeted and updated to 32fad3d2;
+24 targeted tests PASS, final hosted qualification pending.
+Reuse the identity-checked bounded reader and native UTC BEGIN parser
+in the CLI analyzer for ordinary and experimental reports. Preserve
+1 MiB limit, BOM support, output schema and independent-verification
+status; remove redundant enumeration validation. Two regression methods;
+9 CLI, 17 comparator and 8 GET-ID tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: review standalone GET-ID
+reader and its terminal and experimental marker consistency.
+
 # Resume — Windows HID numeric and UTC framing
 
 #358 merged 5d17c4fa after 5/5 hosted checks on 766640d6;

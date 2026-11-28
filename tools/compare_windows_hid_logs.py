@@ -38,12 +38,17 @@ class Capture:
     inconclusive: bool
 
 
-def validate_numeric_fields(lines: list[str]) -> None:
-    """Check native UTC framing and integral transport field bounds."""
-    match = BEGIN.fullmatch(next((line for line in lines if line.strip()), ""))
+def parse_begin(line: str) -> tuple[datetime, int]:
+    """Parse the native UTC start marker and bounded diagnostic deadline."""
+    match = BEGIN.fullmatch(line)
     if not match or not 3 <= int(match[2]) <= 90:
         raise ValueError("invalid diagnostic start or deadline")
-    datetime.fromisoformat(match[1].replace("Z", "+00:00"))
+    return datetime.fromisoformat(match[1].replace("Z", "+00:00")), int(match[2])
+
+
+def validate_numeric_fields(lines: list[str]) -> None:
+    """Check native UTC framing and integral transport field bounds."""
+    parse_begin(next((line for line in lines if line.strip()), ""))
     for line in lines:
         if count := COUNT.fullmatch(line):
             if int(count[1]) > 2**31 - 1:

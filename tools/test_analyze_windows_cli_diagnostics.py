@@ -1,9 +1,12 @@
 """Synthetic regressions for redacted CLI diagnostic summaries."""
 
 import json
+import os
+from pathlib import Path
+import tempfile
 import unittest
 
-from analyze_windows_cli_diagnostics import analyze
+from analyze_windows_cli_diagnostics import LIMIT, analyze, read_local
 from test_compare_get_ids import fixture
 
 
@@ -93,6 +96,45 @@ class WindowsCliAnalysisTests(unittest.TestCase):
                                  'END: worker exited 2\nEND: worker exited 2')):
             with self.assertRaises(ValueError):
                 analyze(bad)
+
+    def test_shared_utc_framing_for_both_modes(self) -> None:
+        """Use the same native start validation in ordinary and experimental logs."""
+        for text in (ordinary(), fixture()):
+            header = text.splitlines()[0]
+            valid = 'BEGIN: UTC=2026-01-01T00:00:00.1234567+00:00 timeout=90s'
+            self.assertEqual(analyze(text.replace(header, valid))['capture_utc'],
+                             '2026-01-01T00:00:00.123456+00:00')
+            for bad in (valid.replace('+00:00', '+02:00'),
+                        valid.replace('90s', '91s'), valid.replace('90s', '９０s'),
+                        valid.replace('01-01', '02-30')):
+                with self.subTest(header=bad), self.assertRaises(ValueError):
+                    analyze(text.replace(header, bad))
+
+    def test_shared_bounded_reader(self) -> None:
+        """Preserve BOM, cap, and rejection of linked/nonregular input."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / 'capture.txt'
+            raw = ordinary().encode('utf-8-sig')
+            path.write_bytes(raw + b'\n' * (LIMIT - len(raw)))
+            self.assertEqual(analyze(read_local(path))['outcome'], 'UNVERIFIED')
+            with self.assertRaises(ValueError):
+                read_local(root)
+            alias = root / 'alias.txt'
+            os.link(path, alias)
+            for linked in (path, alias):
+                with self.assertRaises(ValueError):
+                    read_local(linked)
+            alias.unlink()
+            path.write_bytes(raw + b'\n' * (LIMIT + 1 - len(raw)))
+            with self.assertRaises(ValueError):
+                read_local(path)
+            try:
+                alias.symlink_to(path)
+            except OSError:
+                return
+            with self.assertRaises(ValueError):
+                read_local(alias)
 
     def test_invalid(self) -> None:
         """Reject displaced markers, missing timezone and invented labels."""
