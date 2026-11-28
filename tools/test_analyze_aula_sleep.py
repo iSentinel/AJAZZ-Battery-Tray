@@ -100,7 +100,8 @@ class ExtendedEvidenceTests(unittest.TestCase):
         """Refuse repeated AULA measurements within the same section."""
         raw = extended(SLEEP, START, False)
         lines = raw.splitlines()
-        for line in lines[4:8]:
+        begin = lines.index("[AULA L99 last measurement]") + 1
+        for line in lines[begin:begin + 4]:
             with self.subTest(field=line.split(":", 1)[0]):
                 duplicate = raw.replace("[Bluetooth fallback state]", line + "\n[Bluetooth fallback state]")
                 with self.assertRaisesRegex(ValueError, "Duplicate extended AULA field"):
