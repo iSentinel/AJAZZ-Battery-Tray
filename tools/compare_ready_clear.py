@@ -187,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
         second, ordinary_b, conflict_b = read_report(args.later)
         result = compare(first, second)
     except (OSError, ValueError) as error:
-        print(f"FAIL: {error}")
+        print(f"FAIL: invalid ready-clear diagnostic: {type(error).__name__}")
         return 1
     for label, (stamp, field) in (("Earlier", first), ("Later", second)):
         value = field if field is not None else "unavailable"

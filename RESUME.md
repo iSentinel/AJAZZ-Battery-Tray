@@ -1,3 +1,17 @@
+# Resume — diagnostic CLI process exit contracts
+
+#364 merged 31356d4a after 5/5 hosted checks on c9fd9cac;
+all nine changed blobs match. #365 retargeted and updated to 97be3c6e;
+six targeted catalog tests PASS, fresh hosted qualification pending.
+Exercise six diagnostic entrypoints as bounded subprocesses on synthetic
+local reports. Verify successful, incomplete, failed, invalid and usage
+outcomes as applicable; distinguish parsed JSON from hardware acceptance.
+Initial regression exposed APEX filename leakage; replace filename with
+ordinal report label, and sanitize ready-clear exception output. Rerun
+5 new process test methods plus 27 existing comparison tests PASS;
+source audit PASS. Next: review shared bounded input readers for APEX
+and ready-clear, then other CLI contracts. No device or release action.
+
 # Resume — CLI help and source registry coverage
 
 #363 merged ef211330 after 5/5 hosted checks on fe56c39b;

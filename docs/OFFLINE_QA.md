@@ -530,3 +530,18 @@ A source-only AST regression detects missing or duplicate registry names.
 Six targeted catalog tests and source audit PASS. Successful help exit
 is not proof of safe execution, documented operational exit meanings,
 all input bounds, or native CLI behavior. Hosted qualification pending.
+
+## Diagnostic CLI process exit contracts (candidate)
+
+Six real Python entrypoints are exercised with closed stdin, a ten-second
+per-process timeout and synthetic local inputs. Windows HID and GET-ID
+comparators use 0/1/2 for verified or complete, invalid/error and
+inconclusive respectively; AULA uses 0/1/2 for PASS, FAIL/invalid and
+NOT OBSERVED. Ready-clear uses 0/1/2 for comparison, invalid and
+inconclusive; APEX uses 0/1 for parsed or malformed reports. The JSON
+CLI returns 0 for a parsed summary even when inconclusive, and 2 for
+invalid input. Usage errors return 2 for all six. APEX now prints report
+ordinals rather than filenames; ready-clear errors expose exception type
+only. The initial filename canary regression failed before remediation;
+all five process tests and 27 existing comparison tests pass afterward.
+No hardware or release acceptance is inferred. Hosted CI pending.
