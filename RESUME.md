@@ -1,3 +1,13 @@
+# Resume — native Windows DACL observation
+
+Dependent on #346; initial 4 workflows / 5 jobs PASS, retargeted
+for integrated-base qualification. Add a hosted Windows job to create
+a disposable synthetic QA run using the actual create_run and
+manifest publisher, observe root/run/five evidence DACLs, and prove
+broad explicit read-ACE detection in a separate synthetic probe.
+Report aggregates only. No effective-access or real profile ACL claim.
+Hosted qualification pending. Release BLOCKED.
+
 # Resume — private root final qualification
 
 #345 merged 664d097 after 3 workflows / 4 jobs PASS; all five changed
