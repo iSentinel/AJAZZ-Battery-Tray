@@ -3471,3 +3471,12 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Initial #352 4 workflows / 6 jobs PASS on d2a5792;
       Windows/HA 27 tests, actual roundtrip 140862340153.
 - [ ] Final integrated-base CI; continue other CLI input review.
+
+### ENG-14 AULA sleep report input bounds
+
+- [x] Replace AULA stat-then-unbounded-text read with the existing
+      bounded identity-checked regular single-link reader and a 64 KiB
+      cap; retain UTF-8 BOM support and existing CLI exit contract.
+- [x] Add exact-cap, directory and link regression fixtures.
+- [ ] Hosted qualification after #352. Review duplicate diagnostic
+      field handling separately; actual AULA sleep hardware NOT_RUN.
