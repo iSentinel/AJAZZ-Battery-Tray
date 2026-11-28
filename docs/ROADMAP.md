@@ -3322,3 +3322,17 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Add a regression covering five reads and late summary mutation.
 - [ ] Qualify after #343 integration; native ACL and actual GUI/hardware
       remain open. Release BLOCKED.
+
+### ENG-16 combined transport and verified-byte review
+
+- [x] #343 merged df678e1 after 3 workflows / 4 jobs PASS; all five
+      changed blobs match checkout 155c5cb. Real artifact roundtrip job
+      140735357530, original artifact 15230957804 and downloaded
+      coverage 15231207590 (metadata and logs reviewed).
+- [x] Exact #340 field plan integrated without changes; duplicate PR
+      closed as superseded, branch retained. Actual field cases NOT_RUN.
+- [x] Initial #344 4 workflows / 5 jobs PASS on 9ec3305, including
+      real artifact roundtrip job 140735588411.
+- [ ] Repeat #344 against integrated base; cross-check reported PASS
+      against individual step statuses, test outcomes and audit next.
+      Release BLOCKED.
