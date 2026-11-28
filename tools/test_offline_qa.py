@@ -407,6 +407,31 @@ class OfflineQaTests(unittest.TestCase):
             path.write_bytes(b"second")
             self.assertEqual(read_evidence(path), b"second")
 
+    def test_junit_structure_rejection(self) -> None:
+        """Reject hidden cases, nested results, missing counts and malformed XML."""
+        base = b'<testsuite tests="1" failures="0" errors="0" skipped="0">'
+        case = b'<testcase name="synthetic"/>'
+        end = b'</testsuite>'
+        invalid = (
+            base + case + b'<testsuite>' + case + end + end,
+            base + case + b'<unknown/>' + end,
+            base.replace(b' skipped="0"', b'') + case + end,
+            base.replace(b'tests="1"', b'tests="01"') + case + end,
+            base.replace(b'tests="1"', b'tests="+1"') + case + end,
+            base + case,
+            base.replace(b'failures="0"', b'failures="1"')
+            + b'<testcase name="synthetic"><failure><testcase/></failure></testcase>'
+            + end,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "report.xml"
+            output.write_bytes(base + case + end)
+            self.assertEqual(junit_counts(output)["tests"], 1)
+            for raw in invalid:
+                with self.subTest(raw=raw[:80]), self.assertRaises(ValueError):
+                    output.write_bytes(raw)
+                    junit_counts(output)
+
     def test_junit_count_mismatch(self) -> None:
         """Do not accept a reported total inconsistent with testcase entries."""
         with tempfile.TemporaryDirectory() as tmp:

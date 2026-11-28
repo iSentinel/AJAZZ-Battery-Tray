@@ -217,22 +217,27 @@ def read_evidence(path: Path) -> bytes:
 
 def junit_counts_bytes(raw: bytes) -> dict:
     """Validate counts and identities from an already captured JUnit document."""
-    root = ET.fromstring(raw)
-    if root.tag != "testsuite":
+    if len(raw) > MAX_EVIDENCE:
+        raise ValueError("JUnit evidence exceeds limit")
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError as error:
+        raise ValueError("Invalid JUnit XML") from error
+    if root.tag != "testsuite" or any(child.tag != "testcase" for child in root):
         raise ValueError("Unexpected JUnit suite")
-    cases = root.findall("testcase")
+    cases = list(root)
     counts = {"tests": len(cases)}
     for tag, key in (("failure", "failures"), ("error", "errors"),
                      ("skipped", "skipped")):
         counts[key] = sum(case.find(tag) is not None for case in cases)
-    if any(int(root.attrib[key]) != value for key, value in counts.items()):
+    if any(root.get(key) != str(value) for key, value in counts.items()):
         raise ValueError("JUnit count mismatch")
     identities = [case.get("name") for case in cases]
     if any(not name for name in identities) or len(set(identities)) != len(cases):
         raise ValueError("Missing or duplicate JUnit case identities")
     for case in cases:
         if len(case) > 1 or any(child.tag not in ("failure", "error", "skipped")
-                                for child in case):
+                                or len(child) for child in case):
             raise ValueError("Unexpected JUnit case result")
     return counts
 

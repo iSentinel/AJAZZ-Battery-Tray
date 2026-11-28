@@ -1,3 +1,21 @@
+# Resume — strict JUnit final qualification
+
+#350 merged 688a4e5 after 4 workflows / 6 jobs PASS on 61e972a;
+all eight changed blobs match. Windows/HA 25 targeted tests and real
+artifact roundtrip 140860717544 PASS. Initial #351 4 workflows /
+6 jobs PASS on 87743cc, Windows/HA 26 targeted tests, real roundtrip
+140860916064. Retarget for final integrated-base qualification.
+Continue ENG-14 input review; release and hardware remain separate.
+
+# Resume — strict JUnit structure candidate
+
+Dependent on corrected #350, final hosted qualification pending.
+Reject unexpected direct suite children, nested result elements,
+missing/noncanonical counters, malformed XML and oversized input.
+Preserve valid producer format and existing counts/identity checks.
+New synthetic regression; no change to JUnit producer or release gates.
+Hosted qualification pending.
+
 # Resume — deterministic JSON nesting qualification
 
 Initial #350 on 67fd789 failed offline QA and Windows/HA regressions:
