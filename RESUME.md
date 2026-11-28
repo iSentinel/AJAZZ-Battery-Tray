@@ -1,3 +1,24 @@
+# Resume — AULA duplicate field corrected qualification
+
+#353 merged 5221a56 after 4 workflows / 6 jobs PASS on d4c230c;
+all six changed blobs match. Windows native 1028 PASS, zero FAIL.
+Initial #354 offline QA failed on 3e74500; downloaded artifact
+15248149073 SHA-256 matched hosted digest, 575 tests, one failure,
+zero errors/skips. Failed identity: ExtendedEvidenceTests.test_duplicate_extended_field.
+The fixture included the heading instead of the fourth measurement;
+select the four rows dynamically after the section heading. Retarget
+to integration and repeat CI. No hardware or release claim.
+
+# Resume — AULA ambiguous summary fields
+
+Dependent on #353; initial 4 workflows / 6 jobs PASS, final CI pending.
+Reject repeated required clipboard fields and repeated/malformed cache
+rows; reject repeated measurement rows within the extended AULA section
+without treating other sections as the same device. Two synthetic test
+methods. Preserve unknown unrelated notes and existing sleep semantics.
+No hardware access. Next review remaining diagnostic readers and
+numeric/timestamp semantics. Hosted qualification pending.
+
 # Resume — AULA bounded input final qualification
 
 #352 merged 73e8b55 after 4 workflows / 6 jobs PASS on 7c1a853;

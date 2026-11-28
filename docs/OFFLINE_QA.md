@@ -396,3 +396,25 @@ on 7c1a853; six changed blobs match. Actual artifact roundtrip
 140864178226. Initial AULA bounded read #353 passed all six
 jobs on 3b13842; actual roundtrip 140864457101. Final integrated
 qualification pending.
+
+## AULA summary ambiguity (candidate)
+
+The clipboard analyzer previously used a last-key-wins dictionary and
+first cache row, while the extended analyzer used only four initial
+measurement rows. Require each of the six required clipboard fields
+and the complete cache/status row exactly once. Reject repeated
+recognized measurement prefixes after the initial four rows within
+the same extended AULA section, stopping at the next section header.
+Other section fields and unrelated clipboard notes remain independent.
+Two regression methods cover identical/conflicting duplicates and
+valid controls. This does not establish device identity, report
+authenticity or physical sleep behavior. Hosted qualification pending.
+
+AULA bounded read #353 merged 5221a56 after all six jobs passed
+on d4c230c; six changed blobs match. Initial #354 failed common QA
+on 3e74500; downloaded artifact 15248149073 matched hosted SHA-256
+69312a665a6c272c592c8e9f2087bd2f0c1ecd65e28f0c991ec91f2b540c7edc.
+JUnit reported 575 tests, one failure, zero errors/skips:
+ExtendedEvidenceTests.test_duplicate_extended_field. The test selected
+the heading instead of the fourth measurement row. Corrected fixture
+locates the heading and selects the next four rows. Repeat CI pending.
