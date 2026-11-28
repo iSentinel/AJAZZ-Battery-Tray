@@ -3507,3 +3507,12 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       SHA-256 matched, 575 tests, one failure, zero errors/skips.
       Fix fixture selection to locate the four actual measurement rows.
 - [ ] Repeat integrated-base CI. Hardware acceptance remains open.
+
+### ENG-14 AULA cache and timestamp semantics
+
+- [x] Guard missing last-good timestamps before arithmetic.
+- [x] Reject nonpositive/nonfinite cache lifetime; require documented
+      24-hour policy for three-state PASS; reject contradictory initial
+      fresh failure count and no-reply timestamps not newer than cache.
+- [x] Add two synthetic regression methods.
+- [ ] Hosted qualification after corrected #354; physical AULA NOT_RUN.
