@@ -1,3 +1,12 @@
+# Resume — restricted XML final qualification
+
+#351 merged d355758 after 4 workflows / 6 jobs PASS on bbe1233;
+all five changed blobs match. Windows/HA 26 targeted tests and real
+artifact roundtrip 140862126784 PASS. Initial #352 4 workflows /
+6 jobs PASS on d2a5792, Windows/HA 27 targeted tests, real roundtrip
+140862340153. Retarget for final integrated-base CI. Move to other
+CLI input contracts after qualification. Release BLOCKED.
+
 # Resume — restricted JUnit XML parser candidate
 
 Dependent on #351, initially 4 workflows / 6 jobs PASS; final CI
