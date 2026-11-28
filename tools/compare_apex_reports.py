@@ -4,10 +4,10 @@
 import argparse
 from collections import Counter
 from collections.abc import Iterator
-import os
 from pathlib import Path
 import re
-import stat
+
+from run_offline_qa import read_evidence
 
 RX = re.compile(r"^\s*RX buffer\[(\d+)\]=([0-9a-fA-F]+)\s*$")
 TX = re.compile(r"^\s*Attempt UTC=.*?delay=(\d+)ms; TX\[(\d+)\]=")
@@ -74,23 +74,8 @@ def read_attempts(text: str) -> Iterator[tuple[str, int, int, bytes | None]]:
 
 
 def read_report(path: Path) -> str:
-    """Read only a bounded regular local report, not a pipe or symlink."""
-    before = path.lstat()
-    if not stat.S_ISREG(before.st_mode):
-        raise ValueError("Expected a regular local report")
-    if before.st_size > MAX_REPORT_BYTES:
-        raise ValueError("Report exceeds one MiB")
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
-    fd = os.open(path, flags | getattr(os, "O_BINARY", 0))
-    with os.fdopen(fd, "rb") as stream:
-        opened = os.fstat(stream.fileno())
-        if (not stat.S_ISREG(opened.st_mode) or
-                (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino)):
-            raise ValueError("Report identity changed before read")
-        data = stream.read(MAX_REPORT_BYTES + 1)
-    if len(data) > MAX_REPORT_BYTES:
-        raise ValueError("Report exceeds one MiB")
-    return data.decode("utf-8-sig")
+    """Read a bounded identity-checked local report without following links."""
+    return read_evidence(path, MAX_REPORT_BYTES).decode("utf-8-sig")
 
 
 def inspect(path: Path) -> None:

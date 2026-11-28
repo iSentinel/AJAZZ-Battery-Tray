@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 
 from compare_apex_reports import SECTION, current_percent
+from run_offline_qa import read_evidence
 
 LIMIT = 1024 * 1024
 Matrix = tuple[datetime, int | None]
@@ -157,11 +158,7 @@ def disagreement(text: str, matrix: Matrix) -> tuple[int | None, bool]:
 
 def read_report(path: Path) -> Report:
     """Read bounded local data only."""
-    with path.open("rb") as stream:
-        raw = stream.read(LIMIT + 1)
-    if len(raw) > LIMIT:
-        raise ValueError("Report exceeds one MiB")
-    text = raw.decode("utf-8-sig")
+    text = read_evidence(path, LIMIT).decode("utf-8-sig")
     matrix = parse_matrix(text)
     ordinary, conflict = disagreement(text, matrix)
     return matrix, ordinary, conflict

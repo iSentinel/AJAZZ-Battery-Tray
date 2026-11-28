@@ -3650,3 +3650,13 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       five new process tests, 27 existing comparison tests and audit PASS.
 - [ ] Hosted qualification after #365; review APEX and ready-clear
       bounded input consistency and remaining CLI contracts.
+
+### ENG-14 shared APEX and ready-clear evidence reader
+
+- [x] Confirm #366 at dd958a8c has 5/5 hosted checks PASS;
+      integration remains open after the previous blocked command.
+- [x] Reuse bounded identity-checked reader for APEX and ready-clear.
+- [x] Verify exact 1 MiB cap, BOM, linked/nonregular inputs and
+      invalid UTF-8; 34 targeted tests and source audit PASS.
+- [ ] Full candidate qualification and integration; review remaining
+      timeline and normalization reader boundaries next.

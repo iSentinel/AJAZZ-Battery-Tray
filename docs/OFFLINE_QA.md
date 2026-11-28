@@ -545,3 +545,15 @@ ordinals rather than filenames; ready-clear errors expose exception type
 only. The initial filename canary regression failed before remediation;
 all five process tests and 27 existing comparison tests pass afterward.
 No hardware or release acceptance is inferred. Hosted CI pending.
+
+## APEX and ready-clear shared evidence reader (candidate)
+
+Both comparators use the existing read_evidence implementation with
+unchanged 1 MiB limits and UTF-8 BOM decoding. The shared implementation
+checks regular single-link input and file identity/metadata before and
+after reading. Synthetic reader checks confirmed the previous hardlink
+acceptance in both tools and symlink acceptance in ready-clear. New
+regressions exercise exact cap and link refusal, alongside the existing
+process exit contracts. 12 APEX, 17 ready-clear, 5 process tests and
+source audit PASS. No device I/O, independent hardware attestation or
+release admission. #366 remains open; candidate integration pending.
