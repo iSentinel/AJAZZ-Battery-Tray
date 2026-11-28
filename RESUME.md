@@ -1,3 +1,16 @@
+# Resume — Windows HID numeric and UTC framing
+
+#358 merged 5d17c4fa after 5/5 hosted checks on 766640d6;
+all five changed blobs match. #359 retargeted and updated to de087f0f;
+15 targeted tests PASS, fresh hosted qualification pending.
+Validate ordinary diagnostic UTC start timestamps (including native
+seven-digit fractions), 3..90s deadline, ASCII numeric fields, native
+Int32 enumeration/Win32 and Int64 elapsed bounds. Reject malformed
+transfer results; retain signed Win32 errors and begin markers.
+17 comparator and 7 CLI analyzer tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: evaluate related CLI
+analyzer input reader and redundant framing rules.
+
 # Resume — Windows HID verified operation chronology
 
 #357 merged f331c825 after 5/5 hosted checks on 9c31089f;

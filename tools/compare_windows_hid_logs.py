@@ -3,17 +3,22 @@
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 import re
 
 from run_offline_qa import read_evidence
 
-COUNT = re.compile(r"^STEP: found (\d+) matching MI_02 paths$")
-RESULT = re.compile(
-    r"^STEP: (SET F7|GET 05) (OK|FAILED) Win32=(\d+) elapsed=(\d+)ms$"
+BEGIN = re.compile(
+    r"BEGIN: UTC=([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+    r"(?:\.[0-9]{1,7})?(?:Z|\+00:00)) timeout=([0-9]{1,2})s"
 )
-PASS = re.compile(r"^PASS: verified battery (\d+)%$")
-END = re.compile(r"^END: worker exited (\d+)$")
+COUNT = re.compile(r"^STEP: found ([0-9]{1,10}) matching MI_02 paths$")
+RESULT = re.compile(
+    r"^STEP: (SET F7|GET 05) (OK|FAILED) Win32=(-?[0-9]{1,10}) elapsed=([0-9]{1,19})ms$"
+)
+PASS = re.compile(r"^PASS: verified battery ([0-9]{1,3})%$")
+END = re.compile(r"^END: worker exited ([0-9]{1,10})$")
 
 
 @dataclass(frozen=True)
@@ -31,6 +36,26 @@ class Capture:
     timed_out: bool
     ended: int | None
     inconclusive: bool
+
+
+def validate_numeric_fields(lines: list[str]) -> None:
+    """Check native UTC framing and integral transport field bounds."""
+    match = BEGIN.fullmatch(next((line for line in lines if line.strip()), ""))
+    if not match or not 3 <= int(match[2]) <= 90:
+        raise ValueError("invalid diagnostic start or deadline")
+    datetime.fromisoformat(match[1].replace("Z", "+00:00"))
+    for line in lines:
+        if count := COUNT.fullmatch(line):
+            if int(count[1]) > 2**31 - 1:
+                raise ValueError("receiver count exceeds native integer range")
+        if result := RESULT.fullmatch(line):
+            if not -(2**31) <= int(result[3]) <= 2**31 - 1:
+                raise ValueError("Win32 result exceeds native integer range")
+            if int(result[4]) > 2**63 - 1:
+                raise ValueError("elapsed time exceeds native integer range")
+        elif line.startswith(("STEP: SET F7 ", "STEP: GET 05 ")):
+            if not re.fullmatch(r"STEP: (SET F7|GET 05) begin length=[0-9]{1,10}", line):
+                raise ValueError("malformed HID transfer marker")
 
 
 def validate_markers(lines: list[str]) -> None:
@@ -103,6 +128,7 @@ def parse_log(data: str) -> Capture:
     if any(line.startswith("MODE: experimental GET") for line in lines):
         raise ValueError("Use compare_get_ids.py for an experimental GET-ID log")
     validate_markers(lines)
+    validate_numeric_fields(lines)
     if any(PASS.fullmatch(line) for line in lines):
         validate_verified_order(lines)
     values = {"open_ok": 0, "open_failed": 0, "set_ok": 0,

@@ -167,6 +167,34 @@ class WindowsHidLogTests(unittest.TestCase):
         valid = (count, OPEN, SET_OK, GET_OK, failed_open, passed)
         self.assertEqual(parse_log("\n".join((BEGIN, *valid, terminal))).battery, 83)
 
+    def test_native_utc_header_and_deadline(self) -> None:
+        """Accept native seven-digit timestamps and reject invalid starts."""
+        valid = report("PASS: verified battery 83%", end=0)
+        for stamp in ("2026-11-23T18:00:00.1234567+00:00", "2026-11-23T18:00:00Z"):
+            for timeout in (3, 90):
+                text = valid.replace(BEGIN, f"BEGIN: UTC={stamp} timeout={timeout}s")
+                self.assertEqual(parse_log(text).battery, 83)
+        for bad in (BEGIN.replace("11-23", "02-30"), BEGIN.replace("+00:00", ""),
+                    BEGIN.replace("+00:00", "+02:00"), BEGIN.replace("40s", "2s"),
+                    BEGIN.replace("40s", "91s"), BEGIN.replace("40s", "４０s")):
+            with self.subTest(header=bad), self.assertRaises(ValueError):
+                parse_log(valid.replace(BEGIN, bad))
+
+    def test_native_numeric_bounds(self) -> None:
+        """Reject impossible and malformed transport numbers in all outcomes."""
+        base = report("INCONCLUSIVE: no verified battery report")
+        for original, invalid in (("found 1", "found 2147483648"),
+                                  ("found 1", "found ١"),
+                                  ("Win32=0", "Win32=2147483648"),
+                                  ("Win32=0", "Win32=-2147483649"),
+                                  ("elapsed=2ms", "elapsed=9223372036854775808ms"),
+                                  ("elapsed=2ms", "elapsed=-1ms"),
+                                  ("elapsed=2ms", "elapsed=٢ms")):
+            with self.subTest(value=invalid), self.assertRaises(ValueError):
+                parse_log(base.replace(original, invalid))
+        signed = base.replace(GET_OK, "STEP: GET 05 FAILED Win32=-2147483648 elapsed=0ms")
+        self.assertEqual(parse_log(signed).get_failed, 1)
+
     def test_local_file_size_guard(self) -> None:
         """Accept a small local report and reject one above the size limit."""
         with tempfile.TemporaryDirectory() as directory:

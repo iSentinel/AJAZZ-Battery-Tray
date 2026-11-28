@@ -466,3 +466,13 @@ must precede the verified result. Reject post-result steps and successful
 transfers with nonzero Win32 error. Nonverified classifications remain
 unchanged. 15 targeted tests and source audit PASS. This validates log
 consistency, not authentic device provenance. Hosted qualification pending.
+
+## Windows HID numeric and UTC framing (candidate)
+
+Validate ordinary diagnostic BEGIN timestamps against UTC ISO format,
+including the native seven fractional digits and 3..90s deadline. Reject
+non-ASCII or out-of-range native count, Win32 and elapsed fields and
+malformed transfer results. Signed Win32 errors remain representable.
+The separate one-second synthetic watchdog is not an ordinary capture.
+17 comparator tests, 7 related CLI analyzer tests and source audit PASS.
+No cross-capture identity or physical timestamp attestation. Hosted CI pending.
