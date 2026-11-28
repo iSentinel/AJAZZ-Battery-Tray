@@ -23,6 +23,16 @@ def read_archive(path: Path) -> bytes:
     return read_bounded_file(path, MAX_ARCHIVE)
 
 
+def unique_object(pairs: list[tuple]) -> dict:
+    """Preserve the duplicate-key hook used by existing evidence tools."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('duplicate manifest key')
+        result[key] = value
+    return result
+
+
 def validate_members(archive: zipfile.ZipFile) -> dict:
     """Accept only exact expected names and bounded regular entries."""
     members = archive.infolist()

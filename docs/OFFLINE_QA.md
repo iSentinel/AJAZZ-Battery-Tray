@@ -579,3 +579,8 @@ of a file with another same-size file at its final identity check, plus
 strict manifest failure reasons. 11 session, 27 QA and 11 timeline tests
 PASS; source audit PASS. No ZIP extraction, hardware or release acceptance.
 Hosted qualification pending.
+
+Initial full run on f1a06c48 failed (45 import/discovery errors) because
+seven direct consumers import unique_object. Restore that compatibility hook
+without weakening strict session manifest parsing. Add one regression and
+repeat the full suite. The Apple portable C ZIP roundtrip also passes 2/2.

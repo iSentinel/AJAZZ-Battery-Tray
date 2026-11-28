@@ -8,9 +8,11 @@ Retain 8 MiB aggregate, 1 MiB report, 64 KiB manifest and 32 reports.
 Use the strict JSON parser with decoded duplicate-key, nonstandard
 constant and nesting rejection. Three regression methods cover the
 archive boundary, same-size path replacement and manifest failures.
-11 session, 27 QA and 11 timeline tests PASS; source audit PASS.
-Next: review Apple session archive reader for the same identity and
-manifest boundaries, then remaining CLI contracts. No device or release action.
+Initial full QA failed on removed legacy unique_object imports. Restored
+the compatibility hook and added a regression; rerun required.
+12 session, 27 QA and 11 timeline tests PASS after repair; audit PASS.
+Apple and Windows use the same importer; Apple portable C ZIP roundtrip
+2/2 PASS. Next: review native exporter limit parity and remaining CLI contracts. No device or release action.
 
 # Resume — Apple diagnostics evidence reader
 

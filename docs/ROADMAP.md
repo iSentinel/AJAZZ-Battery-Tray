@@ -3679,3 +3679,8 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       49 targeted tests and source audit PASS.
 - [ ] Hosted qualification and dependent integration.
 - [ ] Review Apple session archive boundaries and remaining CLI contracts.
+
+- [x] Restore the legacy duplicate-key hook after the initial full QA exposed
+      seven direct import consumers. Add compatibility regression; full rerun required.
+- [x] Confirm Apple uses the same ZIP importer; existing portable C roundtrip
+      passes (2/2 tests). Next review native exporter limit parity.

@@ -12,7 +12,7 @@ from unittest.mock import patch
 import zipfile
 
 from compare_diagnostic_timeline import main, timeline
-from read_diagnostic_session import load_session, MAX_ARCHIVE, MAX_REPORT, read_archive
+from read_diagnostic_session import load_session, MAX_ARCHIVE, MAX_REPORT, read_archive, unique_object
 from run_offline_qa import MAX_EVIDENCE, read_evidence
 from test_compare_diagnostic_timeline import field_report
 
@@ -211,6 +211,12 @@ class SessionImportTests(unittest.TestCase):
                     ValueError, 'Evidence changed during read'):
                 read_archive(path)
             self.assertEqual(calls, 2)
+
+    def test_legacy_duplicate_hook_contract(self) -> None:
+        """Retain the existing public hook for other evidence CLI consumers."""
+        self.assertEqual(json.loads('{"key":1}', object_pairs_hook=unique_object), {'key': 1})
+        with self.assertRaisesRegex(ValueError, 'duplicate manifest key'):
+            json.loads('{"key":1,"key":2}', object_pairs_hook=unique_object)
 
     def test_manifest_strict_json(self) -> None:
         """Reject deep nesting, decoded duplicate keys and nonstandard constants."""
