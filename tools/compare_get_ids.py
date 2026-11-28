@@ -8,11 +8,11 @@ from pathlib import Path
 from compare_windows_hid_logs import parse_begin
 from run_offline_qa import read_evidence
 
-PAIR = re.compile(r"PAIR: delay=(30|100|250)ms length=(\d+) request=(05|00)")
+PAIR = re.compile(r"PAIR: delay=(30|100|250)ms length=([0-9]{2,3}) request=(05|00)")
 OBSERVED = re.compile(
     r"OBSERVED: request=(05|00) returned=([0-9A-F]{2}) "
-    r"length=(\d+) delay=(30|100|250)ms status10=([0-9A-F]{20}); "
-    r"existing-parser candidate=(unavailable|\d+) \(not telemetry\)"
+    r"length=([0-9]{2,3}) delay=(30|100|250)ms status10=([0-9A-F]{20}); "
+    r"existing-parser candidate=(unavailable|[0-9]{1,3}) \(not telemetry\)"
 )
 MODE = "MODE: experimental GET 05 versus GET 00; no battery claimed"
 END = "END: worker exited 2"
@@ -57,7 +57,29 @@ def parse(data: str) -> ProbeEntries | None:
             if line.startswith("STEP: experimental receiver #")
     ] != ["STEP: experimental receiver #1"]:
         return None
+    validate_probe_scope(lines)
     return parse_pairs(lines)
+
+
+def validate_probe_scope(lines: list[str]) -> None:
+    """Require probes to follow the single enumerated receiver marker."""
+    mode = lines.index(MODE)
+    count = lines.index("STEP: found 1 matching MI_02 paths")
+    receiver = lines.index("STEP: experimental receiver #1")
+    if not mode < count < receiver:
+        raise ValueError("Invalid experimental receiver order")
+    if any(line.startswith(("PAIR:", "OBSERVED:")) for line in lines[:receiver]):
+        raise ValueError("Probe precedes experimental receiver")
+
+
+def validate_matrix_order(entries: ProbeEntries) -> None:
+    """Mirror the descriptor-first native matrix, without assuming its length."""
+    lengths = list(dict.fromkeys(key[1] for key in entries))
+    native = list(dict.fromkeys((lengths[0], 65, 67)))
+    expected = [(delay, length, report) for delay in (30, 100, 250)
+                for length in native for report in ("05", "00")]
+    if list(entries) != expected:
+        raise ValueError("Unexpected experimental matrix order")
 
 
 def parse_pairs(lines: list[str]) -> ProbeEntries | None:
@@ -87,6 +109,7 @@ def parse_pairs(lines: list[str]) -> ProbeEntries | None:
                 for length in lengths for report in ("05", "00")}
     if not {65, 67} <= lengths or len(lengths) > 3 or set(entries) != expected:
         return None
+    validate_matrix_order(entries)
     return entries
 
 

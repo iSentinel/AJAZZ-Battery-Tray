@@ -1,3 +1,17 @@
+# Resume — GET-ID native matrix ordering
+
+#361 merged ff184f75 after 5/5 hosted checks on 8e0738ce;
+all six changed blobs match. #362 retargeted and updated to aaf8d0ea;
+19 targeted tests PASS, fresh hosted qualification pending.
+Require experimental mode, enumeration and receiver markers before
+probes. Validate complete matrices against the descriptor-first native
+order, including either base length or an additional descriptor length.
+Restrict probe lengths and candidates to bounded ASCII numeric syntax.
+Incomplete evidence remains inconclusive; no telemetry inference.
+12 GET-ID and 9 CLI analyzer tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: review remaining
+experimental timeout/report consistency and consolidate ENG-14 status.
+
 # Resume — GET-ID experimental evidence framing
 
 #360 merged 3452f565 after 5/5 hosted checks on 32fad3d2;
