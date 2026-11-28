@@ -281,3 +281,35 @@ passed on a2534f1; all five changed blobs match. Initial process
 interruption #348 passed all four jobs on 07c107e, including Windows
 22 targeted tests and actual artifact roundtrip 140831620517.
 Final integrated-base qualification required.
+
+## Windows DACL observation and scoped hosted regression
+
+#347 v1 initially failed at setup because Python 3.12.16 was unavailable
+for Windows Server 2025 (job 140830774483); Windows pin 3.13.17 fixed it.
+Initial v1 native job 140831370156 passed on e3771ee. V2 initially had
+a PowerShell parser failure (job 140832237669 on 3aff12a); corrected
+fixture and separate parser preflight passed on eb4b858, job
+140832905724. The v2 aggregate showed fresh root/run protected,
+all seven fresh entries canonical, three ACEs each, no selected broad
+allow/read/write ACEs. The five files inherited three rules. Owners
+were ADMINISTRATORS. Existing synthetic root with explicit inheritable
+Everyone read retained that ACE before/after the producer; its fresh
+run was protected, and all six new objects had zero selected broad
+allow ACEs. Positive explicit Everyone read control passed.
+
+On the integrated recovery baseline (#348 merged 8ae7b00, all four
+changed blobs match 04ccafc), the v3 fixture treats these scoped
+fresh-evidence properties as hosted regression requirements: canonical
+DACL, zero selected broad allow ACEs, owner in RUNNER/ADMINISTRATORS/
+SYSTEM, protected fresh root and both fresh runs. It observes existing
+root rather than requiring that root to be private. The fixture retains
+positive controls and emits only aggregate fields. It does not enforce
+a runtime Windows DACL policy.
+
+Operators must use a trusted, dedicated local evidence root and
+review parent permissions separately; never assume a protected child
+prevents a user with parent deletion/rename rights from disrupting it.
+Do not automatically modify permissions on existing directories.
+Hosted findings do not establish effective access, arbitrary Windows
+versions/filesystems, real user-profile ACLs, ancestor race resistance
+or power-loss durability. Repeat CI pending.

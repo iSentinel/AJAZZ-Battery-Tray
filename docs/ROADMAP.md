@@ -3393,3 +3393,20 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       22 targeted tests and actual artifact roundtrip 140831620517.
 - [ ] Final integrated-base CI; ACL v2 remains independent.
       Power-loss durability and release admission remain open.
+
+### ENG-16 recovery integration and scoped Windows ACL regression
+
+- [x] #348 merged 8ae7b00 after 3 workflows / 4 jobs PASS; all four
+      changed blobs match 04ccafc. Windows 22 targeted tests and
+      actual artifact roundtrip 140832940473 PASS.
+- [x] #347 v2 ACL syntax and native observation PASS on eb4b858,
+      job 140832905724. Root/run protected, fresh evidence canonical,
+      selected broad allow ACEs absent; owner ADMINISTRATORS. Existing
+      root keeps explicit Everyone read, its child is protected.
+- [x] Carry corrected fixture to fresh integration branch. Require
+      selected fresh DACL invariants in hosted CI, retaining explicit
+      positive controls and existing root before/after observations.
+- [ ] Repeat combined hosted qualification; close superseded #347
+      only after replacement integration. Effective access, real
+      profile ACLs, ancestor trust, power-loss durability and release
+      admission remain unverified.
