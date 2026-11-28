@@ -93,6 +93,8 @@ print(root.name)
         try { $writer.WriteLine(($report | ConvertTo-Json -Depth 6)) }
         finally { $writer.Dispose() }
     } finally { $stream.Dispose() }
+    # The closed aggregate is safe for review without downloading raw ACLs.
+    Write-Output ($report | ConvertTo-Json -Depth 6 -Compress)
     Write-Output 'PASS: scoped Windows DACL observation and positive control'
 } catch {
     Write-Error 'FAIL: scoped Windows DACL observation' -ErrorAction Continue
