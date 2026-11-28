@@ -1,3 +1,13 @@
+# Resume — AULA comparison context candidate
+
+#354 merged 11557568 after five hosted checks PASS on fcc09dc0;
+all five changed blobs match. #355 retargeted to integration and merged
+base into f599f434; targeted 31 tests PASS, final hosted qualification
+pending. Reject blank application versions and require the 24-hour
+cache policy across awake, sleep and recovery reports. Two additional
+synthetic regression methods; targeted 33 tests and source audit PASS.
+No runtime, HID, physical or release changes. Release BLOCKED.
+
 # Resume — AULA cache semantics candidate
 
 Dependent on corrected #354; hosted qualification pending.

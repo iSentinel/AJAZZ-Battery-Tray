@@ -167,6 +167,8 @@ def parse_summary(data: str) -> Summary:
     if not lines or lines[0] != "AULA L99 2.4 GHz experimental battery check":
         raise ValueError("not an AULA L99 clipboard summary")
     fields, cache = clipboard_fields(lines)
+    if not fields["Version"].strip():
+        raise ValueError("missing AULA application version")
     return Summary(
         version=fields["Version"],
         automatic=parse_bool(fields["Automatic monitoring enabled"]),
@@ -265,6 +267,9 @@ def analyze(awake: Summary, sleep: Summary,
     if not all(item.automatic for item in (awake, sleep, recovered)):
         checks.append(("SETTINGS", "NOT OBSERVED",
                        "automatic monitoring was not enabled throughout"))
+    if any(item.cache_lifetime != 24 for item in (awake, recovered)):
+        checks.append(("CACHE POLICY", "NOT OBSERVED",
+                       "unexpected cache lifetime in awake or recovered report"))
     result = ("FAIL" if any(item[1] == "FAIL" for item in checks) else
               "NOT OBSERVED" if any(item[1] == "NOT OBSERVED" for item in checks)
               else "PASS")
@@ -307,6 +312,9 @@ def analyze_pair(sleep: Summary, recovered: Summary
     checks = [("SLEEP", *cached)]
     if cached[0] == "PASS":
         checks.append(("RECOVERED", *check_recovery(sleep, recovered)))
+    if recovered.cache_lifetime != 24:
+        checks.append(("CACHE POLICY", "NOT OBSERVED",
+                       "unexpected cache lifetime in recovered report"))
     checks.append(("AWAKE", "NOT OBSERVED", "independent initial report missing"))
     if any(item[1] == "FAIL" for item in checks):
         return "FAIL", checks

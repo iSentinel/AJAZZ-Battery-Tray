@@ -3516,3 +3516,14 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       fresh failure count and no-reply timestamps not newer than cache.
 - [x] Add two synthetic regression methods.
 - [ ] Hosted qualification after corrected #354; physical AULA NOT_RUN.
+
+### ENG-14 AULA comparison context
+
+- [x] #354 merged 11557568; all five hosted checks and all five
+      changed blob comparisons PASS.
+- [x] Retarget #355 and merge exact integration base; local 31 tests PASS.
+- [x] Reject blank application versions and require documented cache
+      lifetime across all three checkpoints; add two regression methods.
+- [x] Targeted 33 tests and source audit PASS.
+- [ ] Final hosted qualification of #355 and dependent context candidate.
+      Real AULA hardware NOT_RUN; no release admission.
