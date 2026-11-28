@@ -54,6 +54,39 @@ def coverage(expected: dict, summary: dict, xml: bytes) -> None:
         raise ValueError('command coverage differs')
 
 
+def step_passed(step: dict) -> bool:
+    """Require each reported process status to agree with its exit code."""
+    status, code = step['status'], step['exit_code']
+    if status == 'PASS' and type(code) is int and code == 0:
+        return True
+    if status == 'FAIL' and type(code) is int and code != 0:
+        return False
+    if status in ('ERROR', 'TIMEOUT') and code is None:
+        return False
+    raise ValueError('contradictory command status or exit code')
+
+
+def verify_status(summary: dict, counts: dict, audit: dict) -> None:
+    """Refuse a reported PASS contradicted by commands, JUnit or audit."""
+    reported = summary['status']
+    if reported not in ('PASS', 'FAIL'):
+        raise ValueError('invalid reported status')
+    tests = summary['tests']
+    if (not isinstance(tests, dict) or tests != counts
+            or any(type(value) is not int for value in tests.values())):
+        raise ValueError('test counts differ')
+    outcomes = [step_passed(step) for step in summary['steps']]
+    if audit['status'] not in ('PASS', 'FAIL'):
+        raise ValueError('invalid audit status')
+    if audit['status'] == 'PASS' and any(audit[key] != [] for key in
+                                         ('findings', 'new', 'resolved')):
+        raise ValueError('contradictory zero-debt audit')
+    if reported == 'PASS' and (not all(outcomes) or not counts['tests']
+            or any(counts[key] for key in ('failures', 'errors', 'skipped'))
+            or audit['status'] != 'PASS'):
+        raise ValueError('contradictory reported PASS')
+
+
 def verify_run(directory: Path, expected: dict) -> dict:
     """Bind coverage to the current clean source and verified local inventory."""
     initial = evidence_snapshot(directory)
@@ -67,8 +100,8 @@ def verify_run(directory: Path, expected: dict) -> dict:
                    for key in ('commit', 'tree'))):
         raise ValueError('source identity differs')
     coverage(expected, summary, xml)
-    if summary['tests'] != junit_counts_bytes(xml):
-        raise ValueError('test counts differ')
+    verify_status(summary, junit_counts_bytes(xml),
+                  json.loads(verified['code-audit.json']))
     check_directory(directory)
     if evidence_snapshot(directory) != initial:
         raise ValueError('evidence changed during coverage review')

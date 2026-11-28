@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from export_offline_qa_catalog import catalog, coverage, verify_run
+from export_offline_qa_catalog import catalog, coverage, verify_run, verify_status
 from run_offline_qa import CLI, read_evidence, verify_inventory, write_json
 
 
@@ -36,11 +36,42 @@ class OfflineCatalogTests(unittest.TestCase):
             coverage(expected, {'steps': list(reversed(summary['steps']))}, good)
 
 
+    def test_reported_status_consistency(self) -> None:
+        """Reject forged PASS semantics even when inventory hashes match."""
+        counts = {'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0}
+        audit = {'status': 'PASS', 'findings': [], 'new': [], 'resolved': []}
+        good = {'status': 'PASS', 'tests': counts,
+                'steps': [{'status': 'PASS', 'exit_code': 0}]}
+        verify_status(good, counts, audit)
+        for step in ({'status': 'PASS', 'exit_code': True},
+                     {'status': 'PASS', 'exit_code': 1},
+                     {'status': 'FAIL', 'exit_code': 0},
+                     {'status': 'FAIL', 'exit_code': 1},
+                     {'status': 'TIMEOUT', 'exit_code': None},
+                     {'status': 'ERROR', 'exit_code': None}):
+            with self.subTest(step=step), self.assertRaises(ValueError):
+                verify_status(dict(good, steps=[step]), counts, audit)
+        for key in ('failures', 'errors', 'skipped'):
+            bad_counts = dict(counts, **{key: 1})
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                verify_status(dict(good, tests=bad_counts), bad_counts, audit)
+        with self.assertRaises(ValueError):
+            verify_status(dict(good, tests=dict(counts, tests=True)), counts, audit)
+        for bad_audit in (dict(audit, status='FAIL'), dict(audit, new=[['drift']]),
+                          dict(audit, status='INVENTORY_ONLY')):
+            with self.subTest(audit=bad_audit), self.assertRaises(ValueError):
+                verify_status(good, counts, bad_audit)
+        # A complete but honestly failed run can still match coverage.
+        failed = dict(good, status='FAIL', steps=[{'status': 'FAIL', 'exit_code': 1}])
+        verify_status(failed, counts, audit)
+        with self.assertRaises(ValueError):
+            verify_status(dict(good, status='UNKNOWN'), counts, audit)
+
     def test_verified_bytes_and_late_mutation(self) -> None:
         """Consume the verified bytes once and reject later evidence mutation."""
         expected = {'unittest_ids': ['a.A.test_x'], 'commands': [['python', 'one']]}
         current = {'commit': 'synthetic-commit', 'tree': 'synthetic-tree', 'dirty': False}
-        summary = dict(current, status='PASS', steps=[{'command': ['python', 'one']}],
+        summary = dict(current, status='PASS', steps=[{'command': ['python', 'one'], 'status': 'PASS', 'exit_code': 0}],
                        tests={'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0})
         xml = (b'<testsuite tests="1" failures="0" errors="0" skipped="0">'
                b'<testcase name="a.A.test_x"/></testsuite>')
@@ -48,7 +79,8 @@ class OfflineCatalogTests(unittest.TestCase):
             root = Path(tmp)
             write_json(root / 'source-toolchain.json', current)
             write_json(root / 'summary.json', summary)
-            write_json(root / 'code-audit.json', {'status': 'PASS'})
+            write_json(root / 'code-audit.json', {'status': 'PASS', 'findings': [],
+                                                  'new': [], 'resolved': []})
             (root / 'python-results.xml').write_bytes(xml)
             write_json(root / 'manifest.json', verify_inventory(root))
             with patch('export_offline_qa_catalog.source_context', return_value=current):

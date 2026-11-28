@@ -3336,3 +3336,22 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [ ] Repeat #344 against integrated base; cross-check reported PASS
       against individual step statuses, test outcomes and audit next.
       Release BLOCKED.
+
+### ENG-16 reported QA status consistency
+
+- [x] Reject contradictory PASS using verified command exit codes,
+      exact integer JUnit counts and zero-debt audit results.
+      Preserve honest complete FAIL coverage, not release admission.
+- [x] Add synthetic contradictory-status regression and update the
+      verified-byte integration fixture.
+- [ ] Hosted qualification after #344; actual GUI/hardware, native
+      ACL and release admission remain open.
+
+### ENG-16 status consistency qualification
+
+- [x] #344 merged 9498fbd after 4 workflows / 5 jobs PASS; six changed
+      blobs match 1ed7680, real artifact roundtrip job 140825516207.
+- [x] Initial #345 3 workflows / 4 jobs PASS on 158b2e5; real
+      artifact roundtrip job 140825694845.
+- [ ] Integrated-base CI, private evidence root validation and native
+      Windows ACL review. Release BLOCKED.
