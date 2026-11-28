@@ -418,3 +418,15 @@ JUnit reported 575 tests, one failure, zero errors/skips:
 ExtendedEvidenceTests.test_duplicate_extended_field. The test selected
 the heading instead of the fourth measurement row. Corrected fixture
 locates the heading and selects the next four rows. Repeat CI pending.
+
+## AULA cache and timestamp semantics (candidate)
+
+Three-state analysis now handles absent last-good value/time before
+timestamp arithmetic, reporting NOT OBSERVED when hidden and FAIL
+when displayed. A finite positive lifetime is required on parse;
+the three-state sleep check uses the documented 24-hour policy
+as the existing two-state check does. Unsupported lifetime cannot
+establish PASS. Initial fresh samples with nonzero failure count
+and no-reply timestamps not later than the last-good timestamp are
+rejected. Two synthetic regressions; hosted qualification pending.
+No runtime behavior or HID changes.
