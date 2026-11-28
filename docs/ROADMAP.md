@@ -3355,3 +3355,13 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       artifact roundtrip job 140825694845.
 - [ ] Integrated-base CI, private evidence root validation and native
       Windows ACL review. Release BLOCKED.
+
+### ENG-16 evidence root validation
+
+- [x] Add no-follow final-entry validation for the output root and
+      newly created run; reject Windows reparse points, non-directories
+      and non-private POSIX permissions. Check observed parent identity
+      across child creation. Three synthetic regressions.
+- [ ] Hosted qualification after #345 integration. Native Windows
+      ACL observation, ancestor path trust and crash recovery remain
+      separate. Real GUI and release admission open.
