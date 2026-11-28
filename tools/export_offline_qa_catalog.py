@@ -2,7 +2,6 @@
 """List offline QA cases and compare exact-checkout evidence coverage."""
 
 import argparse
-import json
 from pathlib import Path
 import re
 import sys
@@ -10,7 +9,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 from run_offline_qa import CLI, ROOT, check_directory, evidence_snapshot
-from run_offline_qa import junit_counts_bytes, read_verified_inventory
+from run_offline_qa import junit_counts_bytes, parse_evidence_json, read_verified_inventory
 from run_offline_qa import source_context, write_json
 
 
@@ -91,8 +90,8 @@ def verify_run(directory: Path, expected: dict) -> dict:
     """Bind coverage to the current clean source and verified local inventory."""
     initial = evidence_snapshot(directory)
     verified = read_verified_inventory(directory)
-    source = json.loads(verified['source-toolchain.json'])
-    summary = json.loads(verified['summary.json'])
+    source = parse_evidence_json(verified['source-toolchain.json'])
+    summary = parse_evidence_json(verified['summary.json'])
     xml = verified['python-results.xml']
     current = source_context()
     if (current['dirty'] or source['dirty'] is not False
@@ -101,7 +100,7 @@ def verify_run(directory: Path, expected: dict) -> dict:
         raise ValueError('source identity differs')
     coverage(expected, summary, xml)
     verify_status(summary, junit_counts_bytes(xml),
-                  json.loads(verified['code-audit.json']))
+                  parse_evidence_json(verified['code-audit.json']))
     check_directory(directory)
     if evidence_snapshot(directory) != initial:
         raise ValueError('evidence changed during coverage review')
