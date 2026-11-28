@@ -19,6 +19,24 @@ from run_offline_qa import (REQUIRED, create_run, junit_counts, read_evidence,
                             private_directory)
 
 
+INTERRUPTED_PUBLISHER = """
+import os
+from pathlib import Path
+import sys
+from unittest.mock import patch
+from run_offline_qa import publish_manifest
+real_link = os.link
+
+def interrupt(source, destination):
+    if sys.argv[2] == "after":
+        real_link(source, destination)
+    os._exit(73)
+
+with patch("run_offline_qa.os.link", side_effect=interrupt):
+    publish_manifest(Path(sys.argv[1]))
+"""
+
+
 def sample_case(kind: str) -> unittest.TestCase:
     """Create a private in-memory fixture without adding discovered tests."""
     class _Case(unittest.TestCase):
@@ -115,22 +133,6 @@ class OfflineQaTests(unittest.TestCase):
 
     def test_interrupted_manifest_publication(self) -> None:
         """A killed producer must leave refused evidence and allow a fresh run."""
-        script = """
-import os
-from pathlib import Path
-import sys
-from unittest.mock import patch
-from run_offline_qa import publish_manifest
-real_link = os.link
-
-def interrupt(source, destination):
-    if sys.argv[2] == "after":
-        real_link(source, destination)
-    os._exit(73)
-
-with patch("run_offline_qa.os.link", side_effect=interrupt):
-    publish_manifest(Path(sys.argv[1]))
-"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for stage in ("before", "after"):
@@ -139,7 +141,7 @@ with patch("run_offline_qa.os.link", side_effect=interrupt):
                     for name in REQUIRED:
                         (run / name).write_bytes(b"synthetic")
                     result = subprocess.run(
-                        [sys.executable, "-c", script, str(run), stage],
+                        [sys.executable, "-c", INTERRUPTED_PUBLISHER, str(run), stage],
                         cwd=Path(__file__).resolve().parent,
                         capture_output=True, timeout=15, check=False)
                     self.assertEqual(result.returncode, 73)
@@ -149,8 +151,10 @@ with patch("run_offline_qa.os.link", side_effect=interrupt):
                     self.assertEqual(len(pending), 1)
                     self.assertEqual(pending[0].stat().st_nlink,
                                      2 if stage == "after" else 1)
+                    original = {p.name for p in run.iterdir()}
                     with self.assertRaises(ValueError):
                         verify_manifest(run)
+                    self.assertEqual({p.name for p in run.iterdir()}, original)
             fresh = create_run(root)
             for name in REQUIRED:
                 (fresh / name).write_bytes(b"synthetic")
