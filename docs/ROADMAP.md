@@ -3298,3 +3298,17 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       full multi-file publication remain separate. Crash between link
       and unlink may leave a rejected incomplete inventory; no crash
       durability claim. Actual GUI and release remain blocked.
+
+### ENG-16 real QA artifact roundtrip and ENG-05 field plan
+
+- [x] #342 merged 7605db9 after 4 workflows / 5 jobs PASS; all five
+      changed blobs match 1234fc3. Windows/HA 18 offline fixtures PASS.
+- [x] #343 initial actual artifact roundtrip PASS, run 46054285012,
+      job 140693031539 on 4390a20; artifact 15226435261 and aggregate
+      downloaded coverage 15225487642 (logs and metadata reviewed).
+- [x] Carry the exact #340 field plan at d51a419 into combined CI;
+      previous Windows/Universal jobs passed on 41ea914, stale base.
+      All field cases NOT_RUN. Keep #340 until combined integration.
+- [ ] Repeat hosted CI against integrated base, then qualify and
+      close superseded field-plan PR. Bind coverage to verified bytes
+      separately. Native ACL, actual GUI and release admission open.

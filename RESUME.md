@@ -1,3 +1,15 @@
+# Resume — real QA artifact roundtrip and Apple field plan
+
+#342 merged 7605db9 after 4 workflows / 5 jobs PASS; all five changed
+blobs match 1234fc3. Windows and HA targeted offline fixtures: 18 tests
+PASS. #343 initial run 46054285012 passed actual artifact download,
+manifest and source coverage (job 140693031539, checkout 4390a20).
+Artifact 15226435261 and downloaded coverage 15225487642, metadata
+and logs reviewed. Carry unchanged #340 field plan from d51a419
+(previous 2 workflows PASS on 41ea914) into combined qualification
+to avoid stale-base merges. Actual field tests NOT_RUN. Retargeted
+#343 requires repeat CI. Release BLOCKED.
+
 # Resume — ENG-16 atomic manifest publication candidate
 
 #341 merged fc70039 after 4 workflows / 5 jobs PASS; all five changed
