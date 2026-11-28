@@ -313,3 +313,21 @@ Do not automatically modify permissions on existing directories.
 Hosted findings do not establish effective access, arbitrary Windows
 versions/filesystems, real user-profile ACLs, ancestor race resistance
 or power-loss durability. Repeat CI pending.
+
+#349 merged 6bedf53 after 3 workflows / 5 jobs PASS on 6670a40,
+all five changed blobs matching. ACL v3 job 140833872747 passed the
+scoped fresh-evidence contract. Actual artifact roundtrip
+140833961443 passed; Windows 22 targeted tests. Duplicate #347 closed.
+All ten scoped ENG-16 increments are integrated, not a claim of
+effective access, authentication or power-loss durability.
+
+## Strict evidence JSON decoding (candidate)
+
+Manifest and semantic source/summary/audit JSON now use a shared
+bounded object decoder. Duplicate decoded keys (including nested or
+escaped aliases), nonstandard NaN/Infinity literals, nonobject roots
+and parser recursion errors are refused. This prevents last-key-wins
+interpretations despite matching file digests. It is not a complete
+schema, finite-number validation or authentication. Three synthetic
+regression methods include matching-hash ambiguous documents.
+Hosted qualification pending.
