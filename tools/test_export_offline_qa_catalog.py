@@ -1,5 +1,6 @@
 """Verify the offline case catalog and evidence coverage without hardware."""
 
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -66,6 +67,34 @@ class OfflineCatalogTests(unittest.TestCase):
         verify_status(failed, counts, audit)
         with self.assertRaises(ValueError):
             verify_status(dict(good, status='UNKNOWN'), counts, audit)
+
+    def test_ambiguous_json_with_matching_manifest(self) -> None:
+        """Reject ambiguous source, summary and audit even with valid hashes."""
+        current = {'commit': 'synthetic', 'tree': 'tree', 'dirty': False}
+        expected = {'unittest_ids': ['a.A.test_x'], 'commands': [['python', 'one']]}
+        summary = dict(current, status='PASS', steps=[
+            {'command': ['python', 'one'], 'status': 'PASS', 'exit_code': 0}],
+            tests={'tests': 1, 'failures': 0, 'errors': 0, 'skipped': 0})
+        audit = {'status': 'PASS', 'findings': [], 'new': [], 'resolved': []}
+        documents = {'source-toolchain.json': current, 'summary.json': summary,
+                     'code-audit.json': audit}
+        xml = (b'<testsuite tests="1" failures="0" errors="0" skipped="0">'
+               b'<testcase name="a.A.test_x"/></testsuite>')
+        for name, key in (('source-toolchain.json', 'dirty'),
+                          ('summary.json', 'status'), ('code-audit.json', 'status')):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for filename, data in documents.items():
+                    raw = json.dumps(data).encode('utf-8')
+                    if filename == name:
+                        prefix = json.dumps({key: 'invalid'}).encode('utf-8')
+                        raw = prefix[:-1] + b',' + raw[1:]
+                    (root / filename).write_bytes(raw)
+                (root / 'python-results.xml').write_bytes(xml)
+                write_json(root / 'manifest.json', verify_inventory(root))
+                with patch('export_offline_qa_catalog.source_context', return_value=current):
+                    with self.assertRaisesRegex(ValueError, 'Duplicate evidence JSON key'):
+                        verify_run(root, expected)
 
     def test_verified_bytes_and_late_mutation(self) -> None:
         """Consume the verified bytes once and reject later evidence mutation."""
