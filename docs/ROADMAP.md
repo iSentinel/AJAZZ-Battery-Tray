@@ -3435,3 +3435,11 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       ignore quoted/escaped delimiters, refuse unmatched closing.
       Add boundary and invalid encoding regressions.
 - [ ] Repeat full CI and real artifact roundtrip before integration.
+
+### ENG-14 JUnit structure validation
+
+- [x] Reject unexpected suite children, nested result elements,
+      absent/noncanonical count attributes and malformed XML with
+      controlled validation errors. Retain byte bound and identities.
+- [x] Add structural negative fixtures and a valid control.
+- [ ] Hosted qualification after #350; release remains BLOCKED.
