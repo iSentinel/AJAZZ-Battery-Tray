@@ -3489,3 +3489,12 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       actual artifact roundtrip 140864457101.
 - [ ] Final integrated-base CI; review duplicate AULA fields.
       Hardware acceptance and release remain separate.
+
+### ENG-14 AULA ambiguous summary rejection
+
+- [x] Reject identical/conflicting duplicates of six required clipboard
+      fields and duplicate cache/status rows; retain unrelated notes.
+- [x] Reject repeated measurement rows within the extended AULA section;
+      do not conflate other device sections.
+- [x] Add two synthetic regression methods.
+- [ ] Hosted qualification after #353. Real AULA hardware NOT_RUN.
