@@ -1,3 +1,13 @@
+# Resume — evidence root validation candidate
+
+Dependent on #345, initially qualified on 158b2e5; integrated-base
+CI pending. Validate final root and fresh run via lstat, reject final
+reparse entries, non-directories and non-private POSIX modes; compare
+root device/inode before and after creating a unique child. Three
+new synthetic regression cases. No chmod of existing directories.
+Ancestor trust, Windows ACLs and fully race-free creation remain open.
+Release BLOCKED.
+
 # Resume — status consistency final qualification
 
 #344 merged 9498fbd after 4 workflows / 5 jobs PASS; all six changed
