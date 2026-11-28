@@ -3612,3 +3612,17 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Two regression methods; 21 targeted tests and source audit PASS.
 - [ ] Hosted qualification after #362. Review remaining experimental
       timeout/report consistency and consolidate ENG-14 status.
+
+### ENG-14 shared HID timeout consistency and scoped review
+
+- [x] #362 merged 45618532 after 5/5 checks; all five changed
+      blobs match. #363 retargeted and updated to fe56c39b;
+      21 targeted tests PASS.
+- [x] Bind native timeout markers to the declared deadline in both
+      diagnostic modes; reject duplicate enumeration and displaced
+      experimental outcomes even on timeout.
+- [x] Two regression methods; 40 targeted tests and source audit PASS.
+- [x] Consolidate integrated versus candidate evidence in the
+      engineering adoption audit. Do not close all ENG-14 gaps.
+- [ ] Hosted qualification after #363. Next: inventory existing
+      command-specific CLI contracts and remaining acceptance gaps.

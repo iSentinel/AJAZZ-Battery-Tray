@@ -51,6 +51,17 @@ class WindowsHidLogTests(unittest.TestCase):
         self.assertTrue(capture.timed_out)
         self.assertEqual(classify(capture)[0], "TIMEOUT")
 
+    def test_timeout_deadline_consistency(self) -> None:
+        """Bind timeout duration to BEGIN, including native deadline limits."""
+        for seconds in (3, 40, 90):
+            header = BEGIN.replace("40s", f"{seconds}s")
+            timeout = f"TIMEOUT: HID worker exceeded {seconds}s; no level claimed"
+            self.assertTrue(parse_log(header + "\n" + timeout).timed_out)
+            for bad in (timeout.replace(f"{seconds}s", f"{seconds + 1}s"),
+                        timeout.replace("; no level claimed", ""), "TIMEOUT: expired"):
+                with self.subTest(marker=bad), self.assertRaises(ValueError):
+                    parse_log(header + "\n" + bad)
+
     def test_no_receiver(self) -> None:
         """Distinguish no enumerated receiver from other read failures."""
         text = "\n".join([BEGIN, "STEP: found 0 matching MI_02 paths",
@@ -145,7 +156,8 @@ class WindowsHidLogTests(unittest.TestCase):
             with self.subTest(text=text[-90:]), self.assertRaises(ValueError):
                 parse_log(text)
         # Worker may report no battery just before the parent's deadline.
-        timeout = report("INCONCLUSIVE: no reply", "TIMEOUT: expired", end=None)
+        timeout = report("INCONCLUSIVE: no reply",
+                         "TIMEOUT: HID worker exceeded 40s; no level claimed", end=None)
         self.assertEqual(classify(parse_log(timeout))[0], "TIMEOUT")
 
     def test_verified_operation_order(self) -> None:

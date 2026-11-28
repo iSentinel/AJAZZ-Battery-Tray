@@ -50,7 +50,7 @@ class GetIdTests(unittest.TestCase):
 
     def test_timeout(self) -> None:
         """A timed-out experimental worker cannot establish a complete matrix."""
-        self.assertIsNone(parse(fixture().replace(END, "TIMEOUT: worker exceeded 40s")))
+        self.assertIsNone(parse(fixture().replace(END, "TIMEOUT: HID worker exceeded 40s; no level claimed")))
 
     def test_multiple_receivers_inconclusive(self) -> None:
         """Reject comparison scope with more than one receiver."""
@@ -83,15 +83,15 @@ class GetIdTests(unittest.TestCase):
                    valid.replace(OUTCOME, OUTCOME + "\nSTEP: extra"),
                    valid.replace("found 1 matching MI_02 paths",
                                  "found 1 matching MI_02 paths\nSTEP: found 2 matching MI_02 paths"),
-                   valid + "\nTIMEOUT: worker exceeded 40s",
-                   valid.replace(END, "TIMEOUT: worker exceeded 40s\nTIMEOUT: repeated"),
+                   valid + "\nTIMEOUT: HID worker exceeded 40s; no level claimed",
+                   valid.replace(END, "TIMEOUT: HID worker exceeded 40s; no level claimed\nTIMEOUT: repeated"),
                    valid.replace(OUTCOME, "PASS: verified battery 83%").replace(
-                       END, "TIMEOUT: worker exceeded 40s"))
+                       END, "TIMEOUT: HID worker exceeded 40s; no level claimed"))
         for text in invalid:
             with self.subTest(text=text[-90:]), self.assertRaises(ValueError):
                 parse(text)
         self.assertIsNone(parse(valid.replace(OUTCOME + "\n" + END,
-                                              "TIMEOUT: worker exceeded 40s")))
+                                              "TIMEOUT: HID worker exceeded 40s; no level claimed")))
 
     def test_cli_local_evidence_reader(self) -> None:
         """Preserve exit codes and BOM while refusing linked/oversized input."""
@@ -143,3 +143,20 @@ class GetIdTests(unittest.TestCase):
                      valid.replace("candidate=unavailable", "candidate=0083", 1)):
             with self.subTest(text=text[:240]), self.assertRaises(ValueError):
                 parse(text)
+
+
+    def test_timeout_deadline_and_partial_scope(self) -> None:
+        """Accept interrupted experiments but reject inconsistent deadlines."""
+        timeout = "TIMEOUT: HID worker exceeded 40s; no level claimed"
+        lines = fixture().splitlines()
+        for cut in (2, 3, 5, len(lines) - 2):
+            self.assertIsNone(parse("\n".join(lines[:cut] + [timeout])))
+        raced = fixture().replace(END, timeout)
+        self.assertIsNone(parse(raced))
+        for bad in (raced.replace("exceeded 40s", "exceeded 41s"),
+                    raced.replace("; no level claimed", ""),
+                    raced.replace(OUTCOME, OUTCOME + "\nPAIR: extra"),
+                    raced.replace("found 1 matching MI_02 paths",
+                                  "found 1 matching MI_02 paths\nSTEP: found 0 matching MI_02 paths")):
+            with self.subTest(text=bad[-100:]), self.assertRaises(ValueError):
+                parse(bad)

@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from compare_windows_hid_logs import parse_begin
+from compare_windows_hid_logs import parse_begin, validate_timeout
 from run_offline_qa import read_evidence
 
 PAIR = re.compile(r"PAIR: delay=(30|100|250)ms length=([0-9]{2,3}) request=(05|00)")
@@ -27,7 +27,7 @@ def validate_session(lines: list[str]) -> bool:
     """Validate experimental framing before interpreting probe observations."""
     if not lines or sum(line.startswith("BEGIN:") for line in lines) != 1:
         raise ValueError("Expected one GET-ID diagnostic session")
-    parse_begin(lines[0])
+    _, deadline = parse_begin(lines[0])
     if [line for line in lines if line.startswith("MODE:")] != [MODE]:
         raise ValueError("Missing or ambiguous experimental mode")
     terminal = [line for line in lines if line.startswith(("END:", "TIMEOUT:"))]
@@ -36,14 +36,15 @@ def validate_session(lines: list[str]) -> bool:
     if any(line.startswith(("PASS:", "FAIL:")) for line in lines):
         raise ValueError("Unexpected success or failure marker")
     outcomes = [line for line in lines if line.startswith("INCONCLUSIVE:")]
+    if sum(line.startswith("STEP: found ") for line in lines) > 1:
+        raise ValueError("Duplicate experimental enumeration")
     if terminal[0].startswith("TIMEOUT:"):
-        if outcomes not in ([], [OUTCOME]):
+        validate_timeout(terminal[0], deadline)
+        if outcomes not in ([], [OUTCOME]) or (outcomes and lines[-2] != OUTCOME):
             raise ValueError("Ambiguous experimental timeout outcome")
         return False
     if terminal[0] != END or outcomes != [OUTCOME] or lines[-2] != OUTCOME:
         raise ValueError("Missing or inconsistent experimental worker outcome")
-    if sum(line.startswith("STEP: found ") for line in lines) > 1:
-        raise ValueError("Duplicate experimental enumeration")
     return True
 
 

@@ -1,3 +1,18 @@
+# Resume — HID timeout consistency and ENG-14 review
+
+#362 merged 45618532 after 5/5 hosted checks on aaf8d0ea;
+all five changed blobs match. #363 retargeted and updated to fe56c39b;
+21 targeted tests PASS, fresh hosted qualification pending.
+Bind native TIMEOUT marker to BEGIN deadline in ordinary and
+experimental logs, including pre-enumeration interrupted experiments.
+Reject duplicate enumeration and displaced experimental outcome even
+on timeout. Preserve timeout as non-telemetry/inconclusive.
+13 GET-ID, 18 HID comparator and 9 CLI analyzer tests PASS;
+source audit PASS. Consolidated scoped ENG-14 evidence in adoption audit.
+No hardware, runtime or release change. Next: command-specific CLI
+contract inventory and remaining acceptance gaps, not more speculative
+protocol changes. Hardware and release remain separate.
+
 # Resume — GET-ID native matrix ordering
 
 #361 merged ff184f75 after 5/5 hosted checks on 8e0738ce;
