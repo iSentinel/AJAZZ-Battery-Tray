@@ -213,6 +213,15 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.13.17'
+      - name: Parse Windows ACL fixture before execution
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $path = (Resolve-Path './tests/fixtures/windows-qa-acl-observation.ps1').Path
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'ACL fixture syntax invalid' }
+          Write-Output 'PASS: Windows ACL fixture syntax'
       - name: Observe synthetic QA evidence DACLs
         shell: pwsh
         run: |
