@@ -3426,3 +3426,12 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       three regression methods, including valid-hash ambiguous documents.
 - [ ] Hosted qualification; continue remaining CLI/input review.
       Real GUI/hardware and release admission remain open.
+
+### ENG-14 deterministic JSON nesting
+
+- [x] Initial #350 failed on 67fd789 (Windows/HA and offline QA);
+      interpreter-specific recursion assumption was not portable.
+- [x] Bound UTF-8 JSON structural depth to 64 before decoding,
+      ignore quoted/escaped delimiters, refuse unmatched closing.
+      Add boundary and invalid encoding regressions.
+- [ ] Repeat full CI and real artifact roundtrip before integration.
