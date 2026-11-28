@@ -4,6 +4,7 @@
 import argparse
 from dataclasses import dataclass
 from datetime import datetime
+import math
 from pathlib import Path
 import re
 
@@ -49,6 +50,14 @@ def parse_level(value: str) -> int | None:
     if not value.isdecimal() or not 1 <= int(value) <= 100:
         raise ValueError("battery outside verified 1..100 range")
     return int(value)
+
+
+def parse_cache_lifetime(value: str) -> float:
+    """Accept only finite positive durations; policy is checked separately."""
+    hours = float(value)
+    if not math.isfinite(hours) or hours <= 0:
+        raise ValueError("invalid AULA cache lifetime")
+    return hours
 
 
 def parse_time(value: str) -> datetime | None:
@@ -169,7 +178,7 @@ def parse_summary(data: str) -> Summary:
         last_good_at=parse_time(cache["time"]),
         failures=int(cache["failures"]),
         cache_active=parse_bool(cache["active"]),
-        cache_lifetime=float(cache["lifetime"]),
+        cache_lifetime=parse_cache_lifetime(cache["lifetime"]),
     )
 
 
@@ -183,6 +192,8 @@ def check_awake(value: Summary) -> tuple[str, str]:
         return "NOT OBSERVED", "initial fresh battery reply is unavailable"
     if value.last_good != value.percent or value.last_good_at is None:
         return "FAIL", "fresh battery and last-good cache disagree"
+    if value.failures != 0:
+        return "FAIL", "fresh initial sample retained failure counter"
     if value.last_good_at != value.last_read or value.cache_active:
         return "FAIL", "fresh measurement must match its last-good timestamp"
     return "PASS", "initial fresh reading and timestamp confirmed"
@@ -207,10 +218,15 @@ def check_sleep(awake: Summary, value: Summary) -> tuple[str, str]:
         return "NOT OBSERVED", "receiver was confirmed disconnected"
     if value.failures == 0:
         return "FAIL", "no reply recorded without increasing failure counter"
-    age = value.last_read - value.last_good_at
-    if age.total_seconds() < 0:
-        return "FAIL", "sleep cache timestamp is in the future"
-    if age.total_seconds() >= value.cache_lifetime * 3600:
+    if value.last_good_at is None or value.last_good is None:
+        return ("FAIL", "cache displayed without a verified sample") if value.cache_active else (
+            "NOT OBSERVED", "no initial verified sample to retain")
+    age = (value.last_read - value.last_good_at).total_seconds()
+    if age <= 0:
+        return "FAIL", "no-reply poll must follow last good sample"
+    if value.cache_lifetime != 24:
+        return "NOT OBSERVED", "unexpected cache lifetime"
+    if age >= 24 * 3600:
         if value.cache_active:
             return "FAIL", "expired battery cache is still displayed"
         return "NOT OBSERVED", "sleep exceeded cache lifetime"

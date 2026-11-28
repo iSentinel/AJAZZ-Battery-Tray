@@ -270,6 +270,28 @@ class AulaOfflineSummaryTests(unittest.TestCase):
             with self.subTest(text=text[:20]), self.assertRaises(ValueError):
                 parse_summary(text)
 
+    def test_missing_initial_sample_does_not_crash(self) -> None:
+        """A no-reply sequence without a last-good sample cannot pass."""
+        awake = parse_summary(summary(percent=None, good=None, last_good="never"))
+        _, _, recovered = cases()
+        for cached, expected in ((False, "NOT OBSERVED"), (True, "FAIL")):
+            asleep = parse_summary(summary(now=SLEEP, percent=None, good=None,
+                                           last_good="never", failures=2, cached=cached))
+            with self.subTest(cached=cached):
+                self.assertEqual(analyze(awake, asleep, recovered)[0], expected)
+
+    def test_cache_lifetime_and_fresh_counter(self) -> None:
+        """Reject nonfinite duration and refuse unsupported cache policy."""
+        for value in ("0", "9" * 400):
+            with self.subTest(value=value[:10]), self.assertRaises(ValueError):
+                parse_summary(summary().replace("hours: 24;", f"hours: {value};"))
+        awake, asleep, recovered = cases()
+        changed = parse_summary(summary(now=SLEEP, percent=None, failures=3,
+                                        cached=True).replace("hours: 24;", "hours: 48;"))
+        self.assertEqual(analyze(awake, changed, recovered)[0], "NOT OBSERVED")
+        self.assertEqual(analyze(parse_summary(summary(failures=1)), asleep,
+                                 recovered)[0], "FAIL")
+
     def test_invalid_battery(self) -> None:
         """Reject out-of-range charge and zero last-good readings."""
         with self.assertRaises(ValueError):
