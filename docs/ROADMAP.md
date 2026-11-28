@@ -3386,3 +3386,16 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [ ] Hosted CI and review observed counts after #346 integration.
       Effective access, real user ACLs, and crash recovery remain open.
       No release admission.
+
+### ENG-16 Windows ACL existing-root observation
+
+- [x] #347 corrected Windows Python 3.13.17; initial 3 workflows / 5
+      jobs PASS on e3771ee. Job 140831370156 observed seven canonical
+      DACLs, three rules each, no selected broad allow ACEs, fresh
+      root/run protected, files inheriting. Owner equality false.
+      Explicit broad-read positive control PASS.
+- [x] Extend synthetic observation to a pre-existing root with an
+      inheritable Everyone read ACE, record root before/after and
+      child/files; classify owner with a closed category.
+- [ ] Repeat hosted qualification and review actual observations;
+      no effective-access or real profile ACL claim. Release BLOCKED.
