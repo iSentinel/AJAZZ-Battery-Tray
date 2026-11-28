@@ -396,3 +396,16 @@ on 7c1a853; six changed blobs match. Actual artifact roundtrip
 140864178226. Initial AULA bounded read #353 passed all six
 jobs on 3b13842; actual roundtrip 140864457101. Final integrated
 qualification pending.
+
+## AULA summary ambiguity (candidate)
+
+The clipboard analyzer previously used a last-key-wins dictionary and
+first cache row, while the extended analyzer used only four initial
+measurement rows. Require each of the six required clipboard fields
+and the complete cache/status row exactly once. Reject repeated
+recognized measurement prefixes after the initial four rows within
+the same extended AULA section, stopping at the next section header.
+Other section fields and unrelated clipboard notes remain independent.
+Two regression methods cover identical/conflicting duplicates and
+valid controls. This does not establish device identity, report
+authenticity or physical sleep behavior. Hosted qualification pending.
