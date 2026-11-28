@@ -1,3 +1,15 @@
+# Resume — native Windows ACL initial observation and existing root
+
+#347 corrected Windows Python to 3.13.17. Initial 3 workflows / 5
+jobs PASS on e3771ee, ACL job 140831370156. Fresh root/run protected,
+all seven DACLs canonical, three rules each, no selected broad ACEs;
+owner not runner on all seven. Explicit broad-read control PASS.
+Extend fixture to classify owner without identity disclosure and observe
+an existing root with an inheritable broad read ACE before/after the
+actual producer, plus fresh child and five files. Repeat CI pending.
+Effective access and real profiles remain unverified. #346 final
+macOS job was still running; #348 independent recovery candidate.
+
 # Resume — native Windows DACL observation
 
 Dependent on #346; initial 4 workflows / 5 jobs PASS, retargeted
