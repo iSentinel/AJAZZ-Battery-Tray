@@ -3410,3 +3410,28 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       only after replacement integration. Effective access, real
       profile ACLs, ancestor trust, power-loss durability and release
       admission remain unverified.
+
+### ENG-16 scoped qualification and ENG-14 strict evidence JSON
+
+- [x] #349 merged 6bedf53 after 3 workflows / 5 jobs PASS on 6670a40;
+      all five changed blobs match. ACL v3 job 140833872747 PASS,
+      actual artifact roundtrip 140833961443 PASS, Windows 22 tests.
+      #347 closed as superseded, branch retained.
+- [x] Ten scoped ENG-16 increments integrated. Native effective access,
+      ancestor trust, physical power-loss durability and authenticity
+      remain separate; do not mark broad security acceptance PASS.
+- [x] ENG-14/16 candidate strict JSON parser rejects duplicate decoded
+      keys at any nesting level, nonstandard constants, nonobjects and
+      recursion errors. Apply to manifest and semantic QA JSON; add
+      three regression methods, including valid-hash ambiguous documents.
+- [ ] Hosted qualification; continue remaining CLI/input review.
+      Real GUI/hardware and release admission remain open.
+
+### ENG-14 deterministic JSON nesting
+
+- [x] Initial #350 failed on 67fd789 (Windows/HA and offline QA);
+      interpreter-specific recursion assumption was not portable.
+- [x] Bound UTF-8 JSON structural depth to 64 before decoding,
+      ignore quoted/escaped delimiters, refuse unmatched closing.
+      Add boundary and invalid encoding regressions.
+- [ ] Repeat full CI and real artifact roundtrip before integration.

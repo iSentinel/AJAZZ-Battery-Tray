@@ -1,3 +1,26 @@
+# Resume — deterministic JSON nesting qualification
+
+Initial #350 on 67fd789 failed offline QA and Windows/HA regressions:
+Python 3.13.17 accepted the 2000-level array fixture rather than
+raising RecursionError (job 140859682830). Apple and ACL jobs passed;
+artifact roundtrip skipped. Replace implicit interpreter recursion
+limit with a quote/escape-aware predecode bound of 64 containers
+including the root; require UTF-8, refuse unmatched closing delimiter.
+Add exact boundary, escaped delimiter and invalid UTF-8 regression.
+No bypass of failed CI. Repeat hosted qualification pending.
+
+# Resume — ENG-16 scoped qualification and strict JSON follow-up
+
+#349 merged 6bedf53 after 3 workflows / 5 jobs PASS on 6670a40;
+all five changed blobs match. ACL v3 job 140833872747 passed scoped
+fresh DACL contract; existing root kept its explicit broad read ACE.
+#347 closed as superseded, original branch retained. Recovery #348
+and all ten current ENG-16 scoped increments integrated. Effective
+access, ancestor trust, power-loss durability and authenticity remain
+unqualified. Continue ENG-14/16 strict evidence JSON: reject duplicate
+decoded names, nonstandard constants, nonobjects and parser recursion.
+Three new regressions, hosted CI pending. Release BLOCKED.
+
 # Resume — scoped Windows DACL regression qualification
 
 #348 merged 8ae7b00 after 3 workflows / 4 jobs PASS; all four changed

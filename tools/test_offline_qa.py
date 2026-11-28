@@ -16,7 +16,7 @@ from qa_unittest import execute
 from run_offline_qa import (REQUIRED, create_run, junit_counts, read_evidence,
                             verify_inventory, verify_manifest, write_json,
                             file_identity, check_directory, publish_manifest,
-                            private_directory)
+                            private_directory, parse_evidence_json)
 
 
 INTERRUPTED_PUBLISHER = """
@@ -314,6 +314,43 @@ class OfflineQaTests(unittest.TestCase):
                        side_effect=replace_after_read):
                 with self.assertRaisesRegex(ValueError, "inventory changed"):
                     verify_manifest(root)
+
+    def test_strict_evidence_json(self) -> None:
+        """Reject repeated decoded names, nonstandard constants and nonobjects."""
+        good = b'{"outer":{"key":1},"other":2}'
+        self.assertEqual(parse_evidence_json(good)["outer"], {"key": 1})
+        invalid = (
+            b'{"schema":0,"schema":1}',
+            b'{"outer":{"key":0,"k\\u0065y":1}}',
+            b'{"value":NaN}', b'{"value":Infinity}', b'{"value":-Infinity}',
+            b'[]', b'null', b'{"outer":' + b'[' * 2000 + b'0' + b']' * 2000 + b'}',
+        )
+        for raw in invalid:
+            with self.subTest(raw=raw[:40]), self.assertRaises(ValueError):
+                parse_evidence_json(raw)
+
+    def test_json_depth_boundary_and_escaped_delimiters(self) -> None:
+        """Require the same depth limit across native interpreter versions."""
+        valid = b'{"outer":' + b'[' * 63 + b'0' + b']' * 63 + b'}'
+        invalid = b'{"outer":' + b'[' * 64 + b'0' + b']' * 64 + b'}'
+        self.assertIn("outer", parse_evidence_json(valid))
+        with self.assertRaisesRegex(ValueError, "nesting exceeds limit"):
+            parse_evidence_json(invalid)
+        value = {'text': '\\"' + '[{' * 100 + ']}', 'nested': {'x': 1}}
+        self.assertEqual(parse_evidence_json(json.dumps(value).encode()), value)
+        with self.assertRaises(ValueError):
+            parse_evidence_json(b'{"value":\xff}')
+
+    def test_manifest_duplicate_json_key(self) -> None:
+        """Reject duplicate schema names even if the last one is valid."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in REQUIRED:
+                (root / name).write_bytes(b"synthetic")
+            raw = json.dumps(verify_inventory(root)).encode("utf-8")
+            (root / "manifest.json").write_bytes(b'{"schema":0,' + raw[1:])
+            with self.assertRaisesRegex(ValueError, "Duplicate evidence JSON key"):
+                verify_manifest(root)
 
     def test_manifest_rejects_duplicate_or_invalid_entry(self) -> None:
         """Reject duplicate required names and Boolean byte counts."""
