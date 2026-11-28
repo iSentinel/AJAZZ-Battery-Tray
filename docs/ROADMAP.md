@@ -3498,3 +3498,12 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       do not conflate other device sections.
 - [x] Add two synthetic regression methods.
 - [ ] Hosted qualification after #353. Real AULA hardware NOT_RUN.
+
+### ENG-14 AULA duplicate-field qualification correction
+
+- [x] #353 merged 5221a56 after all six jobs passed on d4c230c;
+      all six changed blobs match; Windows native 1028 PASS.
+- [x] Download and inspect initial #354 failing QA artifact 15248149073;
+      SHA-256 matched, 575 tests, one failure, zero errors/skips.
+      Fix fixture selection to locate the four actual measurement rows.
+- [ ] Repeat integrated-base CI. Hardware acceptance remains open.
