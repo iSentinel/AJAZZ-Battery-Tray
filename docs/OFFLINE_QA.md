@@ -331,3 +331,13 @@ interpretations despite matching file digests. It is not a complete
 schema, finite-number validation or authentication. Three synthetic
 regression methods include matching-hash ambiguous documents.
 Hosted qualification pending.
+
+Initial #350 on 67fd789 failed offline QA, Windows and HA. Windows
+job 140859682830 showed that Python 3.13.17 accepted the 2000-level
+array instead of raising RecursionError. Apple and ACL jobs passed;
+artifact roundtrip skipped. The corrected decoder requires UTF-8
+and applies an explicit 64-container depth bound (root included)
+before decoding. Quoted and escaped delimiters do not count;
+unmatched closing delimiters are rejected. The JSON decoder still
+validates grammar. Boundary, escape and invalid UTF-8 regressions
+were added; repeated hosted qualification is required.
