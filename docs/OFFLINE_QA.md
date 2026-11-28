@@ -262,3 +262,22 @@ PASS, all five changed blobs matching 7ac3bb5. Initial root validation
 #346 passed 4 workflows / 5 jobs on 53eefa1, including 21 targeted
 tests on Windows and HA and real roundtrip job 140829455636.
 Final integrated-base qualification pending.
+
+## Interrupted publication recovery (candidate)
+
+A synthetic child process runs the actual manifest publisher and exits
+with code 73 immediately before or immediately after the atomic
+no-replace link. The temporary manifest remains in both scenarios.
+Before link there is no final manifest; after link two names refer to
+the same inode. The strict verifier must reject both directories and
+leave their inventories unchanged. A new unique sibling run must
+publish and verify normally. No incomplete evidence is repaired,
+deleted or promoted. The test has a 15-second subprocess timeout.
+This qualifies process interruption only, not storage power-loss
+durability or recovery from arbitrary filesystem corruption.
+
+Private root validation #346 merged e3c1ee7 after all five jobs
+passed on a2534f1; all five changed blobs match. Initial process
+interruption #348 passed all four jobs on 07c107e, including Windows
+22 targeted tests and actual artifact roundtrip 140831620517.
+Final integrated-base qualification required.

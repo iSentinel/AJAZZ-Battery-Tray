@@ -1,3 +1,21 @@
+# Resume — interrupted publication final qualification
+
+#346 merged e3c1ee7 after 4 workflows / 5 jobs PASS; all five changed
+blobs match checkout a2534f1. Initial #348 3 workflows / 4 jobs PASS
+on 07c107e; Windows 22 targeted tests, real artifact roundtrip
+140831620517. Retargeted for final integrated-base CI. ACL v2 #347
+remains independent and requires a corrected fixture qualification.
+Process interruption is not power-loss durability.
+
+# Resume — interrupted manifest publication fixture
+
+Dependent on #346. Exercise a real child process exiting immediately
+before and after the no-replace manifest link. Both interrupted
+inventories must be rejected without mutation; a fresh sibling run
+must publish and verify independently. No repair, deletion or
+promotion of incomplete evidence. Process exit is not power-loss
+durability. Hosted qualification pending.
+
 # Resume — private root final qualification
 
 #345 merged 664d097 after 3 workflows / 4 jobs PASS; all five changed
