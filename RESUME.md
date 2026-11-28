@@ -1,3 +1,14 @@
+# Resume — AULA diagnostic input contract
+
+Dependent on #352 initial 4 workflows / 6 jobs PASS; final CI pending.
+ENG-14 moves beyond QA formats to AULA L99 sleep reports. Reuse the
+bounded identity-checked reader with explicit 64 KiB cap, reject
+nonregular and linked files, preserve UTF-8 BOM support and CLI exits.
+One new regression covers exact size limit, directory/hardlink refusal
+and symlink refusal where creation is available. No hardware access.
+Next: review duplicate AULA diagnostic field handling and other CLI
+inputs. Hosted qualification pending.
+
 # Resume — restricted XML final qualification
 
 #351 merged d355758 after 4 workflows / 6 jobs PASS on bbe1233;
