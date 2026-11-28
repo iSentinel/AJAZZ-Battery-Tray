@@ -1,3 +1,12 @@
+# Resume — strict JUnit structure candidate
+
+Dependent on corrected #350, final hosted qualification pending.
+Reject unexpected direct suite children, nested result elements,
+missing/noncanonical counters, malformed XML and oversized input.
+Preserve valid producer format and existing counts/identity checks.
+New synthetic regression; no change to JUnit producer or release gates.
+Hosted qualification pending.
+
 # Resume — deterministic JSON nesting qualification
 
 Initial #350 on 67fd789 failed offline QA and Windows/HA regressions:
