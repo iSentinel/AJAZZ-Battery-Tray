@@ -3684,3 +3684,14 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       seven direct import consumers. Add compatibility regression; full rerun required.
 - [x] Confirm Apple uses the same ZIP importer; existing portable C roundtrip
       passes (2/2 tests). Next review native exporter limit parity.
+
+### ENG-14 native session exporter and importer budget parity
+
+- [x] Confirm #366–#368 each 5/5 and #369 6/6 hosted checks PASS.
+- [x] Exercise actual Apple portable C exporter at 32 x 64 KiB;
+      import 32 reports and produce 31 transitions.
+- [x] Exercise importer count and aggregate exact boundaries and reject
+      one-byte/one-report overflow; 16 targeted tests and audit PASS.
+- [ ] Hosted qualification and dependent integration.
+- [ ] Review UTC precision and annotation chronology across platforms;
+      preserve public normalized timestamp contracts unless separately reviewed.

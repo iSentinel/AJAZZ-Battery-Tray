@@ -43,6 +43,38 @@ int main(int argc, char **argv) {{
 """
 
 
+def boundary_program() -> str:
+    """Generate exact-limit native Apple reports with distinct capture times."""
+    before, after = report().split(STAMP)
+    prefix = json.dumps(before)
+    suffix = json.dumps(after + '\n\nFresh bounded F7/05 trace:\n')
+    return f"""
+#include "AjazzSessionArchive.h"
+int main(int argc, char **argv) {{
+    if (argc != 2) return 2;
+    AjazzDiagnosticSession *s = AjazzSessionCreate();
+    if (!s) return 1;
+    uint8_t data[AJAZZ_SESSION_REPORT_LIMIT];
+    AjazzSessionStart(s);
+    bool ok = true;
+    char added[28];
+    for (unsigned i = 0; i < AJAZZ_SESSION_LIMIT; i++) {{
+        int n = snprintf((char *)data, sizeof(data), "%s2026-11-25T05:40:%02uZ%s",
+            {prefix}, i, {suffix});
+        if (n < 0 || (size_t)n >= sizeof(data)) {{ ok = false; break; }}
+        memset(data + n, 'x', sizeof(data) - (size_t)n);
+        if (snprintf(added, sizeof(added), "2026-11-25T05:40:%02u.000001Z", i) != 27 ||
+            !AjazzSessionAddAt(s, 0, data, sizeof(data), added)) {{ ok = false; break; }}
+    }}
+    ok = ok && AjazzSessionCount(s) == 32 &&
+        !AjazzSessionAddAt(s, 0, data, sizeof(data), "2026-11-25T05:41:00.000001Z") &&
+        AjazzSessionSave(s, argv[1]);
+    AjazzSessionDestroy(s);
+    return !ok;
+}}
+"""
+
+
 class AppleSessionArchiveTests(unittest.TestCase):
     """Keep both GUI editions connected to the bounded local session writer."""
 
@@ -65,6 +97,26 @@ class AppleSessionArchiveTests(unittest.TestCase):
                              ['universal', 'high-sierra'])
             self.assertEqual(result['snapshots'][1]['owner_annotation']['marker'],
                              'BluetoothSelected')
+            self.assertEqual(result['identity_binding'], 'NOT_VERIFIED')
+
+    def test_native_export_at_count_and_report_limits(self) -> None:
+        """Import the real maximum Apple session and preserve every annotation."""
+        if os.name == 'nt':
+            self.skipTest('POSIX C session writer')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, binary, archive = root / 'limits.c', root / 'limits', root / 'limits.zip'
+            source.write_text(boundary_program(), encoding='utf-8')
+            subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror',
+                            '-I', str(ROOT / 'macos'), str(source), '-o', str(binary)],
+                           check=True, timeout=20)
+            subprocess.run([str(binary), str(archive)], check=True, timeout=10)
+            entries = load_session(archive)
+            self.assertEqual(len(entries), 32)
+            self.assertEqual(sum(len(t.encode('utf-8')) for t, _ in entries), 2 * 1024 * 1024)
+            self.assertTrue(all(len(t.encode('utf-8')) == 65536 for t, _ in entries))
+            result = timeline([t for t, _ in entries], [a for _, a in entries])
+            self.assertEqual(len(result['transitions']), 31)
             self.assertEqual(result['identity_binding'], 'NOT_VERIFIED')
 
     def test_both_menu_paths_passive(self) -> None:

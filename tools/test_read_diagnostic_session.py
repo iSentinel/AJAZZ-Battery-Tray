@@ -12,7 +12,7 @@ from unittest.mock import patch
 import zipfile
 
 from compare_diagnostic_timeline import main, timeline
-from read_diagnostic_session import load_session, MAX_ARCHIVE, MAX_REPORT, read_archive, unique_object
+from read_diagnostic_session import load_session, MAX_ARCHIVE, MAX_REPORT, MAX_REPORTS, MAX_TOTAL, read_archive, unique_object
 from run_offline_qa import MAX_EVIDENCE, read_evidence
 from test_compare_diagnostic_timeline import field_report
 
@@ -38,6 +38,17 @@ def write_zip(path: Path, texts: dict, manifest: dict | str) -> None:
             archive.writestr(name, data)
         archive.writestr('manifest.json', manifest if isinstance(manifest, str)
                          else json.dumps(manifest))
+
+
+def budget_fixture(sizes: list[int]) -> tuple[dict, dict]:
+    """Produce synthetic byte-budget fixtures independent of native hardware."""
+    texts = {f'snapshot-{i:02d}.txt': 'x' * size
+             for i, size in enumerate(sizes, 1)}
+    entries = [{'file': name, 'marker': 'Other', 'bytes': len(text),
+                'addedUtc': f'2026-11-25T07:00:{i:02d}Z'}
+               for i, (name, text) in enumerate(texts.items(), 1)]
+    return texts, {'schema': 'diagnostic-session-v1', 'identityBinding': 'NOT_VERIFIED',
+                   'markers': 'OWNER_ANNOTATED', 'entries': entries}
 
 
 class SessionImportTests(unittest.TestCase):
@@ -153,6 +164,23 @@ class SessionImportTests(unittest.TestCase):
                 archive.writestr('manifest.json', json.dumps(manifest))
             with self.assertRaises(ValueError):
                 load_session(path)
+
+    def test_importer_count_and_aggregate_boundaries(self) -> None:
+        """Accept exact native budgets and reject one extra byte or report."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'test.zip'
+            for sizes in ([1] * MAX_REPORTS, [MAX_REPORT] * (MAX_TOTAL // MAX_REPORT)):
+                texts, manifest = budget_fixture(sizes)
+                write_zip(path, texts, manifest)
+                entries = load_session(path)
+                self.assertEqual(len(entries), len(sizes))
+                self.assertEqual(sum(len(t) for t, _ in entries), sum(sizes))
+            for sizes, reason in (([1] * (MAX_REPORTS + 1), 'member count'),
+                                  ([MAX_REPORT] * (MAX_TOTAL // MAX_REPORT) + [1], 'session size'),
+                                  ([MAX_REPORT + 1, 1], 'invalid archive member')):
+                write_zip(path, *budget_fixture(sizes))
+                with self.assertRaisesRegex(ValueError, reason):
+                    load_session(path)
 
     def test_archive_identity_and_separate_budget(self) -> None:
         """Preserve the archive limit without widening the QA evidence ceiling."""
