@@ -46,10 +46,19 @@ def parse_begin(line: str) -> tuple[datetime, int]:
     return datetime.fromisoformat(match[1].replace("Z", "+00:00")), int(match[2])
 
 
+def validate_timeout(line: str, deadline: int) -> None:
+    """Require the supervisor timeout marker to match its declared deadline."""
+    expected = f"TIMEOUT: HID worker exceeded {deadline}s; no level claimed"
+    if line != expected:
+        raise ValueError("invalid diagnostic timeout marker")
+
+
 def validate_numeric_fields(lines: list[str]) -> None:
     """Check native UTC framing and integral transport field bounds."""
-    parse_begin(next((line for line in lines if line.strip()), ""))
+    _, deadline = parse_begin(next((line for line in lines if line.strip()), ""))
     for line in lines:
+        if line.startswith("TIMEOUT:"):
+            validate_timeout(line, deadline)
         if count := COUNT.fullmatch(line):
             if int(count[1]) > 2**31 - 1:
                 raise ValueError("receiver count exceeds native integer range")

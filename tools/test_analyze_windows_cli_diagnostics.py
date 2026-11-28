@@ -54,7 +54,7 @@ class WindowsCliAnalysisTests(unittest.TestCase):
         self.assertEqual(row['outcome'], 'inconclusive')
         self.assertEqual(row['pair_counts']['INCOMPLETE'], 1)
         text = ordinary().replace('END: worker exited 2',
-                                  'TIMEOUT: HID worker exceeded 40s')
+                                  'TIMEOUT: HID worker exceeded 40s; no level claimed')
         row = analyze(text)
         self.assertEqual(row['outcome'], 'TIMEOUT')
         self.assertEqual(row['policy_sequences']['reported_gate_counts'], {})

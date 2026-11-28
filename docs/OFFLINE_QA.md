@@ -508,3 +508,14 @@ length and candidate syntax use bounded ASCII digits. Missing probes
 or replies remain inconclusive rather than verified telemetry.
 12 GET-ID and 9 CLI analyzer tests PASS, source audit PASS.
 Hosted qualification pending. No hardware observations or protocol change.
+
+## Shared HID timeout consistency (candidate)
+
+Both diagnostic modes require the emitted supervisor timeout marker
+with the same deadline as BEGIN and the no-level-claimed suffix.
+Experimental interruptions after the mode marker may omit enumeration
+or observations; contradictory enumeration or outcome placement is
+rejected. Synthetic fixtures now use the actual native timeout syntax.
+13 GET-ID, 18 HID comparator and 9 CLI analyzer tests PASS;
+source audit PASS. No physical timeout or provenance attestation.
+Hosted qualification pending.

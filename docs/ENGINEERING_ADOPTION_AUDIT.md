@@ -223,3 +223,19 @@ effective-access/ancestor-trust/power-loss/authenticity gaps or
 release admission. Next ENG-14/16 candidate rejects ambiguous JSON
 in manifest and semantic coverage, with matching-hash regression
 fixtures; qualification pending.
+
+## ENG-14 scoped evidence review — 2026-11-28
+
+Integration 45618532 includes the strict JSON/JUnit XML sequence,
+AULA bounded reads, duplicate fields and cache/context validation,
+Windows F7/05 bounded reads, terminal integrity, verified-operation
+chronology, numeric/UTC framing, shared CLI reader and experimental
+GET-ID framing (#350–#362). These changes qualify offline parsing,
+not native device behavior. #363 descriptor-first matrix ordering
+at fe56c39b is awaiting final hosted checks after retargeting;
+the shared timeout consistency candidate has 40 targeted local tests
+and a clean source audit. No release admission or hardware claim.
+The original ENG-14 acceptance also requires a command-specific
+CLI help/exit/evidence inventory and remaining bounded input review.
+Keep ENG-14 open until those gaps and final hosted checks are assessed.
+Avoid extending diagnostic protocol semantics without field evidence.
