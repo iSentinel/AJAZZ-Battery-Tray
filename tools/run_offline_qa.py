@@ -188,15 +188,17 @@ def regular_evidence(info: os.stat_result) -> bool:
             and info.st_ino != 0 and not attributes & reparse)
 
 
-def read_evidence(path: Path) -> bytes:
+def read_evidence(path: Path, max_bytes: int = MAX_EVIDENCE) -> bytes:
     """Read bounded regular evidence; detect identity or metadata changes."""
+    if not 0 < max_bytes <= MAX_EVIDENCE:
+        raise ValueError("Invalid evidence size limit")
     try:
         before = path.lstat()
     except FileNotFoundError as error:
         raise ValueError("Required evidence file missing") from error
     if not regular_evidence(before):
         raise ValueError("Expected an unlinked-to regular evidence file")
-    if before.st_size > MAX_EVIDENCE:
+    if before.st_size > max_bytes:
         raise ValueError("Evidence exceeds limit")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     descriptor = os.open(path, flags | getattr(os, "O_BINARY", 0))
@@ -205,9 +207,9 @@ def read_evidence(path: Path) -> bytes:
         if (not regular_evidence(opened)
                 or file_identity(opened, True) != file_identity(before, True)):
             raise ValueError("Evidence changed before read")
-        raw = stream.read(MAX_EVIDENCE + 1)
+        raw = stream.read(max_bytes + 1)
         after = os.fstat(stream.fileno())
-    if len(raw) > MAX_EVIDENCE or len(raw) != before.st_size:
+    if len(raw) > max_bytes or len(raw) != before.st_size:
         raise ValueError("Evidence length mismatch")
     if (file_identity(after) != file_identity(opened)
             or file_identity(path.lstat()) != file_identity(before)):
