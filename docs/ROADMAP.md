@@ -3551,3 +3551,16 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       source audit PASS.
 - [ ] Hosted qualification after #357; review chronological
       operation evidence separately. Hardware and release separate.
+
+### ENG-14 Windows HID verified operation chronology
+
+- [x] #357 merged f331c825 after 5/5 checks; all five changed
+      blobs match. #358 opened at 766640d6 after integration update;
+      prior common QA 582/582 PASS, repeated targeted 14/14 PASS.
+- [x] Require ordered positive enumeration, open and same-open
+      SET/GET pairs before verified result; reject post-result steps
+      and successful transfers with nonzero Win32 errors.
+- [x] Regression cases including cross-open and retry boundaries;
+      15 targeted tests and source audit PASS.
+- [ ] Hosted qualification after #358. Review numeric/timestamp
+      evidence boundaries separately. Hardware and release separate.

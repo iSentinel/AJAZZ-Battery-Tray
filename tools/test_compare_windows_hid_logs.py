@@ -129,7 +129,7 @@ class WindowsHidLogTests(unittest.TestCase):
         for malformed in ("STEP: found invalid", "PASS: invalid", "END: invalid"):
             with self.subTest(marker=malformed), self.assertRaises(ValueError):
                 parse_log(valid.replace(OPEN, OPEN + "\n" + malformed))
-        self.assertEqual(parse_log(valid.replace(GET_OK, GET_OK + "\n" + GET_OK)).battery, 83)
+        self.assertEqual(parse_log(valid.replace(GET_OK, GET_OK + "\n" + SET_OK + "\n" + GET_OK)).battery, 83)
 
     def test_terminal_order_and_conflicting_outcomes(self) -> None:
         """Prevent ambiguous final results from qualifying as verified."""
@@ -147,6 +147,25 @@ class WindowsHidLogTests(unittest.TestCase):
         # Worker may report no battery just before the parent's deadline.
         timeout = report("INCONCLUSIVE: no reply", "TIMEOUT: expired", end=None)
         self.assertEqual(classify(parse_log(timeout))[0], "TIMEOUT")
+
+    def test_verified_operation_order(self) -> None:
+        """Reject unordered or cross-open transfers in verified reports."""
+        count = "STEP: found 1 matching MI_02 paths"
+        passed = "PASS: verified battery 83%"
+        terminal = "END: worker exited 0"
+        failed_open = "STEP: HID open failed"
+        invalid = ((OPEN, count, SET_OK, GET_OK, passed),
+                   (count, OPEN, GET_OK, SET_OK, passed),
+                   (count, OPEN, SET_OK, failed_open, OPEN, GET_OK, passed),
+                   (count, OPEN, SET_OK, passed, GET_OK),
+                   (count, OPEN, SET_OK, GET_OK, passed, SET_OK),
+                   (count, OPEN, SET_OK, GET_OK.replace("Win32=0", "Win32=5"), passed),
+                   (count, OPEN, SET_OK, GET_OK, GET_OK, passed))
+        for events in invalid:
+            with self.subTest(events=events), self.assertRaises(ValueError):
+                parse_log("\n".join((BEGIN, *events, terminal)))
+        valid = (count, OPEN, SET_OK, GET_OK, failed_open, passed)
+        self.assertEqual(parse_log("\n".join((BEGIN, *valid, terminal))).battery, 83)
 
     def test_local_file_size_guard(self) -> None:
         """Accept a small local report and reject one above the size limit."""

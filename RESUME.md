@@ -1,3 +1,16 @@
+# Resume — Windows HID verified operation chronology
+
+#357 merged f331c825 after 5/5 hosted checks on 9c31089f;
+all five changed blobs match. Terminal marker candidate prior QA
+582/582 PASS on 5313fd39; rebased by merge to 766640d6 and
+published as #358, 14 targeted tests PASS, hosted CI pending.
+Require positive enumeration, successful open, and ordered SET/GET
+pairs before verified output; reset pending SET across opens. Reject
+successful transfers with nonzero Win32 code and post-result steps.
+One new regression method; 15 targeted tests and source audit PASS.
+Nonverified classifications unchanged; no hardware, runtime or release
+change. Next: review numeric and timestamp evidence boundaries.
+
 # Resume — Windows HID terminal marker validation
 
 #356 merged 18508ff1 after 5/5 hosted checks on 13a1e0ee;
