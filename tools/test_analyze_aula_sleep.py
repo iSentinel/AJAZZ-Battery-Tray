@@ -96,6 +96,19 @@ class ExtendedEvidenceTests(unittest.TestCase):
         wake = parse_summary(extended(WAKE, WAKE, True))
         self.assertEqual(analyze_pair(sleep, wake)[0], "FAIL")
 
+    def test_duplicate_extended_field(self) -> None:
+        """Refuse repeated AULA measurements within the same section."""
+        raw = extended(SLEEP, START, False)
+        lines = raw.splitlines()
+        for line in lines[4:8]:
+            with self.subTest(field=line.split(":", 1)[0]):
+                duplicate = raw.replace("[Bluetooth fallback state]", line + "\n[Bluetooth fallback state]")
+                with self.assertRaisesRegex(ValueError, "Duplicate extended AULA field"):
+                    parse_summary(duplicate)
+        # Similar fields in another section are independent, not duplicates.
+        self.assertEqual(parse_summary(raw + "Battery: unavailable; status: other\n"),
+                         parse_summary(raw))
+
     def test_duplicate_extended_section(self) -> None:
         """Reject concatenated reports instead of silently choosing one."""
         with self.assertRaises(ValueError):
@@ -234,6 +247,20 @@ class AulaOfflineSummaryTests(unittest.TestCase):
         recovered = parse_summary(summary(now=WAKE, good=80, percent=80,
                                           last_good=midway))
         self.assertEqual(analyze(awake, asleep, recovered)[0], "FAIL")
+
+    def test_duplicate_clipboard_fields(self) -> None:
+        """Reject identical or conflicting duplicates of all required fields."""
+        raw = summary()
+        prefixes = ("Version:", "Automatic monitoring enabled:", "Receiver present:",
+                    "Presence known:", "Battery percentage:", "Last read UTC:",
+                    "Last successful battery:")
+        for line in raw.splitlines():
+            if line.startswith(prefixes):
+                for duplicate in (line, line.split(":", 1)[0] + ": invalid"):
+                    with self.subTest(field=line.split(":", 1)[0]):
+                        with self.assertRaises(ValueError):
+                            parse_summary(raw + duplicate + "\n")
+        self.assertEqual(parse_summary(raw + "Other note: ignored\n"), parse_summary(raw))
 
     def test_malformed_summary(self) -> None:
         """Reject unrelated content and invalid presence markers."""
