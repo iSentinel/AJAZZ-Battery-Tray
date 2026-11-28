@@ -1,3 +1,12 @@
+# Resume — AULA bounded input final qualification
+
+#352 merged 73e8b55 after 4 workflows / 6 jobs PASS on 7c1a853;
+all six changed blobs match, Windows/HA 27 targeted tests, real
+roundtrip 140864178226. Initial #353 4 workflows / 6 jobs PASS
+on 3b13842, real roundtrip 140864457101. Retarget for final
+integrated-base CI. Next: reject ambiguous AULA summary fields.
+No physical hardware or release admission claim.
+
 # Resume — AULA diagnostic input contract
 
 Dependent on #352 initial 4 workflows / 6 jobs PASS; final CI pending.
