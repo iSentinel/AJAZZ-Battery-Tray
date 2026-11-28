@@ -323,6 +323,8 @@ def check_json_depth(text: str) -> None:
                 raise ValueError("Evidence JSON nesting exceeds limit")
         elif char in "]}":
             depth -= 1
+            if depth < 0:
+                raise ValueError("Invalid evidence JSON nesting")
     # The JSON decoder validates balance and grammar.
 
 
