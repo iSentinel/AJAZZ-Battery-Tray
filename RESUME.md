@@ -1,3 +1,14 @@
+# Resume — AULA cache semantics candidate
+
+Dependent on corrected #354; hosted qualification pending.
+Guard missing last-good sample/timestamp before subtracting dates.
+Hidden absent sample is NOT OBSERVED; displayed absent sample FAIL.
+Reject nonfinite or nonpositive cache lifetimes; three-state analysis
+now requires the documented 24-hour policy like two-state analysis.
+Reject fresh initial samples with nonzero failure counter and require
+a no-reply poll later than its cached sample. Two synthetic tests.
+No runtime or physical AULA changes. Release BLOCKED.
+
 # Resume — AULA duplicate field corrected qualification
 
 #353 merged 5221a56 after 4 workflows / 6 jobs PASS on d4c230c;
