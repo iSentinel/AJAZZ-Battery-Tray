@@ -1,3 +1,17 @@
+# Resume — session exporter and importer budget parity
+
+#366–#368 each 5/5, #369 6/6 hosted checks PASS; all remain open.
+Prior integration block unresolved; no merge claimed.
+Test real portable Apple C exporter at 32 reports of 64 KiB each,
+import all annotations and build 31 transitions. Test common importer
+at 32 entries and 8 MiB aggregate, reject one extra byte or report.
+Existing Windows C# tests cover native count, UTF-8 and cumulative limits;
+no local dotnet, so native Windows execution remains hosted qualification.
+3 Apple and 13 session importer tests PASS; source audit PASS.
+Next: inspect exact UTC precision and annotation chronology across
+Windows and Apple before modifying any timestamp contract. No runtime,
+hardware or release changes.
+
 # Resume — diagnostic session archive identity and strict manifest
 
 #366, #367 and #368 remain open, each 5/5 hosted checks PASS.

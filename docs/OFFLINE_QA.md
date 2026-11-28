@@ -584,3 +584,14 @@ Initial full run on f1a06c48 failed (45 import/discovery errors) because
 seven direct consumers import unique_object. Restore that compatibility hook
 without weakening strict session manifest parsing. Add one regression and
 repeat the full suite. The Apple portable C ZIP roundtrip also passes 2/2.
+
+## Session exporter/importer budget parity (candidate)
+
+A portable C fixture calls the production Apple session writer at the
+32-report and 64 KiB/report limits, refuses an additional report and
+imports the resulting 2 MiB of report text with 31 timeline transitions.
+Synthetic deflated ZIP fixtures exercise 32 reports, 8 MiB aggregate and
+one-byte/count overflow. Existing Windows native C# checks cover count,
+UTF-8 and aggregate limits; they are not executed locally in this stage.
+3 Apple and 13 session importer tests PASS; source audit PASS. Native GUI,
+physical devices and release admission remain outside the scope.
