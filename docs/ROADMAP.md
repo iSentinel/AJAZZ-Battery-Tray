@@ -3539,3 +3539,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       tests and source audit PASS.
 - [ ] Hosted qualification after #356; review repeated/contradictory
       log markers separately. Hardware and release remain separate.
+
+### ENG-14 Windows HID terminal marker integrity
+
+- [x] #356 merged 18508ff1 after 5/5 checks; all five changed
+      blobs match. #357 retargeted and updated to 9c31089f;
+      12 targeted tests PASS.
+- [x] Reject repeated or malformed singleton markers, conflicting
+      outcomes and nonterminal END/TIMEOUT; keep native retries.
+- [x] Two new synthetic test methods; 14 targeted tests and
+      source audit PASS.
+- [ ] Hosted qualification after #357; review chronological
+      operation evidence separately. Hardware and release separate.

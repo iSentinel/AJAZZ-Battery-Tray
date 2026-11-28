@@ -33,13 +33,42 @@ class Capture:
     inconclusive: bool
 
 
+def validate_markers(lines: list[str]) -> None:
+    """Require unambiguous parent and worker outcome markers."""
+    singletons = ("BEGIN:", "STEP: found ", "PASS:", "INCONCLUSIVE:",
+                  "FAIL:", "END:", "TIMEOUT:")
+    counts = {prefix: 0 for prefix in singletons}
+    nonempty = [line for line in lines if line.strip()]
+    if not nonempty or not nonempty[0].startswith("BEGIN: UTC="):
+        raise ValueError("missing initial BEGIN marker")
+    for line in nonempty:
+        for prefix in singletons:
+            if line.startswith(prefix):
+                counts[prefix] += 1
+                if counts[prefix] > 1:
+                    raise ValueError("duplicate HID diagnostic marker")
+        for prefix, pattern in (("STEP: found ", COUNT), ("PASS:", PASS),
+                                ("END:", END)):
+            if line.startswith(prefix) and not pattern.fullmatch(line):
+                raise ValueError("malformed HID diagnostic marker")
+    if counts["END:"] + counts["TIMEOUT:"] != 1 or not nonempty[-1].startswith(
+            ("END:", "TIMEOUT:")):
+        raise ValueError("missing or misplaced terminal marker")
+    if counts["PASS:"] + counts["INCONCLUSIVE:"] + counts["FAIL:"] > 1:
+        raise ValueError("conflicting worker outcome markers")
+    if counts["FAIL:"] and nonempty[-1] != "END: worker exited 1":
+        raise ValueError("worker failure contradicts terminal marker")
+    if counts["INCONCLUSIVE:"] and nonempty[-1].startswith("END:") and (
+            nonempty[-1] != "END: worker exited 2"):
+        raise ValueError("inconclusive outcome contradicts worker exit")
+
+
 def parse_log(data: str) -> Capture:
     """Parse only stage markers from beta.57+ redacted CLI output."""
     lines = data.splitlines()
     if any(line.startswith("MODE: experimental GET") for line in lines):
         raise ValueError("Use compare_get_ids.py for an experimental GET-ID log")
-    if sum(line.startswith("BEGIN: UTC=") for line in lines) != 1:
-        raise ValueError("missing or duplicate BEGIN marker")
+    validate_markers(lines)
     values = {"open_ok": 0, "open_failed": 0, "set_ok": 0,
               "set_failed": 0, "get_ok": 0, "get_failed": 0}
     candidates, level, ended = None, None, None

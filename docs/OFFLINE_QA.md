@@ -447,3 +447,12 @@ The 1 MiB limit and UTF-8 BOM support remain. One synthetic test
 covers exact cap, directory and hardlink/symlink refusal where
 supported. 12 targeted tests and source audit PASS. This is local
 input hardening, not proof of HID observations. Hosted CI pending.
+
+## Windows HID terminal marker integrity (candidate)
+
+The comparator rejects duplicate/malformed singleton markers, conflicting
+worker outcomes and misplaced terminal markers. Repeated native I/O
+operations remain valid; an inconclusive result just before a supervisor
+timeout stays a timeout. Two regression methods, 14 targeted tests
+and source audit PASS. No proof of device identity or actual telemetry.
+Hosted qualification pending.

@@ -118,6 +118,36 @@ class WindowsHidLogTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_log("\n".join([BEGIN, "INCONCLUSIVE: no reply"]))
 
+    def test_duplicate_and_malformed_singleton_markers(self) -> None:
+        """Reject repeated summaries but preserve repeated native operations."""
+        valid = report("PASS: verified battery 83%", end=0)
+        for original in (BEGIN, "STEP: found 1 matching MI_02 paths",
+                         "PASS: verified battery 83%", "END: worker exited 0"):
+            with self.subTest(marker=original):
+                with self.assertRaises(ValueError):
+                    parse_log(valid.replace(original, original + "\n" + original))
+        for malformed in ("STEP: found invalid", "PASS: invalid", "END: invalid"):
+            with self.subTest(marker=malformed), self.assertRaises(ValueError):
+                parse_log(valid.replace(OPEN, OPEN + "\n" + malformed))
+        self.assertEqual(parse_log(valid.replace(GET_OK, GET_OK + "\n" + GET_OK)).battery, 83)
+
+    def test_terminal_order_and_conflicting_outcomes(self) -> None:
+        """Prevent ambiguous final results from qualifying as verified."""
+        valid = report("PASS: verified battery 83%", end=0)
+        invalid = (valid + GET_OK + "\n", GET_OK + "\n" + valid,
+                   report("INCONCLUSIVE: no reply", "PASS: verified battery 83%", end=0),
+                   report("FAIL: worker IOException", "PASS: verified battery 83%", end=0),
+                   report("INCONCLUSIVE: no reply", end=1),
+                   report("FAIL: worker IOException", end=2),
+                   report("INCONCLUSIVE: no reply", "INCONCLUSIVE: no reply"),
+                   report("TIMEOUT: expired", "TIMEOUT: expired", end=None))
+        for text in invalid:
+            with self.subTest(text=text[-90:]), self.assertRaises(ValueError):
+                parse_log(text)
+        # Worker may report no battery just before the parent's deadline.
+        timeout = report("INCONCLUSIVE: no reply", "TIMEOUT: expired", end=None)
+        self.assertEqual(classify(parse_log(timeout))[0], "TIMEOUT")
+
     def test_local_file_size_guard(self) -> None:
         """Accept a small local report and reject one above the size limit."""
         with tempfile.TemporaryDirectory() as directory:
