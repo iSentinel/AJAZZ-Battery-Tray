@@ -1,3 +1,15 @@
+# Resume — CLI help and source registry coverage
+
+#363 merged ef211330 after 5/5 hosted checks on fe56c39b;
+all five changed blobs match. #364 retargeted and updated to c9fd9cac;
+40 targeted tests PASS, fresh hosted qualification pending.
+Inventory found 91 root Python entrypoints, all registered and using
+argparse. Require both --help and -h in the offline QA and coverage
+catalog, close subprocess stdin and test registry/source agreement.
+Six targeted catalog tests and source audit PASS. No native CLI,
+hardware, runtime or release change. Next: command-specific exit
+contracts and evidence bounds inventory; review native CLI separately.
+
 # Resume — HID timeout consistency and ENG-14 review
 
 #362 merged 45618532 after 5/5 hosted checks on aaf8d0ea;

@@ -1,5 +1,6 @@
 """Verify the offline case catalog and evidence coverage without hardware."""
 
+import ast
 import json
 from pathlib import Path
 import tempfile
@@ -7,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from export_offline_qa_catalog import catalog, coverage, verify_run, verify_status
-from run_offline_qa import CLI, read_evidence, verify_inventory, write_json
+from run_offline_qa import CLI, ROOT, read_evidence, verify_inventory, write_json
 
 
 class OfflineCatalogTests(unittest.TestCase):
@@ -17,9 +18,26 @@ class OfflineCatalogTests(unittest.TestCase):
         """Use the actual loader and command registry, not duplicated counts."""
         row = catalog()
         self.assertIn(self.id(), row['unittest_ids'])
-        self.assertEqual(len(row['commands']), len(CLI) + 2)
+        self.assertEqual(len(row['commands']), 2 * len(CLI) + 2)
+        for name in CLI:
+            for flag in ('--help', '-h'):
+                self.assertIn(['python', f'tools/{name}.py', flag], row['commands'])
         self.assertEqual(row['observations'], 'NOT_COLLECTED')
         self.assertEqual(row['hardware'], 'NOT_RUN')
+
+    def test_cli_registry_matches_source_entrypoints(self) -> None:
+        """Discover root Python entrypoints independently of the QA registry."""
+        names = set()
+        for path in sorted((ROOT / 'tools').glob('*.py')):
+            if path.name.startswith('test_'):
+                continue
+            tree = ast.parse(path.read_text(encoding='utf-8'))
+            if any(isinstance(node, ast.If) and '__main__' in ast.unparse(node.test)
+                   for node in tree.body):
+                names.add(path.stem)
+        self.assertTrue(names)
+        self.assertEqual(set(CLI), names)
+        self.assertEqual(len(CLI), len(names))
 
     def test_coverage(self) -> None:
         """Reject missing, extra and duplicate identities and reordered steps."""

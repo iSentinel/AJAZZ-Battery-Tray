@@ -160,7 +160,8 @@ def run_step(arguments: list[str], timeout: int,
     try:
         with output.open("xb") if output else open(os.devnull, "wb") as stream:
             process = subprocess.run([sys.executable, *arguments], cwd=ROOT,
-                                     stdout=stream, stderr=subprocess.DEVNULL,
+                                     stdin=subprocess.DEVNULL, stdout=stream,
+                                     stderr=subprocess.DEVNULL,
                                      timeout=timeout, check=False)
         code = process.returncode
         status = "PASS" if code == 0 else "FAIL"
@@ -404,7 +405,8 @@ def run_qa(directory: Path) -> int:
     steps = [run_step(["tools/code_audit.py", "--baseline",
                        "config/code-audit-baseline.json"], 30,
                       directory / "code-audit.json")]
-    steps.extend(run_step([f"tools/{name}.py", "--help"], 10) for name in CLI)
+    steps.extend(run_step([f"tools/{name}.py", flag], 10)
+                 for name in CLI for flag in ("--help", "-h"))
     steps.append(run_step(["tools/qa_unittest.py", "--output",
                            str(directory / "python-results.xml")], 180))
     # Persist a relative evidence path instead of the user's private location.

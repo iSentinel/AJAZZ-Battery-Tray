@@ -35,7 +35,8 @@ def catalog() -> dict:
         raise ValueError('invalid offline discovery')
     commands = [['python', 'tools/code_audit.py', '--baseline',
                  'config/code-audit-baseline.json']]
-    commands.extend(['python', f'tools/{name}.py', '--help'] for name in CLI)
+    commands.extend(['python', f'tools/{name}.py', flag]
+                    for name in CLI for flag in ('--help', '-h'))
     commands.append(['python', 'tools/qa_unittest.py', '--output', 'python-results.xml'])
     return {'schema': 'offline-qa-catalog-v1', 'scope': 'OFFLINE_PYTHON',
             'unittest_ids': sorted(names), 'commands': commands,
