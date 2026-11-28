@@ -3336,3 +3336,13 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [ ] Repeat #344 against integrated base; cross-check reported PASS
       against individual step statuses, test outcomes and audit next.
       Release BLOCKED.
+
+### ENG-16 reported QA status consistency
+
+- [x] Reject contradictory PASS using verified command exit codes,
+      exact integer JUnit counts and zero-debt audit results.
+      Preserve honest complete FAIL coverage, not release admission.
+- [x] Add synthetic contradictory-status regression and update the
+      verified-byte integration fixture.
+- [ ] Hosted qualification after #344; actual GUI/hardware, native
+      ACL and release admission remain open.
