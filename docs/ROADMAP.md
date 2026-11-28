@@ -3480,3 +3480,12 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Add exact-cap, directory and link regression fixtures.
 - [ ] Hosted qualification after #352. Review duplicate diagnostic
       field handling separately; actual AULA sleep hardware NOT_RUN.
+
+### ENG-14 AULA bounded input qualification
+
+- [x] #352 merged 73e8b55 after 4 workflows / 6 jobs PASS on
+      7c1a853; all six changed blobs match. Real roundtrip 140864178226.
+- [x] Initial #353 4 workflows / 6 jobs PASS on 3b13842;
+      actual artifact roundtrip 140864457101.
+- [ ] Final integrated-base CI; review duplicate AULA fields.
+      Hardware acceptance and release remain separate.
