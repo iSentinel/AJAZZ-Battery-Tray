@@ -5,6 +5,9 @@ import re
 import sys
 from pathlib import Path
 
+from compare_windows_hid_logs import parse_begin
+from run_offline_qa import read_evidence
+
 PAIR = re.compile(r"PAIR: delay=(30|100|250)ms length=(\d+) request=(05|00)")
 OBSERVED = re.compile(
     r"OBSERVED: request=(05|00) returned=([0-9A-F]{2}) "
@@ -13,24 +16,42 @@ OBSERVED = re.compile(
 )
 MODE = "MODE: experimental GET 05 versus GET 00; no battery claimed"
 END = "END: worker exited 2"
+OUTCOME = "INCONCLUSIVE: experimental GET ID comparison; no battery claimed"
 LIMIT = 1024 * 1024
 ProbeKey = tuple[int, int, str]
 Observation = tuple[str, str] | None
 ProbeEntries = dict[ProbeKey, Observation]
 
 
+def validate_session(lines: list[str]) -> bool:
+    """Validate experimental framing before interpreting probe observations."""
+    if not lines or sum(line.startswith("BEGIN:") for line in lines) != 1:
+        raise ValueError("Expected one GET-ID diagnostic session")
+    parse_begin(lines[0])
+    if [line for line in lines if line.startswith("MODE:")] != [MODE]:
+        raise ValueError("Missing or ambiguous experimental mode")
+    terminal = [line for line in lines if line.startswith(("END:", "TIMEOUT:"))]
+    if len(terminal) != 1 or terminal[0] != lines[-1]:
+        raise ValueError("Missing or ambiguous experimental terminal marker")
+    if any(line.startswith(("PASS:", "FAIL:")) for line in lines):
+        raise ValueError("Unexpected success or failure marker")
+    outcomes = [line for line in lines if line.startswith("INCONCLUSIVE:")]
+    if terminal[0].startswith("TIMEOUT:"):
+        if outcomes not in ([], [OUTCOME]):
+            raise ValueError("Ambiguous experimental timeout outcome")
+        return False
+    if terminal[0] != END or outcomes != [OUTCOME] or lines[-2] != OUTCOME:
+        raise ValueError("Missing or inconsistent experimental worker outcome")
+    if sum(line.startswith("STEP: found ") for line in lines) > 1:
+        raise ValueError("Duplicate experimental enumeration")
+    return True
+
+
 def parse(data: str) -> ProbeEntries | None:
     """Read pair markers and observations for exactly one receiver."""
     lines = data.splitlines()
-    if lines.count(MODE) != 1 or sum(
-            line.startswith("BEGIN: UTC=") for line in lines) != 1:
-        raise ValueError("Expected one GET-ID diagnostic session")
-    if any(line.startswith("TIMEOUT:") for line in lines):
+    if not validate_session(lines):
         return None
-    if lines.count(END) != 1 or lines[-1] != END:
-        raise ValueError("Missing completed experimental worker exit")
-    if any(line.startswith(("PASS:", "FAIL:")) for line in lines):
-        raise ValueError("Unexpected success or failure marker")
     if lines.count("STEP: found 1 matching MI_02 paths") != 1 or [
             line for line in lines
             if line.startswith("STEP: experimental receiver #")
@@ -90,13 +111,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--log", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
-        with args.log.open("rb") as source:
-            raw = source.read(LIMIT + 1)
-        if len(raw) > LIMIT:
-            raise ValueError("Log exceeds one MiB")
-        entries = parse(raw.decode("utf-8-sig"))
+        entries = parse(read_evidence(args.log, LIMIT).decode("utf-8-sig"))
     except (OSError, ValueError) as error:
-        print(f"FAIL: {error}", file=sys.stderr)
+        print(f"FAIL: invalid GET-ID diagnostic ({type(error).__name__})", file=sys.stderr)
         return 1
     if entries is None:
         print("INCONCLUSIVE: no complete single-receiver experiment")

@@ -1,6 +1,11 @@
 """Synthetic tests of redacted GET-ID pair association."""
+from contextlib import redirect_stderr, redirect_stdout
+import io
+import os
+from pathlib import Path
+import tempfile
 import unittest
-from compare_get_ids import MODE, END, parse, summarize
+from compare_get_ids import MODE, END, LIMIT, OUTCOME, main, parse, summarize
 
 
 def fixture(missing: bool = False, changed: bool = False) -> str:
@@ -65,3 +70,46 @@ class GetIdTests(unittest.TestCase):
         """Require the observed prefix to match the stated returned ID."""
         with self.assertRaises(ValueError):
             parse(fixture().replace("returned=05", "returned=00", 1))
+
+
+    def test_session_framing(self) -> None:
+        """Reject ambiguous experimental starts, modes and terminal outcomes."""
+        valid = fixture()
+        invalid = ("prefix\n" + valid, valid.replace("00Z", "00+02:00"),
+                   valid.replace(MODE, MODE + "\nMODE: other"),
+                   valid.replace(OUTCOME, ""),
+                   valid.replace(OUTCOME, OUTCOME + "\n" + OUTCOME),
+                   valid.replace(OUTCOME, OUTCOME + "\nSTEP: extra"),
+                   valid.replace("found 1 matching MI_02 paths",
+                                 "found 1 matching MI_02 paths\nSTEP: found 2 matching MI_02 paths"),
+                   valid + "\nTIMEOUT: worker exceeded 40s",
+                   valid.replace(END, "TIMEOUT: worker exceeded 40s\nTIMEOUT: repeated"),
+                   valid.replace(OUTCOME, "PASS: verified battery 83%").replace(
+                       END, "TIMEOUT: worker exceeded 40s"))
+        for text in invalid:
+            with self.subTest(text=text[-90:]), self.assertRaises(ValueError):
+                parse(text)
+        self.assertIsNone(parse(valid.replace(OUTCOME + "\n" + END,
+                                              "TIMEOUT: worker exceeded 40s")))
+
+    def test_cli_local_evidence_reader(self) -> None:
+        """Preserve exit codes and BOM while refusing linked/oversized input."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "capture.txt"
+            path.write_bytes(fixture().encode("utf-8-sig"))
+            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                self.assertEqual(main(["--log", str(path)]), 0)
+                self.assertEqual(main(["--log", str(root)]), 1)
+                alias = root / "alias.txt"
+                os.link(path, alias)
+                self.assertEqual(main(["--log", str(path)]), 1)
+                self.assertEqual(main(["--log", str(alias)]), 1)
+                alias.unlink()
+                path.write_bytes(b"Z" * (LIMIT + 1))
+                self.assertEqual(main(["--log", str(path)]), 1)
+                try:
+                    alias.symlink_to(path)
+                except OSError:
+                    return
+                self.assertEqual(main(["--log", str(alias)]), 1)
