@@ -1,3 +1,17 @@
+# Resume — scoped Windows DACL regression qualification
+
+#348 merged 8ae7b00 after 3 workflows / 4 jobs PASS; all four changed
+blobs match 04ccafc, Windows 22 targeted tests and real artifact
+roundtrip 140832940473 PASS. #347 ACL v2 passed on eb4b858, job
+140832905724: fresh root/run protected, all fresh evidence and existing
+root's new run/files canonical, no selected broad allow ACEs. Existing
+root retained its explicit Everyone read ACE; owner ADMINISTRATORS.
+Carry corrected ACL fixture and workflow onto latest integration,
+require scoped fresh-evidence DACL regression contract and retain
+observation of existing root. Do not merge stale #347; close it only
+after replacement integration. No runtime ACL enforcement or effective
+access guarantee. Release BLOCKED.
+
 # Resume — interrupted publication final qualification
 
 #346 merged e3c1ee7 after 4 workflows / 5 jobs PASS; all five changed
