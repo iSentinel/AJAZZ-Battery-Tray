@@ -456,3 +456,13 @@ operations remain valid; an inconclusive result just before a supervisor
 timeout stays a timeout. Two regression methods, 14 targeted tests
 and source audit PASS. No proof of device identity or actual telemetry.
 Hosted qualification pending.
+
+## Windows HID verified operation chronology (candidate)
+
+Verified reports now require positive enumeration before open, successful
+open before transfer, and successful SET F7 before each GET 05 on that
+open. A new open invalidates pending SET, and at least one complete pair
+must precede the verified result. Reject post-result steps and successful
+transfers with nonzero Win32 error. Nonverified classifications remain
+unchanged. 15 targeted tests and source audit PASS. This validates log
+consistency, not authentic device provenance. Hosted qualification pending.

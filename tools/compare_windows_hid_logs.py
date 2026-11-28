@@ -63,12 +63,48 @@ def validate_markers(lines: list[str]) -> None:
         raise ValueError("inconclusive outcome contradicts worker exit")
 
 
+def validate_verified_order(lines: list[str]) -> None:
+    """Require an ordered, same-open F7/05 chain before verified output."""
+    enumerated = opened = pending_set = complete = outcome = False
+    for line in lines:
+        match = RESULT.fullmatch(line)
+        is_open = line in ("STEP: HID open succeeded", "STEP: HID open failed")
+        if outcome and line.startswith("STEP:"):
+            raise ValueError("HID operation follows verified outcome")
+        if count := COUNT.fullmatch(line):
+            enumerated = int(count[1]) > 0
+        elif is_open:
+            if not enumerated:
+                raise ValueError("HID open precedes positive enumeration")
+            opened = line == "STEP: HID open succeeded"
+            pending_set = False
+        elif match:
+            if not opened:
+                raise ValueError("HID transfer lacks successful open")
+            operation, status, error, _ = match.groups()
+            if status == "OK" and int(error) != 0:
+                raise ValueError("successful HID transfer has Win32 error")
+            if operation == "SET F7":
+                pending_set = status == "OK"
+            else:
+                if not pending_set:
+                    raise ValueError("GET 05 lacks preceding successful SET F7")
+                complete |= status == "OK"
+                pending_set = False
+        elif PASS.fullmatch(line):
+            if not complete:
+                raise ValueError("verified result precedes complete HID chain")
+            outcome = True
+
+
 def parse_log(data: str) -> Capture:
     """Parse only stage markers from beta.57+ redacted CLI output."""
     lines = data.splitlines()
     if any(line.startswith("MODE: experimental GET") for line in lines):
         raise ValueError("Use compare_get_ids.py for an experimental GET-ID log")
     validate_markers(lines)
+    if any(PASS.fullmatch(line) for line in lines):
+        validate_verified_order(lines)
     values = {"open_ok": 0, "open_failed": 0, "set_ok": 0,
               "set_failed": 0, "get_ok": 0, "get_failed": 0}
     candidates, level, ended = None, None, None
