@@ -98,33 +98,7 @@ print(root.name)
     $existingBefore = Get-AclObservation $existing 'existing-root-before'
     $existingChild = $producer | python - $existing
     if ($LASTEXITCODE -ne 0 -or @($existingChild).Count -ne 1 -or
-        $existingChild -notmatch '^offline-qa-[a-z0-9_]+
-        schema = 'windows-qa-acl-observation-v2'
-        scope = 'SYNTHETIC_HOSTED_WINDOWS'
-        observation = 'COMPLETE'
-        positive_control = 'PASS'
-        effective_access = 'NOT_VERIFIED'
-        hardware = 'NOT_RUN'
-        entries = $observations
-        existing_root_entries = $existingEntries
-        control = $control
-    }
-    $stream = [System.IO.File]::Open($Output, [System.IO.FileMode]::CreateNew)
-    try {
-        $writer = [System.IO.StreamWriter]::new($stream, [System.Text.UTF8Encoding]::new($false))
-        try { $writer.WriteLine(($report | ConvertTo-Json -Depth 6)) }
-        finally { $writer.Dispose() }
-    } finally { $stream.Dispose() }
-    # The closed aggregate is safe for review without downloading raw ACLs.
-    Write-Output ($report | ConvertTo-Json -Depth 6 -Compress)
-    Write-Output 'PASS: scoped Windows DACL observation and positive control'
-} catch {
-    Write-Error 'FAIL: scoped Windows DACL observation' -ErrorAction Continue
-    exit 1
-} finally {
-    if ($created) { Remove-Item -LiteralPath $scratch -Recurse -Force }
-}
-) {
+        $existingChild -notmatch '^offline-qa-[a-z0-9_]+$') {
         throw 'Existing-root synthetic producer failed'
     }
     $existingRun = Join-Path $existing $existingChild
@@ -142,13 +116,14 @@ print(root.name)
         throw 'Existing-root observation control failed'
     }
     $report = [ordered]@{
-        schema = 'windows-qa-acl-observation-v1'
+        schema = 'windows-qa-acl-observation-v2'
         scope = 'SYNTHETIC_HOSTED_WINDOWS'
         observation = 'COMPLETE'
         positive_control = 'PASS'
         effective_access = 'NOT_VERIFIED'
         hardware = 'NOT_RUN'
         entries = $observations
+        existing_root_entries = $existingEntries
         control = $control
     }
     $stream = [System.IO.File]::Open($Output, [System.IO.FileMode]::CreateNew)
