@@ -1,3 +1,22 @@
+# Resume — restricted XML final qualification
+
+#351 merged d355758 after 4 workflows / 6 jobs PASS on bbe1233;
+all five changed blobs match. Windows/HA 26 targeted tests and real
+artifact roundtrip 140862126784 PASS. Initial #352 4 workflows /
+6 jobs PASS on d2a5792, Windows/HA 27 targeted tests, real roundtrip
+140862340153. Retarget for final integrated-base CI. Move to other
+CLI input contracts after qualification. Release BLOCKED.
+
+# Resume — restricted JUnit XML parser candidate
+
+Dependent on #351, initially 4 workflows / 6 jobs PASS; final CI
+pending. Share a bounded UTF-8 parser between JUnit counts and case
+coverage. Reject DTD/entity declarations, comments, CDATA and NUL
+before parsing; preserve normal escaped text. One synthetic regression
+method, hosted qualification pending. Not a general XML importer.
+After qualification, move to remaining CLI input audit rather than
+extending the scoped JUnit format indefinitely. Release BLOCKED.
+
 # Resume — strict JUnit final qualification
 
 #350 merged 688a4e5 after 4 workflows / 6 jobs PASS on 61e972a;

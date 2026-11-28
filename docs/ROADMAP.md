@@ -3453,3 +3453,21 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       Windows/HA 26 tests; real roundtrip 140860916064.
 - [ ] Final integrated-base CI; review XML parser trust boundaries
       and remaining CLI inputs. Release BLOCKED.
+
+### ENG-14 restricted JUnit XML parser
+
+- [x] Use one bounded UTF-8 parser in counts and case coverage;
+      refuse markup declarations (DTD, entities, comments, CDATA)
+      and NUL before decoding the XML tree.
+- [x] Add a valid producer-style control and negative fixtures.
+- [ ] Hosted qualification after #351; move on to remaining CLI
+      input contracts. No release admission or general XML claim.
+
+### ENG-14 restricted XML final qualification
+
+- [x] #351 merged d355758 after 4 workflows / 6 jobs PASS on
+      bbe1233; all five changed blobs match. Windows/HA 26 targeted
+      tests, real artifact roundtrip 140862126784.
+- [x] Initial #352 4 workflows / 6 jobs PASS on d2a5792;
+      Windows/HA 27 tests, actual roundtrip 140862340153.
+- [ ] Final integrated-base CI; continue other CLI input review.

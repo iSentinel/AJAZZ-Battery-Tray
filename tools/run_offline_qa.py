@@ -215,14 +215,23 @@ def read_evidence(path: Path) -> bytes:
     return raw
 
 
-def junit_counts_bytes(raw: bytes) -> dict:
-    """Validate counts and identities from an already captured JUnit document."""
+def parse_junit(raw: bytes) -> ET.Element:
+    """Read the producer's UTF-8 XML without DTDs or markup declarations."""
     if len(raw) > MAX_EVIDENCE:
         raise ValueError("JUnit evidence exceeds limit")
+    text = raw.decode("utf-8")
+    # The native producer never emits DTD, entity, comment or CDATA markup.
+    if "<!" in text or "\x00" in text:
+        raise ValueError("Unexpected JUnit markup declaration")
     try:
-        root = ET.fromstring(raw)
+        return ET.fromstring(text)
     except ET.ParseError as error:
         raise ValueError("Invalid JUnit XML") from error
+
+
+def junit_counts_bytes(raw: bytes) -> dict:
+    """Validate counts and identities from an already captured JUnit document."""
+    root = parse_junit(raw)
     if root.tag != "testsuite" or any(child.tag != "testcase" for child in root):
         raise ValueError("Unexpected JUnit suite")
     cases = list(root)

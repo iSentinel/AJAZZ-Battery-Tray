@@ -360,3 +360,21 @@ on 61e972a; eight changed blobs match, Windows/HA 25 targeted tests,
 real artifact roundtrip 140860717544. Initial JUnit #351 passed
 all six jobs on 87743cc, Windows/HA 26 targeted tests and actual
 roundtrip 140860916064. Final integrated-base qualification pending.
+
+## Restricted JUnit XML parsing (candidate)
+
+The offline producer emits UTF-8 XML without DTDs, entity declarations,
+comments or CDATA. Both count and coverage readers now use the same
+bounded parser and reject raw markup declaration tokens and NUL after
+UTF-8 decoding, before building the XML tree. Standard escaped text
+remains valid. The synthetic regression covers declared entities,
+DOCTYPE, comments, CDATA, UTF-16 and invalid UTF-8, with an escaped
+text control. This is a deliberately restricted producer-specific
+format, not a general XML validation or resource-exhaustion guarantee.
+Hosted qualification pending.
+
+JUnit structure #351 merged d355758 after all six jobs passed
+on bbe1233; five changed blobs match. Windows/HA 26 targeted tests,
+actual roundtrip 140862126784. Initial restricted XML #352 passed
+all six jobs on d2a5792, Windows/HA 27 targeted tests and actual
+roundtrip 140862340153. Final integrated-base qualification pending.

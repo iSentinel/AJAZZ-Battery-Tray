@@ -407,6 +407,28 @@ class OfflineQaTests(unittest.TestCase):
             path.write_bytes(b"second")
             self.assertEqual(read_evidence(path), b"second")
 
+    def test_junit_refuses_markup_declarations(self) -> None:
+        """Reject DTD, entity, comments, CDATA and alternate encodings."""
+        valid = ('<?xml version="1.0" encoding="utf-8"?>'
+                 '<testsuite tests="1" failures="0" errors="0" skipped="0">'
+                 '<testcase name="synthetic.&lt;!"/></testsuite>')
+        invalid = (
+            '<!DOCTYPE testsuite [<!ENTITY test "synthetic">]>'
+            + valid.split("?>", 1)[1].replace("synthetic.&lt;!", "&test;"),
+            '<!DOCTYPE testsuite>' + valid.split("?>", 1)[1],
+            valid.replace('<testcase', '<!--hidden--><testcase'),
+            valid.replace('<testcase', '<![CDATA[hidden]]><testcase'),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "report.xml"
+            output.write_bytes(valid.encode("utf-8"))
+            self.assertEqual(junit_counts(output)["tests"], 1)
+            for raw in [item.encode("utf-8") for item in invalid] + [
+                    valid.encode("utf-16"), b'\xff']:
+                with self.subTest(raw=raw[:60]), self.assertRaises(ValueError):
+                    output.write_bytes(raw)
+                    junit_counts(output)
+
     def test_junit_structure_rejection(self) -> None:
         """Reject hidden cases, nested results, missing counts and malformed XML."""
         base = b'<testsuite tests="1" failures="0" errors="0" skipped="0">'
