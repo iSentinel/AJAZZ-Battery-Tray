@@ -1,3 +1,14 @@
+# Resume — deterministic JSON nesting qualification
+
+Initial #350 on 67fd789 failed offline QA and Windows/HA regressions:
+Python 3.13.17 accepted the 2000-level array fixture rather than
+raising RecursionError (job 140859682830). Apple and ACL jobs passed;
+artifact roundtrip skipped. Replace implicit interpreter recursion
+limit with a quote/escape-aware predecode bound of 64 containers
+including the root; require UTF-8, refuse unmatched closing delimiter.
+Add exact boundary, escaped delimiter and invalid UTF-8 regression.
+No bypass of failed CI. Repeat hosted qualification pending.
+
 # Resume — ENG-16 scoped qualification and strict JSON follow-up
 
 #349 merged 6bedf53 after 3 workflows / 5 jobs PASS on 6670a40;
