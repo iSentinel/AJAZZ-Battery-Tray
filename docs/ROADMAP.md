@@ -3660,3 +3660,11 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       invalid UTF-8; 34 targeted tests and source audit PASS.
 - [ ] Full candidate qualification and integration; review remaining
       timeline and normalization reader boundaries next.
+
+### ENG-14 shared Apple diagnostics evidence reader
+
+- [x] Confirm #366 and #367 both 5/5 hosted checks PASS; integration remains open.
+- [x] Reuse identity-checked reader in the standalone Apple analyzer.
+- [x] Preserve 64 KiB cap, BOM and both menu editions; 33 targeted tests and audit PASS.
+- [ ] Candidate hosted qualification and dependent integration.
+- [ ] Review ZIP session reader identity, budgets and manifest parsing separately.

@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 import sys
 
+from run_offline_qa import read_evidence
+
 MAX_SIZE = 65536
 TRACE = '\n\nFresh bounded F7/05 trace:\n'
 SCHEMA = 'Report schema: apple-menu-v1'
@@ -151,14 +153,8 @@ def parse(text: str) -> dict:
 
 
 def read_report(path: Path) -> str:
-    """Bound local input; do not accept directories or symlinks."""
-    if path.is_symlink() or not path.is_file():
-        raise ValueError('expected a local report file')
-    with path.open('rb') as stream:
-        data = stream.read(MAX_SIZE + 1)
-    if len(data) > MAX_SIZE:
-        raise ValueError('report exceeds size budget')
-    return data.decode('utf-8-sig')
+    """Read bounded, identity-checked local input without following links."""
+    return read_evidence(path, MAX_SIZE).decode('utf-8-sig')
 
 
 def main(argv: list[str] | None = None) -> int:
