@@ -3588,3 +3588,15 @@ matching e0ee3b9. Repeat qualification against integrated base required.
       34 targeted tests and source audit PASS.
 - [ ] Hosted qualification after #360. Review standalone GET-ID
       reader and marker consistency. Hardware and release separate.
+
+### ENG-14 GET-ID experimental evidence framing
+
+- [x] #360 merged 3452f565 after 5/5 checks; all five changed
+      blobs match. #361 retargeted and updated to 8e0738ce;
+      34 targeted tests PASS.
+- [x] Share bounded identity-checked reader and native UTC parser;
+      reject ambiguous session/terminal markers and contradictory outcomes.
+- [x] Regression coverage for framing, timeout and file identity;
+      19 targeted tests and source audit PASS.
+- [ ] Hosted qualification after #361. Review experimental probe
+      ordering and numeric field syntax; hardware and release separate.

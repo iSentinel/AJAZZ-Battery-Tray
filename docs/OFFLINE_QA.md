@@ -487,3 +487,14 @@ lack of independent verification remain unchanged. The normalized JSON
 timestamp retains Python microsecond precision, not native 100 ns precision.
 9 CLI, 17 comparator and 8 GET-ID tests PASS; source audit PASS.
 No hardware observations. Hosted qualification pending.
+
+## GET-ID experimental evidence framing (candidate)
+
+Standalone GET-ID comparison uses the existing bounded reader and UTC
+start parser, rejects ambiguous mode and terminal markers, and requires
+the experimental non-telemetry summary before a completed exit. Timeout
+remains inconclusive and contradictory success/failure is rejected.
+Invalid-file diagnostics no longer echo local paths. Existing report
+and exit semantics retained for valid inputs. 10 GET-ID tests and
+9 related CLI tests PASS, source audit PASS. Hosted qualification pending.
+No physical device identity or telemetry attestation.

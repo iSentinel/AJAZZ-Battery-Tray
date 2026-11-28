@@ -1,3 +1,17 @@
+# Resume — GET-ID experimental evidence framing
+
+#360 merged 3452f565 after 5/5 hosted checks on 32fad3d2;
+all five changed blobs match. #361 retargeted and updated to 8e0738ce;
+34 targeted tests PASS, fresh hosted qualification pending.
+Reuse bounded identity-checked reader and native UTC BEGIN parser in
+standalone GET-ID comparison. Require unique mode and terminal marker,
+consistent completed experimental outcome and unique enumeration.
+Timeout remains inconclusive, contradictory markers rejected; errors
+no longer echo local paths. Two synthetic regression methods;
+10 GET-ID and 9 CLI tests PASS, source audit PASS.
+No hardware, runtime or release change. Next: review experimental
+probe ordering and numeric field syntax; retain non-telemetry semantics.
+
 # Resume — Windows CLI shared evidence framing
 
 #359 merged 5c53552f after 5/5 hosted checks on de087f0f;
