@@ -372,3 +372,9 @@ DOCTYPE, comments, CDATA, UTF-16 and invalid UTF-8, with an escaped
 text control. This is a deliberately restricted producer-specific
 format, not a general XML validation or resource-exhaustion guarantee.
 Hosted qualification pending.
+
+JUnit structure #351 merged d355758 after all six jobs passed
+on bbe1233; five changed blobs match. Windows/HA 26 targeted tests,
+actual roundtrip 140862126784. Initial restricted XML #352 passed
+all six jobs on d2a5792, Windows/HA 27 targeted tests and actual
+roundtrip 140862340153. Final integrated-base qualification pending.
