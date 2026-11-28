@@ -409,3 +409,12 @@ Other section fields and unrelated clipboard notes remain independent.
 Two regression methods cover identical/conflicting duplicates and
 valid controls. This does not establish device identity, report
 authenticity or physical sleep behavior. Hosted qualification pending.
+
+AULA bounded read #353 merged 5221a56 after all six jobs passed
+on d4c230c; six changed blobs match. Initial #354 failed common QA
+on 3e74500; downloaded artifact 15248149073 matched hosted SHA-256
+69312a665a6c272c592c8e9f2087bd2f0c1ecd65e28f0c991ec91f2b540c7edc.
+JUnit reported 575 tests, one failure, zero errors/skips:
+ExtendedEvidenceTests.test_duplicate_extended_field. The test selected
+the heading instead of the fourth measurement row. Corrected fixture
+locates the heading and selects the next four rows. Repeat CI pending.
