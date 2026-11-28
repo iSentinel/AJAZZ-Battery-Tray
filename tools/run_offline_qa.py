@@ -66,18 +66,33 @@ CLI = ("verify_dashboard_group_catalog", "verify_apple_group_catalog", "verify_w
 MAX_EVIDENCE = 2 * 1024 * 1024
 
 
-def create_run(parent: Path) -> Path:
-    """Create a new run directory in an owner-private evidence root."""
-    if parent.is_symlink():
-        raise ValueError("Symlinked evidence root")
-    parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if not parent.is_dir():
-        raise ValueError("Evidence root is not a directory")
+def private_directory(path: Path) -> os.stat_result:
+    """Validate the final directory entry without following redirections."""
+    info = path.lstat()
+    reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    if (not stat.S_ISDIR(info.st_mode) or not info.st_ino
+            or getattr(info, "st_file_attributes", 0) & reparse):
+        raise ValueError("Expected regular evidence directory")
     if os.name == "posix":
-        info = parent.stat()
         if info.st_uid != os.geteuid() or info.st_mode & 0o077:
-            raise ValueError("Evidence root must be owner-private")
-    return Path(tempfile.mkdtemp(prefix="offline-qa-", dir=parent))
+            raise ValueError("Evidence directory must be owner-private")
+    return info
+
+
+def create_run(parent: Path) -> Path:
+    """Create a new run directory in a validated local evidence root."""
+    try:
+        before = private_directory(parent)
+    except FileNotFoundError:
+        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        before = private_directory(parent)
+    directory = Path(tempfile.mkdtemp(prefix="offline-qa-", dir=parent))
+    after = private_directory(parent)
+    # Creating the child changes the parent's timestamps and link count.
+    if (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino):
+        raise ValueError("Evidence root changed during creation")
+    private_directory(directory)
+    return directory
 
 
 def write_json(path: Path, value: dict) -> None:
