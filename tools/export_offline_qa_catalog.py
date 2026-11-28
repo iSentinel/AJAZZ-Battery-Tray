@@ -9,7 +9,8 @@ import unittest
 import xml.etree.ElementTree as ET
 
 from run_offline_qa import CLI, ROOT, check_directory, evidence_snapshot
-from run_offline_qa import junit_counts_bytes, parse_evidence_json, read_verified_inventory
+from run_offline_qa import junit_counts_bytes, parse_evidence_json, parse_junit
+from run_offline_qa import read_verified_inventory
 from run_offline_qa import source_context, write_json
 
 
@@ -43,7 +44,7 @@ def catalog() -> dict:
 
 def coverage(expected: dict, summary: dict, xml: bytes) -> None:
     """Reject missing, extra or duplicate reported case and command identities."""
-    root = ET.fromstring(xml)
+    root = parse_junit(xml)
     names = [case.get('name') for case in root.findall('testcase')]
     if (root.tag != 'testsuite' or len(set(names)) != len(names)
             or set(names) != set(expected['unittest_ids'])):
