@@ -241,3 +241,18 @@ PASS; all six changed blobs match 1ed7680. Real artifact roundtrip
 job 140825516207 passed. Initial status consistency #345 passed
 3 workflows / 4 jobs on 158b2e5, including job 140825694845.
 Final integrated-base qualification required.
+
+## Evidence root validation (candidate)
+
+Before creating a fresh run, the writer validates the final root entry
+using lstat, rejecting non-directories, zero inode and Windows reparse
+points. POSIX additionally requires the effective user's ownership and
+no group/other permission bits. After unique child creation, it rechecks
+the root device/inode and validates the child using the same rules.
+It never changes permissions on an existing directory. Three synthetic
+regressions cover unsafe directory types, public POSIX permissions and
+observed parent replacement. These are final-component observations,
+not a race-free directory descriptor traversal or an ACL review.
+Ancestor paths and effective Windows DACLs must be trusted separately.
+An interrupted or refused creation can leave a new incomplete directory;
+do not treat it as completed evidence. Hosted qualification pending.
