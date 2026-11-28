@@ -280,3 +280,9 @@ ACE counts are not an effective-access calculation and do not resolve
 group memberships, deny rules, privileges or inheritance applicability.
 Real user profile ACLs and enforcement remain unqualified. Hosted
 qualification and parent #346 integration required.
+
+Initial ACL job 140830774483 on 27f6691 failed during setup: pinned
+Python 3.12.16 was unavailable for Windows Server 2025. The ACL fixture
+was NOT_RUN. The Windows build job 140830522562 successfully provisioned
+CPython 3.13.17; the ACL job now uses that exact Windows version. Linux
+QA remains on 3.12.16. Repeat hosted qualification required.
