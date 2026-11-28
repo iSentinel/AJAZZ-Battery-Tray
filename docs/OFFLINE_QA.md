@@ -430,3 +430,11 @@ establish PASS. Initial fresh samples with nonzero failure count
 and no-reply timestamps not later than the last-good timestamp are
 rejected. Two synthetic regressions; hosted qualification pending.
 No runtime behavior or HID changes.
+
+## AULA comparison context (candidate)
+
+Reject blank app versions in both clipboard and extended summaries.
+Require the 24-hour cache lifetime in awake and recovered checkpoints as
+well as sleep; an unsupported policy makes comparison NOT OBSERVED,
+not a full PASS. Two synthetic test methods, 33 targeted tests and
+source audit PASS. No runtime change or device acceptance claim.

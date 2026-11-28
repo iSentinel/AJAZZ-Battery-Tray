@@ -292,6 +292,28 @@ class AulaOfflineSummaryTests(unittest.TestCase):
         self.assertEqual(analyze(parse_summary(summary(failures=1)), asleep,
                                  recovered)[0], "FAIL")
 
+    def test_missing_version_is_not_comparable(self) -> None:
+        """Missing application identity must not count as a matching version."""
+        for text in (summary().replace("Version: 0.3.0-beta.58", "Version:   "),
+                     extended(START, START, True).replace(
+                         "App version: 0.3.0-beta.60", "App version: ")):
+            with self.subTest(format=text.splitlines()[0]), self.assertRaises(ValueError):
+                parse_summary(text)
+
+    def test_cache_policy_all_checkpoints(self) -> None:
+        """Require the documented cache policy in each compared report."""
+        awake, asleep, recovered = cases()
+        for initial, final in ((48, 24), (24, 48), (48, 48)):
+            start = parse_summary(summary().replace("hours: 24;", f"hours: {initial};"))
+            end = parse_summary(summary(now=WAKE, percent=80, good=80, last_good=WAKE)
+                                .replace("hours: 24;", f"hours: {final};"))
+            with self.subTest(initial=initial, final=final):
+                self.assertEqual(analyze(start, asleep, end)[0], "NOT OBSERVED")
+        self.assertEqual(analyze(awake, asleep, recovered)[0], "PASS")
+        status, checks = analyze_pair(asleep, end)
+        self.assertEqual(status, "NOT OBSERVED")
+        self.assertTrue(any(row[:2] == ("CACHE POLICY", "NOT OBSERVED") for row in checks))
+
     def test_invalid_battery(self) -> None:
         """Reject out-of-range charge and zero last-good readings."""
         with self.assertRaises(ValueError):
