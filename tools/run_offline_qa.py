@@ -284,11 +284,40 @@ def evidence_snapshot(directory: Path) -> dict:
     return identities
 
 
+def unique_json_object(pairs: list[tuple[str, object]]) -> dict:
+    """Reject duplicate decoded keys, including nested and escaped aliases."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate evidence JSON key")
+        result[key] = value
+    return result
+
+
+def reject_json_constant(value: str) -> object:
+    """Reject nonstandard NaN and Infinity literals without echoing input."""
+    raise ValueError("Nonstandard evidence JSON constant")
+
+
+def parse_evidence_json(raw: bytes) -> dict:
+    """Decode bounded evidence as an unambiguous JSON object."""
+    if len(raw) > MAX_EVIDENCE:
+        raise ValueError("Evidence JSON exceeds limit")
+    try:
+        value = json.loads(raw, object_pairs_hook=unique_json_object,
+                           parse_constant=reject_json_constant)
+    except RecursionError as error:
+        raise ValueError("Evidence JSON nesting exceeds limit") from error
+    if not isinstance(value, dict):
+        raise ValueError("Expected evidence JSON object")
+    return value
+
+
 def read_verified_inventory(directory: Path) -> dict[str, bytes]:
     """Return the bounded bytes that passed exact manifest and identity checks."""
     check_directory(directory)
     initial = evidence_snapshot(directory)
-    manifest = json.loads(read_evidence(directory / "manifest.json"))
+    manifest = parse_evidence_json(read_evidence(directory / "manifest.json"))
     if (not isinstance(manifest, dict) or set(manifest) != {"schema", "files"}
             or type(manifest["schema"]) is not int or manifest["schema"] != 1
             or not isinstance(manifest["files"], list)
