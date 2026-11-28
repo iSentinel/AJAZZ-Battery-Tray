@@ -2,13 +2,12 @@
 
 from datetime import datetime
 from io import BytesIO
-import json
-import os
 from pathlib import Path
 import stat
 import zipfile
 
 from normalize_device_diagnostics import windows_utc
+from run_offline_qa import parse_evidence_json, read_bounded_file
 
 MAX_REPORTS = 32
 MAX_REPORT = 1024 * 1024
@@ -20,30 +19,8 @@ MARKERS = frozenset(('Baseline', 'UsbSelected', 'BluetoothSelected',
 
 
 def read_archive(path: Path) -> bytes:
-    """Reject special files and symlinks; bound the complete archive read."""
-    before = path.lstat()
-    if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_ARCHIVE:
-        raise ValueError('invalid archive file')
-    flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0)
-    with os.fdopen(os.open(path, flags | getattr(os, 'O_BINARY', 0)), 'rb') as stream:
-        opened = os.fstat(stream.fileno())
-        if not stat.S_ISREG(opened.st_mode) or (
-                opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino):
-            raise ValueError('archive identity changed')
-        data = stream.read(MAX_ARCHIVE + 1)
-    if len(data) > MAX_ARCHIVE:
-        raise ValueError('archive size exceeded')
-    return data
-
-
-def unique_object(pairs: list[tuple]) -> dict:
-    """Reject duplicate manifest keys rather than silently overriding them."""
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError('duplicate manifest key')
-        result[key] = value
-    return result
+    """Read a local archive under its separate identity-checked 9 MiB budget."""
+    return read_bounded_file(path, MAX_ARCHIVE)
 
 
 def validate_members(archive: zipfile.ZipFile) -> dict:
@@ -79,7 +56,9 @@ def read_member(archive: zipfile.ZipFile, info: zipfile.ZipInfo) -> bytes:
 
 def parse_manifest(raw: bytes, members: dict) -> list[dict]:
     """Verify the exact emitter schema and explicit owner annotation semantics."""
-    manifest = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_object)
+    if len(raw) > MAX_MANIFEST:
+        raise ValueError('manifest size exceeded')
+    manifest = parse_evidence_json(raw)
     if not isinstance(manifest, dict) or set(manifest) != {
             'schema', 'identityBinding', 'markers', 'entries'}:
         raise ValueError('invalid session manifest')

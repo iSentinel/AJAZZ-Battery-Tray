@@ -3668,3 +3668,14 @@ matching e0ee3b9. Repeat qualification against integrated base required.
 - [x] Preserve 64 KiB cap, BOM and both menu editions; 33 targeted tests and audit PASS.
 - [ ] Candidate hosted qualification and dependent integration.
 - [ ] Review ZIP session reader identity, budgets and manifest parsing separately.
+
+### ENG-14 diagnostic session archive identity and strict manifest
+
+- [x] Confirm #366, #367 and #368 each 5/5 hosted checks PASS; integration open.
+- [x] Share bounded identity-checked file read while preserving separate archive
+      and QA evidence ceilings (9 MiB and 2 MiB).
+- [x] Preserve decompressed report, aggregate, manifest and count budgets.
+- [x] Reuse strict JSON parsing and add replacement/link/budget regressions;
+      49 targeted tests and source audit PASS.
+- [ ] Hosted qualification and dependent integration.
+- [ ] Review Apple session archive boundaries and remaining CLI contracts.

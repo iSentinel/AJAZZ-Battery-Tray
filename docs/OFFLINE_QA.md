@@ -566,3 +566,16 @@ checks exact cap for both menu editions, directory/link rejection and invalid
 UTF-8. 9 Apple, 13 normalization and 11 timeline tests PASS; source audit PASS.
 No native runtime or protocol change. Hosted qualification pending; #366 and
 #367 remain open despite successful hosted checks.
+
+## Diagnostic session archive identity and strict manifest (candidate)
+
+The session ZIP reader reuses the regular single-link identity-checked
+file read with an explicit 9 MiB budget. The read_evidence wrapper retains
+its 2 MiB ceiling. Existing aggregate, report, manifest and count bounds
+are unchanged. Manifest parsing rejects duplicate decoded keys, excessive
+nesting and nonstandard constants. New regressions exercise exact archive
+cap, QA ceiling, hardlinks, symlinks, directory rejection and replacement
+of a file with another same-size file at its final identity check, plus
+strict manifest failure reasons. 11 session, 27 QA and 11 timeline tests
+PASS; source audit PASS. No ZIP extraction, hardware or release acceptance.
+Hosted qualification pending.

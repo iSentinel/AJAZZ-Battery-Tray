@@ -1,3 +1,17 @@
+# Resume — diagnostic session archive identity and strict manifest
+
+#366, #367 and #368 remain open, each 5/5 hosted checks PASS.
+Prior integration block remains unresolved; no merge claimed.
+Reuse the bounded regular-file implementation for session archives;
+keep the separate 9 MiB archive budget and the 2 MiB QA ceiling.
+Retain 8 MiB aggregate, 1 MiB report, 64 KiB manifest and 32 reports.
+Use the strict JSON parser with decoded duplicate-key, nonstandard
+constant and nesting rejection. Three regression methods cover the
+archive boundary, same-size path replacement and manifest failures.
+11 session, 27 QA and 11 timeline tests PASS; source audit PASS.
+Next: review Apple session archive reader for the same identity and
+manifest boundaries, then remaining CLI contracts. No device or release action.
+
 # Resume — Apple diagnostics evidence reader
 
 #366 remains open at dd958a8c, #367 at 92b799a7; both 5/5 hosted
