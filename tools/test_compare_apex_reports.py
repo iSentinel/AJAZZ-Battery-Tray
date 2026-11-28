@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -75,6 +76,24 @@ class ApexComparisonTests(unittest.TestCase):
                 read_report(path)
             with self.assertRaises(ValueError):
                 read_report(root)
+
+    def test_report_identity_and_exact_cap(self) -> None:
+        """Accept the exact byte limit and reject hardlinked or invalid UTF-8 input."""
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / "report.txt"
+            raw = SECTION.encode("utf-8-sig")
+            path.write_bytes(raw + b"\n" * (MAX_REPORT_BYTES - len(raw)))
+            self.assertEqual(read_report(path).rstrip(), SECTION)
+            alias = root / "alias.txt"
+            os.link(path, alias)
+            for linked in (path, alias):
+                with self.assertRaises(ValueError):
+                    read_report(linked)
+            alias.unlink()
+            path.write_bytes(b"\xff")
+            with self.assertRaises(UnicodeError):
+                read_report(path)
 
     def test_report_symlink_is_rejected(self) -> None:
         """Do not read a report redirected via a symbolic link."""

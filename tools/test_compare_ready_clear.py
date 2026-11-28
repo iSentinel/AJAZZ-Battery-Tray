@@ -1,5 +1,6 @@
 """Synthetic complete-matrix checks; no device or network access."""
 
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -158,6 +159,29 @@ class ReadyClearTests(unittest.TestCase):
         """An absent prior poll is not evidence of a conflicting value."""
         text = report()
         self.assertEqual(disagreement(text, parse_matrix(text)), (None, False))
+
+    def test_local_reader_identity(self) -> None:
+        """Preserve BOM and exact cap while rejecting linked/nonregular reports."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "report.txt"
+            raw = report().encode("utf-8-sig")
+            path.write_bytes(raw + b"\n" * (1048576 - len(raw)))
+            self.assertEqual(read_report(path), (parse_matrix(report()), None, False))
+            with self.assertRaises(ValueError):
+                read_report(root)
+            alias = root / "alias.txt"
+            os.link(path, alias)
+            for linked in (path, alias):
+                with self.assertRaises(ValueError):
+                    read_report(linked)
+            alias.unlink()
+            try:
+                alias.symlink_to(path)
+            except (OSError, NotImplementedError):
+                return
+            with self.assertRaises(ValueError):
+                read_report(alias)
 
     def test_size_guard(self) -> None:
         """Reject a local full diagnostic report larger than one MiB."""

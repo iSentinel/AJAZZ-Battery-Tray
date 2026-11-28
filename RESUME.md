@@ -1,3 +1,16 @@
+# Resume — shared APEX and ready-clear evidence reader
+
+#366 remains open at dd958a8c with 5/5 hosted checks PASS;
+prior integration command was blocked, so no merge is claimed.
+Independent dependent branch reuses the existing identity-checked
+bounded evidence reader in both APEX and ready-clear comparators.
+Preserve 1 MiB cap, BOM handling and parsed output; reject hardlinks,
+symlinks, nonregular input and changes during read. Two new regression
+methods; 12 APEX, 17 ready-clear and 5 process tests PASS, audit PASS.
+Next: review remaining diagnostic timeline and normalization readers
+for bounded file identity, preserving existing formats and exit codes.
+No hardware, protocol or release action.
+
 # Resume — diagnostic CLI process exit contracts
 
 #364 merged 31356d4a after 5/5 hosted checks on c9fd9cac;
